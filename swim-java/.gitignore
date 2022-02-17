@@ -1,0 +1,8 @@
+.DS_Store
+.idea
+.gradle
+.vscode
+build
+out
+*.log
+*~
