@@ -12,9 +12,9 @@ repositories {
     gradlePluginPortal()
 }
 
-//application {
-//    applicationDefaultJvmArgs = ['-Djava.library.path=../rustffi/target/release']
-//}
+application {
+    applicationDefaultJvmArgs = ['-Djava.library.path=../rust-java-bridge/target/release']
+}
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
@@ -28,18 +28,18 @@ dependencies {
     implementation 'org.reflections:reflections:0.10.2'
 }
 
-//nativeBuild {
-//    mainClass = "ai.swim.Runner"
-//    runtimeArgs.add('-Djava.library.path=../rustffi/target/release')
-//}
-//
-//nativeTest {
-//    buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
-//    runtimeArgs.add('-Djava.library.path=../rustffi/target/release')
-//}
-//
-//test {
-//    jvmArgs '-Djava.library.path=../rustffi/target/release'
-//
-//    useJUnitPlatform()
-//}
+nativeBuild {
+    mainClass = "ai.swim.Runner"
+    runtimeArgs.add('-Djava.library.path=../rust-java-bridge/target/release')
+}
+
+nativeTest {
+    buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
+    runtimeArgs.add('-Djava.library.path=../rust-java-bridge/target/release')
+}
+
+test {
+    jvmArgs '-Djava.library.path=../rust-java-bridge/target/release'
+
+    useJUnitPlatform()
+}
