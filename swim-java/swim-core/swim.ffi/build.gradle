@@ -1,0 +1,10 @@
+plugins {
+    id 'org.graalvm.buildtools.native' version '0.9.4'
+}
+
+ext.moduleName = 'swim.util'
+
+dependencies {
+    implementation group: 'org.graalvm.nativeimage', name: 'svm', version: '22.0.0.2'
+    implementation 'org.reflections:reflections:0.10.2'
+}

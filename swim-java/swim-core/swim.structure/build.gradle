@@ -1,0 +1,9 @@
+ext.moduleName = 'swim.structure'
+
+dependencies {
+    implementation project(':swim-form-annotations')
+    annotationProcessor project(':swim-form-processor')
+
+    testAnnotationProcessor project(':swim-form-processor')
+}
+
