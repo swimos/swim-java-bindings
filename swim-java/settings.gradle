@@ -1,2 +1,17 @@
 rootProject.name = 'swim-java'
 
+include 'swim.ffi'
+project(':swim.ffi').projectDir = file('swim-core/swim.ffi')
+project(':swim.ffi').name = 'swim-ffi'
+
+include 'swim.structure'
+project(':swim.structure').projectDir = file('swim-core/swim.structure')
+project(':swim.structure').name = 'swim-structure'
+
+include 'swim.form.annotations'
+project(':swim.form.annotations').projectDir = file('swim-core/swim.structure/swim.form.annotations')
+project(':swim.form.annotations').name = 'swim-form-annotations'
+
+include 'swim.form.processor'
+project(':swim.form.processor').projectDir = file('swim-core/swim.structure/swim.form.processor')
+project(':swim.form.processor').name = 'swim-form-processor'
