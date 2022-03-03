@@ -1,6 +1,6 @@
 package ai.swim.structure.form.recognizer.structural;
 
-import ai.swim.structure.form.Builder;
+import ai.swim.structure.form.RecognizingBuilder;
 import ai.swim.structure.form.event.ReadEvent;
 import ai.swim.structure.form.event.ReadStartAttribute;
 import ai.swim.structure.form.event.ReadTextValue;
@@ -12,8 +12,8 @@ import ai.swim.structure.form.recognizer.structural.tag.FixedTagSpec;
 import ai.swim.structure.form.recognizer.structural.tag.TagSpec;
 
 public class ClassRecognizerInit<T> extends ClassRecognizer<T> {
-  public ClassRecognizerInit(TagSpec tagSpec, Builder<T> builder, int fieldCount, LabelledVTable<T> vTable) {
-    super(tagSpec, builder, fieldCount, vTable);
+  public ClassRecognizerInit(TagSpec tagSpec, RecognizingBuilder<T> builder, int fieldCount, IndexFn indexFn) {
+    super(tagSpec, builder, fieldCount, indexFn);
   }
 
   @Override
@@ -30,13 +30,13 @@ public class ClassRecognizerInit<T> extends ClassRecognizer<T> {
           return Recognizer.error(new RuntimeException("Unexpected attribute: " + attributeEvent.value()));
         }
       } else if (this.tagSpec.isField()) {
-        Integer idx = this.vTable.selectIndex(new TagFieldKey());
+        Integer idx = this.indexFn.selectIndex(new TagFieldKey());
 
         if (idx == null) {
           return Recognizer.error(new RuntimeException("Inconsistent state"));
         } else {
           try {
-            if (this.vTable.selectRecognize(this.builder, idx, new ReadTextValue(attributeEvent.value()))) {
+            if (this.builder.feedIndexed(idx, new ReadTextValue(attributeEvent.value()))) {
               return this.nextState(new HeaderFieldKey());
             } else {
               return this;
@@ -59,13 +59,13 @@ public class ClassRecognizerInit<T> extends ClassRecognizer<T> {
   }
 
   private Recognizer<T> nextState(LabelledFieldKey key) {
-    Integer idx = this.vTable.selectIndex(key);
+    Integer idx = this.indexFn.selectIndex(key);
 
     if (idx == null) {
-      return new ClassRecognizerNoHeader<>(this.tagSpec, this.builder, this.bitSet, this.vTable, this.index);
+      return new ClassRecognizerNoHeader<>(this.tagSpec, this.builder, this.bitSet, this.indexFn, this.index);
     } else {
       this.index = idx;
-      return new ClassRecognizerHeader<>(this.tagSpec, this.builder, this.bitSet, this.vTable, this.index);
+      return new ClassRecognizerHeader<>(this.tagSpec, this.builder, this.bitSet, this.indexFn, this.index);
     }
   }
 }

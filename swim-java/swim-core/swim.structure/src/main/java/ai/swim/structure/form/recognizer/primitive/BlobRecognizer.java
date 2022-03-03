@@ -12,15 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.form;
+package ai.swim.structure.form.recognizer.primitive;
 
-import swim.codec.Input;
-import swim.codec.Writer;
+import ai.swim.structure.form.event.ReadBlobValue;
+import ai.swim.structure.form.event.ReadEvent;
+import ai.swim.structure.form.recognizer.Recognizer;
 
-public abstract class Form<F> {
-
-  public abstract F readFrom(Input input);
-
-  public abstract <O> void writeInto(Writer<F, O> writer);
-
+public class BlobRecognizer extends Recognizer<byte[]> {
+  @Override
+  public Recognizer<byte[]> feedEvent(ReadEvent event) {
+    if (event.isBlob()) {
+      ReadBlobValue readBlobValue = (ReadBlobValue) event;
+      return Recognizer.done(readBlobValue.value());
+    } else {
+      return Recognizer.error(new RuntimeException("Expected a byte[]"));
+    }
+  }
 }

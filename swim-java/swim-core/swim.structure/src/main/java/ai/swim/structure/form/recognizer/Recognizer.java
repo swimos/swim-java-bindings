@@ -2,6 +2,7 @@ package ai.swim.structure.form.recognizer;
 
 import ai.swim.structure.form.event.ReadEvent;
 
+// todo: number recognizers will truncate values
 public abstract class Recognizer<T> {
 
   public static <T> Recognizer<T> done(T target) {
