@@ -5,6 +5,10 @@ subprojects {
     group = "ai.swim"
     version = '0.0.1-SNAPSHOT'
 
+    ext {
+        swimVersion = project.property('swim.version')
+    }
+
     repositories {
         mavenCentral()
         gradlePluginPortal()

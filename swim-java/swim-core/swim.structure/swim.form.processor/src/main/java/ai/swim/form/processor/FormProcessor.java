@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.form.processor;
+package ai.swim.structure.form.processor;
 
-import ai.swim.form.annotations.AutoForm;
+import ai.swim.structure.form.annotations.AutoForm;
 import com.google.auto.service.AutoService;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
