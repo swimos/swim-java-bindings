@@ -14,9 +14,13 @@
 
 package ai.swim.structure.form;
 
-import ai.swim.form.annotations.AutoForm;
-import ai.swim.form.annotations.FormProperty;
+import ai.swim.structure.form.annotations.AutoForm;
+import ai.swim.structure.form.annotations.FormProperty;
 import org.junit.jupiter.api.Test;
+import swim.codec.Parser;
+import swim.codec.Unicode;
+import swim.recon.Recon;
+import swim.structure.Value;
 
 class FormTest {
 
@@ -37,10 +41,23 @@ class FormTest {
     private int a;
   }
 
-  // should produce
 
-  static class PropForm extends Form<Prop> {
+  @Test
+  void a() {
+    Parser<Value> parser = Recon.structureParser().blockParser();
+    Parser<Value> feed = parser.feed(Unicode.stringInput("@linked(node:node,lane:lane,rate:0.5,prio:1.0)5"));
+    System.out.println(feed.bind());
 
+    //    parser.
+//    new String(new byte[]{}, StandardCharsets.UTF_8);
+
+    // @auth{first:1,second:2}
+//    byte[] bytes = new byte[]{64, 97, 117, 116, 104, 123, 102, 105, 114, 115, 116, 58, 49, 44, 115, 101, 99, 111, 110, 100, 58, 50, 125};
+//    Decoder<Envelope> decoder = Envelope.decoder();
+//
+//    AuthRequest actual = (AuthRequest) decoder.feed(Binary.input(bytes)).bind();
+//    AuthRequest expected = new AuthRequest(Record.of(Slot.of("first", 1), Slot.of("second", 2)));
+//    assertEquals(actual, expected);
   }
 
 }

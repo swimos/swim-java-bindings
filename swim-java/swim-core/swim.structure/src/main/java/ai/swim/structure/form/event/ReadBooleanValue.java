@@ -12,14 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.form.processor;
+package ai.swim.structure.form.event;
 
-import java.io.IOException;
+public class ReadBooleanValue extends ReadEvent {
+  private final Boolean value;
 
-public class FormBuilder {
+  public ReadBooleanValue(Boolean value) {
+    this.value = value;
+  }
 
-  public void generate() throws IOException {
+  @Override
+  public boolean isBoolean() {
+    return true;
+  }
 
+  public Boolean value() {
+    return this.value;
   }
 
 }

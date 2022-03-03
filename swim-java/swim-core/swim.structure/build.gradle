@@ -5,5 +5,11 @@ dependencies {
     annotationProcessor project(':swim-form-processor')
 
     testAnnotationProcessor project(':swim-form-processor')
+
+    api group: 'org.swimos', name: 'swim-codec', version: swimVersion
+    api group: 'org.swimos', name: 'swim-warp', version: swimVersion
+    api group: 'org.swimos', name: 'swim-recon', version: swimVersion
+    api group: 'org.swimos', name: 'swim-structure', version: swimVersion
+    api group: 'org.swimos', name: 'swim-util', version: swimVersion
 }
 

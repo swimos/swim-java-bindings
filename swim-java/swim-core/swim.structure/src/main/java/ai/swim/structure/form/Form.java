@@ -14,6 +14,13 @@
 
 package ai.swim.structure.form;
 
+import swim.codec.Input;
+import swim.codec.Writer;
+
 public abstract class Form<F> {
+
+  public abstract F readFrom(Input input);
+
+  public abstract <O> void writeInto(Writer<F,O> writer);
 
 }

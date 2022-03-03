@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.form.processor;
+package ai.swim.structure.form.event;
 
-import java.io.IOException;
-
-public class FormBuilder {
-
-  public void generate() throws IOException {
-
+public class ReadEndRecord extends ReadEvent {
+  @Override
+  public boolean isEndRecord() {
+    return true;
   }
-
 }

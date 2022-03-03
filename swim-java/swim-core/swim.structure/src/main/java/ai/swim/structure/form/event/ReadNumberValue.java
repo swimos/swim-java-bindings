@@ -12,14 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.form.processor;
+package ai.swim.structure.form.event;
 
-import java.io.IOException;
+public class ReadNumberValue extends ReadEvent {
 
-public class FormBuilder {
+  // todo wrap class with a field denoting the type of the number
+  private final Number value;
 
-  public void generate() throws IOException {
+  public ReadNumberValue(Number value) {
+    this.value = value;
+  }
 
+  @Override
+  public boolean isNumber() {
+    return true;
+  }
+
+  public Number value() {
+    return this.value;
   }
 
 }

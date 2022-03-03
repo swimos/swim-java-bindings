@@ -12,14 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.form.processor;
+package ai.swim.structure.form.event;
 
-import java.io.IOException;
+public class ReadTextValue extends ReadEvent {
 
-public class FormBuilder {
+  private final String value;
 
-  public void generate() throws IOException {
+  public ReadTextValue(String value) {
+    this.value = value;
+  }
 
+  @Override
+  public boolean isText() {
+    return true;
+  }
+
+  public String value() {
+    return this.value;
   }
 
 }

@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.form;
+package ai.swim.structure.form.event;
 
-import ai.swim.form.annotations.AutoForm;
+public class ReadStartBody extends ReadEvent {
 
-@AutoForm
-public class EnvelopeTest {
+  @Override
+  public boolean isStartBody() {
+    return true;
+  }
+
 }

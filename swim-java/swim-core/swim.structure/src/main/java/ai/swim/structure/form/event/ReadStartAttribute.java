@@ -12,14 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.form.processor;
+package ai.swim.structure.form.event;
 
-import java.io.IOException;
+public class ReadStartAttribute extends ReadEvent {
+  private final String value;
 
-public class FormBuilder {
+  public ReadStartAttribute(String value) {
+    this.value = value;
+  }
 
-  public void generate() throws IOException {
+  @Override
+  public boolean isStartAttribute() {
+    return true;
+  }
 
+  public String value() {
+    return this.value;
   }
 
 }
