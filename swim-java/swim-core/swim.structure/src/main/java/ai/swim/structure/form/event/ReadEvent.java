@@ -16,46 +16,6 @@ package ai.swim.structure.form.event;
 
 public abstract class ReadEvent {
 
-  public boolean isExtant() {
-    return false;
-  }
-
-  public boolean isText() {
-    return false;
-  }
-
-  public boolean isNumber() {
-    return false;
-  }
-
-  public boolean isBoolean() {
-    return false;
-  }
-
-  public boolean isBlob() {
-    return false;
-  }
-
-  public boolean isStartAttribute() {
-    return false;
-  }
-
-  public boolean isEndAttribute() {
-    return false;
-  }
-
-  public boolean isStartBody() {
-    return false;
-  }
-
-  public boolean isSlot() {
-    return false;
-  }
-
-  public boolean isEndRecord() {
-    return false;
-  }
-
   public static ReadEvent startAttribute(String name) {
     return new ReadStartAttribute(name);
   }
@@ -94,6 +54,46 @@ public abstract class ReadEvent {
 
   public static ReadEvent endRecord() {
     return new ReadEndRecord();
+  }
+
+  public boolean isExtant() {
+    return false;
+  }
+
+  public boolean isText() {
+    return false;
+  }
+
+  public boolean isNumber() {
+    return false;
+  }
+
+  public boolean isBoolean() {
+    return false;
+  }
+
+  public boolean isBlob() {
+    return false;
+  }
+
+  public boolean isStartAttribute() {
+    return false;
+  }
+
+  public boolean isEndAttribute() {
+    return false;
+  }
+
+  public boolean isStartBody() {
+    return false;
+  }
+
+  public boolean isSlot() {
+    return false;
+  }
+
+  public boolean isEndRecord() {
+    return false;
   }
 
   @Override

@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.form;
+package ai.swim.structure.form.recognizer.std;
 
-import swim.codec.Input;
-import swim.codec.Writer;
+import ai.swim.structure.form.event.ReadEvent;
+import ai.swim.structure.form.recognizer.Recognizer;
 
-public abstract class Form<F> {
-
-  public abstract F readFrom(Input input);
-
-  public abstract <O> void writeInto(Writer<F, O> writer);
-
+public class ArrayListRecognizer<V> extends Recognizer<V> {
+  @Override
+  public Recognizer<V> feedEvent(ReadEvent event) {
+    throw new AssertionError();
+  }
 }

@@ -30,18 +30,6 @@ class FormTest {
 
   }
 
-  @AutoForm
-  @AutoForm.Tag("FormClass")
-  static class Prop {
-    @AutoForm.Name("Tagged")
-    @AutoForm.Property({FormProperty.Skip})
-    private String tag;
-
-    @AutoForm.Name("b")
-    private int a;
-  }
-
-
   @Test
   void a() {
     Parser<Value> parser = Recon.structureParser().blockParser();
@@ -58,6 +46,17 @@ class FormTest {
 //    AuthRequest actual = (AuthRequest) decoder.feed(Binary.input(bytes)).bind();
 //    AuthRequest expected = new AuthRequest(Record.of(Slot.of("first", 1), Slot.of("second", 2)));
 //    assertEquals(actual, expected);
+  }
+
+  @AutoForm
+  @AutoForm.Tag("FormClass")
+  static class Prop {
+    @AutoForm.Name("Tagged")
+    @AutoForm.Property({FormProperty.Skip})
+    private String tag;
+
+    @AutoForm.Name("b")
+    private int a;
   }
 
 }
