@@ -15,6 +15,7 @@
 package ai.swim.structure.form.event;
 
 public class ReadBlobValue extends ReadEvent {
+
   private final byte[] value;
 
   public ReadBlobValue(byte[] value) {
@@ -29,4 +30,5 @@ public class ReadBlobValue extends ReadEvent {
   public byte[] value() {
     return this.value;
   }
+
 }

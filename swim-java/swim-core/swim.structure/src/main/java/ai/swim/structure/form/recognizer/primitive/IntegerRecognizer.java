@@ -5,6 +5,7 @@ import ai.swim.structure.form.event.ReadNumberValue;
 import ai.swim.structure.form.recognizer.Recognizer;
 
 public class IntegerRecognizer extends Recognizer<Integer> {
+
   @Override
   public Recognizer<Integer> feedEvent(ReadEvent event) {
     if (event.isNumber()) {
@@ -14,4 +15,5 @@ public class IntegerRecognizer extends Recognizer<Integer> {
       return Recognizer.error(new RuntimeException("Expected an integer"));
     }
   }
+
 }

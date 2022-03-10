@@ -12,6 +12,7 @@ import ai.swim.structure.form.recognizer.structural.tag.FixedTagSpec;
 import ai.swim.structure.form.recognizer.structural.tag.TagSpec;
 
 public class ClassRecognizerInit<T> extends ClassRecognizer<T> {
+
   public ClassRecognizerInit(TagSpec tagSpec, RecognizingBuilder<T> builder, int fieldCount, IndexFn indexFn) {
     super(tagSpec, builder, fieldCount, indexFn);
   }
@@ -41,7 +42,7 @@ public class ClassRecognizerInit<T> extends ClassRecognizer<T> {
             } else {
               return this;
             }
-          } catch (Exception e) {
+          } catch (RuntimeException e) {
             return Recognizer.error(e);
           }
         }
@@ -68,4 +69,5 @@ public class ClassRecognizerInit<T> extends ClassRecognizer<T> {
       return new ClassRecognizerHeader<>(this.tagSpec, this.builder, this.bitSet, this.indexFn, this.index);
     }
   }
+
 }

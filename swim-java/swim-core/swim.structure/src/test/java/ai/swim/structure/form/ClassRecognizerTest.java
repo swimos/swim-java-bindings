@@ -1,5 +1,8 @@
 package ai.swim.structure.form;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import ai.swim.structure.form.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
 import ai.swim.structure.form.recognizer.RecognizerProxy;
@@ -7,9 +10,6 @@ import ai.swim.structure.form.recognizer.structural.ClassRecognizerInit;
 import ai.swim.structure.form.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.form.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 class ClassRecognizerTest {
 
@@ -94,6 +94,7 @@ class ClassRecognizerTest {
   }
 
   static class InnerClassRecognizer extends Recognizer<InnerPropClass> {
+
     private Recognizer<InnerPropClass> recognizer;
 
     public InnerClassRecognizer() {
@@ -140,12 +141,14 @@ class ClassRecognizerTest {
     }
 
     @Override
-    public Exception trap() {
+    public RuntimeException trap() {
       return this.recognizer.trap();
     }
+
   }
 
   static class InnerPropClass {
+
     private final int a;
     private final int b;
 
@@ -158,9 +161,11 @@ class ClassRecognizerTest {
     public String toString() {
       return "InnerPropClass{" + "a=" + a + ", b=" + b + '}';
     }
+
   }
 
   static class FieldRecognizingBuilder<I> implements RecognizingBuilder<I> {
+
     public final Recognizer<I> recognizer;
     public I value;
 
@@ -193,9 +198,11 @@ class ClassRecognizerTest {
     public I bind() {
       return Objects.requireNonNull(this.value);
     }
+
   }
 
   static class InnerPropClassBuilder implements RecognizingBuilder<InnerPropClass> {
+
     private final FieldRecognizingBuilder<Integer> aBuilder = new FieldRecognizingBuilder<>(Integer.class);
     private final FieldRecognizingBuilder<Integer> bBuilder = new FieldRecognizingBuilder<>(Integer.class);
 
@@ -215,9 +222,11 @@ class ClassRecognizerTest {
     public InnerPropClass bind() {
       return new InnerPropClass(this.aBuilder.bind(), this.bBuilder.bind());
     }
+
   }
 
   static class OuterPropClass {
+
     private final String c;
     private final InnerPropClass d;
 
@@ -233,9 +242,11 @@ class ClassRecognizerTest {
           ", d=" + d +
           '}';
     }
+
   }
 
   static class OuterPropClassBuilder implements RecognizingBuilder<OuterPropClass> {
+
     private final FieldRecognizingBuilder<String> cBuilder = new FieldRecognizingBuilder<>(String.class);
     private final FieldRecognizingBuilder<InnerPropClass> dBuilder = new FieldRecognizingBuilder<>(new InnerClassRecognizer());
 
@@ -255,9 +266,11 @@ class ClassRecognizerTest {
     public OuterPropClass bind() {
       return new OuterPropClass(this.cBuilder.bind(), this.dBuilder.bind());
     }
+
   }
 
   static class OuterClassRecognizer extends Recognizer<OuterPropClass> {
+
     public Recognizer<OuterPropClass> recognizer;
 
     public OuterClassRecognizer() {
@@ -304,9 +317,10 @@ class ClassRecognizerTest {
     }
 
     @Override
-    public Exception trap() {
+    public RuntimeException trap() {
       return this.recognizer.trap();
     }
+
   }
 
 }

@@ -19,6 +19,7 @@ import ai.swim.structure.form.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
 
 public class BlobRecognizer extends Recognizer<byte[]> {
+
   @Override
   public Recognizer<byte[]> feedEvent(ReadEvent event) {
     if (event.isBlob()) {
@@ -28,4 +29,5 @@ public class BlobRecognizer extends Recognizer<byte[]> {
       return Recognizer.error(new RuntimeException("Expected a byte[]"));
     }
   }
+
 }

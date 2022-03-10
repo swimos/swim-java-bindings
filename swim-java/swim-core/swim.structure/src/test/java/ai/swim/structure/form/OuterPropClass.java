@@ -15,16 +15,22 @@
 package ai.swim.structure.form;
 
 
+import java.util.Objects;
 import ai.swim.structure.form.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
-import ai.swim.structure.form.recognizer.structural.clazz.ClassRecognizerInit;
+import ai.swim.structure.form.recognizer.structural.ClassRecognizerInit;
 import ai.swim.structure.form.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.form.recognizer.structural.tag.FixedTagSpec;
-import java.util.Objects;
 
 class OuterPropClass {
+
   private final String c;
   private final InnerPropClass d;
+
+  public OuterPropClass(String c, InnerPropClass d) {
+    this.c = c;
+    this.d = d;
+  }
 
   @Override
   public boolean equals(Object o) {
@@ -43,11 +49,6 @@ class OuterPropClass {
     return Objects.hash(c, d);
   }
 
-  public OuterPropClass(String c, InnerPropClass d) {
-    this.c = c;
-    this.d = d;
-  }
-
   @Override
   public String toString() {
     return "OuterPropClass{" +
@@ -58,6 +59,7 @@ class OuterPropClass {
 
 
   static class OuterPropClassBuilder implements RecognizingBuilder<OuterPropClass> {
+
     private final ClassRecognizerTest.FieldRecognizingBuilder<String> cBuilder = new ClassRecognizerTest.FieldRecognizingBuilder<>(String.class);
     private final ClassRecognizerTest.FieldRecognizingBuilder<InnerPropClass> dBuilder = new ClassRecognizerTest.FieldRecognizingBuilder<>(new InnerPropClass.InnerClassRecognizer());
 
@@ -78,14 +80,11 @@ class OuterPropClass {
       return new OuterPropClass(this.cBuilder.bind(), this.dBuilder.bind());
     }
 
-    @Override
-    public RecognizingBuilder<OuterPropClass> reset() {
-      return new OuterPropClassBuilder();
-    }
   }
 
   @AutoloadedRecognizer(OuterPropClass.class)
   public static class OuterClassRecognizer extends Recognizer<OuterPropClass> {
+
     public Recognizer<OuterPropClass> recognizer;
 
     public OuterClassRecognizer() {
@@ -132,8 +131,10 @@ class OuterPropClass {
     }
 
     @Override
-    public Exception trap() {
+    public RuntimeException trap() {
       return this.recognizer.trap();
     }
+
   }
+
 }

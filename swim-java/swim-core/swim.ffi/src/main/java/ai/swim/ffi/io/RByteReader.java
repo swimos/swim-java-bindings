@@ -40,12 +40,16 @@ public class RByteReader implements NativeResource {
 
   @FunctionalInterface
   public interface DidReadCallback {
+
     void didRead(byte[] bytes);
+
   }
 
   @FunctionalInterface
   public interface DidCloseCallback {
+
     void didClose();
+
   }
 
 }

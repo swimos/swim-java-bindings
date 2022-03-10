@@ -14,11 +14,11 @@
 
 package ai.swim.ffi.io;
 
-import ai.swim.ffi.JniRunner;
-import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import ai.swim.ffi.JniRunner;
+import org.junit.jupiter.api.Test;
 
 class RByteWriterTest extends JniRunner {
 

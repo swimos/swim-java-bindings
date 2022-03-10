@@ -14,10 +14,10 @@
 
 package ai.swim.ffi.io;
 
+import java.util.concurrent.CountDownLatch;
 import ai.swim.ffi.FfiIntrinsic;
 import ai.swim.ffi.JniRunner;
 import org.junit.jupiter.api.Test;
-import java.util.concurrent.CountDownLatch;
 
 class RByteReaderTest extends JniRunner {
 
@@ -39,20 +39,24 @@ class RByteReaderTest extends JniRunner {
   }
 
   static class DidReadImpl implements RByteReader.DidReadCallback {
+
     @Override
     @FfiIntrinsic
     public void didRead(byte[] bytes) {
       readLatch.countDown();
     }
+
   }
 
   static class DidCloseImpl implements RByteReader.DidCloseCallback {
+
     @Override
     @FfiIntrinsic
     public void didClose() {
       System.out.println("Reader closed");
       closeLatch.countDown();
     }
+
   }
 
 }

@@ -1,6 +1,7 @@
 package ai.swim.structure.form.recognizer.structural.tag;
 
 public class FixedTagSpec extends TagSpec {
+
   private final String tag;
 
   public FixedTagSpec(String tag) {
@@ -15,4 +16,5 @@ public class FixedTagSpec extends TagSpec {
   public String getTag() {
     return tag;
   }
+
 }

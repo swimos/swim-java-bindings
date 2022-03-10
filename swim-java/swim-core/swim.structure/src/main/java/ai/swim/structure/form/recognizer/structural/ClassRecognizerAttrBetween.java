@@ -8,6 +8,7 @@ import ai.swim.structure.form.recognizer.structural.key.AttrFieldKey;
 import ai.swim.structure.form.recognizer.structural.tag.TagSpec;
 
 public class ClassRecognizerAttrBetween<T> extends ClassRecognizer<T> {
+
   public ClassRecognizerAttrBetween(TagSpec tagSpec, RecognizingBuilder<T> builder, BitSet bitSet, IndexFn indexFn, int index) {
     super(tagSpec, builder, bitSet, indexFn, index);
   }
@@ -33,4 +34,5 @@ public class ClassRecognizerAttrBetween<T> extends ClassRecognizer<T> {
     }
     return Recognizer.error(new RuntimeException("Expected a record or an attribute"));
   }
+
 }

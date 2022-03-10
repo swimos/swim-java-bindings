@@ -9,7 +9,7 @@ public abstract class Recognizer<T> {
     return new RecognizerDone<>(target);
   }
 
-  public static <T> Recognizer<T> error(Exception error) {
+  public static <T> Recognizer<T> error(RuntimeException error) {
     return new RecognizerError<>(error);
   }
 
@@ -31,12 +31,14 @@ public abstract class Recognizer<T> {
     throw new IllegalStateException();
   }
 
-  public Exception trap() {
+  public RuntimeException trap() {
     throw new IllegalStateException();
   }
+
 }
 
 final class RecognizerDone<T> extends Recognizer<T> {
+
   final T target;
 
   RecognizerDone(T target) {
@@ -62,17 +64,19 @@ final class RecognizerDone<T> extends Recognizer<T> {
   public Recognizer<T> feedEvent(ReadEvent event) {
     return this;
   }
+
 }
 
 final class RecognizerError<T> extends Recognizer<T> {
-  final Exception error;
 
-  RecognizerError(Exception error) {
+  final RuntimeException error;
+
+  RecognizerError(RuntimeException error) {
     this.error = error;
   }
 
   @Override
-  public Exception trap() {
+  public RuntimeException trap() {
     return this.error;
   }
 
@@ -90,4 +94,5 @@ final class RecognizerError<T> extends Recognizer<T> {
   public Recognizer<T> feedEvent(ReadEvent event) {
     return this;
   }
+
 }

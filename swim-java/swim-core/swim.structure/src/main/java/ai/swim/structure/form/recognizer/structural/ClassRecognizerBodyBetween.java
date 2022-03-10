@@ -8,6 +8,7 @@ import ai.swim.structure.form.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.form.recognizer.structural.tag.TagSpec;
 
 public class ClassRecognizerBodyBetween<T> extends ClassRecognizer<T> {
+
   public ClassRecognizerBodyBetween(TagSpec tagSpec, RecognizingBuilder<T> builder, BitSet bitSet, IndexFn indexFn, int index) {
     super(tagSpec, builder, bitSet, indexFn, index);
   }
@@ -17,7 +18,7 @@ public class ClassRecognizerBodyBetween<T> extends ClassRecognizer<T> {
     if (event.isEndRecord()) {
       try {
         return Recognizer.done(this.builder.bind());
-      } catch (Exception e) {
+      } catch (RuntimeException e) {
         return Recognizer.error(e);
       }
     } else if (event.isText()) {
@@ -34,4 +35,5 @@ public class ClassRecognizerBodyBetween<T> extends ClassRecognizer<T> {
 
     return Recognizer.error(new RuntimeException("Expected end of record or a text value"));
   }
+
 }
