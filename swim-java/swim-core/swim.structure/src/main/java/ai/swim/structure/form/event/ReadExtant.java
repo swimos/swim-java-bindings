@@ -15,8 +15,10 @@
 package ai.swim.structure.form.event;
 
 public class ReadExtant extends ReadEvent {
+
   @Override
   public boolean isExtant() {
     return true;
   }
+
 }

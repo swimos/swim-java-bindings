@@ -19,6 +19,7 @@ import ai.swim.structure.form.event.ReadNumberValue;
 import ai.swim.structure.form.recognizer.Recognizer;
 
 public class FloatRecognizer extends Recognizer<Float> {
+
   @Override
   public Recognizer<Float> feedEvent(ReadEvent event) {
     if (event.isNumber()) {
@@ -28,4 +29,5 @@ public class FloatRecognizer extends Recognizer<Float> {
       return Recognizer.error(new RuntimeException("Expected a float"));
     }
   }
+
 }

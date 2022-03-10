@@ -1,6 +1,7 @@
 package ai.swim.structure.form.recognizer.structural.key;
 
 public class AttrFieldKey extends LabelledFieldKey {
+
   private final String key;
 
   public AttrFieldKey(String key) {
@@ -15,4 +16,5 @@ public class AttrFieldKey extends LabelledFieldKey {
   public String getKey() {
     return key;
   }
+
 }

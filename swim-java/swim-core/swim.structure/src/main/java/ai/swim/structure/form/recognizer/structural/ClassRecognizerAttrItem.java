@@ -6,6 +6,7 @@ import ai.swim.structure.form.recognizer.Recognizer;
 import ai.swim.structure.form.recognizer.structural.tag.TagSpec;
 
 public class ClassRecognizerAttrItem<T> extends ClassRecognizer<T> {
+
   public ClassRecognizerAttrItem(TagSpec tagSpec, RecognizingBuilder<T> builder, BitSet bitSet, IndexFn indexFn, int index) {
     super(tagSpec, builder, bitSet, indexFn, index);
   }
@@ -19,8 +20,9 @@ public class ClassRecognizerAttrItem<T> extends ClassRecognizer<T> {
       } else {
         return this;
       }
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       return Recognizer.error(e);
     }
   }
+
 }

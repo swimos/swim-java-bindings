@@ -15,6 +15,7 @@
 package ai.swim.structure.form.event;
 
 public class ReadStartAttribute extends ReadEvent {
+
   private final String value;
 
   public ReadStartAttribute(String value) {

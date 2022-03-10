@@ -19,6 +19,7 @@ import ai.swim.structure.form.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
 
 public class BooleanRecognizer extends Recognizer<Boolean> {
+
   @Override
   public Recognizer<Boolean> feedEvent(ReadEvent event) {
     if (event.isBoolean()) {
@@ -28,4 +29,5 @@ public class BooleanRecognizer extends Recognizer<Boolean> {
       return Recognizer.error(new RuntimeException("Expected a boolean"));
     }
   }
+
 }

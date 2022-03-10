@@ -15,6 +15,7 @@
 package ai.swim.structure.form.event;
 
 public class ReadBooleanValue extends ReadEvent {
+
   private final Boolean value;
 
   public ReadBooleanValue(Boolean value) {

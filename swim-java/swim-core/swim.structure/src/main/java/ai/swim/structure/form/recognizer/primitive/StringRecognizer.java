@@ -5,6 +5,7 @@ import ai.swim.structure.form.event.ReadTextValue;
 import ai.swim.structure.form.recognizer.Recognizer;
 
 public class StringRecognizer extends Recognizer<String> {
+
   @Override
   public Recognizer<String> feedEvent(ReadEvent event) {
     if (event.isText()) {
@@ -14,4 +15,5 @@ public class StringRecognizer extends Recognizer<String> {
       return Recognizer.error(new RuntimeException("todo"));
     }
   }
+
 }

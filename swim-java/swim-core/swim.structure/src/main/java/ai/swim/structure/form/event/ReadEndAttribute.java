@@ -15,8 +15,10 @@
 package ai.swim.structure.form.event;
 
 public class ReadEndAttribute extends ReadEvent {
+
   @Override
   public boolean isEndAttribute() {
     return true;
   }
+
 }

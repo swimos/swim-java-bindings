@@ -14,14 +14,15 @@
 
 package ai.swim.ffi;
 
-import org.junit.jupiter.api.Test;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Test;
 
 class PointerTest {
+
   private static final int resourceCount = 100;
   private static final AtomicInteger nativeObjectCount = new AtomicInteger(resourceCount);
 
@@ -54,7 +55,10 @@ class PointerTest {
   }
 
   static class Marker implements NativeResource {
+
     @SuppressWarnings("unused")
     private final Pointer.Destructor destructor = Pointer.newDestructor(this, nativeObjectCount::decrementAndGet);
+
   }
+
 }

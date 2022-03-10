@@ -14,13 +14,15 @@
 
 package ai.swim.structure.form.recognizer.std;
 
+import java.util.HashSet;
 import ai.swim.structure.form.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
-import java.util.HashSet;
 
 public class HashSetRecognizer<V> extends Recognizer<HashSet<V>> {
+
   @Override
   public Recognizer<HashSet<V>> feedEvent(ReadEvent event) {
     throw new AssertionError();
   }
+
 }

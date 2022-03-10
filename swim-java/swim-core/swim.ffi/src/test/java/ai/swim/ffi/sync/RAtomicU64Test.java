@@ -60,4 +60,5 @@ class RAtomicU64Test extends JniRunner {
 
     fail("Expected an illegal argument exception to be thrown when storing a negative value in an RAtomicU64");
   }
+
 }

@@ -54,4 +54,5 @@ public class RByteWriter implements NativeResource {
       RByteWriter.write(this.writePtr, bytes, this.lock);
     }
   }
+
 }

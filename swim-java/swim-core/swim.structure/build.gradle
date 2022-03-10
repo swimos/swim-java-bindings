@@ -2,6 +2,7 @@ ext.moduleName = 'swim.structure'
 
 dependencies {
     implementation project(':swim-form-annotations')
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     annotationProcessor project(':swim-form-processor')
 
     testAnnotationProcessor project(':swim-form-processor')
@@ -11,5 +12,9 @@ dependencies {
     api group: 'org.swimos', name: 'swim-recon', version: swimVersion
     api group: 'org.swimos', name: 'swim-structure', version: swimVersion
     api group: 'org.swimos', name: 'swim-util', version: swimVersion
+}
+
+repositories {
+    mavenCentral()
 }
 

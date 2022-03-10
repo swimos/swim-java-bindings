@@ -15,3 +15,11 @@ project(':swim.form.annotations').name = 'swim-form-annotations'
 include 'swim.form.processor'
 project(':swim.form.processor').projectDir = file('swim-core/swim.structure/swim.form.processor')
 project(':swim.form.processor').name = 'swim-form-processor'
+
+include 'swim.recon'
+project(':swim.recon').projectDir = file('swim-core/swim.recon')
+project(':swim.recon').name = 'swim-recon'
+
+include 'swim.codec'
+project(':swim.codec').projectDir = file('swim-core/swim.codec')
+project(':swim.codec').name = 'swim-codec'

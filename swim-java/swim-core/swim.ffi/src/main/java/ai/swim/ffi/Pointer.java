@@ -39,10 +39,13 @@ public class Pointer {
 
   @FunctionalInterface
   public interface Destruct {
+
     void call();
+
   }
 
   public static final class Destructor extends PhantomReference<NativeResource> {
+
     private Destruct callback;
 
     private Destructor(NativeResource referent, Destruct callback) {
@@ -57,9 +60,11 @@ public class Pointer {
         this.callback = null;
       }
     }
+
   }
 
   private static class DestructorTask extends Thread {
+
     public DestructorTask() {
       this.setPriority(Thread.MAX_PRIORITY);
       this.setDaemon(true);
@@ -79,6 +84,7 @@ public class Pointer {
         }
       }
     }
+
   }
 
 }

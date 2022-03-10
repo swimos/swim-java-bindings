@@ -15,8 +15,10 @@
 package ai.swim.structure.form.event;
 
 public class ReadSlot extends ReadEvent {
+
   @Override
   public boolean isSlot() {
     return true;
   }
+
 }

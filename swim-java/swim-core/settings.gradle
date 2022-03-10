@@ -11,3 +11,9 @@ project(':swim.form.annotations').name = 'swim-form-annotations'
 
 include 'swim.form.processor'
 project(':swim.form.processor').name = 'swim-form-processor'
+
+include 'swim.recon'
+project(':swim.recon').name = 'swim-recon'
+
+include 'swim.codec'
+project(':swim.codec').name = 'swim-codec'

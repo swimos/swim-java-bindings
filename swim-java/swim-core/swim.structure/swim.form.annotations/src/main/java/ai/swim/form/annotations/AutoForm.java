@@ -26,20 +26,26 @@ public @interface AutoForm {
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.TYPE})
   @interface Tag {
+
     String value();
+
   }
 
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD})
   @interface Property {
+
     FormProperty[] value();
+
   }
 
 
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD})
   @interface Name {
+
     String value();
+
   }
 
 }

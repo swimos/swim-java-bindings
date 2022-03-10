@@ -6,6 +6,7 @@ import ai.swim.structure.form.recognizer.Recognizer;
 import ai.swim.structure.form.recognizer.structural.tag.TagSpec;
 
 public class ClassRecognizerBodyExpectingSlot<T> extends ClassRecognizer<T> {
+
   public ClassRecognizerBodyExpectingSlot(TagSpec tagSpec, RecognizingBuilder<T> builder, BitSet bitSet, IndexFn indexFn, int index) {
     super(tagSpec, builder, bitSet, indexFn, index);
   }
@@ -18,4 +19,5 @@ public class ClassRecognizerBodyExpectingSlot<T> extends ClassRecognizer<T> {
 
     return Recognizer.error(new RuntimeException("Expected a slot event"));
   }
+
 }

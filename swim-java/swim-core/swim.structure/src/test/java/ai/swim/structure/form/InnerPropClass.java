@@ -14,17 +14,22 @@
 
 package ai.swim.structure.form;
 
+import java.util.Objects;
 import ai.swim.structure.form.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
-import ai.swim.structure.form.recognizer.structural.clazz.ClassRecognizerInit;
+import ai.swim.structure.form.recognizer.structural.ClassRecognizerInit;
 import ai.swim.structure.form.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.form.recognizer.structural.tag.FixedTagSpec;
-import java.util.Objects;
 
 public class InnerPropClass {
 
   private final int a;
   private final int b;
+
+  public InnerPropClass(int a, int b) {
+    this.a = a;
+    this.b = b;
+  }
 
   @Override
   public boolean equals(Object o) {
@@ -43,11 +48,6 @@ public class InnerPropClass {
     return Objects.hash(a, b);
   }
 
-  public InnerPropClass(int a, int b) {
-    this.a = a;
-    this.b = b;
-  }
-
   @Override
   public String toString() {
     return "InnerPropClass{" + "a=" + a + ", b=" + b + '}';
@@ -55,6 +55,7 @@ public class InnerPropClass {
 
   @AutoloadedRecognizer(InnerPropClass.class)
   public static class InnerClassRecognizer extends Recognizer<InnerPropClass> {
+
     private Recognizer<InnerPropClass> recognizer;
 
     public InnerClassRecognizer() {
@@ -101,12 +102,14 @@ public class InnerPropClass {
     }
 
     @Override
-    public Exception trap() {
+    public RuntimeException trap() {
       return this.recognizer.trap();
     }
+
   }
 
   public static class InnerPropClassBuilder implements RecognizingBuilder<InnerPropClass> {
+
     private final ClassRecognizerTest.FieldRecognizingBuilder<Integer> aBuilder = new ClassRecognizerTest.FieldRecognizingBuilder<>(Integer.class);
     private final ClassRecognizerTest.FieldRecognizingBuilder<Integer> bBuilder = new ClassRecognizerTest.FieldRecognizingBuilder<>(Integer.class);
 
@@ -127,10 +130,7 @@ public class InnerPropClass {
       return new InnerPropClass(this.aBuilder.bind(), this.bBuilder.bind());
     }
 
-    @Override
-    public RecognizingBuilder<InnerPropClass> reset() {
-      return new InnerPropClassBuilder();
-    }
+
   }
 
 

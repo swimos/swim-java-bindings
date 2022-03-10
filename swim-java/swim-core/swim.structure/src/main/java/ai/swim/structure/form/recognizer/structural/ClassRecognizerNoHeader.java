@@ -6,6 +6,7 @@ import ai.swim.structure.form.recognizer.Recognizer;
 import ai.swim.structure.form.recognizer.structural.tag.TagSpec;
 
 public class ClassRecognizerNoHeader<T> extends ClassRecognizer<T> {
+
   public ClassRecognizerNoHeader(TagSpec tagSpec, RecognizingBuilder<T> builder, BitSet bitSet, IndexFn indexFn, int index) {
     super(tagSpec, builder, bitSet, indexFn, index);
   }
@@ -20,4 +21,5 @@ public class ClassRecognizerNoHeader<T> extends ClassRecognizer<T> {
       return Recognizer.error(new RuntimeException("Expected the end of an attribute"));
     }
   }
+
 }

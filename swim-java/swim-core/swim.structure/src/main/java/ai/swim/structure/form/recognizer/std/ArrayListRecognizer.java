@@ -18,8 +18,10 @@ import ai.swim.structure.form.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
 
 public class ArrayListRecognizer<V> extends Recognizer<V> {
+
   @Override
   public Recognizer<V> feedEvent(ReadEvent event) {
     throw new AssertionError();
   }
+
 }

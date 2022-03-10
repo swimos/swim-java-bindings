@@ -14,13 +14,13 @@
 
 package ai.swim.structure.form;
 
+import java.util.List;
 import ai.swim.structure.form.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
-import java.util.List;
 
 public class RecognizerTestUtil {
 
-  public static  <T> T runTest(Recognizer<T> recognizer, List<ReadEvent> events) throws Exception {
+  public static <T> T runTest(Recognizer<T> recognizer, List<ReadEvent> events) throws Exception {
     for (ReadEvent event : events) {
       recognizer = recognizer.feedEvent(event);
       if (recognizer.isError()) {
