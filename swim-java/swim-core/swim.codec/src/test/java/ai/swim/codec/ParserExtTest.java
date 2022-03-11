@@ -4,10 +4,13 @@ import ai.swim.codec.input.Input;
 import ai.swim.codec.result.ParseError;
 import ai.swim.codec.result.Result;
 import org.junit.jupiter.api.Test;
+import static ai.swim.codec.ParserExt.alt;
 import static ai.swim.codec.ParserExt.recognize;
+import static ai.swim.codec.ParserTestUtils.runParserIncomplete;
+import static ai.swim.codec.ParserTestUtils.runParserOk;
+import static ai.swim.codec.SequenceParser.separatedPair;
 import static ai.swim.codec.character.StreamingCharacter.alpha1;
 import static ai.swim.codec.character.StreamingCharacter.eqChar;
-import static ai.swim.codec.SequenceParser.separatedPair;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -27,7 +30,7 @@ class ParserExtTest {
 
     ParseError<Input> error = (ParseError<Input>) result;
 
-    assertEquals(cause,error.getCause());
+    assertEquals(cause, error.getCause());
     assertEquals(location, error.getLocation());
   }
 
@@ -36,7 +39,25 @@ class ParserExtTest {
     Parser<Input> recognize = recognize(separatedPair(alpha1(), eqChar(','), alpha1()));
     recognizeOk(recognize, "abcd,efgh", Input.string("abcd,efgh"), Input.string(""));
     recognizeOk(recognize, "abcd,efgh;123", Input.string("abcd,efgh"), Input.string(";123"));
-    recognizeErr(recognize, "abcd;", "Expected ,", Location.of(1,5));
+    recognizeErr(recognize, "abcd;", "Expected ,", Location.of(1, 5));
+  }
+
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void altTest() {
+    Parser<Input> parser = alt(
+        eqChar('a'),
+        eqChar('b'),
+        eqChar('c')
+    );
+
+    runParserOk(parser, "a", "a", "");
+    runParserOk(parser, "b", "b", "");
+    runParserOk(parser, "c", "c", "");
+    runParserOk(parser, "abcd", "a", "bcd");
+
+    runParserIncomplete(parser, "", 1);
   }
 
 }

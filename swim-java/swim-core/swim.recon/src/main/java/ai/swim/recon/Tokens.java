@@ -3,6 +3,9 @@ package ai.swim.recon;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
+import ai.swim.codec.result.Result;
+import ai.swim.recon.utils.Either;
+import static ai.swim.codec.Cont.continuation;
 import static ai.swim.codec.MultiParser.many0Count;
 import static ai.swim.codec.ParserExt.recognize;
 import static ai.swim.codec.SequenceParser.pair;
@@ -43,17 +46,17 @@ public class Tokens {
     ));
   }
 
-//  public static Parser<Either<String, Boolean>> identifierOrBoolean() {
-//    return identifier().then((Input c) -> {
-//      String out = new String(c.collect());
-//      if ("true".equals(out)) {
-//        return continuation(()-> Result.ok(c, Either.right(true)));
-//      } else if ("false".equals(out)) {
-//        return continuation(()-> Result.ok(c, Either.right(true)));
-//      } else {
-//        return continuation(()-> Result.ok(c, Either.left(out)));
-//      }
-//    });
-//  }
+  public static Parser<Either<String, Boolean>> identifierOrBoolean() {
+    return identifier().then(rem -> input -> {
+      String out = new String(input.collect());
+      if ("true".equals(out)) {
+        return continuation(()-> Result.ok(rem, Either.right(true)));
+      } else if ("false".equals(out)) {
+        return continuation(()-> Result.ok(rem, Either.right(false)));
+      } else {
+        return continuation(()-> Result.ok(rem, Either.left(out)));
+      }
+    });
+  }
 
 }

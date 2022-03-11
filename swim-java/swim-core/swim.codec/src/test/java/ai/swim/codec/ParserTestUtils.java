@@ -9,9 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ParserTestUtils {
 
-  public static void runParserOk(Parser<String> p, String input, String output, String remaining) {
-    final Result<String> result = p.parse(Input.string(input));
-    assertEquals(output, result.getOutput());
+  public static void runParserOk(Parser<Input> p, String input, String output, String remaining) {
+    final Result<Input> result = p.parse(Input.string(input));
+    assertEquals(output, new String(result.getOutput().collect()));
 
     Input buf = result.getInput();
     StringBuilder sb = new StringBuilder();
