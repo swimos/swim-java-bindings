@@ -1,5 +1,6 @@
 package ai.swim.codec;
 
+import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
 import static ai.swim.codec.ParserExt.eq;
 import static ai.swim.codec.ParserExt.preceded;
@@ -14,7 +15,7 @@ public class CodecTest {
 
   @Test
   public void simpleCombinator() {
-    final Parser<String> p = eq("a").then(a -> eq("b").then(b -> then("" + a + b)));
+    final Parser<Input> p = eq("a").then(a -> eq("b").then(b -> then(Input.string("" + a + b))));
 
     runParserIncomplete(p, "a", 1);
     runParserError(p, "b", Location.of(1, 1));
@@ -23,7 +24,7 @@ public class CodecTest {
 
   @Test
   void complexCombinator() {
-    Parser<String> parser = preceded(eqChar('@'), alpha1())
+    Parser<Input> parser = preceded(eqChar('@'), alpha1())
         .then(c -> eqChar('('))
         .then(c -> alpha1())
         .then(c -> eqChar(')'));

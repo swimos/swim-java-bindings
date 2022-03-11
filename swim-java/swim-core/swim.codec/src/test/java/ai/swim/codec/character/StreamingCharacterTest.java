@@ -79,4 +79,14 @@ public class StreamingCharacterTest {
     runParserIncomplete(StreamingCharacter.satisfy(c -> c == 'a' || c == 'b'), "", 1);
   }
 
+  @Test
+  void tagNoCase() {
+    runParserOk(StreamingCharacter.tagNoCase("abc"), "abcdefg", "abc", "defg");
+    runParserOk(StreamingCharacter.tagNoCase("ABC"), "ABCDEFG", "ABC", "DEFG");
+    runParserOk(StreamingCharacter.tagNoCase("ABCdef"), "ABCDEFG", "ABCDEF", "G");
+
+    runParserError(StreamingCharacter.tagNoCase("abc"), "def", Location.of(1,1));
+    runParserIncomplete(StreamingCharacter.tagNoCase("abc"), "a", 2);
+  }
+
 }

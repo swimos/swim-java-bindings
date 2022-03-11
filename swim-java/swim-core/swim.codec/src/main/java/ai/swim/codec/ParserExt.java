@@ -87,4 +87,29 @@ public class ParserExt {
     };
   }
 
+  public static <O> Parser<O> alt(Parser<O>... parsers) {
+    if (parsers.length == 0) {
+      throw new IllegalStateException();
+    }
+
+    return input -> {
+      if (input.complete()) {
+        return none(Result.incomplete(input, 1));
+      } else {
+        Result<O> err=null;
+        for (Parser<O> parser : parsers) {
+          Result<O> result = parser.parse(input);
+
+          if (result.isOk()) {
+            return continuation(() -> result);
+          } else {
+            err = result;
+          }
+        }
+
+        return none(err);
+      }
+    };
+  }
+
 }
