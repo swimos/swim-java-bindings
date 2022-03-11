@@ -35,37 +35,31 @@ public class ParserExt {
 
   public static <O> Parser<O> preceded(Parser<O> first, Parser<O> second) {
     return input -> {
-      final Cont<? extends O> firstCont = first.apply(input);
-      if (firstCont.isContinuation()) {
+      final Cont<O> cont = first.apply(input);
+      if (cont.isContinuation()) {
         return second.apply(input.next());
       } else {
-        return none(Result.error(input, null));
+        return cont;
       }
     };
   }
 
-  public static <O, B> Parser<B> and(Parser<? extends O> first, Function<O, Parser<B>> second) {
+  public static <O, B> Parser<B> and(Parser<O> first, Function<O, Parser<B>> second) {
     return input -> {
-      final Cont<? extends O> fistCont = first.apply(input);
-      if (fistCont.isContinuation()) {
-        return continuation(() -> fistCont.getResult().match(
+      final Cont<O> firstCont = first.apply(input);
+      if (firstCont.isContinuation()) {
+        return continuation(() -> firstCont.getResult().match(
             ok -> second.apply(ok.getOutput()).apply(ok.getInput()).getResult(),
             Result::cast,
             Result::cast)
         );
       } else {
-        return fistCont.getResult().match(
-            ok -> {
-              final Cont<B> secondCont = second.apply(ok.getOutput()).apply(ok.getInput());
-              if (secondCont.isContinuation()) {
-                return secondCont;
-              } else {
-                return none(secondCont.getResult());
-              }
-            },
-            error -> none(error.cast()),
-            incomplete -> none(incomplete.cast())
-        );
+        Result<B> result = firstCont.getResult().mapOk(ok -> second.apply(ok.getOutput()).apply(ok.getInput()).getResult());
+        if (result.isOk()) {
+          return continuation(() -> result);
+        } else {
+          return none(result);
+        }
       }
     };
   }
@@ -73,9 +67,9 @@ public class ParserExt {
   public static <O> Parser<Input> recognize(Parser<O> parser) {
     return input -> {
       int offset = input.offset();
-      final Cont<O> fistCont = parser.apply(input);
-      if (fistCont.isContinuation()) {
-        return continuation(() -> fistCont.getResult().match(
+      final Cont<O> cont = parser.apply(input);
+      if (cont.isContinuation()) {
+        return continuation(() -> cont.getResult().match(
             ok -> {
               int newOffset = ok.getInput().offset();
               return Result.ok(input.subInput(offset, newOffset), ok.getInput()).cast();
@@ -84,33 +78,13 @@ public class ParserExt {
             Result::cast)
         );
       } else {
-        return fistCont.getResult().match(
+        return cont.getResult().match(
             ok -> none(Result.ok(ok.getInput(), ok.getInput())),
             error -> none(error.cast()),
             incomplete -> none(incomplete.cast())
         );
       }
     };
-  }
-
-  public static class Indexed<O> {
-
-    private final O output;
-    private final int offset;
-
-    public Indexed(O output, int offset) {
-      this.output = output;
-      this.offset = offset;
-    }
-
-    public O getOutput() {
-      return output;
-    }
-
-    public int getOffset() {
-      return offset;
-    }
-
   }
 
 }

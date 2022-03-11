@@ -1,12 +1,10 @@
 package ai.swim.codec;
 
-import ai.swim.codec.Location;
-import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.result.ParseError;
 import ai.swim.codec.result.Result;
 import org.junit.jupiter.api.Test;
-import static ai.swim.codec.StringParser.tag;
+import static ai.swim.codec.character.CompleteCharacter.tag;
 import static ai.swim.codec.MultiParser.many0Count;
 import static ai.swim.codec.MultiParser.many1Count;
 import static org.junit.jupiter.api.Assertions.assertEquals;

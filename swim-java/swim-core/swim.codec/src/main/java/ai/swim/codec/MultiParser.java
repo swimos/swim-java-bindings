@@ -1,6 +1,5 @@
 package ai.swim.codec;
 
-import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.result.Result;
 import static ai.swim.codec.Cont.continuation;
@@ -20,10 +19,12 @@ public class MultiParser {
           int oldLength = localInput.len();
           Result<O> parseResult = parser.parse(input);
 
-          if (parseResult.isError() || parseResult.isIncomplete()) {
+          if (parseResult.isError()) {
             int finalCount = count;
             return continuation(() -> Result.ok(input, finalCount));
-          } else if (parseResult.isOk()) {
+          } else if (parseResult.isIncomplete()) {
+            return none(Result.incomplete(input, 1));
+          } else {
             localInput = parseResult.getInput();
             count += 1;
             if (input.len() == oldLength) {
