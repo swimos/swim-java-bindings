@@ -1,7 +1,8 @@
 ext.moduleName = 'swim.recon'
 
 dependencies {
-    api project(':swim-structure')
+//    api project(':swim-structure')
+    api project (':swim-codec')
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
 }
 

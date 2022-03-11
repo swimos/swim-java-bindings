@@ -17,5 +17,4 @@ public interface Parser<O> {
     return ParserExt.and(this, f);
   }
 
-
 }

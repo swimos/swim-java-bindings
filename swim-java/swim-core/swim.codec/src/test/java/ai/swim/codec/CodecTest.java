@@ -7,8 +7,8 @@ import static ai.swim.codec.ParserExt.then;
 import static ai.swim.codec.ParserTestUtils.runParserError;
 import static ai.swim.codec.ParserTestUtils.runParserIncomplete;
 import static ai.swim.codec.ParserTestUtils.runParserOk;
-import static ai.swim.codec.StringParser.alpha1;
-import static ai.swim.codec.StringParser.eqChar;
+import static ai.swim.codec.character.StreamingCharacter.alpha1;
+import static ai.swim.codec.character.StreamingCharacter.eqChar;
 
 public class CodecTest {
 

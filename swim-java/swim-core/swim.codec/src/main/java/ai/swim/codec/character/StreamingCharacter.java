@@ -1,4 +1,4 @@
-package ai.swim.codec;
+package ai.swim.codec.character;
 
 import java.util.Arrays;
 import java.util.function.Predicate;
@@ -8,7 +8,7 @@ import ai.swim.codec.result.Result;
 import static ai.swim.codec.Cont.continuation;
 import static ai.swim.codec.Cont.none;
 
-public class StringParser {
+public class StreamingCharacter {
 
   public static Parser<String> eqChar(char c) {
     return input -> {
@@ -113,7 +113,7 @@ public class StringParser {
     return input -> {
       int tagLength = tag.length();
       if (input.complete() || !input.has(tagLength)) {
-        return none(Result.incomplete(input, input.len() - tagLength));
+        return none(Result.incomplete(input, tagLength-input.len() ));
       } else {
         char[] next = input.borrow(tagLength);
         if (Arrays.equals(next, tag.toCharArray())) {
