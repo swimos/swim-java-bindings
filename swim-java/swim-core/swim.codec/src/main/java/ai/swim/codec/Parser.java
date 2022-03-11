@@ -2,20 +2,20 @@ package ai.swim.codec;
 
 import java.util.function.Function;
 import ai.swim.codec.input.Input;
+import ai.swim.codec.result.Result;
 
 @FunctionalInterface
-public interface Parser<I, O> {
+public interface Parser<O> {
 
-  default Result<I, O> parse(Input<I> input) {
+  default Result<O> parse(Input input) {
     return apply(input).getResult();
   }
 
-  Cont<I, O> apply(Input<I> input);
+  Cont<O> apply(Input input);
 
-  default <B> Parser<I, B> then(Function<O, Parser<I, B>> f) {
+  default <B> Parser<B> then(Function<O, Parser<B>> f) {
     return ParserExt.and(this, f);
   }
-
 
 
 }

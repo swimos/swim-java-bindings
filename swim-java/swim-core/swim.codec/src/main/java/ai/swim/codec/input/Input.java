@@ -2,24 +2,42 @@ package ai.swim.codec.input;
 
 import ai.swim.codec.Location;
 
-public interface Input<I> {
+public interface Input {
 
-  static Input<Character> string(String input) {
+  static Input string(String input) {
     return new StringInput(input);
   }
 
-  static <F> Input<F> done(Location location) {
-    return new InputDone<>(location);
+  static Input done(Input input) {
+    return new InputDone(input);
   }
 
   boolean complete();
 
-  I head();
+  boolean has(int n);
 
-  Input<I> next();
+  char head();
+
+  Input next();
 
   Location location();
 
   boolean isDone();
+
+  char[] collect();
+
+  int offset();
+
+  int len();
+
+  char[] take(int n);
+
+  char[] borrow(int n);
+
+  boolean compare(char[] with);
+
+  Input advance(int m);
+
+  Input subInput(int start, int end);
 
 }

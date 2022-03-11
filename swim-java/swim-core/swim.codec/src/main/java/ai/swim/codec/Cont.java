@@ -1,30 +1,31 @@
 package ai.swim.codec;
 
 import java.util.function.Supplier;
+import ai.swim.codec.result.Result;
 
 
-public interface Cont<I, O> {
+public interface Cont<O> {
 
-  static <I, O> Cont<I, O> continuation(Supplier<Result<I, O>> supplier) {
+  static <O> Cont<O> continuation(Supplier<Result<O>> supplier) {
     return new Continuation<>(supplier);
   }
 
-  static <I, O> Cont<I, O> none(Result<I, O> result) {
+  static <O> Cont<O> none(Result<O> result) {
     return new None<>(result);
   }
 
   boolean isContinuation();
 
-  Result<I, O> getResult();
+  Result<O> getResult();
 
 }
 
-final class Continuation<I, O> implements Cont<I, O> {
+final class Continuation<O> implements Cont<O> {
 
-  private Supplier<Result<I, O>> supplier;
-  private Result<I, O> result;
+  private Supplier<Result<O>> supplier;
+  private Result<O> result;
 
-  Continuation(Supplier<Result<I, O>> supplier) {
+  Continuation(Supplier<Result<O>> supplier) {
     this.supplier = supplier;
   }
 
@@ -34,7 +35,7 @@ final class Continuation<I, O> implements Cont<I, O> {
   }
 
   @Override
-  public Result<I, O> getResult() {
+  public Result<O> getResult() {
     if (supplier != null) {
       result = supplier.get();
       supplier = null;
@@ -45,11 +46,11 @@ final class Continuation<I, O> implements Cont<I, O> {
 
 }
 
-final class None<I, O> implements Cont<I, O> {
+final class None<O> implements Cont<O> {
 
-  private final Result<I, O> result;
+  private final Result<O> result;
 
-  None(Result<I, O> result) {
+  None(Result<O> result) {
     this.result = result;
   }
 
@@ -59,7 +60,7 @@ final class None<I, O> implements Cont<I, O> {
   }
 
   @Override
-  public Result<I, O> getResult() {
+  public Result<O> getResult() {
     return result;
   }
 
