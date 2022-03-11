@@ -11,7 +11,7 @@ public class StringParserTest {
   @Test
   void eqChar() {
     runParserOk(StringParser.eqChar('a'), "aa", "a", "a");
-    runParserError(StringParser.eqChar('b'), "aa", Location.of(0, 0));
+    runParserError(StringParser.eqChar('b'), "aa", Location.of(1, 1));
   }
 
   @Test
@@ -28,7 +28,7 @@ public class StringParserTest {
     runParserOk(StringParser.alpha1(), "aa", "aa", "");
     runParserOk(StringParser.alpha1(), "aab", "aab", "");
     runParserOk(StringParser.alpha1(), "aab1", "aab", "1");
-    runParserError(StringParser.alpha1(), "!!", Location.of(0, 0));
+    runParserError(StringParser.alpha1(), "!!", Location.of(1, 1));
   }
 
   @Test
@@ -45,7 +45,7 @@ public class StringParserTest {
     runParserOk(StringParser.alphanumeric1(), "aa123", "aa123", "");
     runParserOk(StringParser.alphanumeric1(), "aab123", "aab123", "");
     runParserOk(StringParser.alphanumeric1(), "aab1!", "aab1", "!");
-    runParserError(StringParser.alphanumeric1(), "!!", Location.of(0, 0));
+    runParserError(StringParser.alphanumeric1(), "!!", Location.of(1, 1));
     runParserIncomplete(StringParser.alphanumeric1(), "", 1);
   }
 
@@ -61,8 +61,20 @@ public class StringParserTest {
   void digit1() {
     runParserOk(StringParser.digit1(), "123", "123", "");
     runParserOk(StringParser.digit1(), "123!", "123", "!");
-    runParserError(StringParser.digit1(), "!!", Location.of(0, 0));
+    runParserError(StringParser.digit1(), "!!", Location.of(1, 1));
     runParserIncomplete(StringParser.digit1(), "", 1);
+  }
+
+  @Test
+  void tag() {
+    runParserOk(StringParser.tag("abc"), "abcdefg", "abc", "defg");
+  }
+
+  @Test
+  void satisfy() {
+    runParserOk(StringParser.satisfy(c -> c == 'a' || c == 'b'), "abc", "a", "bc");
+    runParserError(StringParser.satisfy(c -> c == 'a' || c == 'b'), "cd", Location.of(1, 1));
+    runParserIncomplete(StringParser.satisfy(c -> c == 'a' || c == 'b'), "", 1);
   }
 
 }
