@@ -1,6 +1,7 @@
-package ai.swim.codec.character;
+package ai.swim.codec;
 
 import ai.swim.codec.Location;
+import ai.swim.codec.StringParser;
 import org.junit.jupiter.api.Test;
 import static ai.swim.codec.ParserTestUtils.runParserError;
 import static ai.swim.codec.ParserTestUtils.runParserIncomplete;

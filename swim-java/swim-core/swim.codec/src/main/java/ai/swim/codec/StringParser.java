@@ -1,4 +1,4 @@
-package ai.swim.codec.character;
+package ai.swim.codec;
 
 import java.util.Arrays;
 import java.util.function.Predicate;

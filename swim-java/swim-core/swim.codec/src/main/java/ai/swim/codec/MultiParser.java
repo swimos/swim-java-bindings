@@ -1,4 +1,4 @@
-package ai.swim.codec.multi;
+package ai.swim.codec;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;

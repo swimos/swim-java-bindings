@@ -5,9 +5,9 @@ import ai.swim.codec.result.ParseError;
 import ai.swim.codec.result.Result;
 import org.junit.jupiter.api.Test;
 import static ai.swim.codec.ParserExt.recognize;
-import static ai.swim.codec.character.StringParser.alpha1;
-import static ai.swim.codec.character.StringParser.eqChar;
-import static ai.swim.codec.sequence.SequenceParser.separatedPair;
+import static ai.swim.codec.StringParser.alpha1;
+import static ai.swim.codec.StringParser.eqChar;
+import static ai.swim.codec.SequenceParser.separatedPair;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

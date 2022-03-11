@@ -1,4 +1,4 @@
-package ai.swim.codec.sequence;
+package ai.swim.codec;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.result.ParseOk;
