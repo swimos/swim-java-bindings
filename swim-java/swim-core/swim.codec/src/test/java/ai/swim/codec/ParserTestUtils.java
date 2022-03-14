@@ -1,19 +1,20 @@
 package ai.swim.codec;
 
-import ai.swim.codec.input.Input;
 import ai.swim.codec.result.ParseError;
 import ai.swim.codec.result.ParseIncomplete;
 import ai.swim.codec.result.Result;
+import ai.swim.codec.source.Source;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ParserTestUtils {
 
-  public static void runParserOk(Parser<Input> p, String input, String output, String remaining) {
-    final Result<Input> result = p.parse(Input.string(input));
+  public static void runParserOk(Parser<Source> p, String input, String output, String remaining) {
+    final Result<Source> result = p.parse(Source.string(input));
+    assertTrue(result.isOk());
     assertEquals(output, new String(result.getOutput().collect()));
 
-    Input buf = result.getInput();
+    Source buf = result.getInput();
     StringBuilder sb = new StringBuilder();
 
     while (!buf.isDone()) {
@@ -26,13 +27,13 @@ public class ParserTestUtils {
   }
 
   public static <A> void runParserError(Parser<A> p, String input, Location location) {
-    final Result<A> result = p.parse(Input.string(input));
+    final Result<A> result = p.parse(Source.string(input));
     assertTrue(result.isError());
     assertEquals(((ParseError<A>) result).getLocation(), location);
   }
 
   public static <A> void runParserIncomplete(Parser<A> p, String input, int needed) {
-    final Result<A> result = p.parse(Input.string(input));
+    final Result<A> result = p.parse(Source.string(input));
     assertTrue(result.isIncomplete(), "Expected an incomplete input");
     assertEquals(((ParseIncomplete<A>) result).getNeeded(), needed);
   }

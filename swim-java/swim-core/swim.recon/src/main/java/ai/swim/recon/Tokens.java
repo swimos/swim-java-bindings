@@ -2,12 +2,12 @@ package ai.swim.recon;
 
 
 import ai.swim.codec.Parser;
-import ai.swim.codec.input.Input;
+import ai.swim.codec.source.Source;
 import ai.swim.codec.result.Result;
 import ai.swim.recon.utils.Either;
 import static ai.swim.codec.Cont.continuation;
 import static ai.swim.codec.MultiParser.many0Count;
-import static ai.swim.codec.ParserExt.recognize;
+import static ai.swim.codec.ParserExt.transpose;
 import static ai.swim.codec.SequenceParser.pair;
 import static ai.swim.codec.character.StreamingCharacter.satisfy;
 
@@ -39,8 +39,8 @@ public class Tokens {
         || (char) c >= '0' && (char) c <= '9';
   }
 
-  public static Parser<Input> identifier() {
-    return recognize(pair(
+  public static Parser<Source> identifier() {
+    return transpose(pair(
         satisfy(Tokens::isIdentifierStart),
         many0Count(satisfy(Tokens::isIdentifierChar))
     ));

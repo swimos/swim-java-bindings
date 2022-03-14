@@ -1,7 +1,8 @@
 package ai.swim.codec;
 
-import ai.swim.codec.input.Input;
+import ai.swim.codec.result.ParseIncomplete;
 import ai.swim.codec.result.Result;
+import ai.swim.codec.source.Source;
 import static ai.swim.codec.Cont.continuation;
 import static ai.swim.codec.Cont.none;
 
@@ -12,22 +13,22 @@ public class MultiParser {
       if (input.complete()) {
         return none(Result.incomplete(input, 1));
       } else {
-        Input localInput = input;
+        Source localSource = input;
         int count = 0;
 
         while (true) {
-          int oldLength = localInput.len();
+          int oldLength = localSource.len();
           Result<O> parseResult = parser.parse(input);
 
           if (parseResult.isError()) {
             int finalCount = count;
             return continuation(() -> Result.ok(input, finalCount));
           } else if (parseResult.isIncomplete()) {
-            return none(Result.incomplete(input, 1));
+            return none(Result.incomplete(input, ((ParseIncomplete<O>) parseResult).getNeeded()));
           } else {
-            localInput = parseResult.getInput();
+            localSource = parseResult.getInput();
             count += 1;
-            if (input.len() == oldLength) {
+            if (localSource.len() == oldLength) {
               return none(Result.error(input, "Parser did not consume"));
             }
           }
@@ -43,18 +44,18 @@ public class MultiParser {
       } else {
         return parser.parse(input).match(
             ok -> {
-              Input localInput = ok.getInput();
+              Source localSource = ok.getInput();
               int count = 1;
 
               while (true) {
-                int oldLength = localInput.len();
+                int oldLength = localSource.len();
                 Result<O> parseResult = parser.parse(input);
 
                 if (parseResult.isError() || parseResult.isIncomplete()) {
                   int finalCount = count;
                   return continuation(() -> Result.ok(input, finalCount));
                 } else if (parseResult.isOk()) {
-                  localInput = parseResult.getInput();
+                  localSource = parseResult.getInput();
                   count += 1;
                   if (input.len() == oldLength) {
                     return none(Result.error(input, "Parser did not consume"));
@@ -62,8 +63,8 @@ public class MultiParser {
                 }
               }
             },
-            err -> none(Result.error(input, null)),
-            in -> none(Result.incomplete(input, 1))
+            err -> none(Result.error(input, err.getCause())),
+            in -> none(Result.incomplete(input, in.getNeeded()))
         );
       }
     };

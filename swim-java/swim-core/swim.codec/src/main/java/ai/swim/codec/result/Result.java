@@ -1,21 +1,20 @@
 package ai.swim.codec.result;
 
 import java.util.function.Function;
-import ai.swim.codec.Cont;
-import ai.swim.codec.input.Input;
+import ai.swim.codec.source.Source;
 
 public interface Result<O> {
 
-  static <O> Result<O> ok(Input input, O output) {
-    return new ParseOk<>(input, output);
+  static <O> Result<O> ok(Source source, O output) {
+    return new ParseOk<>(source, output);
   }
 
-  static <O> Result<O> error(Input input, String cause) {
-    return new ParseError<>(input, cause);
+  static <O> Result<O> error(Source source, String cause) {
+    return new ParseError<>(source, cause);
   }
 
-  static <O> Result<O> incomplete(Input input, int needed) {
-    return new ParseIncomplete<>(input, needed);
+  static <O> Result<O> incomplete(Source source, int needed) {
+    return new ParseIncomplete<>(source, needed);
   }
 
   boolean isOk();
@@ -24,7 +23,7 @@ public interface Result<O> {
 
   boolean isIncomplete();
 
-  Input getInput();
+  Source getInput();
 
   default O getOutput() {
     throw new AssertionError();

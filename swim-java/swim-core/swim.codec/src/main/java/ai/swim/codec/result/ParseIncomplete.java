@@ -1,15 +1,15 @@
 package ai.swim.codec.result;
 
 import java.util.function.Function;
-import ai.swim.codec.input.Input;
+import ai.swim.codec.source.Source;
 
 public class ParseIncomplete<O> implements Result<O> {
 
-  private final Input input;
+  private final Source source;
   private final int needed;
 
-  ParseIncomplete(Input input, int needed) {
-    this.input = input;
+  ParseIncomplete(Source source, int needed) {
+    this.source = source;
     this.needed = needed;
   }
 
@@ -29,8 +29,8 @@ public class ParseIncomplete<O> implements Result<O> {
   }
 
   @Override
-  public Input getInput() {
-    return this.input;
+  public Source getInput() {
+    return this.source;
   }
 
   @Override

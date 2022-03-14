@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import static ai.swim.codec.ParserTestUtils.runParserError;
 import static ai.swim.codec.ParserTestUtils.runParserIncomplete;
 import static ai.swim.codec.ParserTestUtils.runParserOk;
+import static ai.swim.codec.character.StreamingCharacter.stringLiteral;
 
 public class StreamingCharacterTest {
 
@@ -68,7 +69,7 @@ public class StreamingCharacterTest {
   @Test
   void tag() {
     runParserOk(StreamingCharacter.tag("abc"), "abcdefg", "abc", "defg");
-    runParserError(StreamingCharacter.tag("abc"), "def", Location.of(1,1));
+    runParserError(StreamingCharacter.tag("abc"), "def", Location.of(1, 1));
     runParserIncomplete(StreamingCharacter.tag("abc"), "a", 2);
   }
 
@@ -85,8 +86,14 @@ public class StreamingCharacterTest {
     runParserOk(StreamingCharacter.tagNoCase("ABC"), "ABCDEFG", "ABC", "DEFG");
     runParserOk(StreamingCharacter.tagNoCase("ABCdef"), "ABCDEFG", "ABCDEF", "G");
 
-    runParserError(StreamingCharacter.tagNoCase("abc"), "def", Location.of(1,1));
+    runParserError(StreamingCharacter.tagNoCase("abc"), "def", Location.of(1, 1));
     runParserIncomplete(StreamingCharacter.tagNoCase("abc"), "a", 2);
+  }
+
+  @Test
+  void testStringLiteral() {
+//    runParserIncomplete(stringLiteral(), "\"\"",1);
+    runParserOk(stringLiteral(), "\"multiple words\"", "multiple words", "");
   }
 
 }

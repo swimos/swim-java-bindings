@@ -1,6 +1,6 @@
 package ai.swim.codec;
 
-import ai.swim.codec.input.Input;
+import ai.swim.codec.source.Source;
 import org.junit.jupiter.api.Test;
 import static ai.swim.codec.ParserExt.eq;
 import static ai.swim.codec.ParserExt.preceded;
@@ -12,25 +12,6 @@ import static ai.swim.codec.character.StreamingCharacter.alpha1;
 import static ai.swim.codec.character.StreamingCharacter.eqChar;
 
 public class CodecTest {
-
-  @Test
-  public void simpleCombinator() {
-    final Parser<Input> p = eq("a").then(a -> eq("b").then(b -> then(Input.string("" + a + b))));
-
-    runParserIncomplete(p, "a", 1);
-    runParserError(p, "b", Location.of(1, 1));
-    runParserOk(p, "ab", "ab", "");
-  }
-
-  @Test
-  void complexCombinator() {
-    Parser<Input> parser = preceded(eqChar('@'), alpha1())
-        .then(c -> eqChar('('))
-        .then(c -> alpha1())
-        .then(c -> eqChar(')'));
-
-    runParserOk(parser, "@event(something)", ")", "");
-  }
 
   static boolean isIdentStartChar(int c) {
     return c >= 'A' && c <= 'Z'
@@ -49,7 +30,6 @@ public class CodecTest {
         || c >= 0xfdf0 && c <= 0xfffd
         || c >= 0x10000 && c <= 0xeffff;
   }
-
 
   static boolean isIdentChar(int c) {
     return c == '-'
@@ -70,6 +50,25 @@ public class CodecTest {
         || c >= 0xf900 && c <= 0xfdcf
         || c >= 0xfdf0 && c <= 0xfffd
         || c >= 0x10000 && c <= 0xeffff;
+  }
+
+  @Test
+  public void simpleCombinator() {
+    final Parser<Source> p = eq("a").then(a -> eq("b").then(b -> then(Source.string("" + a + b))));
+
+    runParserIncomplete(p, "a", 1);
+    runParserError(p, "b", Location.of(1, 1));
+    runParserOk(p, "ab", "ab", "");
+  }
+
+  @Test
+  void complexCombinator() {
+    Parser<Source> parser = preceded(eqChar('@'), alpha1())
+        .then(c -> eqChar('('))
+        .then(c -> alpha1())
+        .then(c -> eqChar(')'));
+
+    runParserOk(parser, "@event(something)", ")", "");
   }
 
   @Test
