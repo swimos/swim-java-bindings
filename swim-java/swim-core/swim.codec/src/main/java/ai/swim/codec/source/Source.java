@@ -1,15 +1,15 @@
-package ai.swim.codec.input;
+package ai.swim.codec.source;
 
 import ai.swim.codec.Location;
 
-public interface Input {
+public interface Source {
 
-  static Input string(String input) {
-    return new StringInput(input);
+  static Source string(String input) {
+    return new StringSource(input);
   }
 
-  static Input done(Input input) {
-    return new InputDone(input);
+  static Source done(Source source) {
+    return new SourceDone(source);
   }
 
   boolean complete();
@@ -18,7 +18,7 @@ public interface Input {
 
   char head();
 
-  Input next();
+  Source next();
 
   Location location();
 
@@ -36,8 +36,8 @@ public interface Input {
 
   boolean compare(char[] with);
 
-  Input advance(int m);
+  Source advance(int m);
 
-  Input subInput(int start, int end);
+  Source subInput(int start, int end);
 
 }

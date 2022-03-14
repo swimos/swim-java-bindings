@@ -1,8 +1,5 @@
 package ai.swim.codec.character;
 
-import ai.swim.codec.result.Result;
-import static ai.swim.codec.Cont.none;
-
 class CharacterImpl {
 
   public static boolean tagNoCase(char[] next, char[] tag) {

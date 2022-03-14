@@ -1,21 +1,20 @@
 package ai.swim.codec.result;
 
 import java.util.function.Function;
-import ai.swim.codec.Cont;
-import ai.swim.codec.input.Input;
+import ai.swim.codec.source.Source;
 
 public class ParseOk<O> implements Result<O> {
 
-  private final Input input;
+  private final Source input;
   private final O output;
 
-  ParseOk(Input input, O output) {
+  ParseOk(Source input, O output) {
     this.input = input;
     this.output = output;
   }
 
   @Override
-  public Input getInput() {
+  public Source getInput() {
     return input;
   }
 

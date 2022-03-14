@@ -1,8 +1,9 @@
-package ai.swim.codec.input;
+package ai.swim.codec.source;
 
+import java.util.Objects;
 import ai.swim.codec.Location;
 
-public class StringInput implements Input {
+public class StringSource implements Source {
 
   private final String data;
   private int line;
@@ -10,7 +11,7 @@ public class StringInput implements Input {
   private int index;
   private int offset;
 
-  StringInput(String data, int line, int column, int index, int offset) {
+  StringSource(String data, int line, int column, int index, int offset) {
     this.data = data;
     this.line = line;
     this.column = column;
@@ -18,7 +19,7 @@ public class StringInput implements Input {
     this.offset = offset;
   }
 
-  StringInput(String data) {
+  StringSource(String data) {
     this(data, 1, 1, 0, 0);
   }
 
@@ -42,13 +43,13 @@ public class StringInput implements Input {
   }
 
   @Override
-  public Input next() {
+  public Source next() {
     final int index = this.index;
     if (index < this.data.length()) {
       advance();
       return this;
     } else {
-      return Input.done(this);
+      return Source.done(this);
     }
   }
 
@@ -82,6 +83,23 @@ public class StringInput implements Input {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    StringSource that = (StringSource) o;
+    return line == that.line && column == that.column && index == that.index && offset == that.offset && Objects.equals(data, that.data);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(data, line, column, index, offset);
+  }
+
+  @Override
   public char[] take(int n) {
     if (!this.has(n)) {
       throw new IllegalStateException();
@@ -111,15 +129,15 @@ public class StringInput implements Input {
   }
 
   @Override
-  public Input subInput(int start, int end) {
-    return new StringInput(
+  public Source subInput(int start, int end) {
+    return new StringSource(
         this.data.substring(start, end),
         1, 1, 0, 0
     );
   }
 
   @Override
-  public Input advance(int n) {
+  public Source advance(int n) {
     if (!this.has(n)) {
       throw new IllegalStateException();
     }

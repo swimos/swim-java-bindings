@@ -1,8 +1,7 @@
 package ai.swim.recon;
 
-import java.util.Arrays;
 import ai.swim.codec.Parser;
-import ai.swim.codec.input.Input;
+import ai.swim.codec.source.Source;
 import ai.swim.codec.result.Result;
 import ai.swim.recon.utils.Either;
 import org.junit.jupiter.api.Test;
@@ -12,30 +11,36 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TokensTest {
 
-  private <O> void parseOk(Parser<O> parser, Input input, O output) {
-    Result<O> result = parser.parse(input);
+  private <O> void parseOk(Parser<O> parser, Source source, O output) {
+    Result<O> result = parser.parse(source);
     assertTrue(result.isOk());
     assertEquals(output, result.getOutput());
-    System.out.println(new String(result.getInput().collect()));
   }
 
-  private <O> void parseIncomplete(Parser<O> parser, Input input) {
-    Result<O> result = parser.parse(input);
+  private void parseOkStr(Parser<Source> parser, Source source, String expectedInput, String expectedOutput) {
+    Result<Source> result = parser.parse(source);
+    assertTrue(result.isOk());
+    assertEquals(expectedInput, new String(result.getInput().collect()));
+    assertEquals(expectedOutput, new String(result.getOutput().collect()));
+  }
+
+  private <O> void parseIncomplete(Parser<O> parser, Source source) {
+    Result<O> result = parser.parse(source);
     assertTrue(result.isIncomplete());
   }
 
   @Test
   void identifierTest() {
-    parseIncomplete(identifier(), Input.string("name"));
-    parseOk(identifier(), Input.string("name "), Input.string(""));
+    parseIncomplete(identifier(), Source.string("name"));
+    parseOkStr(identifier(), Source.string("name "), "name", " ");
   }
 
   @Test
   void identifierOrBooleanTest() {
-    parseIncomplete(identifierOrBoolean(), Input.string("true"));
-    parseOk(identifierOrBoolean(), Input.string("true "), Either.right(true));
-    parseOk(identifierOrBoolean(), Input.string("false "), Either.right(false));
-    parseOk(identifierOrBoolean(), Input.string("blah "), Either.left("blah"));
+    parseIncomplete(identifierOrBoolean(), Source.string("true"));
+    parseOk(identifierOrBoolean(), Source.string("true "), Either.right(true));
+    parseOk(identifierOrBoolean(), Source.string("false "), Either.right(false));
+    parseOk(identifierOrBoolean(), Source.string("blah "), Either.left("blah"));
   }
 
 }

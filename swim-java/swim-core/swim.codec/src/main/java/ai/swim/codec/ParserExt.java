@@ -2,8 +2,8 @@ package ai.swim.codec;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
-import ai.swim.codec.input.Input;
 import ai.swim.codec.result.Result;
+import ai.swim.codec.source.Source;
 import static ai.swim.codec.Cont.continuation;
 import static ai.swim.codec.Cont.none;
 
@@ -24,8 +24,8 @@ public class ParserExt {
       } else {
         final char head = input.head();
         if (predicate.test(String.valueOf(head))) {
-          final Input newInput = input.next();
-          return continuation(() -> Result.ok(newInput, head).cast());
+          final Source newSource = input.next();
+          return continuation(() -> Result.ok(newSource, head).cast());
         } else {
           return none(Result.error(input, null));
         }
@@ -64,7 +64,7 @@ public class ParserExt {
     };
   }
 
-  public static <O> Parser<Input> recognize(Parser<O> parser) {
+  public static <O> Parser<Source> transpose(Parser<O> parser) {
     return input -> {
       int offset = input.offset();
       final Cont<O> cont = parser.apply(input);
@@ -72,7 +72,7 @@ public class ParserExt {
         return continuation(() -> cont.getResult().match(
             ok -> {
               int newOffset = ok.getInput().offset();
-              return Result.ok(input.subInput(offset, newOffset), ok.getInput()).cast();
+              return Result.ok(ok.getInput(), input.subInput(offset, newOffset)).cast();
             },
             Result::cast,
             Result::cast)
@@ -96,7 +96,7 @@ public class ParserExt {
       if (input.complete()) {
         return none(Result.incomplete(input, 1));
       } else {
-        Result<O> err=null;
+        Result<O> err = null;
         for (Parser<O> parser : parsers) {
           Result<O> result = parser.parse(input);
 

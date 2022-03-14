@@ -2,17 +2,17 @@ package ai.swim.codec.result;
 
 import java.util.function.Function;
 import ai.swim.codec.Location;
-import ai.swim.codec.input.Input;
+import ai.swim.codec.source.Source;
 
 public class ParseError<O> implements Result<O> {
 
-  private final Input input;
+  private final Source source;
   private final Location location;
   private final String cause;
 
-  ParseError(Input input, String cause) {
-    this.input = input;
-    this.location = input.location();
+  ParseError(Source source, String cause) {
+    this.source = source;
+    this.location = source.location();
     this.cause = cause;
   }
 
@@ -32,8 +32,8 @@ public class ParseError<O> implements Result<O> {
   }
 
   @Override
-  public Input getInput() {
-    return this.input;
+  public Source getInput() {
+    return this.source;
   }
 
   @Override

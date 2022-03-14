@@ -1,12 +1,12 @@
-package ai.swim.codec.input;
+package ai.swim.codec.source;
 
 import ai.swim.codec.Location;
 
-public class InputDone implements Input {
+public class SourceDone implements Source {
 
-  private final Input delegate;
+  private final Source delegate;
 
-  public InputDone(Input delegate) {
+  public SourceDone(Source delegate) {
     this.delegate = delegate;
   }
 
@@ -26,7 +26,7 @@ public class InputDone implements Input {
   }
 
   @Override
-  public Input next() {
+  public Source next() {
     throw new IllegalStateException();
   }
 
@@ -42,7 +42,7 @@ public class InputDone implements Input {
 
   @Override
   public char[] collect() {
-    return new char[]{};
+    return new char[] {};
   }
 
   @Override
@@ -71,12 +71,12 @@ public class InputDone implements Input {
   }
 
   @Override
-  public Input subInput(int start, int end) {
+  public Source subInput(int start, int end) {
     return null;
   }
 
   @Override
-  public Input advance(int m) {
+  public Source advance(int m) {
     throw new IllegalStateException();
   }
 
