@@ -1,6 +1,7 @@
 package ai.swim.codec;
 
 import ai.swim.codec.character.CompleteCharacter;
+import ai.swim.codec.models.Pair;
 import ai.swim.codec.result.ParseError;
 import ai.swim.codec.result.Result;
 import ai.swim.codec.source.Source;
@@ -14,8 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SequenceParserTest {
 
-  public static void pairOk(Parser<SequenceParser.Pair<Source, Source>> p, String input, String o1, String o2, String remaining) {
-    final Result<SequenceParser.Pair<Source, Source>> result = p.parse(Source.string(input));
+  public static void pairOk(Parser<Pair<Source, Source>> p, String input, String o1, String o2, String remaining) {
+    final Result<Pair<Source, Source>> result = p.parse(Source.string(input));
 
     assertTrue(result.isOk());
     assertEquals(o1, new String(result.getOutput().getOutput1().collect()));
@@ -24,17 +25,17 @@ class SequenceParserTest {
     assertEquals(remaining, new String(result.getInput().collect()));
   }
 
-  public static void pairErr(Parser<SequenceParser.Pair<Source, Source>> p, String input, String remainingInput, String cause) {
-    final Result<SequenceParser.Pair<Source, Source>> result = p.parse(Source.string(input));
+  public static void pairErr(Parser<Pair<Source, Source>> p, String input, String remainingInput, String cause) {
+    final Result<Pair<Source, Source>> result = p.parse(Source.string(input));
 
     assertTrue(result.isError());
     assertEquals(remainingInput, new String(result.getInput().collect()));
-    assertEquals(cause, ((ParseError<SequenceParser.Pair<Source, Source>>) result).getCause());
+    assertEquals(cause, ((ParseError<Pair<Source, Source>>) result).getCause());
   }
 
   @Test
   void separatedPairTest() {
-    Parser<SequenceParser.Pair<Source, Source>> parser = separatedPair(tag("abc"), tag("|"), tag("efg"));
+    Parser<Pair<Source, Source>> parser = separatedPair(tag("abc"), tag("|"), tag("efg"));
     pairOk(parser, "abc|efg", "abc", "efg", "");
     pairOk(parser, "abc|efghij", "abc", "efg", "hij");
     pairErr(parser, "123", "123", "Expected a tag of: abc");
@@ -43,7 +44,7 @@ class SequenceParserTest {
 
   @Test
   void pairTest() {
-    Parser<SequenceParser.Pair<Source, Source>> parser = pair(tag("abc"), tag("efg"));
+    Parser<Pair<Source, Source>> parser = pair(tag("abc"), tag("efg"));
     pairOk(parser, "abcefg", "abc", "efg", "");
     pairOk(parser, "abcefghij", "abc", "efg", "hij");
     pairErr(parser, "123", "123", "Expected a tag of: abc");

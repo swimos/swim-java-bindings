@@ -32,7 +32,7 @@ class TokensTest {
   @Test
   void identifierTest() {
     parseIncomplete(identifier(), Source.string("name"));
-    parseOkStr(identifier(), Source.string("name "), "name", " ");
+    parseOkStr(identifier(), Source.string("name "),  " ", "name");
   }
 
   @Test

@@ -1,10 +1,8 @@
 package ai.swim.codec.num;
 
 import org.junit.jupiter.api.Test;
-import static ai.swim.codec.num.NumStreamingParser.signed;
-import static org.junit.jupiter.api.Assertions.*;
 
-class NumStreamingParserTest {
+class NumCompleteParserTest {
 
   @Test
   void testDecimalString() {
@@ -16,7 +14,7 @@ class NumStreamingParserTest {
 
   @Test
   void testSigned() {
-    signed()
+
   }
 
 }

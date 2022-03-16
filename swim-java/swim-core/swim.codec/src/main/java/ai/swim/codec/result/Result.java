@@ -1,7 +1,9 @@
 package ai.swim.codec.result;
 
-import java.util.function.Function;
+import ai.swim.codec.Parser;
 import ai.swim.codec.source.Source;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public interface Result<O> {
 
@@ -13,9 +15,13 @@ public interface Result<O> {
     return new ParseError<>(source, cause);
   }
 
-  static <O> Result<O> incomplete(Source source, int needed) {
-    return new ParseIncomplete<>(source, needed);
+  static <O> Result<O> incomplete(Source source, int needed, Supplier<Parser<O>> parser) {
+    return new ParseIncomplete<>(source, needed, parser);
   }
+
+//  static <O> Result<O> incomplete(Source source, Parser<O> parser, Source output, int needed) {
+//    return new ParseResumeable<>(source, parser, output, needed);
+//  }
 
   boolean isOk();
 
