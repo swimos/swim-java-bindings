@@ -1,10 +1,10 @@
 package ai.swim.codec.character;
 
-import java.util.Arrays;
-import java.util.function.Predicate;
 import ai.swim.codec.Parser;
 import ai.swim.codec.result.Result;
 import ai.swim.codec.source.Source;
+import java.util.Arrays;
+import java.util.function.Predicate;
 import static ai.swim.codec.Cont.continuation;
 import static ai.swim.codec.Cont.none;
 import static ai.swim.codec.MultiParser.many0Count;
@@ -16,78 +16,66 @@ import static ai.swim.codec.SequenceParser.pair;
 public class StreamingCharacter {
 
   public static Parser<Source> eqChar(char c) {
-    return input -> {
-      if (input.complete()) {
-        return none(Result.incomplete(input, 1));
+    return Parser.streaming(input -> {
+      final char actual = input.head();
+      if (actual == c) {
+        return continuation(() -> Result.ok(input.next(), Source.string(String.valueOf(actual))));
       } else {
-        final char actual = input.head();
-        if (actual == c) {
-          return continuation(() -> Result.ok(input.next(), Source.string(String.valueOf(actual))));
-        } else {
-          return none(Result.error(input, "Expected " + c));
-        }
+        return none(Result.error(input, "Expected " + c));
       }
-    };
+    }, 1);
   }
 
   public static Parser<Source> splitAtPosition(Predicate<Character> predicate, String cause) {
-    return input -> {
-      if (input.complete()) {
-        return none(Result.incomplete(input, 1));
-      } else {
-        char head = input.head();
-        StringBuilder sb = new StringBuilder();
+    return Parser.streaming(input -> {
+      char head = input.head();
+      StringBuilder sb = new StringBuilder();
 
-        if (!predicate.test(head)) {
-          return none(Result.error(input, cause));
-        }
-
-        while (predicate.test(head)) {
-          sb.append(head);
-          input = input.next();
-
-          if (input.isDone()) {
-            break;
-          }
-
-          head = input.head();
-        }
-
-        Source finalSource = input;
-        return continuation(() -> Result.ok(finalSource, Source.string(sb.toString())));
+      if (!predicate.test(head)) {
+        return none(Result.error(input, cause));
       }
-    };
+
+      while (predicate.test(head)) {
+        sb.append(head);
+        input = input.next();
+
+        if (input.isDone()) {
+          break;
+        }
+
+        head = input.head();
+      }
+
+      Source finalSource = input;
+      return continuation(() -> Result.ok(finalSource, Source.string(sb.toString())));
+    }, 1);
   }
 
   public static Parser<Source> position(Predicate<Character> predicate) {
-    return input -> {
-      if (input.complete()) {
-        return none(Result.incomplete(input, 1));
-      } else {
-        char head = input.head();
+    return Parser.streaming(input -> {
+      char head = input.head();
 
-        if (!predicate.test(head)) {
-          Source finalSource = input;
-          return continuation(() -> Result.ok(finalSource, Source.string("")));
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        while (predicate.test(head)) {
-          sb.append(head);
-          input = input.next();
-
-          if (input.isDone()) {
-            break;
-          }
-
-          head = input.head();
-        }
-
+      if (!predicate.test(head)) {
         Source finalSource = input;
-        return continuation(() -> Result.ok(finalSource, Source.string(sb.toString())));
+        return continuation(() -> Result.ok(finalSource, Source.string("")));
       }
-    };
+
+      StringBuilder sb = new StringBuilder();
+
+      while (predicate.test(head)) {
+        sb.append(head);
+        input = input.next();
+
+        if (input.isDone()) {
+          break;
+        }
+
+        head = input.head();
+      }
+
+      Source finalSource = input;
+      return continuation(() -> Result.ok(finalSource, Source.string(sb.toString())));
+    }, 1);
   }
 
   public static Parser<Source> alpha0() {
@@ -118,7 +106,7 @@ public class StreamingCharacter {
     return input -> {
       int tagLength = tag.length();
       if (input.complete() || !input.has(tagLength)) {
-        return none(Result.incomplete(input, tagLength - input.len()));
+        return none(Result.incomplete(input, tagLength - input.len(), ()->tag(tag)));
       } else {
         char[] next = input.borrow(tagLength);
         if (Arrays.equals(next, tag.toCharArray())) {
@@ -134,7 +122,7 @@ public class StreamingCharacter {
     return input -> {
       int tagLength = tag.length();
       if (input.complete() || !input.has(tagLength)) {
-        return none(Result.incomplete(input, tagLength - input.len()));
+        return none(Result.incomplete(input, tagLength - input.len(), ()->tagNoCase(tag)));
       } else {
         char[] nextChars = input.borrow(tagLength);
         char[] tagChars = tag.toCharArray();
@@ -149,34 +137,26 @@ public class StreamingCharacter {
   }
 
   public static Parser<Source> satisfy(Predicate<Character> predicate) {
-    return input -> {
-      if (input.complete()) {
-        return none(Result.incomplete(input, 1));
-      } else {
-        char head = input.head();
+    return Parser.streaming(input -> {
+      char head = input.head();
 
-        if (predicate.test(head)) {
-          return continuation(() -> Result.ok(input.next(), Source.string(String.valueOf(head))));
-        } else {
-          return none(Result.error(input, "Satisfy"));
-        }
+      if (predicate.test(head)) {
+        return continuation(() -> Result.ok(input.next(), Source.string(String.valueOf(head))));
+      } else {
+        return none(Result.error(input, "Satisfy"));
       }
-    };
+    }, 1);
   }
 
   public static Parser<String> oneOf(String of) {
-    return input -> {
-      if (input.complete()) {
-        return none(Result.incomplete(input, 1));
+    return Parser.streaming(input -> {
+      char head = input.head();
+      if (of.indexOf(head) != -1) {
+        return continuation(() -> Result.ok(input.next(), String.valueOf(head)));
       } else {
-        char head = input.head();
-        if (of.indexOf(head) != -1) {
-          return continuation(() -> Result.ok(input.next(), String.valueOf(head)));
-        } else {
-          return none(Result.error(input, "One of: " + of));
-        }
+        return none(Result.error(input, "One of: " + of));
       }
-    };
+    }, 1);
   }
 
   public static Parser<Source> escape() {

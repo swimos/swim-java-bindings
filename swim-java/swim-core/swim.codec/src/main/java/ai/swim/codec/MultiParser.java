@@ -11,7 +11,7 @@ public class MultiParser {
   public static <O> Parser<Integer> many0Count(Parser<O> parser) {
     return input -> {
       if (input.complete()) {
-        return none(Result.incomplete(input, 1));
+        return none(Result.incomplete(input, 1, () -> many0Count(parser)));
       } else {
         Source localSource = input;
         int count = 0;
@@ -24,7 +24,8 @@ public class MultiParser {
             int finalCount = count;
             return continuation(() -> Result.ok(input, finalCount));
           } else if (parseResult.isIncomplete()) {
-            return none(Result.incomplete(input, ((ParseIncomplete<O>) parseResult).getNeeded()));
+            ParseIncomplete<O> parseIncomplete = (ParseIncomplete<O>) parseResult;
+            return none(Result.incomplete(input, parseIncomplete.getNeeded(), () -> many0Count(parser)));
           } else {
             localSource = parseResult.getInput();
             count += 1;
@@ -40,7 +41,7 @@ public class MultiParser {
   public static <O> Parser<Integer> many1Count(Parser<O> parser) {
     return input -> {
       if (input.complete()) {
-        return none(Result.incomplete(input, 1));
+        return none(Result.incomplete(input, 1, ()->many1Count(parser)));
       } else {
         return parser.parse(input).match(
             ok -> {
@@ -64,7 +65,7 @@ public class MultiParser {
               }
             },
             err -> none(Result.error(input, err.getCause())),
-            in -> none(Result.incomplete(input, in.getNeeded()))
+            in -> none(Result.incomplete(input, in.getNeeded(), ()->many1Count(parser)))
         );
       }
     };

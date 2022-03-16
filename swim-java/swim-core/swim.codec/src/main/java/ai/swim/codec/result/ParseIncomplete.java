@@ -1,16 +1,20 @@
 package ai.swim.codec.result;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
+import ai.swim.codec.Parser;
 import ai.swim.codec.source.Source;
 
 public class ParseIncomplete<O> implements Result<O> {
 
   private final Source source;
   private final int needed;
+  private final Supplier<Parser<O>> parser;
 
-  ParseIncomplete(Source source, int needed) {
+  ParseIncomplete(Source source, int needed, Supplier<Parser<O>> parser) {
     this.source = source;
     this.needed = needed;
+    this.parser = parser;
   }
 
   @Override
@@ -42,4 +46,7 @@ public class ParseIncomplete<O> implements Result<O> {
     return needed;
   }
 
+  public Supplier<Parser<O>> getParser() {
+    return parser;
+  }
 }

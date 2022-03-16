@@ -1,9 +1,10 @@
 package ai.swim.codec;
 
-import java.util.function.Function;
-import java.util.function.Predicate;
 import ai.swim.codec.result.Result;
 import ai.swim.codec.source.Source;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import static ai.swim.codec.Cont.continuation;
 import static ai.swim.codec.Cont.none;
 
@@ -20,7 +21,7 @@ public class ParserExt {
   public static <O> Parser<O> pred(Predicate<String> predicate) {
     return input -> {
       if (input.complete()) {
-        return none(Result.incomplete(input, 1));
+        return none(Result.incomplete(input, 1, ()->pred(predicate)));
       } else {
         final char head = input.head();
         if (predicate.test(String.valueOf(head))) {
@@ -94,7 +95,7 @@ public class ParserExt {
 
     return input -> {
       if (input.complete()) {
-        return none(Result.incomplete(input, 1));
+        return none(Result.incomplete(input, 1, ()->alt(parsers)));
       } else {
         Result<O> err = null;
         for (Parser<O> parser : parsers) {
@@ -108,6 +109,34 @@ public class ParserExt {
         }
 
         return none(err);
+      }
+    };
+  }
+
+  public static <O> Parser<Optional<O>> opt(Parser<O> parser) {
+    return input -> parser.apply(input).getResult().match(
+        ok -> continuation(() -> Result.ok(ok.getInput(), Optional.of(ok.getOutput()))),
+        err -> continuation(() -> Result.ok(input, Optional.empty())),
+        in -> none(Result.incomplete(in.getInput(), in.getNeeded(), ()->opt(parser)))
+    );
+  }
+
+  public static <O> Parser<O> peek(Parser<O> parser) {
+    return input -> parser.apply(input).getResult().match(
+        ok -> continuation(() -> Result.ok(input, ok.getOutput())),
+        err -> continuation(() -> Result.error(input, err.getCause())),
+        in -> none(Result.incomplete(in.getInput(), in.getNeeded(), ()->peek(parser)))
+    );
+  }
+
+
+  public static <O, N> Parser<N> map(Parser<O> parser, N ret) {
+    return input -> {
+      Result<N> result = parser.parse(input).mapOk(o -> Result.ok(o.getInput(), ret));
+      if (result.isOk()) {
+        return continuation(() -> result);
+      } else {
+        return none(result);
       }
     };
   }
