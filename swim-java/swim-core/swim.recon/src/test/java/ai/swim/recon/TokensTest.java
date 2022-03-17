@@ -1,13 +1,15 @@
 package ai.swim.recon;
 
 import ai.swim.codec.Parser;
-import ai.swim.codec.source.Source;
 import ai.swim.codec.result.Result;
+import ai.swim.codec.source.Source;
+import ai.swim.codec.source.StringSource;
 import ai.swim.recon.utils.Either;
 import org.junit.jupiter.api.Test;
 import static ai.swim.recon.Tokens.identifier;
 import static ai.swim.recon.Tokens.identifierOrBoolean;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TokensTest {
 
@@ -20,8 +22,8 @@ class TokensTest {
   private void parseOkStr(Parser<Source> parser, Source source, String expectedInput, String expectedOutput) {
     Result<Source> result = parser.parse(source);
     assertTrue(result.isOk());
-    assertEquals(expectedInput, new String(result.getInput().collect()));
-    assertEquals(expectedOutput, new String(result.getOutput().collect()));
+    assertEquals(expectedInput, StringSource.codePointsToString(result.getInput().collect()));
+    assertEquals(expectedOutput, StringSource.codePointsToString(result.getOutput().collect()));
   }
 
   private <O> void parseIncomplete(Parser<O> parser, Source source) {
@@ -32,7 +34,7 @@ class TokensTest {
   @Test
   void identifierTest() {
     parseIncomplete(identifier(), Source.string("name"));
-    parseOkStr(identifier(), Source.string("name "),  " ", "name");
+    parseOkStr(identifier(), Source.string("name "), " ", "name");
   }
 
   @Test

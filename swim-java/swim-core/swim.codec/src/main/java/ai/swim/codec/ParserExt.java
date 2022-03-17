@@ -1,10 +1,9 @@
 package ai.swim.codec;
 
-import ai.swim.codec.result.Result;
-import ai.swim.codec.source.Source;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
+import ai.swim.codec.result.Result;
+import ai.swim.codec.source.Source;
 import static ai.swim.codec.Cont.continuation;
 import static ai.swim.codec.Cont.none;
 
@@ -12,26 +11,6 @@ public class ParserExt {
 
   public static <O> Parser<O> then(O x) {
     return input -> none(Result.ok(input, x));
-  }
-
-  public static <O> Parser<O> eq(String value) {
-    return pred(value::equals);
-  }
-
-  public static <O> Parser<O> pred(Predicate<String> predicate) {
-    return input -> {
-      if (input.complete()) {
-        return none(Result.incomplete(input, 1, ()->pred(predicate)));
-      } else {
-        final char head = input.head();
-        if (predicate.test(String.valueOf(head))) {
-          final Source newSource = input.next();
-          return continuation(() -> Result.ok(newSource, head).cast());
-        } else {
-          return none(Result.error(input, null));
-        }
-      }
-    };
   }
 
   public static <O> Parser<O> preceded(Parser<O> first, Parser<O> second) {
@@ -73,7 +52,7 @@ public class ParserExt {
         return continuation(() -> cont.getResult().match(
             ok -> {
               int newOffset = ok.getInput().offset();
-              return Result.ok(ok.getInput(), input.subInput(offset, newOffset)).cast();
+              return Result.ok(ok.getInput(), input.slice(offset, newOffset)).cast();
             },
             Result::cast,
             Result::cast)
@@ -95,7 +74,7 @@ public class ParserExt {
 
     return input -> {
       if (input.complete()) {
-        return none(Result.incomplete(input, 1, ()->alt(parsers)));
+        return none(Result.incomplete(input, 1));
       } else {
         Result<O> err = null;
         for (Parser<O> parser : parsers) {
@@ -117,7 +96,7 @@ public class ParserExt {
     return input -> parser.apply(input).getResult().match(
         ok -> continuation(() -> Result.ok(ok.getInput(), Optional.of(ok.getOutput()))),
         err -> continuation(() -> Result.ok(input, Optional.empty())),
-        in -> none(Result.incomplete(in.getInput(), in.getNeeded(), ()->opt(parser)))
+        in -> none(Result.incomplete(in.getInput(), in.getNeeded()))
     );
   }
 
@@ -125,7 +104,7 @@ public class ParserExt {
     return input -> parser.apply(input).getResult().match(
         ok -> continuation(() -> Result.ok(input, ok.getOutput())),
         err -> continuation(() -> Result.error(input, err.getCause())),
-        in -> none(Result.incomplete(in.getInput(), in.getNeeded(), ()->peek(parser)))
+        in -> none(Result.incomplete(in.getInput(), in.getNeeded()))
     );
   }
 

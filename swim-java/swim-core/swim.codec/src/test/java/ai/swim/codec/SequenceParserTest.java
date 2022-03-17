@@ -5,6 +5,7 @@ import ai.swim.codec.models.Pair;
 import ai.swim.codec.result.ParseError;
 import ai.swim.codec.result.Result;
 import ai.swim.codec.source.Source;
+import ai.swim.codec.source.StringSource;
 import org.junit.jupiter.api.Test;
 import static ai.swim.codec.SequenceParser.delimited;
 import static ai.swim.codec.SequenceParser.pair;
@@ -19,18 +20,26 @@ class SequenceParserTest {
     final Result<Pair<Source, Source>> result = p.parse(Source.string(input));
 
     assertTrue(result.isOk());
-    assertEquals(o1, new String(result.getOutput().getOutput1().collect()));
-    assertEquals(o2, new String(result.getOutput().getOutput2().collect()));
+    assertEquals(o1, StringSource.codePointsToString(result.getOutput().getOutput1().collect()));
+    assertEquals(o2, StringSource.codePointsToString(result.getOutput().getOutput2().collect()));
 
-    assertEquals(remaining, new String(result.getInput().collect()));
+    assertEquals(remaining, StringSource.codePointsToString(result.getInput().collect()));
   }
 
   public static void pairErr(Parser<Pair<Source, Source>> p, String input, String remainingInput, String cause) {
     final Result<Pair<Source, Source>> result = p.parse(Source.string(input));
 
     assertTrue(result.isError());
-    assertEquals(remainingInput, new String(result.getInput().collect()));
+    assertEquals(remainingInput, StringSource.codePointsToString(result.getInput().collect()));
     assertEquals(cause, ((ParseError<Pair<Source, Source>>) result).getCause());
+  }
+
+  public static void delimitedOk(Parser<Source> p, String input, String expectedInput, String expectedOutput) {
+    final Result<Source> result = p.parse(Source.string(input));
+
+    assertTrue(result.isOk());
+    assertEquals(expectedInput, StringSource.codePointsToString(result.getInput().collect()));
+    assertEquals(expectedOutput, StringSource.codePointsToString(result.getOutput().collect()));
   }
 
   @Test
@@ -49,14 +58,6 @@ class SequenceParserTest {
     pairOk(parser, "abcefghij", "abc", "efg", "hij");
     pairErr(parser, "123", "123", "Expected a tag of: abc");
     pairErr(parser, "abc123", "123", "Expected a tag of: efg");
-  }
-
-  public static void delimitedOk(Parser<Source> p, String input, String expectedInput, String expectedOutput) {
-    final Result<Source> result = p.parse(Source.string(input));
-
-    assertTrue(result.isOk());
-    assertEquals(expectedInput, new String(result.getInput().collect()));
-    assertEquals(expectedOutput, new String(result.getOutput().collect()));
   }
 
   @Test

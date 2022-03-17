@@ -3,6 +3,7 @@ package ai.swim.codec;
 import ai.swim.codec.result.ParseError;
 import ai.swim.codec.result.Result;
 import ai.swim.codec.source.Source;
+import ai.swim.codec.source.StringSource;
 import org.junit.jupiter.api.Test;
 import static ai.swim.codec.ParserExt.alt;
 import static ai.swim.codec.ParserExt.transpose;
@@ -20,8 +21,8 @@ class ParserExtTest {
     Result<Source> result = parser.parse(Source.string(input));
     assertTrue(result.isOk());
 
-    assertEquals(new String(expectedOutput.collect()), new String(result.getInput().collect()));
-    assertEquals(new String(expectedSource.collect()), new String(result.getOutput().collect()));
+    assertEquals(StringSource.codePointsToString(expectedOutput.collect()), StringSource.codePointsToString(result.getInput().collect()));
+    assertEquals(StringSource.codePointsToString(expectedSource.collect()), StringSource.codePointsToString(result.getOutput().collect()));
   }
 
   void recognizeErr(Parser<Source> parser, String input, String cause, Location location) {
@@ -51,10 +52,10 @@ class ParserExtTest {
         eqChar('c')
     );
 
-    runParserOk(parser, "a", "a", "");
-    runParserOk(parser, "b", "b", "");
-    runParserOk(parser, "c", "c", "");
-    runParserOk(parser, "abcd", "a", "bcd");
+    runParserOk(parser, "a", Source.string("a"), Source.string(""));
+    runParserOk(parser, "b", Source.string("b"), Source.string(""));
+    runParserOk(parser, "c", Source.string("c"), Source.string(""));
+    runParserOk(parser, "abcd", Source.string("a"), Source.string("bcd"));
 
     runParserIncomplete(parser, "", 1);
   }

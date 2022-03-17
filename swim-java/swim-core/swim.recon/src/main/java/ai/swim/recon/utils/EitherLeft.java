@@ -2,9 +2,13 @@ package ai.swim.recon.utils;
 
 import java.util.Objects;
 
-public class EitherLeft<L,R> extends Either<L,R> {
+public class EitherLeft<L, R> extends Either<L, R> {
 
   private final L value;
+
+  public EitherLeft(L value) {
+    this.value = value;
+  }
 
   @Override
   public boolean equals(Object o) {
@@ -23,10 +27,6 @@ public class EitherLeft<L,R> extends Either<L,R> {
     return Objects.hash(value);
   }
 
-  public  EitherLeft(L value) {
-    this.value = value;
-  }
-
   @Override
   public boolean isLeft() {
     return true;
@@ -39,6 +39,13 @@ public class EitherLeft<L,R> extends Either<L,R> {
 
   public L value() {
     return this.value;
+  }
+
+  @Override
+  public String toString() {
+    return "EitherLeft{" +
+        "value=" + value +
+        '}';
   }
 
 }

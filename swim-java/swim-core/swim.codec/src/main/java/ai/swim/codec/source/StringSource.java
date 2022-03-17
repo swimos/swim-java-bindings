@@ -2,6 +2,7 @@ package ai.swim.codec.source;
 
 import java.util.Objects;
 import ai.swim.codec.Location;
+import ai.swim.codec.StringLocation;
 
 public class StringSource implements Source {
 
@@ -11,7 +12,7 @@ public class StringSource implements Source {
   private int index;
   private int offset;
 
-  StringSource(String data, int line, int column, int index, int offset) {
+  public StringSource(String data, int line, int column, int index, int offset) {
     this.data = data;
     this.line = line;
     this.column = column;
@@ -21,6 +22,15 @@ public class StringSource implements Source {
 
   StringSource(String data) {
     this(data, 1, 1, 0, 0);
+  }
+
+  public static String codePointsToString(int[] codePoints) {
+    StringBuilder sb = new StringBuilder(codePoints.length);
+    for (int c : codePoints) {
+      sb.appendCodePoint(c);
+    }
+
+    return sb.toString();
   }
 
   @Override
@@ -34,9 +44,9 @@ public class StringSource implements Source {
   }
 
   @Override
-  public char head() {
+  public int head() {
     if (this.index < this.data.length()) {
-      return this.data.charAt(this.index);
+      return this.data.codePointAt(this.index);
     } else {
       throw new IllegalStateException();
     }
@@ -55,7 +65,7 @@ public class StringSource implements Source {
 
   @Override
   public Location location() {
-    return new Location(this.line, this.column);
+    return new StringLocation(this.line, this.column);
   }
 
   @Override
@@ -64,12 +74,28 @@ public class StringSource implements Source {
   }
 
   @Override
-  public char[] collect() {
+  public boolean isError() {
+    return false;
+  }
+
+  @Override
+  public int[] collect() {
     if (this.isDone()) {
-      return new char[] {};
+      return new int[] {};
     }
 
-    return this.data.substring(this.offset).toCharArray();
+    return this.data.substring(this.offset).chars().toArray();
+  }
+
+  @Override
+  public String toString() {
+    return "StringSource{" +
+        "data='" + data + '\'' +
+        ", line=" + line +
+        ", column=" + column +
+        ", index=" + index +
+        ", offset=" + offset +
+        '}';
   }
 
   @Override
@@ -100,12 +126,12 @@ public class StringSource implements Source {
   }
 
   @Override
-  public char[] take(int n) {
+  public int[] take(int n) {
     if (!this.has(n)) {
       throw new IllegalStateException();
     }
 
-    char[] output = new char[n];
+    int[] output = new int[n];
 
     for (int i = 0; i < n; i++) {
       output[i] = this.advance();
@@ -115,21 +141,21 @@ public class StringSource implements Source {
   }
 
   @Override
-  public char[] borrow(int n) {
+  public int[] borrow(int n) {
     if (!this.has(n)) {
       throw new IllegalStateException();
     }
 
-    return this.data.substring(this.offset, this.offset + n).toCharArray();
+    return this.data.substring(this.offset, this.offset + n).chars().toArray();
   }
 
   @Override
-  public boolean compare(char[] with) {
+  public boolean compare(int[] with) {
     throw new IllegalStateException();
   }
 
   @Override
-  public Source subInput(int start, int end) {
+  public Source slice(int start, int end) {
     return new StringSource(
         this.data.substring(start, end),
         1, 1, 0, 0
@@ -149,10 +175,9 @@ public class StringSource implements Source {
     return this;
   }
 
-
-  private char advance() {
+  private int advance() {
     final int idx = this.index;
-    final char c = this.data.charAt(idx);
+    final int c = this.data.codePointAt(idx);
 
     this.index = this.data.offsetByCodePoints(idx, 1);
     this.offset += (long) (this.index - idx);

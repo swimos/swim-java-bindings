@@ -1,5 +1,6 @@
 package ai.swim.codec.source;
 
+import java.util.Arrays;
 import ai.swim.codec.Location;
 
 public interface Source {
@@ -16,7 +17,7 @@ public interface Source {
 
   boolean has(int n);
 
-  char head();
+  int head();
 
   Source next();
 
@@ -24,20 +25,36 @@ public interface Source {
 
   boolean isDone();
 
-  char[] collect();
+  boolean isError();
+
+  int[] collect();
 
   int offset();
 
   int len();
 
-  char[] take(int n);
+  int[] take(int n);
 
-  char[] borrow(int n);
+  int[] borrow(int n);
 
-  boolean compare(char[] with);
+  boolean compare(int[] with);
 
   Source advance(int m);
 
-  Source subInput(int start, int end);
+  Source slice(int start, int end);
+
+  /***
+   * Compares two sources for data equality. Checking if their remaining data is equal rather than the instances.
+   */
+  default boolean dataEquals(Source source) {
+    int thisLen = this.len();
+    int thatLen = source.len();
+
+    if (thisLen != thatLen) {
+      return false;
+    }
+
+    return Arrays.equals(this.borrow(thisLen), source.borrow(thatLen));
+  }
 
 }

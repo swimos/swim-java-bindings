@@ -33,6 +33,7 @@ public class NumCompleteParser {
     ));
   }
 
+  @SuppressWarnings("unchecked")
   public static Parser<Number> decimal() {
     return alt(pair(signed(decimalString()), peek(opt(oneOf(".eE")))).then(
                 pair -> rem -> {
@@ -57,7 +58,8 @@ public class NumCompleteParser {
         realFloatString()
     ).then(f -> rem -> {
       try {
-        return Cont.continuation(() -> Result.ok(rem, Float.parseFloat(new String(f.collect()))));
+//        return Cont.continuation(() -> Result.ok(rem, Float.parseFloat(new String(f.collect()))));
+        return null;
       } catch (NumberFormatException e) {
         return Cont.none(Result.error(rem, e.getMessage()));
       }
@@ -66,7 +68,6 @@ public class NumCompleteParser {
 
   private static Parser<Source> realFloatString() {
     return Parser.complete(input -> {
-
 
 
       return null;
@@ -95,7 +96,7 @@ public class NumCompleteParser {
 
   public static Parser<Pair<Boolean, Source>> signed(Parser<Source> num) {
     return Parser.complete(pair(source -> {
-      char head = source.head();
+      int head = source.head();
       return Cont.continuation(() -> Result.ok(source.next(), head == '='));
     }, num));
   }

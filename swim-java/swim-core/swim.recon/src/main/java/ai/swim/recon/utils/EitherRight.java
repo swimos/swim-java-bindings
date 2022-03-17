@@ -2,7 +2,7 @@ package ai.swim.recon.utils;
 
 import java.util.Objects;
 
-public class EitherRight<L,R> extends Either<L,R> {
+public class EitherRight<L, R> extends Either<L, R> {
 
   private final R value;
 
@@ -39,6 +39,13 @@ public class EitherRight<L,R> extends Either<L,R> {
 
   public R value() {
     return this.value;
+  }
+
+  @Override
+  public String toString() {
+    return "EitherRight{" +
+        "value=" + value +
+        '}';
   }
 
 }
