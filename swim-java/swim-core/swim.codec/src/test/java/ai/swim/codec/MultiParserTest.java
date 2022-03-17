@@ -3,6 +3,7 @@ package ai.swim.codec;
 import ai.swim.codec.result.ParseError;
 import ai.swim.codec.result.Result;
 import ai.swim.codec.source.Source;
+import ai.swim.codec.source.StringSource;
 import org.junit.jupiter.api.Test;
 import static ai.swim.codec.MultiParser.many0Count;
 import static ai.swim.codec.MultiParser.many1Count;
@@ -17,7 +18,7 @@ class MultiParserTest {
 
     assertTrue(result.isOk());
     assertEquals(count, result.getOutput());
-    assertEquals(remaining, new String(result.getInput().collect()));
+    assertEquals(remaining, StringSource.codePointsToString(result.getInput().collect()));
   }
 
   public static <A> void manyError(Parser<Integer> p, String input, Location location) {

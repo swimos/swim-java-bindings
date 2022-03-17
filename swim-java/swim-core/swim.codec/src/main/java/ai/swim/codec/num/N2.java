@@ -20,27 +20,21 @@ import ai.swim.codec.result.Result;
 
 public class N2 {
 
+  private static Parser<Number> execNumber(State state, int sign, long value, int mode, int step) {
+    return input -> {
+      if (input.isDone()) {
+        return Cont.none(Result.incomplete(input, 1));
+      } else {
+        return null;
+      }
+    };
+  }
+
   enum State {
     Init,
     ParsingDigit,
     ParsingBigInt,
     ParsingHexadecimal
-  }
-
-  public static Parser<Number> number() {
-
-
-    return null;
-  }
-
-  private static Parser<Number> execNumber(State state, int sign, long value, int mode, int step) {
-    return input -> {
-      if (input.isDone()) {
-        return Cont.none(Result.incomplete(input, 1, () -> execNumber(state, sign, value, mode, step)));
-      } else {
-        return null;
-      }
-    };
   }
 
 }

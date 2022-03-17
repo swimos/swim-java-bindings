@@ -1,6 +1,7 @@
 package ai.swim.codec.input;
 
 import ai.swim.codec.source.Source;
+import ai.swim.codec.source.StringSource;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -12,7 +13,7 @@ class StringSourceTest {
   void testTake() {
     Source source = Source.string("abcd");
 
-    assertEquals("ab", new String(source.take(2)));
+    assertEquals("ab", StringSource.codePointsToString(source.take(2)));
   }
 
   @Test

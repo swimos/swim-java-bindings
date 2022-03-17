@@ -9,21 +9,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ParserTestUtils {
 
-  public static void runParserOk(Parser<Source> p, String input, String output, String remaining) {
-    final Result<Source> result = p.parse(Source.string(input));
+  public static <O extends Source> void runParserOk(Parser<O> p, String input, O output, O remaining) {
+    final Result<O> result = p.parse(Source.string(input));
     assertTrue(result.isOk());
-    assertEquals(output, new String(result.getOutput().collect()));
 
-    Source buf = result.getInput();
-    StringBuilder sb = new StringBuilder();
-
-    while (!buf.isDone()) {
-      int head = buf.head();
-      sb.append((char) head);
-      buf = buf.next();
-    }
-
-    assertEquals(remaining, sb.toString());
+    assertTrue(remaining.dataEquals(result.getInput()));
+    assertEquals(output, result.getOutput());
   }
 
   public static <A> void runParserError(Parser<A> p, String input, Location location) {

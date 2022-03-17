@@ -21,7 +21,7 @@ public class SourceDone implements Source {
   }
 
   @Override
-  public char head() {
+  public int head() {
     throw new IllegalStateException();
   }
 
@@ -41,8 +41,13 @@ public class SourceDone implements Source {
   }
 
   @Override
-  public char[] collect() {
-    return new char[] {};
+  public boolean isError() {
+    return false;
+  }
+
+  @Override
+  public int[] collect() {
+    return new int[] {};
   }
 
   @Override
@@ -56,22 +61,22 @@ public class SourceDone implements Source {
   }
 
   @Override
-  public char[] take(int tagLength) {
+  public int[] take(int tagLength) {
     throw new IllegalStateException();
   }
 
   @Override
-  public char[] borrow(int n) {
+  public int[] borrow(int n) {
     throw new IllegalStateException();
   }
 
   @Override
-  public boolean compare(char[] with) {
+  public boolean compare(int[] with) {
     return this.delegate.compare(with);
   }
 
   @Override
-  public Source subInput(int start, int end) {
+  public Source slice(int start, int end) {
     return null;
   }
 

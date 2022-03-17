@@ -14,12 +14,6 @@
 
 package ai.swim.codec.num;
 
-import ai.swim.codec.Cont;
-import ai.swim.codec.Parser;
-import ai.swim.codec.result.Result;
-import static ai.swim.codec.ParserExt.alt;
-import static ai.swim.codec.character.StreamingCharacter.tag;
-
 public class NumParser {
 
 

@@ -1,9 +1,11 @@
 package ai.swim.recon;
 
 
+import java.util.Arrays;
 import ai.swim.codec.Parser;
-import ai.swim.codec.source.Source;
 import ai.swim.codec.result.Result;
+import ai.swim.codec.source.Source;
+import ai.swim.codec.source.StringSource;
 import ai.swim.recon.utils.Either;
 import static ai.swim.codec.Cont.continuation;
 import static ai.swim.codec.MultiParser.many0Count;
@@ -47,14 +49,15 @@ public class Tokens {
   }
 
   public static Parser<Either<String, Boolean>> identifierOrBoolean() {
-    return identifier().then(rem -> input -> {
-      String out = new String(input.collect());
-      if ("true".equals(out)) {
-        return continuation(()-> Result.ok(rem, Either.right(true)));
-      } else if ("false".equals(out)) {
-        return continuation(()-> Result.ok(rem, Either.right(false)));
+    return identifier().then(in -> rem -> {
+      int[] codePoints = in.collect();
+
+      if (Arrays.equals("true".chars().toArray(), codePoints)) {
+        return continuation(() -> Result.ok(rem, Either.right(true)));
+      } else if (Arrays.equals("false".chars().toArray(), codePoints)) {
+        return continuation(() -> Result.ok(rem, Either.right(false)));
       } else {
-        return continuation(()-> Result.ok(rem, Either.left(out)));
+        return continuation(() -> Result.ok(rem, Either.left(StringSource.codePointsToString(codePoints))));
       }
     });
   }
