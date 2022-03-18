@@ -2,16 +2,16 @@ package ai.swim.recon;
 
 
 import java.util.Arrays;
-import ai.swim.codec.Parser;
-import ai.swim.codec.result.Result;
-import ai.swim.codec.source.Source;
-import ai.swim.codec.source.StringSource;
+import ai.swim.codec.old.Parser3;
+import ai.swim.codec.old.result.Result;
+import ai.swim.codec.input.Input;
+import ai.swim.codec.input.StringInput;
 import ai.swim.recon.utils.Either;
-import static ai.swim.codec.Cont.continuation;
-import static ai.swim.codec.MultiParser.many0Count;
-import static ai.swim.codec.ParserExt.transpose;
-import static ai.swim.codec.SequenceParser.pair;
-import static ai.swim.codec.character.StreamingCharacter.satisfy;
+import static ai.swim.codec.old.Cont.continuation;
+import static ai.swim.codec.old.MultiParser.many0Count;
+import static ai.swim.codec.old.ParserExt.transpose;
+import static ai.swim.codec.old.SequenceParser.pair;
+import static ai.swim.codec.old.character.StreamingCharacter.satisfy;
 
 public class Tokens {
 
@@ -41,14 +41,14 @@ public class Tokens {
         || (char) c >= '0' && (char) c <= '9';
   }
 
-  public static Parser<Source> identifier() {
+  public static Parser3<Input> identifier() {
     return transpose(pair(
         satisfy(Tokens::isIdentifierStart),
         many0Count(satisfy(Tokens::isIdentifierChar))
     ));
   }
 
-  public static Parser<Either<String, Boolean>> identifierOrBoolean() {
+  public static Parser3<Either<String, Boolean>> identifierOrBoolean() {
     return identifier().then(in -> rem -> {
       int[] codePoints = in.collect();
 
@@ -57,7 +57,7 @@ public class Tokens {
       } else if (Arrays.equals("false".chars().toArray(), codePoints)) {
         return continuation(() -> Result.ok(rem, Either.right(false)));
       } else {
-        return continuation(() -> Result.ok(rem, Either.left(StringSource.codePointsToString(codePoints))));
+        return continuation(() -> Result.ok(rem, Either.left(StringInput.codePointsToString(codePoints))));
       }
     });
   }

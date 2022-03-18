@@ -1,44 +1,62 @@
+// Copyright 2015-2021 Swim Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ai.swim.codec;
 
+import ai.swim.codec.input.Input;
+import ai.swim.codec.ParserDone;
+import ai.swim.codec.ParserError;
 import java.util.function.Function;
-import ai.swim.codec.result.Result;
-import ai.swim.codec.source.Source;
 
-@FunctionalInterface
-public interface Parser<O> {
+public abstract class Parser<O> {
 
-  String INCOMPLETE_INPUT = "Incomplete input";
-
-  private static <O> Parser<O> inputOpt(Parser<O> parser, Function<Source, Result<O>> onComplete) {
-    return input -> {
-      if (input.complete()) {
-        return Cont.none(onComplete.apply(input));
-      } else {
-        return parser.apply(input);
-      }
-    };
+  public static <O> Parser<O> lambda(ParseFn<O> fn) {
+    return new LambdaParser<>(fn);
   }
 
-  static <O> Parser<O> streaming(Parser<O> parser, int expected) {
-    return inputOpt(parser, i -> Result.incomplete(i, expected));
+  public static <O> Parser<O> done(O output) {
+    return new ParserDone<>(output);
   }
 
-  static <O> Parser<O> complete(Parser<O> parser) {
-    return inputOpt(parser, i -> Result.error(i, Parser.INCOMPLETE_INPUT));
+  public static <O> Parser<O> error(String cause) {
+    return new ParserError<>(cause);
   }
 
-  static <O> Parser<O> complete(Parser<O> parser, String cause) {
-    return inputOpt(parser, i -> Result.error(i, cause));
+  public boolean isDone() {
+    return false;
   }
 
-  default Result<O> parse(Source source) {
-    return apply(source).getResult();
+  public boolean isError() {
+    return false;
   }
 
-  Cont<O> apply(Source source);
+  public boolean isCont() {
+    return true;
+  }
 
-  default <B> Parser<B> then(Function<O, Parser<B>> f) {
-    return ParserExt.and(this, f);
+  public abstract Parser<O> feed(Input input);
+
+  public O bind() {
+    throw new IllegalStateException();
+  }
+
+  public <I> Parser<I> map(Function<O, I> with) {
+    return MappedParser.map(this, with);
+  }
+
+  public <T> Parser<T> andThen(Function<O, Parser<T>> then) {
+    return AndThen.andThen(this, then);
   }
 
 }

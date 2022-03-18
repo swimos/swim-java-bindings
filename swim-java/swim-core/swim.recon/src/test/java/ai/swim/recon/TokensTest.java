@@ -1,9 +1,9 @@
 package ai.swim.recon;
 
-import ai.swim.codec.Parser;
-import ai.swim.codec.result.Result;
-import ai.swim.codec.source.Source;
-import ai.swim.codec.source.StringSource;
+import ai.swim.codec.old.Parser3;
+import ai.swim.codec.old.result.Result;
+import ai.swim.codec.input.Input;
+import ai.swim.codec.input.StringInput;
 import ai.swim.recon.utils.Either;
 import org.junit.jupiter.api.Test;
 import static ai.swim.recon.Tokens.identifier;
@@ -13,36 +13,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TokensTest {
 
-  private <O> void parseOk(Parser<O> parser, Source source, O output) {
-    Result<O> result = parser.parse(source);
+  private <O> void parseOk(Parser3<O> parser, Input input, O output) {
+    Result<O> result = parser.parse(input);
     assertTrue(result.isOk());
     assertEquals(output, result.getOutput());
   }
 
-  private void parseOkStr(Parser<Source> parser, Source source, String expectedInput, String expectedOutput) {
-    Result<Source> result = parser.parse(source);
+  private void parseOkStr(Parser3<Input> parser, Input input, String expectedInput, String expectedOutput) {
+    Result<Input> result = parser.parse(input);
     assertTrue(result.isOk());
-    assertEquals(expectedInput, StringSource.codePointsToString(result.getInput().collect()));
-    assertEquals(expectedOutput, StringSource.codePointsToString(result.getOutput().collect()));
+    assertEquals(expectedInput, StringInput.codePointsToString(result.getInput().collect()));
+    assertEquals(expectedOutput, StringInput.codePointsToString(result.getOutput().collect()));
   }
 
-  private <O> void parseIncomplete(Parser<O> parser, Source source) {
-    Result<O> result = parser.parse(source);
+  private <O> void parseIncomplete(Parser3<O> parser, Input input) {
+    Result<O> result = parser.parse(input);
     assertTrue(result.isIncomplete());
   }
 
   @Test
   void identifierTest() {
-    parseIncomplete(identifier(), Source.string("name"));
-    parseOkStr(identifier(), Source.string("name "), " ", "name");
+    parseIncomplete(identifier(), Input.string("name"));
+    parseOkStr(identifier(), Input.string("name "), " ", "name");
   }
 
   @Test
   void identifierOrBooleanTest() {
-    parseIncomplete(identifierOrBoolean(), Source.string("true"));
-    parseOk(identifierOrBoolean(), Source.string("true "), Either.right(true));
-    parseOk(identifierOrBoolean(), Source.string("false "), Either.right(false));
-    parseOk(identifierOrBoolean(), Source.string("blah "), Either.left("blah"));
+    parseIncomplete(identifierOrBoolean(), Input.string("true"));
+    parseOk(identifierOrBoolean(), Input.string("true "), Either.right(true));
+    parseOk(identifierOrBoolean(), Input.string("false "), Either.right(false));
+    parseOk(identifierOrBoolean(), Input.string("blah "), Either.left("blah"));
   }
 
 }

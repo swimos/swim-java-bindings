@@ -14,8 +14,8 @@
 
 package ai.swim.structure.form.recognizer.primitive;
 
-import ai.swim.structure.form.event.ReadBlobValue;
-import ai.swim.structure.form.event.ReadEvent;
+import ai.swim.recon.event.ReadBlobValue;
+import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
 
 public class BlobRecognizer extends Recognizer<byte[]> {

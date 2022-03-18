@@ -16,7 +16,7 @@ package ai.swim.structure.form;
 
 
 import java.util.Objects;
-import ai.swim.structure.form.event.ReadEvent;
+import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
 import ai.swim.structure.form.recognizer.structural.ClassRecognizerInit;
 import ai.swim.structure.form.recognizer.structural.key.ItemFieldKey;
