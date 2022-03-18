@@ -18,8 +18,10 @@ import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Base64;
 import static ai.swim.codec.data.DataParser.blob;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,15 +30,15 @@ class DataParserTest {
   void blobTestOk(String input, byte[] expected) {
     Parser<byte[]> parser = blob().feed(Input.string(input));
     assertTrue(parser.isDone());
-    assertEquals(parser.bind(), expected);
+    assertArrayEquals(parser.bind(), expected);
   }
 
   @Test
   void parseBlobTest() {
-    blobTestOk("%AAAA", Base64.getEncoder().encode("AAAA".getBytes()));
-    blobTestOk("%AAA=", "AAA=".getBytes());
-    blobTestOk("%AA==", "AA==".getBytes());
-    blobTestOk("%ABCDabcd12/+", "ABCDabcd12/+".getBytes());
+    blobTestOk("%YWI=", "ab".getBytes());
+    blobTestOk("%YWJj", "abc".getBytes());
+    blobTestOk("%YW55IGNhcm5hbCBwbGVhc3VyZQ==", "any carnal pleasure".getBytes());
+    blobTestOk("%YWJj)", "abc".getBytes());
   }
 
   public static String toHexString(byte[] ba) {

@@ -16,144 +16,96 @@ package ai.swim.codec.data;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
+import java.util.Base64;
 
 final class DataParser extends Parser<byte[]> {
 
-  final ByteArrayOutput output;
-  final int p;
-  final int q;
-  final int r;
-  final int step;
+  private final boolean readHead;
+  private final boolean fin;
+  private final int idx;
+  private final StringBuilder output;
 
-  DataParser(ByteArrayOutput output, int p, int q, int r, int step) {
+  public DataParser(StringBuilder output, boolean readHead, boolean fin, int idx) {
     this.output = output;
-    this.p = p;
-    this.q = q;
-    this.r = r;
-    this.step = step;
-  }
-
-  DataParser(ByteArrayOutput output) {
-    this(output, 0, 0, 0, 0);
+    this.readHead = readHead;
+    this.fin = fin;
+    this.idx = idx;
   }
 
   private static boolean isDigit(int c) {
-    return c >= '0' && c <= '9'
-        || c >= 'A' && c <= 'Z'
-        || c >= 'a' && c <= 'z'
-        || c == '+' || c == '/';
+    return c >= '0' && c <= '9' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c == '+' || c == '/';
   }
 
   public static Parser<byte[]> blob() {
-    return new DataParser(new ByteArrayOutput(32));
+    return new DataParser(null, false, false, 1);
   }
 
-  static Parser<byte[]> parse(Input input, ByteArrayOutput output, int p, int q, int r, int step) {
-    int c = 0;
+  static Parser<byte[]> parse(Input input, StringBuilder output, boolean readHead, boolean fin, int idx) {
+    int c;
 
-    if (step == 0) {
+    if (!readHead) {
       if (input.isContinuation()) {
         c = input.head();
+
         if (c == '%') {
+          readHead = true;
           input = input.step();
-          step = 1;
+          c = input.head();
+          output = new StringBuilder();
         } else {
-          return error("Expected a blob");
+          error("Expected: %");
         }
-      } else if (input.isDone()) {
-        return error("Expected a blob");
       }
     }
 
-    while (!input.isError() && !input.isEmpty()) {
-      if (step == 1) {
-        if (input.isContinuation()) {
-          c = input.head();
-          if (isDigit(c)) {
-            input = input.step();
-            p = c;
-            step = 2;
-          } else {
-            return done(output.getData());
-          }
-        } else if (input.isDone()) {
-          return done(output.getData());
-        }
+    while (input.isContinuation()) {
+      c = input.head();
+
+
+      if (!isDigit(c) && c != '=') {
+        return decode(output);
       }
-      if (step == 2) {
-        if (input.isContinuation()) {
-          c = input.head();
-          if (isDigit(c)) {
-            input = input.step();
-            q = c;
-            step = 3;
-          } else {
-            return error("Expected a blob");
-          }
-        } else if (input.isDone()) {
-          return error("Expected a blob");
+
+      if (idx < 3) {
+        if (isDigit(c)) {
+          output.appendCodePoint(c);
+        } else {
+          return error("Expected a base64 character");
         }
+      } else if (idx == 3) {
+        if (isDigit(c)) {
+          output.appendCodePoint(c);
+        } else {
+          fin = true;
+          output.appendCodePoint(c);
+        }
+      } else if (idx == 4) {
+        output.appendCodePoint(c);
+      } else {
+        throw new AssertionError();
       }
-      if (step == 3) {
-        if (input.isContinuation()) {
-          c = input.head();
-          if (isDigit(c) || c == '=') {
-            input = input.step();
-            r = c;
-            if (c != '=') {
-              step = 4;
-            } else {
-              step = 5;
-            }
-          } else {
-            return error("Expected a blob");
-          }
-        } else if (input.isDone()) {
-          return error("Expected a blob");
-        }
+
+      input = input.step();
+
+      if (input.isDone()) {
+        return decode(output);
       }
-      if (step == 4) {
-        if (input.isContinuation()) {
-          c = input.head();
-          if (isDigit(c) || c == '=') {
-            input = input.step();
-            writeQuantum(p, q, r, c, output);
-            r = 0;
-            q = 0;
-            p = 0;
-            if (c != '=') {
-              step = 1;
-            } else {
-              return done(output.getData());
-            }
-          } else {
-            return error("Expected a blob");
-          }
-        } else if (input.isDone()) {
-          return error("Expected a blob");
-        }
-      } else if (step == 5) {
-        if (input.isContinuation()) {
-          c = input.head();
-          if (c == '=') {
-            input = input.step();
-            writeQuantum(p, q, r, c, output);
-            r = 0;
-            q = 0;
-            p = 0;
-            return done(output.getData());
-          } else {
-            return error("Expected a blob");
-          }
-        } else if (input.isDone()) {
-          return error("Expected a blob");
-        }
+
+      idx += 1;
+      if (idx > 4) {
+        idx = 1;
       }
     }
-    if (input.isError()) {
-      return error("Expected a blob");
+
+    return new DataParser(output, readHead, fin, idx);
+  }
+
+  private static Parser<byte[]> decode(StringBuilder output) {
+    try {
+      return Parser.done(Base64.getDecoder().decode(output.toString()));
+    } catch (IllegalArgumentException e) {
+      return Parser.error(e.toString());
     }
-    return new DataParser(output, p, q, r, step);
   }
 
   public static int decodeDigit(int c) {
@@ -197,7 +149,7 @@ final class DataParser extends Parser<byte[]> {
 
   @Override
   public Parser<byte[]> feed(Input input) {
-    return parse(input, this.output, this.p, this.q, this.r, this.step);
+    return parse(input, this.output, this.readHead, this.fin, this.idx);
   }
 
 }
