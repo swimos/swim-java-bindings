@@ -1,63 +1,83 @@
+// Copyright 2015-2021 Swim Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ai.swim.codec;
 
-import ai.swim.codec.result.ParseError;
-import ai.swim.codec.result.Result;
-import ai.swim.codec.source.Source;
-import ai.swim.codec.source.StringSource;
+import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
 import static ai.swim.codec.ParserExt.alt;
-import static ai.swim.codec.ParserExt.transpose;
-import static ai.swim.codec.ParserTestUtils.runParserIncomplete;
-import static ai.swim.codec.ParserTestUtils.runParserOk;
-import static ai.swim.codec.SequenceParser.separatedPair;
-import static ai.swim.codec.character.StreamingCharacter.alpha1;
-import static ai.swim.codec.character.StreamingCharacter.eqChar;
+import static ai.swim.codec.string.StringParser.stringLiteral;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ParserExtTest {
 
-  void recognizeOk(Parser<Source> parser, String input, Source expectedSource, Source expectedOutput) {
-    Result<Source> result = parser.parse(Source.string(input));
-    assertTrue(result.isOk());
+  @Test
+  void altTestComplete() {
+    Parser<String> parser = alt(stringLiteral());
 
-    assertEquals(StringSource.codePointsToString(expectedOutput.collect()), StringSource.codePointsToString(result.getInput().collect()));
-    assertEquals(StringSource.codePointsToString(expectedSource.collect()), StringSource.codePointsToString(result.getOutput().collect()));
-  }
-
-  void recognizeErr(Parser<Source> parser, String input, String cause, Location location) {
-    Result<Source> result = parser.parse(Source.string(input));
-    assertTrue(result.isError());
-
-    ParseError<Source> error = (ParseError<Source>) result;
-
-    assertEquals(cause, error.getCause());
-    assertEquals(location, error.getLocation());
+    Parser<String> parseResult = parser.feed(Input.string("\"123\""));
+    assertTrue(parseResult.isDone());
+    assertEquals(parseResult.bind(), "123");
   }
 
   @Test
-  void recognizeTest() {
-    Parser<Source> recognize = transpose(separatedPair(alpha1(), eqChar(','), alpha1()));
-    recognizeOk(recognize, "abcd,efgh", Source.string("abcd,efgh"), Source.string(""));
-    recognizeOk(recognize, "abcd,efgh;123", Source.string("abcd,efgh"), Source.string(";123"));
-    recognizeErr(recognize, "abcd;", "Expected ,", Location.of(1, 5));
+  void altTestCont() {
+    Parser<String> parser = alt(stringLiteral());
+
+    Parser<String> parseResult = parser.feed(Input.string("\"abc").isPartial(true));
+    assertFalse(parseResult.isError());
+    assertTrue(parseResult.isCont());
+
+    parseResult = parseResult.feed(Input.string("def\""));
+    assertTrue(parseResult.isDone());
+    assertEquals(parseResult.bind(), "abcdef");
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  void altTest() {
-    Parser<Source> parser = alt(
-        eqChar('a'),
-        eqChar('b'),
-        eqChar('c')
-    );
+  void altTestDone() {
+    Parser<String> parser = alt(stringLiteral(), Parser.lambda(input -> {
+      StringBuilder sb = new StringBuilder();
+      while (input.isContinuation()) {
+        sb.appendCodePoint(input.head());
+        input = input.step();
+      }
 
-    runParserOk(parser, "a", Source.string("a"), Source.string(""));
-    runParserOk(parser, "b", Source.string("b"), Source.string(""));
-    runParserOk(parser, "c", Source.string("c"), Source.string(""));
-    runParserOk(parser, "abcd", Source.string("a"), Source.string("bcd"));
+      return Parser.done(sb.toString());
+    }));
 
-    runParserIncomplete(parser, "", 1);
+    Parser<String> parseResult = parser.feed(Input.string("abcdef123"));
+    assertTrue(parseResult.isDone());
+    assertEquals(parseResult.bind(), "abcdef123");
+  }
+
+  @Test
+  void altTestNone() {
+    Parser<String> parser = alt(stringLiteral(), new Parser<>() {
+      @Override
+      public Parser<String> feed(Input input) {
+        return this;
+      }
+    }, Parser.error(""));
+
+    Parser<String> parseResult = parser.feed(Input.string("").isPartial(true));
+    assertTrue(parseResult.isCont());
+    parseResult = parseResult.feed(Input.string("").isPartial(true));
+    parseResult = parseResult.feed(Input.string("\"abc\""));
+
+    assertEquals(parseResult.bind(), "abc");
   }
 
 }

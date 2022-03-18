@@ -14,6 +14,33 @@
 
 package ai.swim.recon;
 
-public class ReconParser {
+import ai.swim.codec.Parser;
+import ai.swim.recon.event.ReadEvent;
+import ai.swim.recon.models.BooleanIdentifier;
+import ai.swim.recon.models.StringIdentifier;
+import static ai.swim.codec.DataParser.blob;
+import static ai.swim.codec.ParserExt.alt;
+import static ai.swim.codec.number.NumberParser.numericLiteral;
+import static ai.swim.codec.string.StringParser.stringLiteral;
+import static ai.swim.recon.IdentifierParser.identifier;
+
+public abstract class ReconParser {
+
+  public static Parser<ReadEvent> init() {
+    return alt(
+        stringLiteral().map(ReadEvent::text),
+        identifier().map(s -> {
+          if (s.isBoolean()) {
+            return ReadEvent.bool(((BooleanIdentifier) s).getValue());
+          } else {
+            return ReadEvent.text(((StringIdentifier) s).getValue());
+          }
+        }),
+        numericLiteral().map(ReadEvent::number)
+//        blob().map(ReadEvent::blob)
+    );
+  }
+
 
 }
+

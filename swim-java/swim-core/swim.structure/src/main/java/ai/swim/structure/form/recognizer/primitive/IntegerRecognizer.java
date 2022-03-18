@@ -1,7 +1,7 @@
 package ai.swim.structure.form.recognizer.primitive;
 
-import ai.swim.structure.form.event.ReadEvent;
-import ai.swim.structure.form.event.ReadNumberValue;
+import ai.swim.recon.event.ReadEvent;
+import ai.swim.recon.event.ReadNumberValue;
 import ai.swim.structure.form.recognizer.Recognizer;
 
 public class IntegerRecognizer extends Recognizer<Integer> {

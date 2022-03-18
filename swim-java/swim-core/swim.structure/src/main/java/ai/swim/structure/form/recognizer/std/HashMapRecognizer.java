@@ -15,7 +15,7 @@
 package ai.swim.structure.form.recognizer.std;
 
 import java.util.HashMap;
-import ai.swim.structure.form.event.ReadEvent;
+import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
 
 public class HashMapRecognizer<K, V> extends Recognizer<HashMap<K, V>> {

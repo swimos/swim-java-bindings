@@ -1,6 +1,6 @@
 package ai.swim.structure.form;
 
-import ai.swim.structure.form.event.ReadEvent;
+import ai.swim.recon.event.ReadEvent;
 
 public interface RecognizingBuilder<I> {
 
