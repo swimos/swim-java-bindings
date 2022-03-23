@@ -14,6 +14,9 @@
 
 package ai.swim.recon.event;
 
+import ai.swim.recon.models.ParserTransition;
+import ai.swim.recon.models.state.NoStateChange;
+
 public abstract class ReadEvent {
 
   public static ReadEvent startAttribute(String name) {
@@ -101,4 +104,16 @@ public abstract class ReadEvent {
     return this.getClass().getSimpleName();
   }
 
+  public ParserTransition transition() {
+    return new ParserTransition(this, new NoStateChange());
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    return o != null && getClass() == o.getClass();
+  }
 }

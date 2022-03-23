@@ -12,34 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.codec.stateful;
 
-import ai.swim.codec.input.Input;
+public class Ok<S,T> extends Result<S, T> {
+  private final T output;
 
-public class ParserDone<O> extends Parser<O> {
-  private final O output;
-
-  public ParserDone(O output) {
+  public  Ok(T output) {
     this.output = output;
   }
 
-  @Override
-  public Parser<O> feed(Input input) {
-    throw new IllegalStateException();
+  public T getOutput() {
+    return output;
   }
 
   @Override
-  public O bind() {
-    return this.output;
-  }
-
-  @Override
-  public boolean isDone() {
+  public boolean isOk() {
     return true;
-  }
-
-  @Override
-  public boolean isCont() {
-    return false;
   }
 }

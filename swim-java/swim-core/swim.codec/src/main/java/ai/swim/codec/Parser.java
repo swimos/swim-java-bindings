@@ -15,8 +15,9 @@
 package ai.swim.codec;
 
 import ai.swim.codec.input.Input;
-import ai.swim.codec.ParserDone;
-import ai.swim.codec.ParserError;
+import ai.swim.codec.stateful.Result;
+import ai.swim.codec.stateful.StatefulParser;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public abstract class Parser<O> {
@@ -27,6 +28,10 @@ public abstract class Parser<O> {
 
   public static <O> Parser<O> done(O output) {
     return new ParserDone<>(output);
+  }
+
+  public static <S, T> Parser< T> stateful(S state, BiFunction<S, Input, Result<S, T>> parser) {
+    return new StatefulParser<>(state, parser);
   }
 
   public static <O> Parser<O> error(String cause) {
@@ -55,8 +60,16 @@ public abstract class Parser<O> {
     return MappedParser.map(this, with);
   }
 
+  public <I> Parser<I> tryMap(Function<O, I> with) {
+    return TryMappedParser.tryMap(this, with);
+  }
+
   public <T> Parser<T> andThen(Function<O, Parser<T>> then) {
     return AndThen.andThen(this, then);
+  }
+
+  public static <B,T> Parser<T> preceded(Parser<B> by, Parser<T> then){
+    return Preceded.preceded(by, then);
   }
 
 }

@@ -14,6 +14,8 @@
 
 package ai.swim.recon.event;
 
+import java.util.Arrays;
+
 public class ReadBlobValue extends ReadEvent {
 
   private final byte[] value;
@@ -31,4 +33,23 @@ public class ReadBlobValue extends ReadEvent {
     return this.value;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    ReadBlobValue that = (ReadBlobValue) o;
+    return Arrays.equals(value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(value);
+  }
 }

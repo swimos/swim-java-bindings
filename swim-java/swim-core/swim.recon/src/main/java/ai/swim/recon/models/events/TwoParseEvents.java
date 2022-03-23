@@ -12,31 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.location;
+package ai.swim.recon.models.events;
 
+import ai.swim.recon.event.ReadEvent;
 import java.util.Objects;
 
-public class StringLocation implements Location {
+public class TwoParseEvents extends ParseEvents {
+  private final ReadEvent event1;
+  private final ReadEvent event2;
 
-  private final int line;
-  private final int column;
-
-
-  public StringLocation(int line, int column) {
-    this.line = line;
-    this.column = column;
+  TwoParseEvents(ReadEvent event1, ReadEvent event2){
+    this.event1 = event1;
+    this.event2=event2;
   }
 
-  public static StringLocation of(int line, int column) {
-    return new StringLocation(line, column);
+  public ReadEvent getEvent1() {
+    return event1;
   }
 
-  public int getLine() {
-    return line;
+  public ReadEvent getEvent2() {
+    return event2;
   }
 
-  public int getColumn() {
-    return column;
+  @Override
+  public boolean isTwoEvents() {
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "TwoParseEvents{" +
+        "event1=" + event1 +
+        ", event2=" + event2 +
+        '}';
   }
 
   @Override
@@ -47,21 +55,12 @@ public class StringLocation implements Location {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StringLocation location = (StringLocation) o;
-    return line == location.line && column == location.column;
+    TwoParseEvents that = (TwoParseEvents) o;
+    return Objects.equals(event1, that.event1) && Objects.equals(event2, that.event2);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(line, column);
+    return Objects.hash(event1, event2);
   }
-
-  @Override
-  public String toString() {
-    return "StringLocation{" +
-        "line=" + line +
-        ", column=" + column +
-        '}';
-  }
-
 }

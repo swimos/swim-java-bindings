@@ -20,6 +20,7 @@ import java.util.function.Function;
 public class AndThen<O, T> extends Parser<T> {
   private Parser<O> first;
   private final Function<O, Parser<T>> then;
+  private Parser<T> second;
 
   AndThen(Parser<O> first, Function<O, Parser<T>> then) {
     this.first = first;
@@ -32,14 +33,29 @@ public class AndThen<O, T> extends Parser<T> {
 
   @Override
   public Parser<T> feed(Input input) {
-    Parser<O> parseResult = this.first.feed(input);
-    if (parseResult.isDone()) {
-      return this.then.apply(parseResult.bind());
-    } else if (parseResult.isCont()) {
-      this.first = parseResult;
-      return this;
+    if (second == null) {
+      Parser<O> parseResult = this.first.feed(input);
+      if (parseResult.isDone()) {
+        this.second = this.then.apply(parseResult.bind());
+        return feed(input);
+      } else if (parseResult.isCont()) {
+        this.first = parseResult;
+        return this;
+      } else if (parseResult.isError()) {
+        return Parser.error(((ParserError<O>) parseResult).getCause());
+      } else {
+        return this;
+      }
     } else {
-      return Parser.error(((ParserError<O>) parseResult).getCause());
+      Parser<T> result = this.second.feed(input);
+      if (result.isDone()) {
+        return Parser.done(result.bind());
+      } else if (result.isError()) {
+        return Parser.error(((ParserError<T>) result).getCause());
+      } else {
+        this.second = result;
+        return this;
+      }
     }
   }
 }

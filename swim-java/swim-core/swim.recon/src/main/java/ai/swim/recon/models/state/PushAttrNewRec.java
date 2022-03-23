@@ -12,29 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.recon.models;
+package ai.swim.recon.models.state;
 
 import java.util.Objects;
 
-public final class DecimalLiteralIdentifier extends Identifier {
-  private final float value;
+public class PushAttrNewRec extends StateChange {
 
-  DecimalLiteralIdentifier(float value) {
-    this.value = value;
+  private final boolean hasBody;
+
+  PushAttrNewRec(boolean hasBody){
+    this.hasBody =hasBody;
+  }
+
+  public boolean hasBody() {
+    return hasBody;
   }
 
   @Override
-  public boolean isText() {
-    return false;
-  }
-
-  @Override
-  public boolean isBoolean() {
+  public boolean isPushAttrNewRec() {
     return true;
-  }
-
-  public float getValue() {
-    return this.value;
   }
 
   @Override
@@ -45,19 +41,19 @@ public final class DecimalLiteralIdentifier extends Identifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DecimalLiteralIdentifier that = (DecimalLiteralIdentifier) o;
-    return Float.compare(value, that.value)==0;
+    PushAttrNewRec that = (PushAttrNewRec) o;
+    return hasBody == that.hasBody;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(value);
+    return Objects.hash(hasBody);
   }
 
   @Override
   public String toString() {
-    return "DecimalLiteralIdentifier{" +
-        "value=" + value +
+    return "PushAttrNewRec{" +
+        "hasBody=" + hasBody +
         '}';
   }
 }

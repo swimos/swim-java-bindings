@@ -12,34 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.recon.models.stage;
 
-import ai.swim.codec.input.Input;
+public abstract class FinalAttr {
 
-public class ParserDone<O> extends Parser<O> {
-  private final O output;
-
-  public ParserDone(O output) {
-    this.output = output;
-  }
-
-  @Override
-  public Parser<O> feed(Input input) {
-    throw new IllegalStateException();
-  }
-
-  @Override
-  public O bind() {
-    return this.output;
-  }
-
-  @Override
-  public boolean isDone() {
-    return true;
-  }
-
-  @Override
-  public boolean isCont() {
+  public boolean isStart(){
     return false;
   }
+
+  public boolean isEndAttr(){
+    return false;
+  }
+
+  public boolean isStartBody(){
+    return false;
+  }
+
+  public boolean isEndBody(){
+    return false;
+  }
+
+  public static FinalAttr start(String name){
+    return new StartFinalAttr(name);
+  }
+
+  public static FinalAttr endAttr(){
+    return new EndAttrFinal();
+  }
+
+  public static FinalAttr startBody(){
+    return new StartBodyFinalAttr();
+  }
+
+  public static FinalAttr endBody(){
+    return new EndBodyFinal();
+  }
+
 }

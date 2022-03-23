@@ -12,34 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.recon.models.identifier;
 
-import ai.swim.codec.input.Input;
+public abstract class Identifier {
+  public abstract boolean isText();
 
-public class ParserDone<O> extends Parser<O> {
-  private final O output;
+  public abstract boolean isBoolean();
 
-  public ParserDone(O output) {
-    this.output = output;
+  public static Identifier string(String value){
+    return new StringIdentifier(value);
   }
 
-  @Override
-  public Parser<O> feed(Input input) {
-    throw new IllegalStateException();
+  public static Identifier bool(boolean value){
+    return new BooleanIdentifier(value);
   }
 
-  @Override
-  public O bind() {
-    return this.output;
+  public static Identifier decimal(float value){
+    return new DecimalLiteralIdentifier(value);
   }
 
-  @Override
-  public boolean isDone() {
-    return true;
-  }
-
-  @Override
-  public boolean isCont() {
-    return false;
-  }
 }

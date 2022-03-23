@@ -6,7 +6,7 @@ import java.util.Objects;
 
 public class StringInput extends Input {
 
-  private final String data;
+  private String data;
   private int line;
   private int column;
   private int index;
@@ -183,6 +183,19 @@ public class StringInput extends Input {
   @Override
   public Input clone() {
     return new StringInput(this.data, this.line, this.column, this.index, this.offset).isPartial(this.isPartial);
+  }
+
+  @Override
+  public void cloneFrom(Input input) {
+    if (input instanceof StringInput) {
+      StringInput stringInput  = (StringInput) input;
+      this.isPartial = stringInput.isPartial;
+      this.data = stringInput.data;
+      this.column = stringInput.column;
+      this.index = stringInput.index;
+      this.line = stringInput.line;
+      this.offset = stringInput.offset;
+    }
   }
 
   @Override

@@ -17,12 +17,9 @@ package ai.swim.codec.data;
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Base64;
 import static ai.swim.codec.data.DataParser.blob;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DataParserTest {
@@ -33,20 +30,49 @@ class DataParserTest {
     assertArrayEquals(parser.bind(), expected);
   }
 
-  @Test
-  void parseBlobTest() {
-    blobTestOk("%YWI=", "ab".getBytes());
-    blobTestOk("%YWJj", "abc".getBytes());
-    blobTestOk("%YW55IGNhcm5hbCBwbGVhc3VyZQ==", "any carnal pleasure".getBytes());
-    blobTestOk("%YWJj)", "abc".getBytes());
+  void blobTestErr(String input) {
+    Parser<byte[]> parser = blob().feed(Input.string(input));
+    assertTrue(parser.isError());
   }
 
-  public static String toHexString(byte[] ba) {
-    StringBuilder str = new StringBuilder();
-    for (byte b : ba) {
-      str.append(String.format("%x", b));
+  void feedIncremental(String input, byte[] expected) {
+    Parser<byte[]> parser = blob();
+
+    for (char c : input.toCharArray()) {
+      parser = parser.feed(Input.string(String.valueOf(c)).isPartial(true));
+      assertFalse(parser.isDone());
+      assertTrue(parser.isCont());
     }
-    return str.toString();
+
+    parser = parser.feed(Input.string(""));
+    assertTrue(parser.isDone());
+
+    assertArrayEquals(parser.bind(), expected);
+  }
+
+  @Test
+  void parseBlobOk() {
+    blobTestOk("%YQ==", "a".getBytes());
+    blobTestOk("%YWI=", "ab".getBytes());
+    blobTestOk("%YWJj", "abc".getBytes());
+    blobTestOk("%TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQu", "Lorem ipsum dolor sit amet.".getBytes());
+    blobTestOk("%YWJj)", "abc".getBytes());
+    blobTestOk("%QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODk=", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".getBytes());
+  }
+
+  @Test
+  void parseBlobCont() {
+   feedIncremental("%YQ==", "a".getBytes());
+   feedIncremental("%YWI=", "ab".getBytes());
+   feedIncremental("%YWJj", "abc".getBytes());
+   feedIncremental("%TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQu", "Lorem ipsum dolor sit amet.".getBytes());
+   feedIncremental("%QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODk=", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".getBytes());
+  }
+
+  @Test
+  void parseBlobErr() {
+//    blobTestErr("abcd");
+    blobTestErr("%!!!!");
   }
 
 }
