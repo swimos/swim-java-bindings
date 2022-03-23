@@ -14,7 +14,7 @@
 
 package ai.swim.codec.string;
 
- class UnicodeParser {
+class UnicodeParser {
   int unicodeIdx;
   int code;
   boolean done;

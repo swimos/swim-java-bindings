@@ -67,4 +67,7 @@ public abstract class Input {
     return Arrays.equals(this.borrow(thisLen), input.borrow(thatLen));
   }
 
+  public  void cloneFrom(Input innerInput) {
+    throw new IllegalStateException();
+  }
 }

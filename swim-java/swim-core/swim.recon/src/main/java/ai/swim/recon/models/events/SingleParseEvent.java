@@ -12,35 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.recon.models;
+package ai.swim.recon.models.events;
 
+import ai.swim.recon.event.ReadEvent;
 import java.util.Objects;
 
-public class StringIdentifier extends Identifier {
-  private final String value;
+public class SingleParseEvent extends ParseEvents {
 
-  StringIdentifier(String value) {
-    this.value = value;
+  private final ReadEvent event;
+
+  SingleParseEvent(ReadEvent event){
+    this.event = event;
+  }
+
+  public ReadEvent getEvent() {
+    return event;
   }
 
   @Override
-  public boolean isText() {
+  public boolean isSingleEvent() {
     return true;
   }
 
   @Override
-  public boolean isBoolean() {
-    return false;
-  }
-
-  public String getValue() {
-    return value;
-  }
-
-  @Override
   public String toString() {
-    return "StringIdentifier{" +
-        "value='" + value + '\'' +
+    return "SingleParseEvent{" +
+        "event=" + event +
         '}';
   }
 
@@ -52,12 +49,12 @@ public class StringIdentifier extends Identifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StringIdentifier that = (StringIdentifier) o;
-    return Objects.equals(value, that.value);
+    SingleParseEvent that = (SingleParseEvent) o;
+    return Objects.equals(event, that.event);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(value);
+    return Objects.hash(event);
   }
 }

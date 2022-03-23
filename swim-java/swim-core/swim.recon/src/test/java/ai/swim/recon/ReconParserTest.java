@@ -17,14 +17,17 @@ package ai.swim.recon;
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.recon.event.ReadEvent;
+import ai.swim.recon.models.ParserTransition;
+import ai.swim.recon.models.events.ParseEvents;
+import ai.swim.recon.models.state.ChangeState;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReconParserTest {
 
-  void initTestOk(String input, ReadEvent expected) {
-    Parser<ReadEvent> parser = ReconParser.init().feed(Input.string(input));
+  void initTestOk(String input, ParserTransition expected) {
+    Parser<ParserTransition> parser = ReconParser.init().feed(Input.string(input));
     assertTrue(parser.isDone());
 
     assertEquals(expected, parser.bind());
@@ -32,21 +35,30 @@ class ReconParserTest {
 
   @Test
   void initTest() {
-    initTestOk("\"hello\"", ReadEvent.text("hello"));
-    initTestOk("true", ReadEvent.bool(true));
-    initTestOk("12345.0", ReadEvent.number(12345.0f));
+    initTestOk("\"hello\"", new ParserTransition(ReadEvent.text("hello"), null));
+    initTestOk("true", new ParserTransition(ReadEvent.bool(true), null));
+    initTestOk("12345.0", new ParserTransition(ReadEvent.number(12345.0f), null));
   }
 
   @Test
   void initTestCont() {
-    Parser<ReadEvent> parser = ReconParser.init();
-    Parser<ReadEvent> parseResult = parser.feed(Input.string("\"hi").isPartial(true));
+    Parser<ParserTransition> parser = ReconParser.init();
+    Parser<ParserTransition> parseResult = parser.feed(Input.string("\"hi").isPartial(true));
 
     assertTrue(parseResult.isCont());
 
     parseResult = parseResult.feed(Input.string(" there\""));
     assertTrue(parseResult.isDone());
-    assertEquals(parseResult.bind(), ReadEvent.text("hi there"));
+    assertEquals(parseResult.bind(), new ParserTransition(ReadEvent.text("hi there"), null));
+  }
+
+  @Test
+  void attr() {
+    Parser<ParserTransition> parser = ReconParser.init();
+    parser = parser.feed(Input.string("@attrName"));
+
+    assertTrue(parser.isDone());
+    assertEquals(parser.bind(), new ParserTransition(ReadEvent.startAttribute("attrName"), ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
   }
 
 }

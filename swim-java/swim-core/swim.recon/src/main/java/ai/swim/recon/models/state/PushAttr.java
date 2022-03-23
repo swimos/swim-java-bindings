@@ -12,34 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.recon.models.state;
 
-import ai.swim.codec.input.Input;
-
-public class ParserDone<O> extends Parser<O> {
-  private final O output;
-
-  public ParserDone(O output) {
-    this.output = output;
-  }
-
+public class PushAttr extends StateChange {
   @Override
-  public Parser<O> feed(Input input) {
-    throw new IllegalStateException();
-  }
-
-  @Override
-  public O bind() {
-    return this.output;
-  }
-
-  @Override
-  public boolean isDone() {
-    return true;
-  }
-
-  @Override
-  public boolean isCont() {
-    return false;
+  public String toString() {
+    return "PushAttr{}";
   }
 }

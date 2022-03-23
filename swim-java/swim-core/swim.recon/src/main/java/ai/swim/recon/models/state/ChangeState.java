@@ -12,32 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.location;
+package ai.swim.recon.models.state;
 
+import ai.swim.recon.models.events.ParseEvents;
 import java.util.Objects;
 
-public class StringLocation implements Location {
+public class ChangeState extends StateChange {
 
-  private final int line;
-  private final int column;
-
-
-  public StringLocation(int line, int column) {
-    this.line = line;
-    this.column = column;
-  }
-
-  public static StringLocation of(int line, int column) {
-    return new StringLocation(line, column);
-  }
-
-  public int getLine() {
-    return line;
-  }
-
-  public int getColumn() {
-    return column;
-  }
+  private final ParseEvents.ParseState state;
 
   @Override
   public boolean equals(Object o) {
@@ -47,21 +29,32 @@ public class StringLocation implements Location {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StringLocation location = (StringLocation) o;
-    return line == location.line && column == location.column;
+    ChangeState that = (ChangeState) o;
+    return state == that.state;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(line, column);
+    return Objects.hash(state);
+  }
+
+  public ChangeState(ParseEvents.ParseState state){
+    this.state = state;
+  }
+
+  public ParseEvents.ParseState getState() {
+    return state;
+  }
+
+  @Override
+  public boolean isChangeState() {
+    return true;
   }
 
   @Override
   public String toString() {
-    return "StringLocation{" +
-        "line=" + line +
-        ", column=" + column +
+    return "ChangeState{" +
+        "state=" + state +
         '}';
   }
-
 }

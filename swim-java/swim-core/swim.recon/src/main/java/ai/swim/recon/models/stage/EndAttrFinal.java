@@ -12,24 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.models;
+package ai.swim.recon.models.stage;
 
-public class Pair<O1, O2> {
-
-  private final O1 output1;
-  private final O2 output2;
-
-  public Pair(O1 output1, O2 output2) {
-    this.output1 = output1;
-    this.output2 = output2;
+public class EndAttrFinal extends FinalAttr {
+  @Override
+  public boolean isEndAttr() {
+    return true;
   }
-
-  public O1 getOutput1() {
-    return output1;
-  }
-
-  public O2 getOutput2() {
-    return output2;
-  }
-
 }

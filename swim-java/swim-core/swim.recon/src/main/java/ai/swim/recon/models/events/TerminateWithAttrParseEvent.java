@@ -12,31 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.location;
+package ai.swim.recon.models.events;
 
+import ai.swim.recon.models.stage.FinalAttr;
 import java.util.Objects;
 
-public class StringLocation implements Location {
+public class TerminateWithAttrParseEvent extends ParseEvents {
 
-  private final int line;
-  private final int column;
+  private final FinalAttr stage;
 
-
-  public StringLocation(int line, int column) {
-    this.line = line;
-    this.column = column;
+  TerminateWithAttrParseEvent(FinalAttr stage){
+    this.stage = stage;
   }
 
-  public static StringLocation of(int line, int column) {
-    return new StringLocation(line, column);
+
+  public FinalAttr getStage() {
+    return stage;
   }
 
-  public int getLine() {
-    return line;
+  @Override
+  public boolean isTerminateWithAttr() {
+    return true;
   }
 
-  public int getColumn() {
-    return column;
+  @Override
+  public String toString() {
+    return "TerminateWithAttrParseEvent{" +
+        "stage=" + stage +
+        '}';
   }
 
   @Override
@@ -47,21 +50,12 @@ public class StringLocation implements Location {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StringLocation location = (StringLocation) o;
-    return line == location.line && column == location.column;
+    TerminateWithAttrParseEvent that = (TerminateWithAttrParseEvent) o;
+    return Objects.equals(stage, that.stage);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(line, column);
+    return Objects.hash(stage);
   }
-
-  @Override
-  public String toString() {
-    return "StringLocation{" +
-        "line=" + line +
-        ", column=" + column +
-        '}';
-  }
-
 }

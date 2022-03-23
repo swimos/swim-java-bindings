@@ -12,31 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.location;
+package ai.swim.recon.models.identifier;
 
 import java.util.Objects;
 
-public class StringLocation implements Location {
+public class StringIdentifier extends Identifier {
+  private final String value;
 
-  private final int line;
-  private final int column;
-
-
-  public StringLocation(int line, int column) {
-    this.line = line;
-    this.column = column;
+  StringIdentifier(String value) {
+    this.value = value;
   }
 
-  public static StringLocation of(int line, int column) {
-    return new StringLocation(line, column);
+  @Override
+  public boolean isText() {
+    return true;
   }
 
-  public int getLine() {
-    return line;
+  @Override
+  public boolean isBoolean() {
+    return false;
   }
 
-  public int getColumn() {
-    return column;
+  public String getValue() {
+    return value;
+  }
+
+  @Override
+  public String toString() {
+    return "StringIdentifier{" +
+        "value='" + value + '\'' +
+        '}';
   }
 
   @Override
@@ -47,21 +52,12 @@ public class StringLocation implements Location {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StringLocation location = (StringLocation) o;
-    return line == location.line && column == location.column;
+    StringIdentifier that = (StringIdentifier) o;
+    return Objects.equals(value, that.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(line, column);
+    return Objects.hash(value);
   }
-
-  @Override
-  public String toString() {
-    return "StringLocation{" +
-        "line=" + line +
-        ", column=" + column +
-        '}';
-  }
-
 }

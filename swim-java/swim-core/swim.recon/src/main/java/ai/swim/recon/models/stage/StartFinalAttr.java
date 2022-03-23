@@ -12,23 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.recon.models;
+package ai.swim.recon.models.stage;
 
-public abstract class Identifier {
-  public abstract boolean isText();
+public class StartFinalAttr extends FinalAttr {
 
-  public abstract boolean isBoolean();
+  private final String name;
 
-  public static Identifier string(String value){
-    return new StringIdentifier(value);
+  StartFinalAttr(String name){
+    this.name = name;
   }
 
-  public static Identifier bool(boolean value){
-    return new BooleanIdentifier(value);
+  public String getName() {
+    return name;
   }
 
-  public static Identifier decimal(float value){
-    return new DecimalLiteralIdentifier(value);
+  @Override
+  public boolean isStart() {
+    return true;
   }
-
 }

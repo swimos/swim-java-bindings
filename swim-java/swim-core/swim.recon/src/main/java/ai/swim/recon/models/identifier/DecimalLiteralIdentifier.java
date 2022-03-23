@@ -12,31 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.location;
+package ai.swim.recon.models.identifier;
 
 import java.util.Objects;
 
-public class StringLocation implements Location {
+public final class DecimalLiteralIdentifier extends Identifier {
+  private final float value;
 
-  private final int line;
-  private final int column;
-
-
-  public StringLocation(int line, int column) {
-    this.line = line;
-    this.column = column;
+  DecimalLiteralIdentifier(float value) {
+    this.value = value;
   }
 
-  public static StringLocation of(int line, int column) {
-    return new StringLocation(line, column);
+  @Override
+  public boolean isText() {
+    return false;
   }
 
-  public int getLine() {
-    return line;
+  @Override
+  public boolean isBoolean() {
+    return true;
   }
 
-  public int getColumn() {
-    return column;
+  public float getValue() {
+    return this.value;
   }
 
   @Override
@@ -47,21 +45,19 @@ public class StringLocation implements Location {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StringLocation location = (StringLocation) o;
-    return line == location.line && column == location.column;
+    DecimalLiteralIdentifier that = (DecimalLiteralIdentifier) o;
+    return Float.compare(value, that.value)==0;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(line, column);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
-    return "StringLocation{" +
-        "line=" + line +
-        ", column=" + column +
+    return "DecimalLiteralIdentifier{" +
+        "value=" + value +
         '}';
   }
-
 }

@@ -14,6 +14,8 @@
 
 package ai.swim.recon.event;
 
+import java.util.Objects;
+
 public class ReadStartAttribute extends ReadEvent {
 
   private final String value;
@@ -31,4 +33,27 @@ public class ReadStartAttribute extends ReadEvent {
     return this.value;
   }
 
+  @Override
+  public String toString() {
+    return "ReadStartAttribute{" +
+        "value='" + value + '\'' +
+        '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ReadStartAttribute that = (ReadStartAttribute) o;
+    return Objects.equals(value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
+  }
 }
