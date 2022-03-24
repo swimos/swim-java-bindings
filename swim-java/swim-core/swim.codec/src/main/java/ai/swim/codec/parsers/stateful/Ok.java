@@ -12,30 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.stateful;
+package ai.swim.codec.parsers.stateful;
 
-public abstract class Result<S, T> {
-  public static <S, T> Result<S, T> ok(T bind) {
-    return new Ok<>(bind);
+public class Ok<S, T> extends Result<S, T> {
+  private final T output;
+
+  public Ok(T output) {
+    this.output = output;
   }
 
-  public static <S, T> Result<S, T> cont(S state) {
-    return new Cont<>(state);
+  public T getOutput() {
+    return output;
   }
 
-  public static <S, T> Result<S, T> err(String cause) {
-    return new Err<>(cause);
-  }
-
+  @Override
   public boolean isOk() {
-    return false;
-  }
-
-  public boolean isCont() {
-    return false;
-  }
-
-  public boolean isErr() {
-    return false;
+    return true;
   }
 }

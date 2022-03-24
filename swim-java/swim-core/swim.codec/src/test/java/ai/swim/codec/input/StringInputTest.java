@@ -10,7 +10,6 @@ class StringInputTest {
   @Test
   void testTake() {
     Input input = Input.string("abcd");
-
     assertEquals("ab", StringInput.codePointsToString(input.take(2)));
   }
 

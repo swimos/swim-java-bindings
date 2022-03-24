@@ -20,14 +20,16 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.events.ParseEvents;
 import ai.swim.recon.models.state.ChangeState;
+import ai.swim.recon.models.state.PushAttr;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReconParserTest {
 
   void initTestOk(String input, ParserTransition expected) {
-    Parser<ParserTransition> parser = ReconParser.init().feed(Input.string(input));
+    Parser<ParserTransition> parser = ReconParser.parserInit().feed(Input.string(input));
     assertTrue(parser.isDone());
 
     assertEquals(expected, parser.bind());
@@ -42,7 +44,7 @@ class ReconParserTest {
 
   @Test
   void initTestCont() {
-    Parser<ParserTransition> parser = ReconParser.init();
+    Parser<ParserTransition> parser = ReconParser.parserInit();
     Parser<ParserTransition> parseResult = parser.feed(Input.string("\"hi").isPartial(true));
 
     assertTrue(parseResult.isCont());
@@ -52,13 +54,47 @@ class ReconParserTest {
     assertEquals(parseResult.bind(), new ParserTransition(ReadEvent.text("hi there"), null));
   }
 
-  @Test
-  void attr() {
-    Parser<ParserTransition> parser = ReconParser.init();
-    parser = parser.feed(Input.string("@attrName"));
+  void attrOkDoneTest(String input, ParserTransition expected) {
+    Parser<ParserTransition> parser = ReconParser.parserInit();
+    parser = parser.feed(Input.string(input));
 
     assertTrue(parser.isDone());
-    assertEquals(parser.bind(), new ParserTransition(ReadEvent.startAttribute("attrName"), ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
+    assertEquals(expected, parser.bind());
+  }
+
+  @Test
+  void attrsDone() {
+    attrOkDoneTest("@attrName()", new ParserTransition(ReadEvent.startAttribute("attrName"), new PushAttr()));
+    attrOkDoneTest("@attrName{}", new ParserTransition(ReadEvent.startAttribute("attrName"), ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
+    attrOkDoneTest("@attrName", new ParserTransition(ReadEvent.startAttribute("attrName"), ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
+  }
+
+  void attrsContTest(String input, ParserTransition expected) {
+    Parser<ParserTransition> parser = ReconParser.parserInit();
+    char[] chars = input.toCharArray();
+
+    for (int i = 0; i < input.length(); i++) {
+      char c = chars[i];
+      boolean isPartial = i + 1 != input.length();
+      parser = parser.feed(Input.string(String.valueOf(c)).isPartial(isPartial));
+
+      if (isPartial) {
+        assertFalse(parser.isDone());
+        assertTrue(parser.isCont());
+      } else {
+        assertTrue(parser.isDone());
+        assertFalse(parser.isCont());
+      }
+    }
+
+    assertEquals(parser.bind(), expected);
+  }
+
+  @Test
+  void attrsCont() {
+    attrsContTest("@attrName(", new ParserTransition(ReadEvent.startAttribute("attrName"), new PushAttr()));
+    attrsContTest("@attrName{", new ParserTransition(ReadEvent.startAttribute("attrName"), ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
+    attrsContTest("@attrName", new ParserTransition(ReadEvent.startAttribute("attrName"), ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
   }
 
 }

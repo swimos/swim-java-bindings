@@ -14,8 +14,6 @@
 
 package ai.swim.ffi;
 
-import java.lang.reflect.Method;
-import java.util.Set;
 import com.oracle.svm.core.annotate.AutomaticFeature;
 import com.oracle.svm.core.jni.JNIRuntimeAccess;
 import org.graalvm.nativeimage.hosted.Feature;
@@ -23,6 +21,8 @@ import org.reflections.Reflections;
 import org.reflections.scanners.Scanner;
 import org.reflections.scanners.Scanners;
 import org.reflections.util.ConfigurationBuilder;
+import java.lang.reflect.Method;
+import java.util.Set;
 
 @AutomaticFeature
 public class FfiIntrinsicRegistrationFeature implements Feature {

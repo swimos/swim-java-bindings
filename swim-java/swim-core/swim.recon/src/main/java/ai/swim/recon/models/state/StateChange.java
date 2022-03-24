@@ -15,19 +15,33 @@
 package ai.swim.recon.models.state;
 
 public abstract class StateChange {
-  public boolean isNone(){return false;}
+  public boolean isNone() {
+    return false;
+  }
 
-  public boolean isPopAfterAttr() {return false;}
+  public boolean isPopAfterAttr() {
+    return false;
+  }
 
-  public boolean isPopAfterItem() {return false;}
+  public boolean isPopAfterItem() {
+    return false;
+  }
 
-  public boolean isChangeState() {return false;}
+  public boolean isChangeState() {
+    return false;
+  }
 
-  public boolean isPushAttr() {return false;}
+  public boolean isPushAttr() {
+    return false;
+  }
 
-  public boolean isPushAttrNewRec() {return false;}
+  public boolean isPushAttrNewRec() {
+    return false;
+  }
 
-  public boolean isPushBody() {return false;}
+  public boolean isPushBody() {
+    return false;
+  }
 
   @Override
   public boolean equals(Object o) {

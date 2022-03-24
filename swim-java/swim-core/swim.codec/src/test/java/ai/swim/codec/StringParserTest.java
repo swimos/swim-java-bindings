@@ -15,32 +15,13 @@
 package ai.swim.codec;
 
 import ai.swim.codec.input.Input;
-import ai.swim.codec.string.StringParser;
+import ai.swim.codec.parsers.string.StringParser;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StringParserTest {
-
-  abstract class ReadEvent {
-
-  }
-
-  class StringReadEvent extends ReadEvent {
-    String value;
-
-    StringReadEvent(String value) {
-      this.value = value;
-    }
-
-    @Override
-    public String toString() {
-      return "StringReadEvent{" +
-          "value='" + value + '\'' +
-          '}';
-    }
-  }
 
   @Test
   public void t() {
@@ -68,5 +49,24 @@ class StringParserTest {
     Parser<String> parseResult = parser.feed(Input.string("\"a\\nmulti\\nline\\t\\ninput\""));
     assertTrue(parseResult.isDone());
     assertEquals(parseResult.bind(), "a\nmulti\nline\t\ninput");
+  }
+
+  abstract class ReadEvent {
+
+  }
+
+  class StringReadEvent extends ReadEvent {
+    String value;
+
+    StringReadEvent(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return "StringReadEvent{" +
+          "value='" + value + '\'' +
+          '}';
+    }
   }
 }

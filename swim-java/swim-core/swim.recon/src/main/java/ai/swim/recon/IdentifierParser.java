@@ -25,11 +25,6 @@ public class IdentifierParser extends Parser<Identifier> {
   private final StringBuilder data;
   private State state;
 
-  enum State {
-    Head,
-    Body
-  }
-
   IdentifierParser() {
     this.data = new StringBuilder();
     this.state = State.Head;
@@ -83,10 +78,16 @@ public class IdentifierParser extends Parser<Identifier> {
         }
       }
     }
+
     if (input.isError()) {
       return error("Expected an identifier");
     }
 
     return this;
+  }
+
+  enum State {
+    Head,
+    Body
   }
 }

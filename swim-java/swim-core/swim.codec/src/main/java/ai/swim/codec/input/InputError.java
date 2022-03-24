@@ -74,7 +74,7 @@ public class InputError extends Input {
   }
 
   @Override
-  public int[] collect() {
+  public int[] bind() {
     return new int[0];
   }
 
@@ -118,7 +118,7 @@ public class InputError extends Input {
     throw new IllegalStateException();
   }
 
-  public String getCause(){
+  public String getCause() {
     return this.cause;
   }
 }

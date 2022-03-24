@@ -14,15 +14,21 @@
 
 package ai.swim.codec;
 
+import ai.swim.codec.combinators.AndThen;
+import ai.swim.codec.combinators.MappedParser;
+import ai.swim.codec.combinators.TryMappedParser;
 import ai.swim.codec.input.Input;
-import ai.swim.codec.stateful.Result;
-import ai.swim.codec.stateful.StatefulParser;
+import ai.swim.codec.input.InputError;
+import ai.swim.codec.parsers.LambdaParser;
+import ai.swim.codec.parsers.Preceded;
+import ai.swim.codec.parsers.stateful.Result;
+import ai.swim.codec.parsers.stateful.StatefulParser;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public abstract class Parser<O> {
 
-  public static <O> Parser<O> lambda(ParseFn<O> fn) {
+  public static <O> Parser<O> lambda(Function<Input, Parser<O>> fn) {
     return new LambdaParser<>(fn);
   }
 
@@ -30,12 +36,24 @@ public abstract class Parser<O> {
     return new ParserDone<>(output);
   }
 
-  public static <S, T> Parser< T> stateful(S state, BiFunction<S, Input, Result<S, T>> parser) {
+  public static <S, T> Parser<T> stateful(S state, BiFunction<S, Input, Result<S, T>> parser) {
     return new StatefulParser<>(state, parser);
   }
 
   public static <O> Parser<O> error(String cause) {
     return new ParserError<>(cause);
+  }
+
+  public static <O> Parser<O> error(InputError inputError) {
+    return new ParserError<>(inputError.getCause());
+  }
+
+  public static <I, O> Parser<O> error(ParserError<I> error) {
+    return new ParserError<>(error.getCause());
+  }
+
+  public static <B, T> Parser<T> preceded(Parser<B> by, Parser<T> then) {
+    return Preceded.preceded(by, then);
   }
 
   public boolean isDone() {
@@ -66,10 +84,6 @@ public abstract class Parser<O> {
 
   public <T> Parser<T> andThen(Function<O, Parser<T>> then) {
     return AndThen.andThen(this, then);
-  }
-
-  public static <B,T> Parser<T> preceded(Parser<B> by, Parser<T> then){
-    return Preceded.preceded(by, then);
   }
 
 }

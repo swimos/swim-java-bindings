@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.number;
+package ai.swim.codec.parsers.number;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
-import static ai.swim.codec.string.StringParser.decodeDigit;
-import static ai.swim.codec.string.StringParser.isDigit;
+import static ai.swim.codec.parsers.string.StringParser.decodeDigit;
+import static ai.swim.codec.parsers.string.StringParser.isDigit;
 
 final class HexadecimalParser extends Parser<Number> {
 

@@ -16,36 +16,36 @@ package ai.swim.recon.models.stage;
 
 public abstract class FinalAttr {
 
-  public boolean isStart(){
-    return false;
-  }
-
-  public boolean isEndAttr(){
-    return false;
-  }
-
-  public boolean isStartBody(){
-    return false;
-  }
-
-  public boolean isEndBody(){
-    return false;
-  }
-
-  public static FinalAttr start(String name){
+  public static FinalAttr start(String name) {
     return new StartFinalAttr(name);
   }
 
-  public static FinalAttr endAttr(){
+  public static FinalAttr endAttr() {
     return new EndAttrFinal();
   }
 
-  public static FinalAttr startBody(){
+  public static FinalAttr startBody() {
     return new StartBodyFinalAttr();
   }
 
-  public static FinalAttr endBody(){
+  public static FinalAttr endBody() {
     return new EndBodyFinal();
+  }
+
+  public boolean isStart() {
+    return false;
+  }
+
+  public boolean isEndAttr() {
+    return false;
+  }
+
+  public boolean isStartBody() {
+    return false;
+  }
+
+  public boolean isEndBody() {
+    return false;
   }
 
 }

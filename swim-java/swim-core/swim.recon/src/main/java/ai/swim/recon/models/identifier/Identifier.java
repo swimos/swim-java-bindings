@@ -15,20 +15,20 @@
 package ai.swim.recon.models.identifier;
 
 public abstract class Identifier {
-  public abstract boolean isText();
-
-  public abstract boolean isBoolean();
-
-  public static Identifier string(String value){
+  public static Identifier string(String value) {
     return new StringIdentifier(value);
   }
 
-  public static Identifier bool(boolean value){
+  public static Identifier bool(boolean value) {
     return new BooleanIdentifier(value);
   }
 
-  public static Identifier decimal(float value){
+  public static Identifier decimal(float value) {
     return new DecimalLiteralIdentifier(value);
   }
+
+  public abstract boolean isText();
+
+  public abstract boolean isBoolean();
 
 }

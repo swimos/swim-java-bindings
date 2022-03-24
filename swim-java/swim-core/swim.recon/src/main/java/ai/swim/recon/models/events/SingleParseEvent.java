@@ -21,7 +21,7 @@ public class SingleParseEvent extends ParseEvents {
 
   private final ReadEvent event;
 
-  SingleParseEvent(ReadEvent event){
+  SingleParseEvent(ReadEvent event) {
     this.event = event;
   }
 

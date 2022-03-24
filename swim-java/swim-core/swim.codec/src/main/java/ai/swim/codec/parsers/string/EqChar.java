@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.string;
+package ai.swim.codec.parsers.string;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.input.InputError;
 
-public class EqChar<T> extends Parser<T> {
+public class EqChar extends Parser<Character> {
 
   private final int c;
 
@@ -26,17 +26,17 @@ public class EqChar<T> extends Parser<T> {
     this.c = c;
   }
 
-  public static <T> EqChar<T> eqChar(int c) {
-    return new EqChar<>(c);
+  public static EqChar eqChar(int c) {
+    return new EqChar(c);
   }
 
   @Override
-  public Parser<T> feed(Input input) {
+  public Parser<Character> feed(Input input) {
     if (input.isContinuation()) {
       int head = input.head();
       input.step();
       if (head == this.c) {
-        return Parser.done(null);
+        return Parser.done((char) head);
       } else {
         return Parser.error("Expected: " + head);
       }

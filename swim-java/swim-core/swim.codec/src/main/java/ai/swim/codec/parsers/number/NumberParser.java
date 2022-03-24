@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Swim inc.
+// Copyright 2015-2021 Swim Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.number;
+package ai.swim.codec.parsers.number;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
@@ -31,13 +31,6 @@ public final class NumberParser extends Parser<Number> {
     this.value = value;
     this.stage = stage;
     this.floatLiteralBuilder = floatLiteralBuilder;
-  }
-
-  enum Stage {
-    Sign,
-    Alt,
-    Integer,
-    Decimal,
   }
 
   static Parser<Number> parse(Input input, boolean isNegative, long value, Stage stage, StringBuilder floatLiteralBuilder) {
@@ -143,7 +136,7 @@ public final class NumberParser extends Parser<Number> {
 
   private static Parser<Number> parseLiteralFloat(StringBuilder floatLiteralBuilder, boolean isNegative) {
     String fs = floatLiteralBuilder.toString();
-    if ("nan".equalsIgnoreCase(fs) && !isNegative ) {
+    if ("nan".equalsIgnoreCase(fs) && !isNegative) {
       return Parser.done(Float.NaN);
     } else if ("inf".equalsIgnoreCase(fs) || "infinity".equalsIgnoreCase(fs)) {
       if (isNegative) {
@@ -197,6 +190,13 @@ public final class NumberParser extends Parser<Number> {
   @Override
   public Parser<Number> feed(Input input) {
     return parse(input, this.isNegative, this.value, this.stage, this.floatLiteralBuilder);
+  }
+
+  enum Stage {
+    Sign,
+    Alt,
+    Integer,
+    Decimal,
   }
 
 }

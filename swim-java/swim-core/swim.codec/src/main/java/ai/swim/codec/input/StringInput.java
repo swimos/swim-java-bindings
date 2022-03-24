@@ -97,7 +97,7 @@ public class StringInput extends Input {
   }
 
   @Override
-  public int[] collect() {
+  public int[] bind() {
     if (this.isDone()) {
       return new int[] {};
     }
@@ -188,7 +188,7 @@ public class StringInput extends Input {
   @Override
   public void cloneFrom(Input input) {
     if (input instanceof StringInput) {
-      StringInput stringInput  = (StringInput) input;
+      StringInput stringInput = (StringInput) input;
       this.isPartial = stringInput.isPartial;
       this.data = stringInput.data;
       this.column = stringInput.column;

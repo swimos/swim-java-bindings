@@ -19,19 +19,28 @@ import ai.swim.recon.models.stage.FinalAttr;
 
 public abstract class ParseEvents {
 
-  public enum ParseState {
-    Init,
-    AttrBodyStartOrNl,
-    AttrBodyAfterValue,
-    AttrBodyAfterSlot,
-    AttrBodySlot,
-    AttrBodyAfterSep,
-    AfterAttr,
-    RecordBodyStartOrNl,
-    RecordBodyAfterValue,
-    RecordBodyAfterSlot,
-    RecordBodySlot,
-    RecordBodyAfterSep,
+  public static ParseEvents noEvent() {
+    return new NoParseEvent();
+  }
+
+  public static ParseEvents singleEvent(ReadEvent event) {
+    return new SingleParseEvent(event);
+  }
+
+  public static ParseEvents twoEvents(ReadEvent event1, ReadEvent event2) {
+    return new TwoParseEvents(event1, event2);
+  }
+
+  public static ParseEvents threeEvents(ReadEvent event1, ReadEvent event2, ReadEvent event3) {
+    return new ThreeParseEvents(event1, event2, event3);
+  }
+
+  public static ParseEvents terminateWithAttr(FinalAttr stage) {
+    return new TerminateWithAttrParseEvent(stage);
+  }
+
+  public static ParseEvents end() {
+    return new EndParseEvent();
   }
 
   public boolean isNoEvent() {
@@ -58,30 +67,6 @@ public abstract class ParseEvents {
     return false;
   }
 
-  public static ParseEvents noEvent(){
-    return new NoParseEvent();
-  }
-
-  public static ParseEvents singleEvent(ReadEvent event){
-    return new SingleParseEvent(event);
-  }
-
-  public static ParseEvents twoEvents(ReadEvent event1, ReadEvent event2){
-    return new TwoParseEvents(event1, event2);
-  }
-
-  public static ParseEvents threeEvents(ReadEvent event1, ReadEvent event2, ReadEvent event3){
-    return new ThreeParseEvents(event1, event2, event3);
-  }
-
-  public static ParseEvents terminateWithAttr(FinalAttr stage){
-    return new TerminateWithAttrParseEvent(stage);
-  }
-
-  public static ParseEvents end(){
-    return new EndParseEvent();
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -89,5 +74,20 @@ public abstract class ParseEvents {
     }
 
     return o != null && getClass() == o.getClass();
+  }
+
+  public enum ParseState {
+    Init,
+    AttrBodyStartOrNl,
+    AttrBodyAfterValue,
+    AttrBodyAfterSlot,
+    AttrBodySlot,
+    AttrBodyAfterSep,
+    AfterAttr,
+    RecordBodyStartOrNl,
+    RecordBodyAfterValue,
+    RecordBodyAfterSlot,
+    RecordBodySlot,
+    RecordBodyAfterSep,
   }
 }

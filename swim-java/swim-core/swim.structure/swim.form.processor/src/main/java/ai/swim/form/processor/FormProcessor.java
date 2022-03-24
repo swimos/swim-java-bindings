@@ -14,9 +14,8 @@
 
 package ai.swim.structure.form.processor;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import ai.swim.structure.form.annotations.AutoForm;
+import com.google.auto.service.AutoService;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
@@ -26,8 +25,9 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
-import ai.swim.structure.form.annotations.AutoForm;
-import com.google.auto.service.AutoService;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @AutoService(Processor.class)
 public class FormProcessor extends AbstractProcessor {

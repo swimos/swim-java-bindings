@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.stateful;
+package ai.swim.codec.parsers.stateful;
 
-public class Err<S,T> extends Result<S, T> {
+public class Err<S, T> extends Result<S, T> {
   private final String cause;
 
   public Err(String cause) {
