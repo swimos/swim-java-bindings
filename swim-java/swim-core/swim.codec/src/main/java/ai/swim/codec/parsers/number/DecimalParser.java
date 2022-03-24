@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.number;
+package ai.swim.codec.parsers.number;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
@@ -22,7 +22,7 @@ final class DecimalParser extends Parser<Number> {
   final StringBuilder builder;
   final int step;
 
-  DecimalParser(StringBuilder builder,  int step) {
+  DecimalParser(StringBuilder builder, int step) {
     this.builder = builder;
     this.step = step;
   }
@@ -54,9 +54,9 @@ final class DecimalParser extends Parser<Number> {
           input = input.step();
           builder.appendCodePoint(c);
           step = 3;
-        } else if(c=='.'){
+        } else if (c == '.') {
           return error("Expected a digit");
-        }else {
+        } else {
           return done(NumberParser.valueOf(builder.toString()));
         }
       } else if (input.isDone()) {
@@ -74,7 +74,7 @@ final class DecimalParser extends Parser<Number> {
         }
       }
       if (input.isContinuation()) {
-          step = 4;
+        step = 4;
       } else if (input.isDone()) {
         return done(NumberParser.valueOf(builder.toString()));
       }
@@ -132,7 +132,7 @@ final class DecimalParser extends Parser<Number> {
     if (input.isError()) {
       return error("Expected a decimal");
     }
-    return new DecimalParser(builder,  step);
+    return new DecimalParser(builder, step);
   }
 
   static Parser<Number> parse(Input input, int sign, long value) {
@@ -142,7 +142,7 @@ final class DecimalParser extends Parser<Number> {
     } else {
       builder.append(value);
     }
-    return parse(input, builder,  1);
+    return parse(input, builder, 1);
   }
 
   @Override

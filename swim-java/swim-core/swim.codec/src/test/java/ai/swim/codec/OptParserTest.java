@@ -16,11 +16,10 @@ package ai.swim.codec;
 
 import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
-import java.util.Optional;
-import static ai.swim.codec.OptParser.opt;
 import static ai.swim.codec.Parser.preceded;
-import static ai.swim.codec.number.NumberParser.numericLiteral;
-import static ai.swim.codec.string.EqChar.eqChar;
+import static ai.swim.codec.parsers.OptParser.opt;
+import static ai.swim.codec.parsers.number.NumberParser.numericLiteral;
+import static ai.swim.codec.parsers.string.EqChar.eqChar;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

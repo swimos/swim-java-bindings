@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.codec.combinators;
 
+import ai.swim.codec.Parser;
+import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
 import java.util.function.Function;
 
 public class AndThen<O, T> extends Parser<T> {
-  private Parser<O> first;
   private final Function<O, Parser<T>> then;
+  private Parser<O> first;
   private Parser<T> second;
 
   AndThen(Parser<O> first, Function<O, Parser<T>> then) {
@@ -47,14 +49,18 @@ public class AndThen<O, T> extends Parser<T> {
         return this;
       }
     } else {
-      Parser<T> result = this.second.feed(input);
-      if (result.isDone()) {
-        return Parser.done(result.bind());
-      } else if (result.isError()) {
-        return Parser.error(((ParserError<T>) result).getCause());
+      if (second.isError()) {
+        return Parser.error(((ParserError<T>) second).getCause());
       } else {
-        this.second = result;
-        return this;
+        Parser<T> result = this.second.feed(input);
+        if (result.isDone()) {
+          return Parser.done(result.bind());
+        } else if (result.isError()) {
+          return Parser.error(((ParserError<T>) result).getCause());
+        } else {
+          this.second = result;
+          return this;
+        }
       }
     }
   }

@@ -1,7 +1,7 @@
 package ai.swim.structure.form.recognizer.structural;
 
-import ai.swim.structure.form.RecognizingBuilder;
 import ai.swim.recon.event.ReadEvent;
+import ai.swim.structure.form.RecognizingBuilder;
 import ai.swim.structure.form.recognizer.Recognizer;
 import ai.swim.structure.form.recognizer.structural.tag.TagSpec;
 

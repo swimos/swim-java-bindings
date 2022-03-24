@@ -12,19 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.codec.parsers;
 
+import ai.swim.codec.Parser;
+import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.input.InputError;
 
-public class Preceded<B,T> extends Parser<T> {
+public class Preceded<B, T> extends Parser<T> {
 
-  private Parser<B> by;
   private final Parser<T> then;
+  private Parser<B> by;
 
   public Preceded(Parser<B> by, Parser<T> then) {
     this.by = by;
     this.then = then;
+  }
+
+  public static <B, T> Parser<T> preceded(Parser<B> by, Parser<T> then) {
+    return new Preceded<>(by, then);
   }
 
   @Override
@@ -36,7 +42,7 @@ public class Preceded<B,T> extends Parser<T> {
     } else if (input.isContinuation()) {
       Parser<B> result = this.by.feed(input);
       if (result.isError()) {
-        return Parser.error(((ParserError<B>)result).getCause());
+        return Parser.error(((ParserError<B>) result).getCause());
       } else if (result.isDone()) {
         return this.then.feed(input);
       } else {
@@ -46,10 +52,6 @@ public class Preceded<B,T> extends Parser<T> {
     } else {
       return this;
     }
-  }
-
-  public static <B,T> Parser<T> preceded(Parser<B> by, Parser<T> then) {
-    return new Preceded<>(by, then);
   }
 
 }

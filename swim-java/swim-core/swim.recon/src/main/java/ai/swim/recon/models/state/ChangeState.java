@@ -21,6 +21,10 @@ public class ChangeState extends StateChange {
 
   private final ParseEvents.ParseState state;
 
+  public ChangeState(ParseEvents.ParseState state) {
+    this.state = state;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -36,10 +40,6 @@ public class ChangeState extends StateChange {
   @Override
   public int hashCode() {
     return Objects.hash(state);
-  }
-
-  public ChangeState(ParseEvents.ParseState state){
-    this.state = state;
   }
 
   public ParseEvents.ParseState getState() {

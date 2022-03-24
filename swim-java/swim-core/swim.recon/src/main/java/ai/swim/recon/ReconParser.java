@@ -26,18 +26,18 @@ import ai.swim.recon.models.identifier.StringIdentifier;
 import ai.swim.recon.models.state.ChangeState;
 import ai.swim.recon.models.state.PushAttr;
 import java.util.Optional;
-import static ai.swim.codec.OptParser.opt;
 import static ai.swim.codec.Parser.preceded;
-import static ai.swim.codec.ParserExt.alt;
-import static ai.swim.codec.data.DataParser.blob;
-import static ai.swim.codec.number.NumberParser.numericLiteral;
-import static ai.swim.codec.string.EqChar.eqChar;
-import static ai.swim.codec.string.StringParser.stringLiteral;
+import static ai.swim.codec.parsers.DataParser.blob;
+import static ai.swim.codec.parsers.OptParser.opt;
+import static ai.swim.codec.parsers.ParserExt.alt;
+import static ai.swim.codec.parsers.number.NumberParser.numericLiteral;
+import static ai.swim.codec.parsers.string.EqChar.eqChar;
+import static ai.swim.codec.parsers.string.StringParser.stringLiteral;
 import static ai.swim.recon.IdentifierParser.identifier;
 
 public abstract class ReconParser {
 
-  public static Parser<ParserTransition> init() {
+  public static Parser<ParserTransition> parserInit() {
     return alt(
         stringLiteral().map(t -> ReadEvent.text(t).transition()),
         identifier().map(s -> {
@@ -66,11 +66,11 @@ public abstract class ReconParser {
   private static Parser<ParserTransition> isBody(ReadEvent event) {
     return Parser.lambda(input -> {
       if (input.isDone()) {
-        return Parser.error("Insufficient input");
+        return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
       } else if (input.isError()) {
         return Parser.error(((InputError) input).getCause());
       } else if (input.isContinuation()) {
-        Parser<Optional<Object>> parseResult = opt(eqChar(')')).feed(input);
+        Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
         if (parseResult.isDone()) {
           if (parseResult.bind().isPresent()) {
             return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), new PushAttr()));

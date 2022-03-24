@@ -12,11 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.codec.parsers;
 
+import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
+import java.util.function.Function;
 
-@FunctionalInterface
-public interface ParseFn<O> {
-  Parser<O> parse(Input input);
+public class LambdaParser<O> extends Parser<O> {
+
+  private final Function<Input, Parser<O>> parseFn;
+
+  public LambdaParser(Function<Input, Parser<O>> parseFn) {
+    this.parseFn = parseFn;
+  }
+
+  @Override
+  public boolean isDone() {
+    return false;
+  }
+
+  @Override
+  public boolean isError() {
+    return false;
+  }
+
+  @Override
+  public boolean isCont() {
+    return true;
+  }
+
+  @Override
+  public Parser<O> feed(Input input) {
+    return this.parseFn.apply(input);
+  }
+
 }

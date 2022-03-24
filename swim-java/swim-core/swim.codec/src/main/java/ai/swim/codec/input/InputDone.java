@@ -61,7 +61,7 @@ public class InputDone extends Input {
   }
 
   @Override
-  public int[] collect() {
+  public int[] bind() {
     return new int[] {};
   }
 

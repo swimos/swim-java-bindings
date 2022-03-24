@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.data;
+package ai.swim.codec.parsers;
 
 import ai.swim.codec.Parser;
-import ai.swim.codec.stateful.Result;
+import ai.swim.codec.parsers.stateful.Result;
 import java.util.Base64;
 import static ai.swim.codec.Parser.preceded;
-import static ai.swim.codec.string.EqChar.eqChar;
+import static ai.swim.codec.parsers.string.EqChar.eqChar;
 
 public final class DataParser {
 

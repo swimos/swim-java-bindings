@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.string;
+package ai.swim.codec.parsers.string;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
@@ -21,8 +21,8 @@ import ai.swim.codec.input.StringInput;
 public class StringParser extends Parser<String> {
 
   private final StringBuilder output;
+  private final int code;
   private int quoteNeedle;
-  private int code;
   private Stage stage;
   private UnicodeParser unicodeParser;
 
@@ -37,16 +37,39 @@ public class StringParser extends Parser<String> {
     return new StringParser(new StringBuilder(), 0, 0, Stage.Head);
   }
 
+  static boolean isSpace(int c) {
+    return c == 0x20 || c == 0x9;
+  }
+
+  static boolean isNewline(int c) {
+    return c == 0xa || c == 0xd;
+  }
+
+  static boolean isWhitespace(int c) {
+    return isSpace(c) || isNewline(c);
+  }
+
+  public static boolean isDigit(int c) {
+    return c >= '0' && c <= '9'
+        || c >= 'A' && c <= 'F'
+        || c >= 'a' && c <= 'f';
+  }
+
+  public static int decodeDigit(int c) {
+    if (c >= '0' && c <= '9') {
+      return c - '0';
+    } else if (c >= 'A' && c <= 'F') {
+      return 10 + (c - 'A');
+    } else if (c >= 'a' && c <= 'f') {
+      return 10 + (c - 'a');
+    } else {
+      throw new IllegalArgumentException("Invalid base-16 digit: " + c);
+    }
+  }
+
   @Override
   public Parser<String> feed(Input input) {
     return parse(input);
-  }
-
-  enum Stage {
-    Head,
-    Contents,
-    Escaped,
-    HexDigit,
   }
 
   private Parser<String> parse(Input input) {
@@ -152,40 +175,17 @@ public class StringParser extends Parser<String> {
     } while (true);
 
     if (input.isError()) {
-      return error("Error: " + StringInput.codePointsToString(input.collect()));
+      return error("Error: " + StringInput.codePointsToString(input.bind()));
     }
 
     return new StringParser(output, quoteNeedle, code, stage);
   }
 
-  static boolean isSpace(int c) {
-    return c == 0x20 || c == 0x9;
-  }
-
-  static boolean isNewline(int c) {
-    return c == 0xa || c == 0xd;
-  }
-
-  static boolean isWhitespace(int c) {
-    return isSpace(c) || isNewline(c);
-  }
-
-  public static boolean isDigit(int c) {
-    return c >= '0' && c <= '9'
-        || c >= 'A' && c <= 'F'
-        || c >= 'a' && c <= 'f';
-  }
-
-  public static int decodeDigit(int c) {
-    if (c >= '0' && c <= '9') {
-      return c - '0';
-    } else if (c >= 'A' && c <= 'F') {
-      return 10 + (c - 'A');
-    } else if (c >= 'a' && c <= 'f') {
-      return 10 + (c - 'a');
-    } else {
-      throw new IllegalArgumentException("Invalid base-16 digit: " + c);
-    }
+  enum Stage {
+    Head,
+    Contents,
+    Escaped,
+    HexDigit,
   }
 
 }

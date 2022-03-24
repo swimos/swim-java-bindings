@@ -13,29 +13,29 @@ public abstract class Input {
     return new InputDone(input);
   }
 
-  public abstract  boolean complete();
+  public abstract boolean complete();
 
   public abstract boolean has(int n);
 
-  public abstract  int head();
+  public abstract int head();
 
-  public abstract  Input step();
+  public abstract Input step();
 
-  public abstract  Location location();
+  public abstract Location location();
 
-  public abstract  boolean isDone();
+  public abstract boolean isDone();
 
-  public abstract  boolean isContinuation();
+  public abstract boolean isContinuation();
 
   public abstract boolean isEmpty();
 
-  public abstract  Input isPartial(boolean isPartial);
+  public abstract Input isPartial(boolean isPartial);
 
-  public abstract  boolean isError();
+  public abstract boolean isError();
 
-  public abstract int[] collect();
+  public abstract int[] bind();
 
-  public abstract  int offset();
+  public abstract int offset();
 
   public abstract int len();
 
@@ -67,7 +67,7 @@ public abstract class Input {
     return Arrays.equals(this.borrow(thisLen), input.borrow(thatLen));
   }
 
-  public  void cloneFrom(Input innerInput) {
+  public void cloneFrom(Input innerInput) {
     throw new IllegalStateException();
   }
 }

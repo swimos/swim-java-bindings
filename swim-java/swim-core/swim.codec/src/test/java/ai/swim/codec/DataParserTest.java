@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.data;
+package ai.swim.codec;
 
-import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
-import static ai.swim.codec.data.DataParser.blob;
+import static ai.swim.codec.parsers.DataParser.blob;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,16 +61,16 @@ class DataParserTest {
 
   @Test
   void parseBlobCont() {
-   feedIncremental("%YQ==", "a".getBytes());
-   feedIncremental("%YWI=", "ab".getBytes());
-   feedIncremental("%YWJj", "abc".getBytes());
-   feedIncremental("%TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQu", "Lorem ipsum dolor sit amet.".getBytes());
-   feedIncremental("%QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODk=", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".getBytes());
+    feedIncremental("%YQ==", "a".getBytes());
+    feedIncremental("%YWI=", "ab".getBytes());
+    feedIncremental("%YWJj", "abc".getBytes());
+    feedIncremental("%TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQu", "Lorem ipsum dolor sit amet.".getBytes());
+    feedIncremental("%QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODk=", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".getBytes());
   }
 
   @Test
   void parseBlobErr() {
-//    blobTestErr("abcd");
+    blobTestErr("abcd");
     blobTestErr("%!!!!");
   }
 

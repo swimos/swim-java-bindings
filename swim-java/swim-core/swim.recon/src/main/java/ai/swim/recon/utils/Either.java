@@ -15,5 +15,4 @@ public abstract class Either<L, R> {
   public abstract boolean isRight();
 
 
-
 }

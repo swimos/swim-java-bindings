@@ -1,8 +1,5 @@
 package ai.swim.structure.form;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
 import ai.swim.structure.form.recognizer.RecognizerProxy;
@@ -10,6 +7,9 @@ import ai.swim.structure.form.recognizer.structural.ClassRecognizerInit;
 import ai.swim.structure.form.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.form.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 class ClassRecognizerTest {
 

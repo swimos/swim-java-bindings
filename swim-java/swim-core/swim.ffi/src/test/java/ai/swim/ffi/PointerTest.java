@@ -14,12 +14,12 @@
 
 package ai.swim.ffi;
 
+import org.junit.jupiter.api.Test;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Test;
 
 class PointerTest {
 

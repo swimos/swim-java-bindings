@@ -21,9 +21,9 @@ public class TwoParseEvents extends ParseEvents {
   private final ReadEvent event1;
   private final ReadEvent event2;
 
-  TwoParseEvents(ReadEvent event1, ReadEvent event2){
+  TwoParseEvents(ReadEvent event1, ReadEvent event2) {
     this.event1 = event1;
-    this.event2=event2;
+    this.event2 = event2;
   }
 
   public ReadEvent getEvent1() {

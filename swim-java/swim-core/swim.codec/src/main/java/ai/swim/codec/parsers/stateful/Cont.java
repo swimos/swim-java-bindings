@@ -12,30 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.string;
+package ai.swim.codec.parsers.stateful;
 
-class UnicodeParser {
-  int unicodeIdx;
-  int code;
-  boolean done;
+public class Cont<S, T> extends Result<S, T> {
+  private final S state;
 
-  boolean parseUnicodePoint(StringBuilder builder, int c) {
-    if (StringParser.isDigit(c)) {
-      code = 16 * code + StringParser.decodeDigit(c);
-      if (unicodeIdx <= 3) {
-        unicodeIdx += 1;
-      } else {
-        builder.appendCodePoint(code);
-        code = 0;
-        done = true;
-      }
-      return true;
-    } else {
-      return false;
-    }
+  public Cont(S state) {
+    this.state = state;
   }
 
-  boolean isDone() {
-    return done;
+  @Override
+  public boolean isCont() {
+    return true;
+  }
+
+  public S getState() {
+    return state;
   }
 }

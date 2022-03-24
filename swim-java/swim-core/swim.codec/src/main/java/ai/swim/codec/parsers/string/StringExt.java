@@ -12,21 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.stateful;
+package ai.swim.codec.parsers.string;
 
-public class Cont<S,T> extends Result<S, T> {
-  private final S state;
+import ai.swim.codec.Parser;
+import static ai.swim.codec.parsers.ParserExt.takeWhile0;
 
-  public  Cont(S state) {
-    this.state = state;
+public class StringExt {
+
+  public static Parser<String> multispace0() {
+    return takeWhile0(c -> c == ' ');
   }
 
-  @Override
-  public boolean isCont() {
-    return true;
-  }
-
-  public S getState() {
-    return state;
-  }
 }

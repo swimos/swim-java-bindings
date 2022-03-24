@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.codec.parsers;
 
+import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.input.InputError;
 import java.util.Optional;
@@ -46,7 +47,7 @@ public class OptParser<T> extends Parser<Optional<T>> {
       } else {
         // The parser succeeded. Advance the input buffer and return it's state.
         input.cloneFrom(innerInput);
-        return result.map(Optional::of);
+        return Parser.done(Optional.ofNullable(result.bind()));
       }
     } else if (input.isError()) {
       return Parser.error(((InputError) input).getCause());

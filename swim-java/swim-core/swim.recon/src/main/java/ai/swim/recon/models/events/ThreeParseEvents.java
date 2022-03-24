@@ -22,10 +22,10 @@ public class ThreeParseEvents extends ParseEvents {
   private final ReadEvent event2;
   private final ReadEvent event3;
 
-  ThreeParseEvents(ReadEvent event1, ReadEvent event2, ReadEvent event3){
+  ThreeParseEvents(ReadEvent event1, ReadEvent event2, ReadEvent event3) {
     this.event1 = event1;
-    this.event2=event2;
-    this.event3=event3;
+    this.event2 = event2;
+    this.event3 = event3;
   }
 
   public ReadEvent getEvent1() {

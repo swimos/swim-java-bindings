@@ -18,7 +18,7 @@ public class StartFinalAttr extends FinalAttr {
 
   private final String name;
 
-  StartFinalAttr(String name){
+  StartFinalAttr(String name) {
     this.name = name;
   }
 

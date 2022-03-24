@@ -15,12 +15,12 @@
 package ai.swim.structure.form;
 
 
-import java.util.Objects;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
 import ai.swim.structure.form.recognizer.structural.ClassRecognizerInit;
 import ai.swim.structure.form.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.form.recognizer.structural.tag.FixedTagSpec;
+import java.util.Objects;
 
 class OuterPropClass {
 

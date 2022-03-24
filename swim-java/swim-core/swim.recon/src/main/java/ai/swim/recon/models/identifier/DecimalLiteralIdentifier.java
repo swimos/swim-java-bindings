@@ -46,7 +46,7 @@ public final class DecimalLiteralIdentifier extends Identifier {
       return false;
     }
     DecimalLiteralIdentifier that = (DecimalLiteralIdentifier) o;
-    return Float.compare(value, that.value)==0;
+    return Float.compare(value, that.value) == 0;
   }
 
   @Override

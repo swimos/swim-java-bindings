@@ -12,33 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.codec.combinators;
 
+import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import java.util.function.Function;
 
-public class TryMappedParser<I, O> extends Parser<O> {
+public class MappedParser<I, O> extends Parser<O> {
 
-  private Parser<I> inner;
   private final Function<I, O> map;
+  private Parser<I> inner;
 
-  private TryMappedParser(Parser<I> inner, Function<I, O> map) {
+  private MappedParser(Parser<I> inner, Function<I, O> map) {
     this.inner = inner;
     this.map = map;
   }
 
+  public static <I, O> MappedParser<I, O> map(Parser<I> parser, Function<I, O> with) {
+    return new MappedParser<>(parser, with);
+  }
+
   @Override
   public Parser<O> feed(Input input) {
-    try {
-      this.inner = this.inner.feed(input);
+    this.inner = this.inner.feed(input);
 
-      if (this.inner.isDone()) {
-        return Parser.done(this.map.apply(this.inner.bind()));
-      } else {
-        return this;
-      }
-    } catch (Exception e) {
-      return Parser.error(e.getMessage());
+    if (this.inner.isDone()) {
+      return Parser.done(this.map.apply(this.inner.bind()));
+    } else {
+      return this;
     }
   }
 
@@ -55,9 +56,5 @@ public class TryMappedParser<I, O> extends Parser<O> {
   @Override
   public boolean isError() {
     return this.inner.isError();
-  }
-
-  public static <I, O> TryMappedParser<I, O> tryMap(Parser<I> parser, Function<I, O> with) {
-    return new TryMappedParser<>(parser, with);
   }
 }

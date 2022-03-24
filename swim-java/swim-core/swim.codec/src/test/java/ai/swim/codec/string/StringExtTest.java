@@ -12,24 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.codec.string;
 
+import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.input.InputError;
 import ai.swim.codec.parsers.stateful.Result;
 import org.junit.jupiter.api.Test;
 import static ai.swim.codec.Parser.preceded;
-import static ai.swim.codec.parsers.string.EqChar.eqChar;
+import static ai.swim.codec.parsers.string.StringExt.multispace0;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class PrecededTest {
+class StringExtTest {
 
-  Parser<String> parser() {
-    return preceded(eqChar('@'), Parser.stateful(new StringBuilder(), (state, input) -> {
+  private static Parser<String> parser() {
+    return preceded(multispace0(), Parser.stateful(new StringBuilder(), (state, input) -> {
       while (input.isContinuation()) {
         int head = input.head();
-        if (Character.isLetter(head)) {
+        if (Character.isDigit(head)) {
           state.appendCodePoint(head);
           input = input.step();
         } else {
@@ -48,13 +49,13 @@ class PrecededTest {
   }
 
   @Test
-  void precededTestFin() {
-    Parser<String> parser = parser();
-    parser = parser.feed(Input.string("@abc"));
-
+  void multispace0Test() {
+    Parser<String> parser = parser().feed(Input.string("     12345"));
     assertTrue(parser.isDone());
-    assertEquals(parser.bind(), "abc");
+    assertEquals(parser.bind(), "12345");
+
+    parser = parser().feed(Input.string("12345"));
+    assertTrue(parser.isDone());
+    assertEquals(parser.bind(), "12345");
   }
-
-
 }

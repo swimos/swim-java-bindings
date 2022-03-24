@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.stateful;
+package ai.swim.codec.parsers.stateful;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import java.util.function.BiFunction;
 
 public class StatefulParser<S, T> extends Parser<T> {
-  private S state;
   private final BiFunction<S, Input, Result<S, T>> parser;
+  private S state;
 
   public StatefulParser(S state, BiFunction<S, Input, Result<S, T>> parser) {
     this.state = state;

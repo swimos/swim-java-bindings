@@ -21,7 +21,7 @@ public class TerminateWithAttrParseEvent extends ParseEvents {
 
   private final FinalAttr stage;
 
-  TerminateWithAttrParseEvent(FinalAttr stage){
+  TerminateWithAttrParseEvent(FinalAttr stage) {
     this.stage = stage;
   }
 

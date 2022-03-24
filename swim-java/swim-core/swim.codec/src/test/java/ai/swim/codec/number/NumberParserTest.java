@@ -16,6 +16,7 @@ package ai.swim.codec.number;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
+import ai.swim.codec.parsers.number.NumberParser;
 import org.junit.jupiter.api.Test;
 import java.math.BigInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,18 +68,18 @@ class NumberParserTest {
     numberTestOk("0012345.12345 ", 12345.12345);
     numberTestOk("12345asd", 12345);
     numberTestOk("0012345.:", 12345f);
-    numberTestOk("00.X",0f);
+    numberTestOk("00.X", 0f);
     numberTestOk("1.17549435e-38", 1.17549435e-38); // Float.MIN_VALUE
     numberTestOk("3.4028235e38", 3.4028235e38); // Float.MAX_VALUE
     numberTestOk("1.17549435e-38", 1.17549435e-38); // Float.MIN_NORMAL
     numberTestOk("4.9e-324", 4.9e-324); // Double.MIN_VALUE
     numberTestOk("1.7976931348623157e308", 1.7976931348623157e308); // Double.MAX_VALUE
     numberTestOk("2.2250738585072014e-308", 2.2250738585072014e-308); // Double.MIN_NORMAL
-    numberTestOk("-4.0E02",-4.0E2f);
-    numberTestOk("-4.0e+02",-4.0e+2f);
-    numberTestOk("-4.0E+02",-4.0E+2f);
-    numberTestOk("-4.0e-02",-4.0e-2);
-    numberTestOk("-4.0E-02",-4.0E-2);
+    numberTestOk("-4.0E02", -4.0E2f);
+    numberTestOk("-4.0e+02", -4.0e+2f);
+    numberTestOk("-4.0E+02", -4.0E+2f);
+    numberTestOk("-4.0e-02", -4.0e-2);
+    numberTestOk("-4.0E-02", -4.0E-2);
     numberTestOk("0x0", 0x0);
     numberTestOk("0x00000001", 0x00000001);
     numberTestOk("0x00000010", 0x00000010);
@@ -118,15 +119,15 @@ class NumberParserTest {
 
   @Test
   void parseIntegerCont() {
-    numberTestCont("0x","3039", 12345);
-    numberTestCont("na","n", Float.NaN);
-    numberTestCont("-","inf", Float.NEGATIVE_INFINITY);
-    numberTestCont("12345",".0", 12345.0f);
-    numberTestCont("","1", 1);
-    numberTestCont("00","12345", 12345);
-    numberTestCont("0012345",".12345", 12345.12345);
-    numberTestCont(".","1", 0.1d);
-    numberTestCont("",".1", 0.1d);
+    numberTestCont("0x", "3039", 12345);
+    numberTestCont("na", "n", Float.NaN);
+    numberTestCont("-", "inf", Float.NEGATIVE_INFINITY);
+    numberTestCont("12345", ".0", 12345.0f);
+    numberTestCont("", "1", 1);
+    numberTestCont("00", "12345", 12345);
+    numberTestCont("0012345", ".12345", 12345.12345);
+    numberTestCont(".", "1", 0.1d);
+    numberTestCont("", ".1", 0.1d);
   }
 
   @Test

@@ -12,36 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec;
+package ai.swim.codec.parsers.stateful;
 
-import ai.swim.codec.input.Input;
-
-public class LambdaParser<O> extends Parser<O> {
-
-  private final ParseFn<O> parseFn;
-
-  public LambdaParser(ParseFn<O> parseFn) {
-    this.parseFn = parseFn;
+public abstract class Result<S, T> {
+  public static <S, T> Result<S, T> ok(T bind) {
+    return new Ok<>(bind);
   }
 
-  @Override
-  public boolean isDone() {
+  public static <S, T> Result<S, T> cont(S state) {
+    return new Cont<>(state);
+  }
+
+  public static <S, T> Result<S, T> err(String cause) {
+    return new Err<>(cause);
+  }
+
+  public boolean isOk() {
     return false;
   }
 
-  @Override
-  public boolean isError() {
-    return false;
-  }
-
-  @Override
   public boolean isCont() {
-    return true;
+    return false;
   }
 
-  @Override
-  public Parser<O> feed(Input input) {
-    return this.parseFn.parse(input);
+  public boolean isErr() {
+    return false;
   }
-
 }
