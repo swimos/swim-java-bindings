@@ -16,6 +16,7 @@ package ai.swim.ffi.sync;
 
 import ai.swim.ffi.JniRunner;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 

@@ -17,6 +17,7 @@ package ai.swim.codec.parsers;
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BinaryOperator;

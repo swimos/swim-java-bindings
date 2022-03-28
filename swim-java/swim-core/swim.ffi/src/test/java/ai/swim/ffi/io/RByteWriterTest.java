@@ -16,6 +16,7 @@ package ai.swim.ffi.io;
 
 import ai.swim.ffi.JniRunner;
 import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -28,7 +29,7 @@ class RByteWriterTest extends JniRunner {
       RByteWriter writer = RByteWriter.create(8);
 
       long now = System.nanoTime();
-      int count = writer.tryWrite(new byte[] {1, 2, 3, 4, 5, 6});
+      int count = writer.tryWrite(new byte[]{1, 2, 3, 4, 5, 6});
     }
   }
 

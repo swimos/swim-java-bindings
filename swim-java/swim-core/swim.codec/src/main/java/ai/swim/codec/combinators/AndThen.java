@@ -17,6 +17,7 @@ package ai.swim.codec.combinators;
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
+
 import java.util.function.Function;
 
 public class AndThen<O, T> extends Parser<T> {

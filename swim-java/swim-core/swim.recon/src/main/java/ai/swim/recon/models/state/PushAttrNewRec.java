@@ -20,7 +20,7 @@ public class PushAttrNewRec extends StateChange {
 
   private final boolean hasBody;
 
-  PushAttrNewRec(boolean hasBody) {
+  public PushAttrNewRec(boolean hasBody) {
     this.hasBody = hasBody;
   }
 

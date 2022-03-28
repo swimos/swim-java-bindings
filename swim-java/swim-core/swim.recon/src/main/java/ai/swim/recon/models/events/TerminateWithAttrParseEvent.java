@@ -15,6 +15,7 @@
 package ai.swim.recon.models.events;
 
 import ai.swim.recon.models.stage.FinalAttr;
+
 import java.util.Objects;
 
 public class TerminateWithAttrParseEvent extends ParseEvents {

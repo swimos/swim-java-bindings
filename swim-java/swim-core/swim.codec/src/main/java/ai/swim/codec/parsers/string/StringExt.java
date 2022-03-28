@@ -15,12 +15,21 @@
 package ai.swim.codec.parsers.string;
 
 import ai.swim.codec.Parser;
+
+import java.util.Optional;
+
+import static ai.swim.codec.parsers.OptParser.opt;
 import static ai.swim.codec.parsers.ParserExt.takeWhile0;
+import static ai.swim.codec.parsers.StringParsersExt.eqChar;
 
 public class StringExt {
 
   public static Parser<String> multispace0() {
     return takeWhile0(c -> c == ' ');
+  }
+
+  public static Parser<Optional<Character>> space0() {
+    return opt(eqChar(' '));
   }
 
 }

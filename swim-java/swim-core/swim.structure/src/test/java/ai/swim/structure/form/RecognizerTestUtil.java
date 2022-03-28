@@ -16,6 +16,7 @@ package ai.swim.structure.form;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
+
 import java.util.List;
 
 public class RecognizerTestUtil {

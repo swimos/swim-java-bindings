@@ -16,6 +16,7 @@ package ai.swim.codec.combinators;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
+
 import java.util.function.Function;
 
 public class MappedParser<I, O> extends Parser<O> {

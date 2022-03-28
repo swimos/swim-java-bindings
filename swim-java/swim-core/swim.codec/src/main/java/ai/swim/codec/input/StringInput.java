@@ -2,6 +2,7 @@ package ai.swim.codec.input;
 
 import ai.swim.codec.location.Location;
 import ai.swim.codec.location.StringLocation;
+
 import java.util.Objects;
 
 public class StringInput extends Input {
@@ -99,7 +100,7 @@ public class StringInput extends Input {
   @Override
   public int[] bind() {
     if (this.isDone()) {
-      return new int[] {};
+      return new int[]{};
     }
 
     return this.data.substring(this.offset).chars().toArray();
