@@ -47,7 +47,7 @@ public class RecordBodyItems implements ItemsKind {
 
   @Override
   public char endDelim() {
-    return ')';
+    return '}';
   }
 
   @Override

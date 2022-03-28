@@ -17,6 +17,7 @@ package ai.swim.recon;
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.recon.models.identifier.Identifier;
+
 import static ai.swim.recon.ReconUtils.isIdentChar;
 import static ai.swim.recon.ReconUtils.isIdentStartChar;
 

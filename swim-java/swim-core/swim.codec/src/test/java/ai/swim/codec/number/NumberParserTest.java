@@ -18,7 +18,9 @@ import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.parsers.number.NumberParser;
 import org.junit.jupiter.api.Test;
+
 import java.math.BigInteger;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

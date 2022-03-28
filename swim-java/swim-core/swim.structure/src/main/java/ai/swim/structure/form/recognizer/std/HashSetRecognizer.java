@@ -16,6 +16,7 @@ package ai.swim.structure.form.recognizer.std;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.form.recognizer.Recognizer;
+
 import java.util.HashSet;
 
 public class HashSetRecognizer<V> extends Recognizer<HashSet<V>> {

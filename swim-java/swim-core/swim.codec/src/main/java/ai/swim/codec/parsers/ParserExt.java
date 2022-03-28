@@ -18,6 +18,7 @@ import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.input.InputError;
 import ai.swim.codec.parsers.stateful.Result;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -118,6 +119,10 @@ public class ParserExt {
       this.output = output;
       this.parser = parser;
     }
+  }
+
+  public static <O> Parser<O> peek(Parser<O> parser) {
+    return Parser.lambda(input -> parser.feed(input.clone()));
   }
 
 }

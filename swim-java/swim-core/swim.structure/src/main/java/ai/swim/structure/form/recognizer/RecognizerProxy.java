@@ -2,6 +2,7 @@ package ai.swim.structure.form.recognizer;
 
 import ai.swim.structure.form.recognizer.primitive.IntegerRecognizer;
 import ai.swim.structure.form.recognizer.primitive.StringRecognizer;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RecognizerProxy {

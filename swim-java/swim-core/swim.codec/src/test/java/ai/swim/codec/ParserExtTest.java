@@ -17,18 +17,16 @@ package ai.swim.codec;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.input.StringInput;
 import org.junit.jupiter.api.Test;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static ai.swim.codec.parsers.StringParsersExt.eqChar;
 import static ai.swim.codec.parsers.MapReduce.mapReduce;
-import static ai.swim.codec.parsers.ParserExt.alt;
-import static ai.swim.codec.parsers.ParserExt.many0;
-import static ai.swim.codec.parsers.ParserExt.takeWhile0;
-import static ai.swim.codec.parsers.string.EqChar.eqChar;
+import static ai.swim.codec.parsers.ParserExt.*;
 import static ai.swim.codec.parsers.string.StringParser.stringLiteral;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ParserExtTest {
 
@@ -124,7 +122,6 @@ class ParserExtTest {
     Parser<List<Character>> parser = many0(eqChar('a'));
 
     for (char c : input.toCharArray()) {
-      System.out.println(c);
       parser = parser.feed(Input.string(String.valueOf(c)).isPartial(true));
 
       if (c == 'a') {

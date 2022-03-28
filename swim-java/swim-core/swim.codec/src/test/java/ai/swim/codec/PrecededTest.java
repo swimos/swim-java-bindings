@@ -18,8 +18,9 @@ import ai.swim.codec.input.Input;
 import ai.swim.codec.input.InputError;
 import ai.swim.codec.parsers.stateful.Result;
 import org.junit.jupiter.api.Test;
+
 import static ai.swim.codec.Parser.preceded;
-import static ai.swim.codec.parsers.string.EqChar.eqChar;
+import static ai.swim.codec.parsers.StringParsersExt.eqChar;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

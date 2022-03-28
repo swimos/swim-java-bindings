@@ -7,6 +7,7 @@ import ai.swim.structure.form.recognizer.structural.ClassRecognizerInit;
 import ai.swim.structure.form.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.form.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

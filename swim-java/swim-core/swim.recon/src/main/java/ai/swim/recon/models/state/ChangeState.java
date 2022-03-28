@@ -15,6 +15,7 @@
 package ai.swim.recon.models.state;
 
 import ai.swim.recon.models.events.ParseEvents;
+
 import java.util.Objects;
 
 public class ChangeState extends StateChange {

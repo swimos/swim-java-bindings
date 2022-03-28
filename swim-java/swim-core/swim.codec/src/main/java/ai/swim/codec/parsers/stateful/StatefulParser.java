@@ -16,6 +16,7 @@ package ai.swim.codec.parsers.stateful;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
+
 import java.util.function.BiFunction;
 
 public class StatefulParser<S, T> extends Parser<T> {

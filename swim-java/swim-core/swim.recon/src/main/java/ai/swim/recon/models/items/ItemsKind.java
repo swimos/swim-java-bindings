@@ -19,6 +19,14 @@ import ai.swim.recon.models.events.ParseEvents.ParseState;
 import ai.swim.recon.models.state.StateChange;
 
 public interface ItemsKind {
+  static ItemsKind attr() {
+    return new AttrBodyItems();
+  }
+
+  static ItemsKind record() {
+    return new RecordBodyItems();
+  }
+
   ParseState startOrNl();
 
   ParseState afterSep();

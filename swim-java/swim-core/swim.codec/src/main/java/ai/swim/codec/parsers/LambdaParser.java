@@ -16,6 +16,7 @@ package ai.swim.codec.parsers;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
+
 import java.util.function.Function;
 
 public class LambdaParser<O> extends Parser<O> {

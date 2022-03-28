@@ -1,6 +1,7 @@
 package ai.swim.codec.input;
 
 import ai.swim.codec.location.Location;
+
 import java.util.Arrays;
 
 public abstract class Input {

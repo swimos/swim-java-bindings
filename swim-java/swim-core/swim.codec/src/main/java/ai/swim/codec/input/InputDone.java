@@ -62,7 +62,7 @@ public class InputDone extends Input {
 
   @Override
   public int[] bind() {
-    return new int[] {};
+    return new int[]{};
   }
 
   @Override

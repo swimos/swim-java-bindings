@@ -15,6 +15,7 @@
 package ai.swim.recon.models.events;
 
 import ai.swim.recon.event.ReadEvent;
+
 import java.util.Objects;
 
 public class TwoParseEvents extends ParseEvents {

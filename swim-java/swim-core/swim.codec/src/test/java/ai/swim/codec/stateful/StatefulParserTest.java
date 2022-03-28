@@ -19,9 +19,8 @@ import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.parsers.stateful.Result;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class StatefulParserTest {
 

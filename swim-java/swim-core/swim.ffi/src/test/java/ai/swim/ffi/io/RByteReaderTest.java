@@ -17,6 +17,7 @@ package ai.swim.ffi.io;
 import ai.swim.ffi.FfiIntrinsic;
 import ai.swim.ffi.JniRunner;
 import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 
 class RByteReaderTest extends JniRunner {

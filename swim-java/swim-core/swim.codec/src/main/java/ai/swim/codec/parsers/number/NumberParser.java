@@ -16,6 +16,7 @@ package ai.swim.codec.parsers.number;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 

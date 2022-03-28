@@ -23,6 +23,7 @@ import ai.swim.codec.parsers.LambdaParser;
 import ai.swim.codec.parsers.Preceded;
 import ai.swim.codec.parsers.stateful.Result;
 import ai.swim.codec.parsers.stateful.StatefulParser;
+
 import java.util.function.BiFunction;
 import java.util.function.Function;
 

@@ -1,110 +1,215 @@
-// Copyright 2015-2021 Swim Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package ai.swim.recon;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
-import ai.swim.codec.input.InputError;
+import ai.swim.codec.input.Input;
 import ai.swim.recon.event.ReadEvent;
-import ai.swim.recon.event.ReadTextValue;
 import ai.swim.recon.models.ParserTransition;
+import ai.swim.recon.models.events.EndParseEvent;
+import ai.swim.recon.models.events.NoParseEvent;
 import ai.swim.recon.models.events.ParseEvents;
-import ai.swim.recon.models.identifier.BooleanIdentifier;
-import ai.swim.recon.models.identifier.Identifier;
-import ai.swim.recon.models.identifier.StringIdentifier;
-import ai.swim.recon.models.state.ChangeState;
-import ai.swim.recon.models.state.PopAfterItem;
-import ai.swim.recon.models.state.PushAttr;
-import java.util.Optional;
+import ai.swim.recon.models.items.ItemsKind;
+import ai.swim.recon.models.state.*;
+import ai.swim.recon.result.ParseResult;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+
 import static ai.swim.codec.Parser.preceded;
-import static ai.swim.codec.parsers.DataParser.blob;
-import static ai.swim.codec.parsers.OptParser.opt;
-import static ai.swim.codec.parsers.ParserExt.alt;
-import static ai.swim.codec.parsers.number.NumberParser.numericLiteral;
-import static ai.swim.codec.parsers.string.EqChar.eqChar;
-import static ai.swim.codec.parsers.string.StringParser.stringLiteral;
-import static ai.swim.recon.IdentifierParser.identifier;
+import static ai.swim.codec.parsers.string.StringExt.multispace0;
+import static ai.swim.codec.parsers.string.StringExt.space0;
+import static ai.swim.recon.ReconParserParts.*;
 
-public abstract class ReconParser {
+public final class ReconParser {
 
-  private static ReadEvent mapIdentifier(Identifier identifier) {
-    if (identifier.isBoolean()) {
-      return ReadEvent.bool(((BooleanIdentifier) identifier).getValue());
+  private final Input input;
+  private final Deque<ParseEvents.ParseState> state;
+  private Parser<ParserTransition> current;
+
+  public ReconParser(Input input) {
+    this.input = input;
+    this.state = new ArrayDeque<>(10);
+  }
+
+  public boolean isError() {
+    throw new AssertionError();
+  }
+
+  public boolean isCont() {
+    throw new AssertionError();
+  }
+
+  public boolean isDone() {
+    throw new AssertionError();
+  }
+
+  public ReconParser feed(Input input) {
+    return new ReconParser(input);
+  }
+
+  public ParseResult<ParseEvents> next() {
+    if (this.state.peekLast() != null) {
+      return this.nextEvent();
     } else {
-      return ReadEvent.text(((StringIdentifier) identifier).getValue());
+      return ParseResult.ok(new EndParseEvent());
     }
   }
 
-  public static Parser<ParserTransition> parserInit() {
-    return alt(stringLiteral().map(t -> ReadEvent.text(t).transition()),
-        identifier().map(s -> mapIdentifier(s).transition()),
-        numericLiteral().map(n -> ReadEvent.number(n).transition()), blob().map(b -> ReadEvent.blob(b).transition()),
-        secondaryAttr(), eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(),
-            new ChangeState(ParseEvents.ParseState.RecordBodyStartOrNl))));
+  private ParseResult<ParseEvents> parseEvent(Parser<ParserTransition> parser, boolean clearIfNone) {
+    if (this.current == null) {
+      this.current = parser;
+      return parseEvent(null, clearIfNone);
+    }
+
+    if (this.current.isCont()) {
+      return ParseResult.continuation();
+    } else if (this.current.isError()) {
+      return ParseResult.error(((ParserError<ParserTransition>) this.current).getCause());
+    }
+
+    ParserTransition output = this.current.bind();
+    this.transition(output.getChange(), clearIfNone);
+    this.current = null;
+    return ParseResult.ok(output.getEvents());
   }
 
-  public static Parser<ParserTransition> secondaryAttr() {
-    return preceded(eqChar('@'), alt(stringLiteral().map(ReadEvent::text), identifier().tryMap(r -> {
-      if (r.isText()) {
-        return ReadEvent.text(((StringIdentifier) r).getValue());
-      } else {
-        throw new IllegalStateException("Expected a text identifier");
-      }
-    }))).andThen(ReconParser::isBody);
-  }
+  private ParseResult<ParseEvents> nextEvent() {
+    switch (this.state.getLast()) {
+      case Init:
+        return parseEvent(preceded(multispace0(), parseInit()), true);
+      case AfterAttr:
+        return parseEvent(parseAfterAttr(), false);
+      case RecordBodyStartOrNl:
+        return parseEvent(preceded(multispace0(), parseNotAfterItem(ItemsKind.record(), false)), false);
+      case AttrBodyStartOrNl:
+        return parseEvent(preceded(multispace0(), parseNotAfterItem(ItemsKind.attr(), false)), false);
+      case RecordBodyAfterSep:
+        return parseEvent(preceded(multispace0(), parseNotAfterItem(ItemsKind.record(), true)), false);
+      case AttrBodyAfterSep:
+        return parseEvent(preceded(multispace0(), parseNotAfterItem(ItemsKind.attr(), true)), false);
+      case RecordBodyAfterValue:
+        return parseEvent(preceded(space0(), parseAfterValue(ItemsKind.record())).map(s -> {
+          if (s.isPresent()) {
+            ParseEvents.ParseState parseState = s.get();
+            this.state.removeLast();
+            this.state.addLast(parseState);
 
-  private static Parser<ParserTransition> isBody(ReadEvent event) {
-    return Parser.lambda(input -> {
-      if (input.isDone()) {
-        return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
-            ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
-      } else if (input.isError()) {
-        return Parser.error(((InputError) input).getCause());
-      } else if (input.isContinuation()) {
-        Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
-        if (parseResult.isDone()) {
-          if (parseResult.bind().isPresent()) {
-            return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
-                new PushAttr()));
+            if (parseState == ParseEvents.ParseState.AttrBodySlot) {
+              return new ParserTransition(ReadEvent.slot(), null);
+            } else {
+              return new ParserTransition(new NoParseEvent(), null);
+            }
           } else {
-            return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
-                ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
+            this.transition(new PopAfterItem(), false);
+            return new ParserTransition(ReadEvent.endRecord(), null);
           }
-        } else if (parseResult.isError()) {
-          return ParserError.error(((ParserError<?>) parseResult).getCause());
-        } else {
-          return isBody(event);
-        }
-      } else {
-        return isBody(event);
+        }), false);
+      case RecordBodyAfterSlot:
+        return parseEvent(preceded(space0(), parseAfterSlot(ItemsKind.record())).map(s -> {
+          if (s.isPresent()) {
+            this.state.removeLast();
+            this.state.addLast(s.get());
+            return new ParserTransition(new NoParseEvent(), null);
+          } else {
+            this.transition(new PopAfterItem(), false);
+            return new ParserTransition(ReadEvent.endRecord(), null);
+          }
+        }), false);
+      case AttrBodyAfterSlot:
+        return parseEvent(preceded(space0(), parseAfterSlot(ItemsKind.attr())).map(s -> {
+          if (s.isPresent()) {
+            this.state.removeLast();
+            this.state.addLast(s.get());
+            return new ParserTransition(new NoParseEvent(), null);
+          } else {
+            this.transition(new PopAfterAttr(), false);
+            return new ParserTransition(ReadEvent.endAttribute(), null);
+          }
+        }), false);
+      case AttrBodyAfterValue:
+        return parseEvent(preceded(space0(), parseAfterValue(ItemsKind.record())).map(s -> {
+          if (s.isPresent()) {
+            ParseEvents.ParseState parseState = s.get();
+            this.state.removeLast();
+            this.state.addLast(parseState);
+
+            if (parseState == ParseEvents.ParseState.AttrBodySlot) {
+              return new ParserTransition(ReadEvent.slot(), null);
+            } else {
+              return new ParserTransition(new NoParseEvent(), null);
+            }
+          } else {
+            this.transition(new PopAfterAttr(), false);
+            return new ParserTransition(ReadEvent.endAttribute(), null);
+          }
+        }), false);
+      case RecordBodySlot:
+        return parseEvent(preceded(space0(), parseSlotValue(ItemsKind.record())), false);
+      default:
+        throw new AssertionError();
+      case AttrBodySlot:
+        return parseEvent(preceded(space0(), parseSlotValue(ItemsKind.attr())), false);
+    }
+  }
+
+  private void transition(StateChange stateChange, boolean clearIfNone) {
+    if (stateChange.isNone()) {
+      if (clearIfNone) {
+        this.state.clear();
       }
-    });
+    } else if (stateChange.isPopAfterAttr()) {
+      if (this.state.peekLast() != null) {
+        this.state.removeLast();
+        this.state.addLast(ParseEvents.ParseState.AfterAttr);
+      }
+    } else if (stateChange.isPopAfterItem()) {
+      ParseEvents.ParseState parseState = this.state.peekLast();
+      if (parseState != null) {
+        this.state.removeLast();
+        switch (parseState) {
+          case Init:
+            this.state.addLast(ParseEvents.ParseState.AfterAttr);
+            break;
+          case AttrBodyStartOrNl:
+          case AttrBodyAfterSep:
+            this.state.addLast(ParseEvents.ParseState.AttrBodyAfterValue);
+            break;
+          case AttrBodySlot:
+            this.state.addLast(ParseEvents.ParseState.AttrBodyAfterSlot);
+            break;
+          case RecordBodyStartOrNl:
+          case RecordBodyAfterSep:
+            this.state.addLast(ParseEvents.ParseState.RecordBodyAfterValue);
+            break;
+          case RecordBodySlot:
+            this.state.addLast(ParseEvents.ParseState.RecordBodyAfterSlot);
+            break;
+          default:
+            throw new IllegalStateException("Invalid state transition from: " + parseState + ", to: " + stateChange);
+        }
+      }
+    } else if (stateChange.isChangeState()) {
+      if (this.state.peekLast() != null) {
+        this.state.removeLast();
+        this.state.addLast(((ChangeState) stateChange).getState());
+      }
+    } else if (stateChange.isPushAttr()) {
+      this.state.addLast(ParseEvents.ParseState.AttrBodyStartOrNl);
+    } else if (stateChange.isPushAttrNewRec()) {
+      PushAttrNewRec pushAttr = (PushAttrNewRec) stateChange;
+      if (pushAttr.hasBody()) {
+        this.state.addLast(ParseEvents.ParseState.Init);
+        this.state.addLast(ParseEvents.ParseState.AttrBodyStartOrNl);
+      } else {
+        this.state.addLast(ParseEvents.ParseState.AfterAttr);
+      }
+    } else if (stateChange.isPushAttrNewRec()) {
+      this.state.addLast(ParseEvents.ParseState.AttrBodyStartOrNl);
+    } else if (stateChange.isPushBody()) {
+      this.state.addLast(ParseEvents.ParseState.RecordBodyStartOrNl);
+    } else {
+      throw new AssertionError();
+    }
   }
 
-
-  public static Parser<ParserTransition> parseAfterAttr() {
-    return alt(
-        alt(
-            stringLiteral().map(ReadEvent::text),
-            identifier().map(ReconParser::mapIdentifier),
-            numericLiteral().map(ReadEvent::number),
-            blob().map(ReadEvent::blob)
-        ).map(event -> new ParserTransition(event, new PopAfterItem())),
-        eqChar('{').map(c ->
-            new ParserTransition(ReadEvent.startBody(), new ChangeState(ParseEvents.ParseState.RecordBodyStartOrNl))
-        ));
-  }
 }
-

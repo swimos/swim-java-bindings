@@ -17,9 +17,8 @@ package ai.swim.codec;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.parsers.string.StringParser;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class StringParserTest {
 
@@ -27,8 +26,6 @@ class StringParserTest {
   public void t() {
     Parser<ReadEvent> parser = StringParser.stringLiteral().map(StringReadEvent::new);
     Parser<ReadEvent> parseResult = parser.feed(Input.string("\"abcdef\""));
-    System.out.println(parseResult.isError());
-    System.out.println(parseResult.bind());
   }
 
   @Test
