@@ -111,6 +111,7 @@ public class StringParser extends Parser<String> {
           }
           if (input.isContinuation()) {
             if (c == quoteNeedle) {
+              input.step();
               return done(output.toString());
             } else if (c == '\\') {
               input = input.step();
