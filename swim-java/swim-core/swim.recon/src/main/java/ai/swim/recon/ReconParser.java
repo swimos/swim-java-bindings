@@ -3,17 +3,18 @@ package ai.swim.recon;
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
+import ai.swim.codec.input.InputError;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParserTransition;
-import ai.swim.recon.models.events.EndParseEvent;
+import ai.swim.recon.models.events.Event;
+import ai.swim.recon.models.events.EventOrEnd;
 import ai.swim.recon.models.events.NoParseEvent;
 import ai.swim.recon.models.events.ParseEvents;
 import ai.swim.recon.models.items.ItemsKind;
 import ai.swim.recon.models.state.*;
 import ai.swim.recon.result.ParseResult;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.*;
 
 import static ai.swim.codec.Parser.preceded;
 import static ai.swim.codec.parsers.string.StringExt.multispace0;
@@ -25,41 +26,124 @@ public final class ReconParser {
   private final Input input;
   private final Deque<ParseEvents.ParseState> state;
   private Parser<ParserTransition> current;
+  private ParseEvents pending;
+  private boolean complete = false;
+  private boolean clearIfNone;
 
   public ReconParser(Input input) {
+    this.input = Objects.requireNonNull(input);
+    this.state = new ArrayDeque<>(Collections.singleton(ParseEvents.ParseState.Init));
+  }
+
+  public ReconParser(Input input, Deque<ParseEvents.ParseState> state, Parser<ParserTransition> current, ParseEvents pending, boolean complete) {
     this.input = input;
-    this.state = new ArrayDeque<>(10);
+    this.state = state;
+    this.current = current;
+    this.pending = pending;
+    this.complete = complete;
   }
 
   public boolean isError() {
-    throw new AssertionError();
+    if (this.complete) {
+      return false;
+    } else if (this.current == null) {
+      return this.input.isError();
+    } else {
+      return this.current.isCont();
+    }
   }
 
   public boolean isCont() {
-    throw new AssertionError();
+    if (this.complete) {
+      return false;
+    } else if (this.current == null) {
+      return this.input.isContinuation();
+    } else {
+      return this.current.isCont();
+    }
   }
 
   public boolean isDone() {
-    throw new AssertionError();
+    if (this.complete) {
+      return true;
+    } else if (this.current == null) {
+      return this.input.isDone();
+    } else {
+      return this.current.isCont();
+    }
   }
 
   public ReconParser feed(Input input) {
-    return new ReconParser(input);
+    return new ReconParser(Objects.requireNonNull(input), this.state, this.current, this.pending, this.complete);
   }
 
-  public ParseResult<ParseEvents> next() {
+  public ParseResult<ReadEvent> next() {
+    if (this.pending != null) {
+      Optional<EventOrEnd> optEvent = pending.takeEvent();
+      if (optEvent.isPresent()) {
+        return onEvent(optEvent.get());
+      }
+    }
+
+    if (this.complete) {
+      return ParseResult.end();
+    } else if (this.current != null) {
+      if (this.current.isError()) {
+        return ParseResult.error(((ParserError<?>) this.current).getCause());
+      } else if (this.input.isContinuation()) {
+        while (input.isContinuation()) {
+          System.out.println("Current state: " + this.state.getLast());
+          ParseResult<ParseEvents> result = this.feed();
+          if (result.isOk()) {
+            Optional<EventOrEnd> optEvent = result.bind().takeEvent();
+            if (optEvent.isPresent()) {
+              return onEvent(optEvent.get());
+            }
+          } else {
+            return result.cast();
+          }
+        }
+
+        if (this.input.isError()) {
+          return ParseResult.error(((InputError) this.input));
+        } else if (!this.complete && this.input.isDone()) {
+          return ParseResult.error("Not enough data");
+        } else {
+          return ParseResult.continuation();
+        }
+      }
+    }
+
     if (this.state.peekLast() != null) {
-      return this.nextEvent();
+      while (true) {
+        ParseResult<ParseEvents> result = this.nextEvent();
+        if (result.isOk()) {
+          Optional<EventOrEnd> optEvent = result.bind().takeEvent();
+          if (optEvent.isPresent()) {
+            return onEvent(optEvent.get());
+          }
+        } else {
+          return result.cast();
+        }
+      }
+    }
+
+    return ParseResult.end();
+  }
+
+  private ParseResult<ReadEvent> onEvent(EventOrEnd eventOrEnd) {
+    if (eventOrEnd.isEnd()) {
+      this.complete = true;
+      return ParseResult.end();
     } else {
-      return ParseResult.ok(new EndParseEvent());
+      Event event = (Event) eventOrEnd;
+      this.pending = event.getNext();
+      return ParseResult.ok(event.getEvent());
     }
   }
 
-  private ParseResult<ParseEvents> parseEvent(Parser<ParserTransition> parser, boolean clearIfNone) {
-    if (this.current == null) {
-      this.current = parser;
-      return parseEvent(null, clearIfNone);
-    }
+  private ParseResult<ParseEvents> feed() {
+    this.current = this.current.feed(this.input);
 
     if (this.current.isCont()) {
       return ParseResult.continuation();
@@ -73,12 +157,34 @@ public final class ReconParser {
     return ParseResult.ok(output.getEvents());
   }
 
+  private ParseResult<ParseEvents> parseEvent(Parser<ParserTransition> parser, boolean clearIfNone) {
+    if (this.current == null) {
+      this.current = parser;
+      this.clearIfNone = clearIfNone;
+    }
+
+    return this.feed();
+  }
+
   private ParseResult<ParseEvents> nextEvent() {
+    System.out.println("Current state: " + this.state.getLast());
+
     switch (this.state.getLast()) {
       case Init:
-        return parseEvent(preceded(multispace0(), parseInit()), true);
+        if (input.isDone()) {
+          this.complete = true;
+          return ParseResult.ok(ParseEvents.singleEvent(ReadEvent.extant()));
+        } else {
+          return parseEvent(preceded(multispace0(), parseInit()), true);
+        }
       case AfterAttr:
-        return parseEvent(parseAfterAttr(), false);
+        if (input.isDone()) {
+          this.current = null;
+          this.complete = true;
+          return ParseResult.ok(ParseEvents.twoEvents(ReadEvent.startBody(), ReadEvent.endRecord()));
+        } else {
+          return parseEvent(parseAfterAttr(), false);
+        }
       case RecordBodyStartOrNl:
         return parseEvent(preceded(multispace0(), parseNotAfterItem(ItemsKind.record(), false)), false);
       case AttrBodyStartOrNl:
@@ -127,7 +233,7 @@ public final class ReconParser {
           }
         }), false);
       case AttrBodyAfterValue:
-        return parseEvent(preceded(space0(), parseAfterValue(ItemsKind.record())).map(s -> {
+        return parseEvent(preceded(space0(), parseAfterValue(ItemsKind.attr())).map(s -> {
           if (s.isPresent()) {
             ParseEvents.ParseState parseState = s.get();
             this.state.removeLast();
@@ -153,6 +259,12 @@ public final class ReconParser {
   }
 
   private void transition(StateChange stateChange, boolean clearIfNone) {
+    if (stateChange == null) {
+      return;
+    }
+
+    System.out.println("Transitioning to: " + stateChange);
+
     if (stateChange.isNone()) {
       if (clearIfNone) {
         this.state.clear();

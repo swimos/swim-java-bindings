@@ -36,4 +36,9 @@ public class ParserError<O> extends Parser<O> {
   public boolean isError() {
     return true;
   }
+
+  @Override
+  public boolean isCont() {
+    return false;
+  }
 }

@@ -20,6 +20,7 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.events.ParseEvents;
 import ai.swim.recon.models.items.AttrBodyItems;
+import ai.swim.recon.models.items.ItemsKind;
 import ai.swim.recon.models.items.RecordBodyItems;
 import ai.swim.recon.models.state.*;
 import org.junit.jupiter.api.Test;
@@ -108,7 +109,7 @@ class ReconParserPartsTest {
   }
 
   void parseNotAfterItemExec(String input, ParserTransition expected) {
-    Parser<ParserTransition> parser = ReconParserParts.parseNotAfterItem(new RecordBodyItems(), false);
+    Parser<ParserTransition> parser = ReconParserParts.parseNotAfterItem(ItemsKind.record(), false);
     parser = parser.feed(Input.string(input));
 
     assertTrue(parser.isDone());

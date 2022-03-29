@@ -15,7 +15,7 @@ public class StringParsersExt {
           input.step();
           return Parser.done(head);
         } else {
-          return Parser.error("Expected: " + head);
+          return Parser.error("Expected: " + c + ", found: " + head);
         }
       } else if (input.isError()) {
         return Parser.error(((InputError) input).getCause());

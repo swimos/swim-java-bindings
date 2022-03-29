@@ -50,11 +50,14 @@ public abstract class ReconParserParts {
   }
 
   public static Parser<ParserTransition> parseInit() {
-    return alt(stringLiteral().map(t -> ReadEvent.text(t).transition()),
+    return alt(
+        stringLiteral().map(t -> ReadEvent.text(t).transition()),
         identifier().map(s -> mapIdentifier(s).transition()),
-        numericLiteral().map(n -> ReadEvent.number(n).transition()), blob().map(b -> ReadEvent.blob(b).transition()),
-        secondaryAttr(), eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(),
-            new ChangeState(ParseEvents.ParseState.RecordBodyStartOrNl))));
+        numericLiteral().map(n -> ReadEvent.number(n).transition()),
+        blob().map(b -> ReadEvent.blob(b).transition()),
+        secondaryAttr(),
+        eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(), new ChangeState(ParseEvents.ParseState.RecordBodyStartOrNl)))
+    );
   }
 
   public static Parser<String> attr() {
@@ -152,7 +155,10 @@ public abstract class ReconParserParts {
         peek(alt(
             oneOf(',', ';', ')', '}').map(Object::toString),
             lineEnding()
-        ).map(s -> new ParserTransition(ReadEvent.startBody(), ReadEvent.endRecord(), new PopAfterItem())))
+        ).map(s -> {
+          System.out.println("Done");
+          return new ParserTransition(ReadEvent.startBody(), ReadEvent.endRecord(), new PopAfterItem());
+        }))
     );
   }
 

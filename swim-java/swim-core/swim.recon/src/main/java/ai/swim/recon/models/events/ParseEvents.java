@@ -17,6 +17,8 @@ package ai.swim.recon.models.events;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.stage.FinalAttr;
 
+import java.util.Optional;
+
 public abstract class ParseEvents {
 
   public static ParseEvents noEvent() {
@@ -65,6 +67,22 @@ public abstract class ParseEvents {
 
   public boolean isEnd() {
     return false;
+  }
+
+  public Optional<EventOrEnd> takeEvent() {
+    if (this.isSingleEvent()) {
+      return Optional.of(new Event(((SingleParseEvent) this).getEvent(), null));
+    } else if (this.isTwoEvents()) {
+      TwoParseEvents parseEvents = (TwoParseEvents) this;
+      return Optional.of(new Event(parseEvents.getEvent1(), ParseEvents.singleEvent(parseEvents.getEvent2())));
+    } else if (this.isThreeEvents()) {
+      ThreeParseEvents parseEvents = (ThreeParseEvents) this;
+      return Optional.of(new Event(parseEvents.getEvent1(), ParseEvents.twoEvents(parseEvents.getEvent2(), parseEvents.getEvent3())));
+    } else if (this.isEnd()) {
+      return Optional.of(EventOrEnd.end());
+    } else {
+      return Optional.empty();
+    }
   }
 
   @Override
