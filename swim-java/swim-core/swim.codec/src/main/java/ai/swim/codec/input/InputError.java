@@ -24,11 +24,6 @@ public class InputError extends Input {
   }
 
   @Override
-  public boolean complete() {
-    return false;
-  }
-
-  @Override
   public boolean has(int n) {
     return false;
   }
@@ -79,11 +74,6 @@ public class InputError extends Input {
   }
 
   @Override
-  public int offset() {
-    return 0;
-  }
-
-  @Override
   public int len() {
     return 0;
   }
@@ -94,23 +84,8 @@ public class InputError extends Input {
   }
 
   @Override
-  public int[] borrow(int n) {
-    return new int[0];
-  }
-
-  @Override
   public boolean compare(int[] with) {
     return false;
-  }
-
-  @Override
-  public Input advance(int m) {
-    return null;
-  }
-
-  @Override
-  public Input slice(int start, int end) {
-    throw new IllegalStateException();
   }
 
   @Override

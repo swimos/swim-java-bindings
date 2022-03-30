@@ -11,11 +11,6 @@ public class InputDone extends Input {
   }
 
   @Override
-  public boolean complete() {
-    return false;
-  }
-
-  @Override
   public boolean has(int n) {
     throw new IllegalStateException();
   }
@@ -66,11 +61,6 @@ public class InputDone extends Input {
   }
 
   @Override
-  public int offset() {
-    throw new IllegalStateException();
-  }
-
-  @Override
   public int len() {
     return this.delegate.len();
   }
@@ -81,18 +71,8 @@ public class InputDone extends Input {
   }
 
   @Override
-  public int[] borrow(int n) {
-    throw new IllegalStateException();
-  }
-
-  @Override
   public boolean compare(int[] with) {
     return this.delegate.compare(with);
-  }
-
-  @Override
-  public Input slice(int start, int end) {
-    return null;
   }
 
   @Override
@@ -104,11 +84,5 @@ public class InputDone extends Input {
   public Input extend(Input from) {
     return this.delegate.extend(from);
   }
-
-  @Override
-  public Input advance(int m) {
-    throw new IllegalStateException();
-  }
-
 
 }

@@ -21,7 +21,6 @@ public class StringLocation implements Location {
   private final int line;
   private final int column;
 
-
   public StringLocation(int line, int column) {
     this.line = line;
     this.column = column;

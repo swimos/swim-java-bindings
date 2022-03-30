@@ -70,23 +70,6 @@ class ParserExtTest {
   }
 
   @Test
-  void altTestNone() {
-    Parser<String> parser = alt(stringLiteral(), new Parser<>() {
-      @Override
-      public Parser<String> feed(Input input) {
-        return this;
-      }
-    }, Parser.error(""));
-
-    Parser<String> parseResult = parser.feed(Input.string("").isPartial(true));
-    assertTrue(parseResult.isCont());
-    parseResult = parseResult.feed(Input.string("").isPartial(true));
-    parseResult = parseResult.feed(Input.string("\"abc\""));
-
-    assertEquals(parseResult.bind(), "abc");
-  }
-
-  @Test
   void takeWhile0Test() {
     Parser<String> parser = takeWhile0(Character::isDigit);
     Input input = Input.string("12345abcde");
