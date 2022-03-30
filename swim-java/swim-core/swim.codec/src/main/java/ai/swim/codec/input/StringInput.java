@@ -37,11 +37,6 @@ public class StringInput extends Input {
   }
 
   @Override
-  public boolean complete() {
-    return index >= data.length();
-  }
-
-  @Override
   public boolean has(int n) {
     return (offset + n) <= data.length();
   }
@@ -118,11 +113,6 @@ public class StringInput extends Input {
   }
 
   @Override
-  public int offset() {
-    return this.offset;
-  }
-
-  @Override
   public int len() {
     return this.data.length() - this.offset;
   }
@@ -160,25 +150,8 @@ public class StringInput extends Input {
   }
 
   @Override
-  public int[] borrow(int n) {
-    if (!this.has(n)) {
-      throw new IllegalStateException();
-    }
-
-    return this.data.substring(this.offset, this.offset + n).chars().toArray();
-  }
-
-  @Override
   public boolean compare(int[] with) {
     throw new IllegalStateException();
-  }
-
-  @Override
-  public Input slice(int start, int end) {
-    return new StringInput(
-        this.data.substring(start, end),
-        1, 1, 0, 0
-    );
   }
 
   @Override
@@ -208,19 +181,6 @@ public class StringInput extends Input {
     } else {
       throw new IllegalArgumentException("Cannot extend a StringInput from a: " + from.getClass().getCanonicalName());
     }
-  }
-
-  @Override
-  public Input advance(int n) {
-    if (!this.has(n)) {
-      throw new IllegalStateException();
-    }
-
-    for (int i = 0; i < n; i++) {
-      this.advance();
-    }
-
-    return this;
   }
 
   private int advance() {

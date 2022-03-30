@@ -2,8 +2,6 @@ package ai.swim.codec.input;
 
 import ai.swim.codec.location.Location;
 
-import java.util.Arrays;
-
 public abstract class Input {
 
   public static Input string(String input) {
@@ -13,8 +11,6 @@ public abstract class Input {
   public static Input done(Input input) {
     return new InputDone(input);
   }
-
-  public abstract boolean complete();
 
   public abstract boolean has(int n);
 
@@ -36,37 +32,14 @@ public abstract class Input {
 
   public abstract int[] bind();
 
-  public abstract int offset();
-
   public abstract int len();
 
   public abstract int[] take(int n);
 
-  public abstract int[] borrow(int n);
-
   public abstract boolean compare(int[] with);
-
-  public abstract Input advance(int m);
-
-  public abstract Input slice(int start, int end);
 
   @Override
   public abstract Input clone();
-
-
-  /***
-   * Compares two sources for data equality. Checking if their remaining data is equal rather than the instances.
-   */
-  public boolean dataEquals(Input input) {
-    int thisLen = this.len();
-    int thatLen = input.len();
-
-    if (thisLen != thatLen) {
-      return false;
-    }
-
-    return Arrays.equals(this.borrow(thisLen), input.borrow(thatLen));
-  }
 
   public void cloneFrom(Input innerInput) {
     throw new IllegalStateException();
