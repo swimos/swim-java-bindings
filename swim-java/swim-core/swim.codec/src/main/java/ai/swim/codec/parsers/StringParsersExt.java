@@ -72,7 +72,7 @@ public class StringParsersExt {
           return Parser.error("Expected a line ending");
         }
       } else if (input.isEmpty()) {
-        return Parser.error(((InputError) input));
+        return Parser.error("Need more data");
       } else if (input.isDone()) {
         return Parser.error("Invalid input");
       } else {

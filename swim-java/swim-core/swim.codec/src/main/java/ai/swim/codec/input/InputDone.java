@@ -101,6 +101,11 @@ public class InputDone extends Input {
   }
 
   @Override
+  public Input extend(Input from) {
+    return this.delegate.extend(from);
+  }
+
+  @Override
   public Input advance(int m) {
     throw new IllegalStateException();
   }

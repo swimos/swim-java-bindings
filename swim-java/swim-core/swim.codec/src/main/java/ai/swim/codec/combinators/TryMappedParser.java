@@ -15,6 +15,7 @@
 package ai.swim.codec.combinators;
 
 import ai.swim.codec.Parser;
+import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
 
 import java.util.function.Function;
@@ -39,6 +40,8 @@ public class TryMappedParser<I, O> extends Parser<O> {
       this.inner = this.inner.feed(input);
       if (this.inner.isDone()) {
         return Parser.done(this.map.apply(this.inner.bind()));
+      } else if (this.inner.isError()) {
+        return Parser.error(((ParserError<O>) this.inner).getCause());
       } else {
         return this;
       }

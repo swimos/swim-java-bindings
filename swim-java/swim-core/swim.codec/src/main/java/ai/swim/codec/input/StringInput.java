@@ -200,6 +200,17 @@ public class StringInput extends Input {
   }
 
   @Override
+  public Input extend(Input from) {
+    Objects.requireNonNull(from);
+    if (from instanceof StringInput) {
+      StringInput stringInput = (StringInput) from;
+      return new StringInput(this.data + stringInput.data, this.line, this.column, this.index, this.offset).isPartial(stringInput.isPartial);
+    } else {
+      throw new IllegalArgumentException("Cannot extend a StringInput from a: " + from.getClass().getCanonicalName());
+    }
+  }
+
+  @Override
   public Input advance(int n) {
     if (!this.has(n)) {
       throw new IllegalStateException();

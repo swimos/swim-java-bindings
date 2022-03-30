@@ -26,13 +26,20 @@ import java.util.function.Predicate;
 public class ParserExt {
 
   /***
-   * Runs n parsers until one produces a value or every parser fails.
+   * Runs n parsers until one makes progress or every parser errors. The parser that makes progress will be returned as
+   * a new parser.
+   *
+   * Each arm in an alt group should have a unique token that identifies what parser should succeed, if this condition
+   * is not met then the state of the group will be undefined.
    **/
   @SafeVarargs
   public static <O> Parser<O> alt(Parser<O>... parsers) {
     return Parser.lambda(input -> {
       Parser<O> error = null;
+      Parser<O> cont = null;
+      Input advanced = null;
       int errorCount = 0;
+      int contCount = 0;
 
       for (int i = 0; i < parsers.length; i++) {
         Parser<O> p = parsers[i];
@@ -47,8 +54,16 @@ public class ParserExt {
         if (parseResult.isError()) {
           errorCount += 1;
           error = parseResult;
+        } else if (parseResult.isCont()) {
+          // It's possible that a branch cannot make progress due to insufficient input and will return a continuation.
+          // This is problematic as that branch could be returned and effectively starve the other branch in the
+          // combinator. We want every branch to try and make some progress before deciding which branch to return.
+          contCount += 1;
+          cont = parseResult;
+          advanced = source;
         } else if (parseResult.isDone()) {
           input.cloneFrom(source);
+          System.out.println("Alt done");
           return parseResult;
         }
 
@@ -56,10 +71,19 @@ public class ParserExt {
       }
 
       if (errorCount == parsers.length) {
+        System.out.println("Alt error");
         return error;
       }
 
-      return alt(parsers);
+      if (contCount == parsers.length || cont == null) {
+        System.out.println("Alt alt(parsers)");
+        /// There was insufficient data available for any branches to make progress.
+        return alt(parsers);
+      }
+
+//      System.out.println("Alt cont");
+      input.cloneFrom(advanced);
+      return cont;
     });
   }
 

@@ -57,6 +57,5 @@ public class OptParser<T> extends Parser<Optional<T>> {
     } else {
       return this;
     }
-
   }
 }

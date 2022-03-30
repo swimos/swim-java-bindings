@@ -3,6 +3,7 @@ package ai.swim.recon;
 import ai.swim.codec.input.Input;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.result.ParseResult;
+import ai.swim.recon.result.ResultError;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -24,7 +25,9 @@ class ReconParserTest {
     for (int i = 1; i < string.length(); i++) {
       assertTrue(parser.isCont());
       ParseResult<ReadEvent> parseResult = parser.next();
-      assertFalse(parseResult.isError());
+      if (parseResult.isError()) {
+        fail(((ResultError<?>) parseResult).getCause());
+      }
 
       if (parseResult.isOk()) {
         System.out.println("ReadEvent: " + parseResult.bind());
@@ -39,10 +42,20 @@ class ReconParserTest {
       parser = parser.feed(Input.string(s).isPartial(isPartial));
     }
 
-    ParseResult<ReadEvent> parseResult = parser.next();
-    assertFalse(parseResult.isError());
-    assertTrue(parseResult.isOk());
-    actual.add(parseResult.bind());
+    // A sufficiently large enough loop to drain any pending events but not cause an infinite loop
+    for (int i = 0; i < 1000; i++) {
+      ParseResult<ReadEvent> parseResult = parser.next();
+      if (parseResult.isError()) {
+        fail(((ResultError<?>) parseResult).getCause());
+      }
+
+      assertTrue(parseResult.isOk());
+      actual.add(parseResult.bind());
+
+      if (parser.isDone()) {
+        break;
+      }
+    }
 
     assertTrue(parser.isDone());
     assertEquals(expected, actual);
@@ -52,6 +65,7 @@ class ReconParserTest {
     ReconParser parser = new ReconParser(Input.string(input));
 
     for (ReadEvent event : expected) {
+      System.out.println(event);
       assertEquals(ParseResult.ok(event), parser.next());
     }
 

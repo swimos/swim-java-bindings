@@ -64,20 +64,16 @@ public final class ReconParser {
   }
 
   public boolean isDone() {
-    if (this.complete) {
-      return true;
-    } else if (this.current == null) {
-      return this.input.isDone();
-    } else {
-      return this.current.isCont();
-    }
+    return this.complete && this.pending==null;
   }
 
   public ReconParser feed(Input input) {
-    return new ReconParser(Objects.requireNonNull(input), this.state, this.current, this.pending, this.complete);
+    return new ReconParser(this.input.extend(Objects.requireNonNull(input)), this.state, this.current, this.pending, this.complete);
   }
 
   public ParseResult<ReadEvent> next() {
+//    System.out.println("Current state: " + this.state.getLast() + ", head: " + (char) input.head());
+
     if (this.pending != null) {
       Optional<EventOrEnd> optEvent = pending.takeEvent();
       if (optEvent.isPresent()) {
@@ -91,17 +87,15 @@ public final class ReconParser {
       if (this.current.isError()) {
         return ParseResult.error(((ParserError<?>) this.current).getCause());
       } else if (this.input.isContinuation()) {
-        while (input.isContinuation()) {
-          System.out.println("Current state: " + this.state.getLast());
-          ParseResult<ParseEvents> result = this.feed();
-          if (result.isOk()) {
-            Optional<EventOrEnd> optEvent = result.bind().takeEvent();
-            if (optEvent.isPresent()) {
-              return onEvent(optEvent.get());
-            }
-          } else {
-            return result.cast();
+        ParseResult<ParseEvents> result = this.feed();
+
+        if (result.isOk()) {
+          Optional<EventOrEnd> optEvent = result.bind().takeEvent();
+          if (optEvent.isPresent()) {
+            return onEvent(optEvent.get());
           }
+        } else {
+          return result.cast();
         }
 
         if (this.input.isError()) {
@@ -167,8 +161,6 @@ public final class ReconParser {
   }
 
   private ParseResult<ParseEvents> nextEvent() {
-    System.out.println("Current state: " + this.state.getLast());
-
     switch (this.state.getLast()) {
       case Init:
         if (input.isDone()) {

@@ -133,10 +133,10 @@ public abstract class ReconParserParts {
         } else if (parseResult.isError()) {
           return ParserError.error(((ParserError<?>) parseResult).getCause());
         } else {
-          return secondaryAttrCont(event);
+          return primaryAttrCont(event);
         }
       } else {
-        return secondaryAttrCont(event);
+        return primaryAttrCont(event);
       }
     });
   }
@@ -215,6 +215,7 @@ public abstract class ReconParserParts {
   }
 
   public static Parser<ParserTransition> parseSlotValue(ItemsKind itemsKind) {
+    System.out.println("Parse slot value");
     return alt(
         stringLiteral().map(t -> slotItem(itemsKind, ReadEvent.text(t))),
         identifier().map(i -> slotItem(itemsKind, mapIdentifier(i))),
