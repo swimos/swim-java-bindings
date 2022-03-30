@@ -143,6 +143,7 @@ public abstract class ReconParserParts {
 
   public static Parser<ParserTransition> parseAfterAttr() {
     return alt(
+        secondaryAttr(),
         alt(
             stringLiteral().map(ReadEvent::text),
             identifier().map(ReconParserParts::mapIdentifier),
