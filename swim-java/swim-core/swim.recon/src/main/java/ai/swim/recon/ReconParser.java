@@ -90,7 +90,11 @@ public final class ReconParser {
   }
 
   public ParseResult<ReadEvent> next() {
-//    System.out.println("Current state: " + this.state.peekLast() + ", head: " + (char) input.head());
+    if (input.isDone()) {
+      System.out.println("Current state: " + this.state.peekLast() + ", input done");
+    } else {
+      System.out.println("Current state: " + this.state.peekLast() + ", head: " + (char) input.head());
+    }
 
     if (this.pending != null) {
       Optional<EventOrEnd> optEvent = pending.takeEvent();
@@ -198,7 +202,7 @@ public final class ReconParser {
           this.complete = true;
           return ParseResult.ok(ParseEvents.twoEvents(ReadEvent.startBody(), ReadEvent.endRecord()));
         } else {
-          return parseEvent(parseAfterAttr(), false);
+          return parseEvent(preceded(multispace0(), parseAfterAttr()), false);
         }
       case RecordBodyStartOrNl:
         return parseEvent(preceded(multispace0(), parseNotAfterItem(ItemsKind.record(), false)), false);
@@ -215,7 +219,7 @@ public final class ReconParser {
             this.state.removeLast();
             this.state.addLast(parseState);
 
-            if (parseState == ParseEvents.ParseState.AttrBodySlot) {
+            if (parseState == ParseEvents.ParseState.RecordBodySlot) {
               return new ParserTransition(ReadEvent.slot(), null);
             } else {
               return new ParserTransition(new NoParseEvent(), null);
@@ -289,13 +293,16 @@ public final class ReconParser {
         this.state.clear();
       }
     } else if (stateChange.isPopAfterAttr()) {
-      if (this.state.peekLast() != null) {
-        this.state.removeLast();
+      this.state.pollLast();
+      ParseEvents.ParseState last = this.state.pollLast();
+      if (last != null) {
         this.state.addLast(ParseEvents.ParseState.AfterAttr);
       }
+
+//      System.out.println("Pop after attr stack: " + this.state);
     } else if (stateChange.isPopAfterItem()) {
       this.state.pollLast();
-      ParseEvents.ParseState parseState = this.state.peekLast();
+      ParseEvents.ParseState parseState = this.state.pollLast();
       if (parseState != null) {
         switch (parseState) {
           case Init:
@@ -320,8 +327,8 @@ public final class ReconParser {
         }
       }
     } else if (stateChange.isChangeState()) {
-      if (this.state.peekLast() != null) {
-        this.state.removeLast();
+      ParseEvents.ParseState last = this.state.pollLast();
+      if (last != null) {
         this.state.addLast(((ChangeState) stateChange).getState());
       }
     } else if (stateChange.isPushAttr()) {

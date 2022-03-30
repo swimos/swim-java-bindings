@@ -15,7 +15,7 @@ class ReconParserTest {
 
   void runTestOk(String string, List<ReadEvent> expected) {
     testCompleteOk(string, expected);
-//    testIncrementalOk(string, expected);
+    testIncrementalOk(string, expected);
   }
 
   private void testIncrementalOk(String string, List<ReadEvent> expected) {
@@ -152,7 +152,7 @@ class ReconParserTest {
 
     runTestOk("{1,two,3}", events);
     runTestOk("{ 1, two, 3}", events);
-    runTestOk(" { 1 , two , 3 } ", events);
+    runTestOk(" { 1, two, 3 }", events);
   }
 
   @Test
@@ -183,14 +183,276 @@ class ReconParserTest {
   @Test
   void newlineSeparators() {
     List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.text("two"),
+        ReadEvent.number(3),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{1\ntwo\n3}", events);
+    runTestOk("{\n\t1\n\ttwo\n\t3\n}", events);
+  }
+
+  @Test
+  void singletonSlot() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.text("name"),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{name:1}", events);
+    runTestOk("{ name: 1 }", events);
+    runTestOk("{\nname: 1 }", events);
+  }
+
+  @Test
+  void missingSlotValue() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.text("name"),
+        ReadEvent.slot(),
+        ReadEvent.extant(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{name:}", events);
+    runTestOk("{ name: }", events);
+    runTestOk("{\n name:\n }", events);
+  }
+
+  @Test
+  void missingSlotKey() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.extant(),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{:1}", events);
+    runTestOk("{ : 1 }", events);
+    runTestOk("{\n : 1 }", events);
+  }
+
+  @Test
+  void simpleSlotsRecord() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.text("first"),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.text("second"),
+        ReadEvent.slot(),
+        ReadEvent.text("two"),
+        ReadEvent.text("third"),
+        ReadEvent.slot(),
+        ReadEvent.number(3),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{first:1,second:two,third:3}", events);
+    runTestOk("{ first: 1, second: two, third: 3 }", events);
+  }
+
+  @Test
+  void missingSlotParts() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.text("first"),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.text("second"),
+        ReadEvent.slot(),
+        ReadEvent.extant(),
+        ReadEvent.extant(),
+        ReadEvent.slot(),
+        ReadEvent.number(3),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{first:1,second:,:3}", events);
+    runTestOk("{ first: 1, second: , : 3 }", events);
+    runTestOk("{first:1,second:\n:3}", events);
+    runTestOk("{first:1\nsecond:\n:3\n}", events);
+    runTestOk("{first:1,second:\r\n:3}", events);
+    runTestOk("{first:1\r\nsecond:\r\n:3\r\n}", events);
+  }
+
+  @Test
+  void tagAttribute() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("tag"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@tag", events);
+    runTestOk("@tag {}", events);
+  }
+
+  @Test
+  void attrSimpleBody() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("name"),
+        ReadEvent.number(2),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@name(2)", events);
+    runTestOk("@name(2) {}", events);
+  }
+
+  @Test
+  void attrSlotBody() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("name"),
+        ReadEvent.text("a"),
+        ReadEvent.slot(),
+        ReadEvent.bool(true),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@name(a:true)", events);
+    runTestOk("@name(a:true) {}", events);
+    runTestOk("@name(a:true\n) {}", events);
+    runTestOk("@name(a:true\r\n) {}", events);
+  }
+
+  @Test
+  void attrSlotBodyMissingParts() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("name"),
+        ReadEvent.text("a"),
+        ReadEvent.slot(),
+        ReadEvent.extant(),
+        ReadEvent.text("b"),
+        ReadEvent.slot(),
+        ReadEvent.extant(),
+        ReadEvent.text("c"),
+        ReadEvent.slot(),
+        ReadEvent.extant(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@name(a:,b:,c:)", events);
+    runTestOk("@name(a:\nb:\nc:\n)", events);
+    runTestOk("@name(a:\r\nb:\r\nc:\r\n)", events);
+    runTestOk("@name(a:\n\nb:\n\nc:\n\n)", events);
+    runTestOk("@name(a:\r\n\r\nb:\r\n\r\nc:\r\n\r\n)", events);
+  }
+
+  @Test
+  void attrMultipleItemBody() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("name"),
+        ReadEvent.number(1),
+        ReadEvent.text("a"),
+        ReadEvent.slot(),
+        ReadEvent.bool(true),
+        ReadEvent.extant(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@name(1, a: true,)", events);
+    runTestOk("@name(1, a: true,) {}", events);
+    runTestOk("@name(1\n a: true,)", events);
+    runTestOk("@name(1\r\n a: true,)", events);
+  }
+
+  @Test
+  void multipleAttributes() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("first"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startAttribute("second"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@first@second", events);
+    runTestOk("@first@second {}", events);
+  }
+
+  @Test
+  void multipleAttributesWithBodies() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("first"),
+        ReadEvent.number(1),
+        ReadEvent.endAttribute(),
+        ReadEvent.startAttribute("second"),
+        ReadEvent.number(2),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@first(1)@second(2)", events);
+    runTestOk("@first(1)@second(2) {}", events);
+  }
+
+  @Test
+  void emptyNested() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{{},{},{}}", events);
+  }
+
+  @Test
+  void simpleNested() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.startBody(),
+        ReadEvent.number(4),
+        ReadEvent.text("slot"),
+        ReadEvent.slot(),
+        ReadEvent.text("word"),
+        ReadEvent.endRecord(),
+        ReadEvent.number(1),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{\n" +
+        "            { 4, slot: word }\n" +
+        "            1\n" +
+        "        }", events);
+  }
+
+  @Test
+  void nestedWithAttr() {
+    List<ReadEvent> events = List.of(
       ReadEvent.startBody(),
-      ReadEvent.number(1),
-      ReadEvent.text("two"),
-      ReadEvent.number(3),
+      ReadEvent.startAttribute("inner"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
       ReadEvent.endRecord()
     );
 
-    runTestOk("{1\ntwo\n3}",events);
-    runTestOk("{\n\t1\n\ttwo\n\t3\n}",events);
+    runTestOk("{ @inner }", events);
+    runTestOk("{ @inner {} }", events);
   }
 }
