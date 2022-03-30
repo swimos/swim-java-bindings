@@ -91,9 +91,9 @@ public final class ReconParser {
 
   public ParseResult<ReadEvent> next() {
     if (input.isDone()) {
-      System.out.println("Current state: " + this.state.peekLast() + ", input done");
+//      System.out.println("Current state: " + this.state.peekLast() + ", input done");
     } else {
-      System.out.println("Current state: " + this.state.peekLast() + ", head: " + (char) input.head());
+//      System.out.println("Current state: " + this.state.peekLast() + ", head: " + (char) input.head());
     }
 
     if (this.pending != null) {
@@ -286,7 +286,7 @@ public final class ReconParser {
       return;
     }
 
-    System.out.println("Transitioning to: " + stateChange);
+//    System.out.println("Transitioning to: " + stateChange);
 
     if (stateChange.isNone()) {
       if (clearIfNone) {
