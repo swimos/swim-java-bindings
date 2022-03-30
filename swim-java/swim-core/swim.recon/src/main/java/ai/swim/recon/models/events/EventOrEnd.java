@@ -3,13 +3,6 @@ package ai.swim.recon.models.events;
 import ai.swim.recon.event.ReadEvent;
 
 public abstract class EventOrEnd {
-  public static class EndEvent extends EventOrEnd {
-    @Override
-    public boolean isEnd() {
-      return true;
-    }
-  }
-
   private static EndEvent end;
 
   public static EventOrEnd end() {
@@ -30,5 +23,12 @@ public abstract class EventOrEnd {
 
   public boolean isEnd() {
     return false;
+  }
+
+  public static class EndEvent extends EventOrEnd {
+    @Override
+    public boolean isEnd() {
+      return true;
+    }
   }
 }

@@ -18,7 +18,6 @@ import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.input.StringInput;
 
-import static ai.swim.codec.parsers.OptParser.opt;
 import static ai.swim.codec.parsers.ParserExt.peek;
 import static ai.swim.codec.parsers.StringParsersExt.eqChar;
 

@@ -1,7 +1,5 @@
 package ai.swim.recon.result;
 
-import ai.swim.recon.event.ReadEvent;
-
 public class ResultError<O> extends ParseResult<O> {
   private final String cause;
 
@@ -19,7 +17,7 @@ public class ResultError<O> extends ParseResult<O> {
   }
 
   @Override
-  public  <T> ParseResult<T> cast() {
+  public <T> ParseResult<T> cast() {
     return new ResultError<>(this.cause);
   }
 

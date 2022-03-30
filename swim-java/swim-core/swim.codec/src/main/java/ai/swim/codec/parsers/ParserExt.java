@@ -63,7 +63,6 @@ public class ParserExt {
           advanced = source;
         } else if (parseResult.isDone()) {
           input.cloneFrom(source);
-//          System.out.println("Alt done");
           return parseResult;
         }
 
@@ -71,17 +70,14 @@ public class ParserExt {
       }
 
       if (errorCount == parsers.length) {
-//        System.out.println("Alt error");
         return error;
       }
 
       if (contCount == parsers.length || cont == null) {
-//        System.out.println("Alt alt(parsers)");
         /// There was insufficient data available for any branches to make progress.
         return alt(parsers);
       }
 
-//      System.out.println("Alt cont");
       input.cloneFrom(advanced);
       return cont;
     });
@@ -135,6 +131,10 @@ public class ParserExt {
     });
   }
 
+  public static <O> Parser<O> peek(Parser<O> parser) {
+    return Parser.lambda(input -> parser.feed(input.clone()));
+  }
+
   private static class Many0State<O> {
     private final List<O> output;
     private Parser<O> parser;
@@ -143,10 +143,6 @@ public class ParserExt {
       this.output = output;
       this.parser = parser;
     }
-  }
-
-  public static <O> Parser<O> peek(Parser<O> parser) {
-    return Parser.lambda(input -> parser.feed(input.clone()));
   }
 
 }

@@ -1,7 +1,5 @@
 package ai.swim.recon.result;
 
-import ai.swim.recon.event.ReadEvent;
-
 public class ResultEnd<O> extends ParseResult<O> {
   @Override
   public boolean isDone() {

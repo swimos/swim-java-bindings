@@ -156,10 +156,7 @@ public abstract class ReconParserParts {
         peek(alt(
             oneOf(',', ';', ')', '}').map(Object::toString),
             lineEnding()
-        ).map(s -> {
-//          System.out.println("Done");
-          return new ParserTransition(ReadEvent.startBody(), ReadEvent.endRecord(), new PopAfterItem());
-        }))
+        ).map(s -> new ParserTransition(ReadEvent.startBody(), ReadEvent.endRecord(), new PopAfterItem())))
     );
   }
 
@@ -205,7 +202,7 @@ public abstract class ReconParserParts {
 
   public static Parser<Optional<ParseEvents.ParseState>> parseAfterSlot(ItemsKind itemsKind) {
     return alt(
-         lineEnding().map(i -> Optional.of(itemsKind.startOrNl())),
+        lineEnding().map(i -> Optional.of(itemsKind.startOrNl())),
         separator().map(i -> Optional.of(itemsKind.afterSep())),
         eqChar(itemsKind.endDelim()).map(i -> Optional.empty())
     );

@@ -1,7 +1,5 @@
 package ai.swim.recon.result;
 
-import ai.swim.recon.event.ReadEvent;
-
 import java.util.Objects;
 
 public class ResultOk<O> extends ParseResult<O> {

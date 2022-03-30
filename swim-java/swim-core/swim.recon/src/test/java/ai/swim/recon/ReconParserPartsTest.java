@@ -21,7 +21,6 @@ import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.events.ParseEvents;
 import ai.swim.recon.models.items.AttrBodyItems;
 import ai.swim.recon.models.items.ItemsKind;
-import ai.swim.recon.models.items.RecordBodyItems;
 import ai.swim.recon.models.state.*;
 import org.junit.jupiter.api.Test;
 

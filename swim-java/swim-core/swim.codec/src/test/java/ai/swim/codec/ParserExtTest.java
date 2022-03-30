@@ -22,9 +22,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static ai.swim.codec.parsers.StringParsersExt.eqChar;
 import static ai.swim.codec.parsers.MapReduce.mapReduce;
 import static ai.swim.codec.parsers.ParserExt.*;
+import static ai.swim.codec.parsers.StringParsersExt.eqChar;
 import static ai.swim.codec.parsers.string.StringParser.stringLiteral;
 import static org.junit.jupiter.api.Assertions.*;
 
