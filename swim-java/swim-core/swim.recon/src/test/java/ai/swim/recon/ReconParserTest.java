@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ReconParserTest {
 
   void runTestOk(String string, List<ReadEvent> expected) {
-//    testCompleteOk(string, expected);
+    testCompleteOk(string, expected);
     testIncrementalOk(string, expected);
   }
 
@@ -37,7 +37,7 @@ class ReconParserTest {
       String s = String.valueOf(string.charAt(i));
       boolean isPartial = i != string.length() - 1;
 
-      System.out.println("Feeding: " + s + ", is partial: "+ isPartial);
+      System.out.println("Feeding: " + s + ", is partial: " + isPartial);
 
       parser = parser.feed(Input.string(s).isPartial(isPartial));
     }
@@ -49,10 +49,14 @@ class ReconParserTest {
         fail(((ResultError<?>) parseResult).getCause());
       }
 
+      if (parseResult.isDone()) {
+        break;
+      }
+
       assertTrue(parseResult.isOk());
       actual.add(parseResult.bind());
 
-      if (parser.isDone()) {
+      if (!parser.hasEvents()) {
         break;
       }
     }
@@ -65,6 +69,7 @@ class ReconParserTest {
     ReconParser parser = new ReconParser(Input.string(input));
 
     for (ReadEvent event : expected) {
+      System.out.println("Last: " + parser.state.getLast());
       System.out.println(event);
       assertEquals(ParseResult.ok(event), parser.next());
     }
@@ -83,34 +88,42 @@ class ReconParserTest {
         ReadEvent.startBody(),
         ReadEvent.endRecord()
     ));
-//    runTestOk("@tag(a:1,b:abc,c:\"string\")", List.of(
-//        ReadEvent.startAttribute("tag"),
-//        ReadEvent.text("a"),
-//        ReadEvent.slot(),
-//        ReadEvent.number(1),
-//        ReadEvent.text("b"),
-//        ReadEvent.slot(),
-//        ReadEvent.text("abc"),
-//        ReadEvent.text("c"),
-//        ReadEvent.slot(),
-//        ReadEvent.text("string"),
-//        ReadEvent.endAttribute(),
-//        ReadEvent.startBody(),
-//        ReadEvent.endRecord()
-//    ));
+    runTestOk("@tag(a:1,b:abc,c:\"string\")", List.of(
+        ReadEvent.startAttribute("tag"),
+        ReadEvent.text("a"),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.text("b"),
+        ReadEvent.slot(),
+        ReadEvent.text("abc"),
+        ReadEvent.text("c"),
+        ReadEvent.slot(),
+        ReadEvent.text("string"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    ));
+
+    runTestOk("@tag(a:\"abc\")",
+        List.of(
+            ReadEvent.startAttribute("tag"),
+            ReadEvent.text("a"),
+            ReadEvent.slot(),
+            ReadEvent.text("abc"),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.endRecord()
+        )
+    );
 
     runTestOk("\"string\"", List.of(ReadEvent.text("string")));
+  }
 
-//    runTestOk("@tag(a:\"abc\")",
-//        List.of(
-//            ReadEvent.startAttribute("tag"),
-//            ReadEvent.text("a"),
-//            ReadEvent.slot(),
-//            ReadEvent.text("abc"),
-//            ReadEvent.endAttribute(),
-//            ReadEvent.startBody(),
-//            ReadEvent.endRecord()
-//        )
-//    );
+  @Test
+  void emptyInput() {
+    ReconParser parser = new ReconParser(Input.string(""));
+    assertEquals(ParseResult.ok(ReadEvent.extant()), parser.next());
+    assertEquals(ParseResult.end(), parser.next());
+    assertEquals(ParseResult.end(), parser.next());
   }
 }
