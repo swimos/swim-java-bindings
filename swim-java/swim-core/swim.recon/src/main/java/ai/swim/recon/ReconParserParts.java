@@ -127,7 +127,7 @@ public abstract class ReconParserParts {
             return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
                 new PushAttrNewRec(true)));
           } else {
-            return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endRecord(),
+            return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endAttribute(),
                 new PushAttrNewRec(false)));
           }
         } else if (parseResult.isError()) {
@@ -157,7 +157,7 @@ public abstract class ReconParserParts {
             oneOf(',', ';', ')', '}').map(Object::toString),
             lineEnding()
         ).map(s -> {
-          System.out.println("Done");
+//          System.out.println("Done");
           return new ParserTransition(ReadEvent.startBody(), ReadEvent.endRecord(), new PopAfterItem());
         }))
     );

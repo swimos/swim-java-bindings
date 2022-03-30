@@ -65,6 +65,10 @@ class ReconParserTest {
   void testCompleteOk(String input, List<ReadEvent> expected) {
     ReconParser parser = new ReconParser(Input.string(input));
 
+//    for (int i = 0; i < 20; i++) {
+//      System.out.println(parser.next());
+//    }
+
     for (ReadEvent event : expected) {
       assertEquals(ParseResult.ok(event), parser.next());
     }
@@ -444,15 +448,174 @@ class ReconParserTest {
   @Test
   void nestedWithAttr() {
     List<ReadEvent> events = List.of(
-      ReadEvent.startBody(),
-      ReadEvent.startAttribute("inner"),
-      ReadEvent.endAttribute(),
-      ReadEvent.startBody(),
-      ReadEvent.endRecord(),
-      ReadEvent.endRecord()
+        ReadEvent.startBody(),
+        ReadEvent.startAttribute("inner"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord(),
+        ReadEvent.endRecord()
     );
 
     runTestOk("{ @inner }", events);
     runTestOk("{ @inner {} }", events);
+  }
+
+  @Test
+  void nestedAttrWithBody() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.startAttribute("inner"),
+        ReadEvent.number(0),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{ @inner(0) }", events);
+    runTestOk("{ @inner(0) {} }", events);
+  }
+
+  @Test
+  void nestedWithAttrWithBodyFollowed() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.startAttribute("inner"),
+        ReadEvent.number(0),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord(),
+        ReadEvent.text("after"),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{ @inner(0), after }", events);
+    runTestOk("{ @inner(0) {}, after }", events);
+  }
+
+  @Test
+  void emptyNestedInAttr() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("outer"),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@outer({})", events);
+  }
+
+  @Test
+  void simpleNestedInAttr() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("outer"),
+        ReadEvent.startBody(),
+        ReadEvent.number(4),
+        ReadEvent.text("slot"),
+        ReadEvent.slot(),
+        ReadEvent.text("word"),
+        ReadEvent.endRecord(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@outer({ 4, slot: word })", events);
+  }
+
+  @Test
+  void nestedWithAttrInAttr() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("outer"),
+        ReadEvent.startAttribute("inner"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@outer(@inner)", events);
+    runTestOk("@outer(@inner {})", events);
+  }
+
+  @Test
+  void nestedWithAttrWithBodyInAttr() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("outer"),
+        ReadEvent.startAttribute("inner"),
+        ReadEvent.number(0),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@outer(@inner(0))", events);
+    runTestOk("@outer(@inner(0) {})", events);
+  }
+
+  @Test
+  void nestedWithAttrWithBodyFollowedInAttr() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("outer"),
+        ReadEvent.startAttribute("inner"),
+        ReadEvent.number(0),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord(),
+        ReadEvent.number(3),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@outer(@inner(0), 3)", events);
+    runTestOk("@outer(@inner(0) {}, 3)", events);
+  }
+
+  @Test
+  void doubleNested() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.startBody(),
+        ReadEvent.number(2),
+        ReadEvent.startBody(),
+        ReadEvent.number(3),
+        ReadEvent.number(4),
+        ReadEvent.endRecord(),
+        ReadEvent.endRecord(),
+        ReadEvent.number(5),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{1, {2, {3, 4}}, 5}", events);
+  }
+
+  @Test
+  void complexSlot() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.startAttribute("key"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.endRecord(),
+        ReadEvent.slot(),
+        ReadEvent.startAttribute("value"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.number(2),
+        ReadEvent.endRecord(),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("{@key {1}: @value {2}}", events);
   }
 }
