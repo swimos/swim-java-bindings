@@ -25,7 +25,7 @@ import static ai.swim.codec.parsers.StringParsersExt.eqChar;
 public class StringExt {
 
   public static Parser<String> multispace0() {
-    return takeWhile0(c -> c == ' ');
+    return takeWhile0(c -> c == ' ' ||  c == '\t' || c == '\r' || c == '\n');
   }
 
   public static Parser<Optional<Character>> space0() {

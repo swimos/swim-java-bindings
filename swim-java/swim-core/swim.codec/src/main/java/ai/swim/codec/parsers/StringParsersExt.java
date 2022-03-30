@@ -5,6 +5,8 @@ import ai.swim.codec.input.InputError;
 
 import java.util.Arrays;
 
+import static ai.swim.codec.parsers.ParserExt.peek;
+
 public class StringParsersExt {
 
   public static Parser<Character> eqChar(char c) {
@@ -51,16 +53,18 @@ public class StringParsersExt {
   }
 
   public static Parser<String> lineEnding() {
-    return Parser.lambda(input -> {
+    return Parser.preceded(peek(oneOf('\r', '\n')), Parser.lambda(input -> {
       if (input.isContinuation()) {
         char first = (char) input.head();
         if (first == '\n') {
+          input.step();
           return Parser.done("\n");
         } else if (first == '\r') {
           input = input.step();
           if (input.isContinuation()) {
             char second = (char) input.head();
             if (second == '\n') {
+              input.step();
               return Parser.done("\r\n");
             } else {
               return Parser.error("Expected a line ending");
@@ -78,7 +82,7 @@ public class StringParsersExt {
       } else {
         return lineEnding();
       }
-    });
+    }));
   }
 
 }

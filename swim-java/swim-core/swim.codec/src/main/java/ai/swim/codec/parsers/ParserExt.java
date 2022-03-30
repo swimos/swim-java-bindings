@@ -63,7 +63,7 @@ public class ParserExt {
           advanced = source;
         } else if (parseResult.isDone()) {
           input.cloneFrom(source);
-          System.out.println("Alt done");
+//          System.out.println("Alt done");
           return parseResult;
         }
 
@@ -71,12 +71,12 @@ public class ParserExt {
       }
 
       if (errorCount == parsers.length) {
-        System.out.println("Alt error");
+//        System.out.println("Alt error");
         return error;
       }
 
       if (contCount == parsers.length || cont == null) {
-        System.out.println("Alt alt(parsers)");
+//        System.out.println("Alt alt(parsers)");
         /// There was insufficient data available for any branches to make progress.
         return alt(parsers);
       }
