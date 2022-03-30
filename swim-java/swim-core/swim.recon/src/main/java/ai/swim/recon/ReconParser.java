@@ -17,6 +17,7 @@ import ai.swim.recon.result.ParseResult;
 import java.util.*;
 
 import static ai.swim.codec.Parser.preceded;
+import static ai.swim.codec.parsers.ParserExt.alt;
 import static ai.swim.codec.parsers.string.StringExt.multispace0;
 import static ai.swim.codec.parsers.string.StringExt.space0;
 import static ai.swim.recon.ReconParserParts.*;
@@ -24,23 +25,26 @@ import static ai.swim.recon.ReconParserParts.*;
 public final class ReconParser {
 
   private final Input input;
-  private final Deque<ParseEvents.ParseState> state;
+  public final Deque<ParseEvents.ParseState> state;
   private Parser<ParserTransition> current;
   private ParseEvents pending;
-  private boolean complete = false;
+  private boolean complete;
   private boolean clearIfNone;
 
   public ReconParser(Input input) {
     this.input = Objects.requireNonNull(input);
     this.state = new ArrayDeque<>(Collections.singleton(ParseEvents.ParseState.Init));
+    this.complete = false;
+    this.clearIfNone = false;
   }
 
-  public ReconParser(Input input, Deque<ParseEvents.ParseState> state, Parser<ParserTransition> current, ParseEvents pending, boolean complete) {
+  public ReconParser(Input input, Deque<ParseEvents.ParseState> state, Parser<ParserTransition> current, ParseEvents pending, boolean complete, boolean clearIfNone) {
     this.input = input;
     this.state = state;
     this.current = current;
     this.pending = pending;
     this.complete = complete;
+    this.clearIfNone = clearIfNone;
   }
 
   public boolean isError() {
@@ -63,12 +67,26 @@ public final class ReconParser {
     }
   }
 
+  /**
+   * Returns whether the input is done.
+   *
+   * @return if the input is done.
+   */
   public boolean isDone() {
-    return this.complete && this.pending==null;
+    return this.input.isDone();
+  }
+
+  /**
+   * Return whether there are any pending events available.
+   *
+   * @return whether there are any pending events available.
+   */
+  public boolean hasEvents() {
+    return !(this.complete && this.pending == null);
   }
 
   public ReconParser feed(Input input) {
-    return new ReconParser(this.input.extend(Objects.requireNonNull(input)), this.state, this.current, this.pending, this.complete);
+    return new ReconParser(this.input.extend(Objects.requireNonNull(input)), this.state, this.current, this.pending, this.complete, this.clearIfNone);
   }
 
   public ParseResult<ReadEvent> next() {
@@ -122,6 +140,7 @@ public final class ReconParser {
       }
     }
 
+    this.complete = true;
     return ParseResult.end();
   }
 
@@ -163,12 +182,16 @@ public final class ReconParser {
   private ParseResult<ParseEvents> nextEvent() {
     switch (this.state.getLast()) {
       case Init:
-        if (input.isDone()) {
-          this.complete = true;
-          return ParseResult.ok(ParseEvents.singleEvent(ReadEvent.extant()));
-        } else {
-          return parseEvent(preceded(multispace0(), parseInit()), true);
-        }
+        return parseEvent(alt(
+            Parser.lambda(input -> {
+              if (input.isDone()) {
+                return Parser.done(ReadEvent.extant());
+              } else {
+                return Parser.error("Expected an empty input");
+              }
+            }).map(ReadEvent::transition),
+            preceded(multispace0(), parseInit())
+        ), true);
       case AfterAttr:
         if (input.isDone()) {
           this.current = null;
@@ -252,6 +275,10 @@ public final class ReconParser {
 
   private void transition(StateChange stateChange, boolean clearIfNone) {
     if (stateChange == null) {
+      if (clearIfNone) {
+        this.state.clear();
+      }
+
       return;
     }
 
