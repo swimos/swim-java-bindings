@@ -40,7 +40,7 @@ public class ParserTransition {
     this.change = Objects.requireNonNullElse(change, new NoStateChange());
   }
 
-  public ParserTransition(ParseEvents events, StateChange change){
+  public ParserTransition(ParseEvents events, StateChange change) {
     this.events = events;
     this.change = change;
   }

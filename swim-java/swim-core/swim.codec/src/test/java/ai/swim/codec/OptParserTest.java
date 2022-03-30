@@ -18,8 +18,8 @@ import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
 
 import static ai.swim.codec.Parser.preceded;
-import static ai.swim.codec.parsers.StringParsersExt.eqChar;
 import static ai.swim.codec.parsers.OptParser.opt;
+import static ai.swim.codec.parsers.StringParsersExt.eqChar;
 import static ai.swim.codec.parsers.number.NumberParser.numericLiteral;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

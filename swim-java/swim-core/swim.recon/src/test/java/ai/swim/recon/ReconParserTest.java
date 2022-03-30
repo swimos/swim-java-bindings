@@ -65,10 +65,6 @@ class ReconParserTest {
   void testCompleteOk(String input, List<ReadEvent> expected) {
     ReconParser parser = new ReconParser(Input.string(input));
 
-//    for (int i = 0; i < 20; i++) {
-//      System.out.println(parser.next());
-//    }
-
     for (ReadEvent event : expected) {
       assertEquals(ParseResult.ok(event), parser.next());
     }

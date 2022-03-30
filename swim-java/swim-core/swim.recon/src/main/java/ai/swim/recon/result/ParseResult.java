@@ -2,7 +2,6 @@ package ai.swim.recon.result;
 
 import ai.swim.codec.ParserError;
 import ai.swim.codec.input.InputError;
-import ai.swim.recon.event.ReadEvent;
 
 public abstract class ParseResult<O> {
 
@@ -42,7 +41,9 @@ public abstract class ParseResult<O> {
     return false;
   }
 
-  public boolean isDone(){return false;}
+  public boolean isDone() {
+    return false;
+  }
 
   public abstract <T> ParseResult<T> cast();
 

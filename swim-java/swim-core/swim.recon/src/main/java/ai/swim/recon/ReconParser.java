@@ -90,12 +90,6 @@ public final class ReconParser {
   }
 
   public ParseResult<ReadEvent> next() {
-    if (input.isDone()) {
-//      System.out.println("Current state: " + this.state.peekLast() + ", input done");
-    } else {
-//      System.out.println("Current state: " + this.state.peekLast() + ", head: " + (char) input.head());
-    }
-
     if (this.pending != null) {
       Optional<EventOrEnd> optEvent = pending.takeEvent();
       if (optEvent.isPresent()) {
@@ -286,8 +280,6 @@ public final class ReconParser {
       return;
     }
 
-//    System.out.println("Transitioning to: " + stateChange);
-
     if (stateChange.isNone()) {
       if (clearIfNone) {
         this.state.clear();
@@ -298,8 +290,6 @@ public final class ReconParser {
       if (last != null) {
         this.state.addLast(ParseEvents.ParseState.AfterAttr);
       }
-
-//      System.out.println("Pop after attr stack: " + this.state);
     } else if (stateChange.isPopAfterItem()) {
       this.state.pollLast();
       ParseEvents.ParseState parseState = this.state.pollLast();
