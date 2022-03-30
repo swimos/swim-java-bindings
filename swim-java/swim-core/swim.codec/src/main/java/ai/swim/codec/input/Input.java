@@ -71,4 +71,14 @@ public abstract class Input {
   public void cloneFrom(Input innerInput) {
     throw new IllegalStateException();
   }
+
+  /**
+   * Extend this instance with the data from the argument. This operation should ignore any indices from the argument
+   * and just extend the data.
+   *
+   * @param from to pull the data from.
+   * @return an extended Input instance.
+   * @throws IllegalArgumentException if the type of the argument is not the same as this instance.
+   */
+  public abstract Input extend(Input from);
 }

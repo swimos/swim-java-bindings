@@ -118,6 +118,11 @@ public class InputError extends Input {
     throw new IllegalStateException();
   }
 
+  @Override
+  public Input extend(Input from) {
+    throw new IllegalStateException();
+  }
+
   public String getCause() {
     return this.cause;
   }

@@ -20,6 +20,9 @@ import ai.swim.codec.input.Input;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import static ai.swim.codec.parsers.ParserExt.peek;
+import static ai.swim.codec.parsers.StringParsersExt.oneOf;
+
 public final class NumberParser extends Parser<Number> {
 
   final boolean isNegative;
@@ -151,7 +154,10 @@ public final class NumberParser extends Parser<Number> {
   }
 
   public static Parser<Number> numericLiteral() {
-    return new NumberParser(false, 0, Stage.Sign, null);
+    return preceded(
+        peek(oneOf('-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.')),
+        new NumberParser(false, 0, Stage.Sign, null)
+    );
   }
 
   public static boolean isFloatChar(int c) {

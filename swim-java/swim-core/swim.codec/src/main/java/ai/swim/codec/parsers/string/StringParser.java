@@ -18,6 +18,10 @@ import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.input.StringInput;
 
+import static ai.swim.codec.parsers.OptParser.opt;
+import static ai.swim.codec.parsers.ParserExt.peek;
+import static ai.swim.codec.parsers.StringParsersExt.eqChar;
+
 public class StringParser extends Parser<String> {
 
   private final StringBuilder output;
@@ -33,8 +37,8 @@ public class StringParser extends Parser<String> {
     this.stage = stage;
   }
 
-  public static StringParser stringLiteral() {
-    return new StringParser(new StringBuilder(), 0, 0, Stage.Head);
+  public static Parser<String> stringLiteral() {
+    return peek(eqChar('\"')).andThen(c -> new StringParser(new StringBuilder(), 0, 0, Stage.Head));
   }
 
   static boolean isSpace(int c) {
