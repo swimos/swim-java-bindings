@@ -204,7 +204,7 @@ public abstract class ReconParserParts {
 
   public static Parser<Optional<ParseEvents.ParseState>> parseAfterSlot(ItemsKind itemsKind) {
     return alt(
-        lineEnding().map(i -> Optional.of(itemsKind.startOrNl())),
+         lineEnding().map(i -> Optional.of(itemsKind.startOrNl())),
         separator().map(i -> Optional.of(itemsKind.afterSep())),
         eqChar(itemsKind.endDelim()).map(i -> Optional.empty())
     );

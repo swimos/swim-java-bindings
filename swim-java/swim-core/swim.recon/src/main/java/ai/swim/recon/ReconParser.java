@@ -25,7 +25,7 @@ import static ai.swim.recon.ReconParserParts.*;
 public final class ReconParser {
 
   private final Input input;
-  public final Deque<ParseEvents.ParseState> state;
+  private final Deque<ParseEvents.ParseState> state;
   private Parser<ParserTransition> current;
   private ParseEvents pending;
   private boolean complete;
@@ -90,7 +90,7 @@ public final class ReconParser {
   }
 
   public ParseResult<ReadEvent> next() {
-//    System.out.println("Current state: " + this.state.getLast() + ", head: " + (char) input.head());
+//    System.out.println("Current state: " + this.state.peekLast() + ", head: " + (char) input.head());
 
     if (this.pending != null) {
       Optional<EventOrEnd> optEvent = pending.takeEvent();
@@ -294,9 +294,9 @@ public final class ReconParser {
         this.state.addLast(ParseEvents.ParseState.AfterAttr);
       }
     } else if (stateChange.isPopAfterItem()) {
+      this.state.pollLast();
       ParseEvents.ParseState parseState = this.state.peekLast();
       if (parseState != null) {
-        this.state.removeLast();
         switch (parseState) {
           case Init:
             this.state.addLast(ParseEvents.ParseState.AfterAttr);
