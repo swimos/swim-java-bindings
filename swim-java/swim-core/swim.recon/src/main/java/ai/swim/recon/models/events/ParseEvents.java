@@ -20,8 +20,14 @@ import java.util.Optional;
 
 public abstract class ParseEvents {
 
+  private static ParseEvents NONE;
+
   public static ParseEvents noEvent() {
-    return new NoParseEvent();
+    if (NONE == null) {
+      NONE = new NoParseEvent();
+    }
+
+    return NONE;
   }
 
   public static ParseEvents singleEvent(ReadEvent event) {
@@ -32,14 +38,6 @@ public abstract class ParseEvents {
     return new TwoParseEvents(event1, event2);
   }
 
-  public static ParseEvents threeEvents(ReadEvent event1, ReadEvent event2, ReadEvent event3) {
-    return new ThreeParseEvents(event1, event2, event3);
-  }
-
-  public boolean isNoEvent() {
-    return false;
-  }
-
   public boolean isSingleEvent() {
     return false;
   }
@@ -48,21 +46,13 @@ public abstract class ParseEvents {
     return false;
   }
 
-  public boolean isThreeEvents() {
-    return false;
-  }
-
-
   public Optional<Event> takeEvent() {
     if (this.isSingleEvent()) {
       return Optional.of(new Event(((SingleParseEvent) this).getEvent(), null));
     } else if (this.isTwoEvents()) {
       TwoParseEvents parseEvents = (TwoParseEvents) this;
       return Optional.of(new Event(parseEvents.getEvent1(), ParseEvents.singleEvent(parseEvents.getEvent2())));
-    } else if (this.isThreeEvents()) {
-      ThreeParseEvents parseEvents = (ThreeParseEvents) this;
-      return Optional.of(new Event(parseEvents.getEvent1(), ParseEvents.twoEvents(parseEvents.getEvent2(), parseEvents.getEvent3())));
-    }  else {
+    } else {
       return Optional.empty();
     }
   }

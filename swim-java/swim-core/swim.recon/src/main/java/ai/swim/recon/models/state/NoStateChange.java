@@ -15,6 +15,10 @@
 package ai.swim.recon.models.state;
 
 public class NoStateChange extends StateChange {
+  NoStateChange() {
+
+  }
+
   @Override
   public boolean isNone() {
     return true;

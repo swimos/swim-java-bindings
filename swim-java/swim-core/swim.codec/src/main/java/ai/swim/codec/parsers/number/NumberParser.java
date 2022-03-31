@@ -25,7 +25,7 @@ import static ai.swim.codec.parsers.StringParsersExt.oneOf;
 
 public final class NumberParser extends Parser<Number> {
 
-  private final  boolean isNegative;
+  private final boolean isNegative;
   private final long value;
   private final Stage stage;
   private final StringBuilder floatLiteralBuilder;

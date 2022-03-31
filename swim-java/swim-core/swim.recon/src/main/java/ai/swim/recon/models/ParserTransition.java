@@ -16,7 +16,6 @@ package ai.swim.recon.models;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.events.ParseEvents;
-import ai.swim.recon.models.state.NoStateChange;
 import ai.swim.recon.models.state.StateChange;
 
 import java.util.Objects;
@@ -27,22 +26,22 @@ public class ParserTransition {
 
   public ParserTransition(ReadEvent event, StateChange change) {
     this.events = ParseEvents.singleEvent(event);
-    this.change = Objects.requireNonNullElse(change, new NoStateChange());
+    this.change = Objects.requireNonNullElse(change, StateChange.none());
   }
 
   public ParserTransition(ParseEvents events) {
     this.events = events;
-    this.change = new NoStateChange();
+    this.change = StateChange.none();
   }
 
   public ParserTransition(ReadEvent event) {
     this.events = ParseEvents.singleEvent(event);
-    this.change = new NoStateChange();
+    this.change = StateChange.none();
   }
 
   public ParserTransition(ReadEvent event1, ReadEvent event2, StateChange change) {
     this.events = ParseEvents.twoEvents(event1, event2);
-    this.change = Objects.requireNonNullElse(change, new NoStateChange());
+    this.change = Objects.requireNonNullElse(change, StateChange.none());
   }
 
   public ParserTransition(ParseEvents events, StateChange change) {

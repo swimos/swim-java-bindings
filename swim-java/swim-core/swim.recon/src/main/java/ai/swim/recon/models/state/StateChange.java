@@ -15,12 +15,45 @@
 package ai.swim.recon.models.state;
 
 public abstract class StateChange {
+  private static StateChange POP_AFTER_ATTR;
+  private static StateChange POP_AFTER_ITEM;
+  private static StateChange PUSH_ATTR;
+  private static StateChange PUSH_BODY;
+  private static StateChange NONE;
+
   public static StateChange popAfterAttr() {
-    return new PopAfterAttr();
+    if (POP_AFTER_ATTR == null) {
+      POP_AFTER_ATTR = new PopAfterAttr();
+    }
+    return POP_AFTER_ATTR;
   }
 
   public static StateChange popAfterItem() {
-    return new PopAfterItem();
+    if (POP_AFTER_ITEM == null) {
+      POP_AFTER_ITEM = new PopAfterItem();
+    }
+    return POP_AFTER_ITEM;
+  }
+
+  public static StateChange none() {
+    if (NONE == null) {
+      NONE = new NoStateChange();
+    }
+    return NONE;
+  }
+
+  public static StateChange pushAttr() {
+    if (PUSH_ATTR == null) {
+      PUSH_ATTR = new PushAttr();
+    }
+    return PUSH_ATTR;
+  }
+
+  public static StateChange pushBody() {
+    if (PUSH_BODY == null) {
+      PUSH_BODY = new PushBody();
+    }
+    return PUSH_BODY;
   }
 
   public boolean isNone() {

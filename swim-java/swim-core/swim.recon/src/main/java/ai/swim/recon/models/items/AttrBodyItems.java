@@ -19,6 +19,10 @@ import ai.swim.recon.models.events.ParseEvents;
 import ai.swim.recon.models.state.StateChange;
 
 public class AttrBodyItems implements ItemsKind {
+  AttrBodyItems() {
+
+  }
+
   @Override
   public ParseEvents.ParseState startOrNl() {
     return ParseEvents.ParseState.AttrBodyStartOrNl;

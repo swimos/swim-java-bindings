@@ -316,7 +316,6 @@ public final class ReconParser {
       if (clearIfNone) {
         this.state.clear();
       }
-
       return;
     }
 

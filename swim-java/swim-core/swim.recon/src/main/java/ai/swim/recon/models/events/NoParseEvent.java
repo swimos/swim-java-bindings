@@ -17,12 +17,6 @@ package ai.swim.recon.models.events;
 public class NoParseEvent extends ParseEvents {
 
   NoParseEvent() {
-
-  }
-
-  @Override
-  public boolean isNoEvent() {
-    return true;
   }
 
   @Override

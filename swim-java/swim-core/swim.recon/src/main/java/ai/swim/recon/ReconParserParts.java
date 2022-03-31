@@ -25,7 +25,9 @@ import ai.swim.recon.models.identifier.BooleanIdentifier;
 import ai.swim.recon.models.identifier.Identifier;
 import ai.swim.recon.models.identifier.StringIdentifier;
 import ai.swim.recon.models.items.ItemsKind;
-import ai.swim.recon.models.state.*;
+import ai.swim.recon.models.state.ChangeState;
+import ai.swim.recon.models.state.PushAttrNewRec;
+import ai.swim.recon.models.state.StateChange;
 
 import java.util.Optional;
 
@@ -93,7 +95,7 @@ public abstract class ReconParserParts {
         if (parseResult.isDone()) {
           if (parseResult.bind().isPresent()) {
             return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
-                new PushAttr()));
+                StateChange.pushAttr()));
           } else {
             return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
                 ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
@@ -149,14 +151,14 @@ public abstract class ReconParserParts {
             identifier().map(ReconParserParts::mapIdentifier),
             numericLiteral().map(ReadEvent::number),
             blob().map(ReadEvent::blob)
-        ).map(event -> new ParserTransition(event, new PopAfterItem())),
+        ).map(event -> new ParserTransition(event, StateChange.popAfterItem())),
         eqChar('{').map(c ->
             new ParserTransition(ReadEvent.startBody(), new ChangeState(ParseEvents.ParseState.RecordBodyStartOrNl))
         ),
         peek(alt(
             oneOf(',', ';', ')', '}').map(Object::toString),
             lineEnding()
-        ).map(s -> new ParserTransition(ReadEvent.startBody(), ReadEvent.endRecord(), new PopAfterItem())))
+        ).map(s -> new ParserTransition(ReadEvent.startBody(), ReadEvent.endRecord(), StateChange.popAfterItem())))
     );
   }
 
@@ -189,7 +191,7 @@ public abstract class ReconParserParts {
           return new ParserTransition(events, itemsKind.endStateChange());
         }),
         primaryAttr(),
-        eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(), new PushBody()))
+        eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(), StateChange.pushBody()))
     );
   }
 
@@ -222,7 +224,7 @@ public abstract class ReconParserParts {
         separator().map(s -> new ParserTransition(ReadEvent.extant(), new ChangeState(itemsKind.afterSep()))),
         eqChar(itemsKind.endDelim()).map(c -> new ParserTransition(ReadEvent.extant(), itemsKind.endEvent(), itemsKind.endStateChange())),
         primaryAttr(),
-        eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(), new PushBody()))
+        eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(), StateChange.pushBody()))
     );
   }
 }
