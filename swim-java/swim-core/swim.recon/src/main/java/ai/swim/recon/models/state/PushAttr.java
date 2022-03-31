@@ -15,6 +15,10 @@
 package ai.swim.recon.models.state;
 
 public class PushAttr extends StateChange {
+  PushAttr() {
+
+  }
+
   @Override
   public boolean isPushAttr() {
     return true;

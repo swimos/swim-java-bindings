@@ -15,6 +15,9 @@
 package ai.swim.recon.models.state;
 
 public class PushBody extends StateChange {
+  PushBody() {
+
+  }
 
   @Override
   public boolean isPushBody() {

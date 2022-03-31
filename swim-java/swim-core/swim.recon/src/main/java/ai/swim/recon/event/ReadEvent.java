@@ -15,7 +15,7 @@
 package ai.swim.recon.event;
 
 import ai.swim.recon.models.ParserTransition;
-import ai.swim.recon.models.state.NoStateChange;
+import ai.swim.recon.models.state.StateChange;
 
 public abstract class ReadEvent {
 
@@ -105,7 +105,7 @@ public abstract class ReadEvent {
   }
 
   public ParserTransition transition() {
-    return new ParserTransition(this, new NoStateChange());
+    return new ParserTransition(this, StateChange.none());
   }
 
   @Override

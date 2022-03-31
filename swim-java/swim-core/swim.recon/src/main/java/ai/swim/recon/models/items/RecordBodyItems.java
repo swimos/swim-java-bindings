@@ -16,10 +16,13 @@ package ai.swim.recon.models.items;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.events.ParseEvents;
-import ai.swim.recon.models.state.PopAfterItem;
 import ai.swim.recon.models.state.StateChange;
 
 public class RecordBodyItems implements ItemsKind {
+  RecordBodyItems() {
+
+  }
+
   @Override
   public ParseEvents.ParseState startOrNl() {
     return ParseEvents.ParseState.RecordBodyStartOrNl;
@@ -57,6 +60,6 @@ public class RecordBodyItems implements ItemsKind {
 
   @Override
   public StateChange endStateChange() {
-    return new PopAfterItem();
+    return StateChange.popAfterItem();
   }
 }
