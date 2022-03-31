@@ -45,19 +45,19 @@ public class AndThen<O, T> extends Parser<T> {
         this.first = parseResult;
         return this;
       } else if (parseResult.isError()) {
-        return Parser.error(((ParserError<O>) parseResult).getCause());
+        return Parser.error(input, ((ParserError<O>) parseResult).cause());
       } else {
         return this;
       }
     } else {
       if (second.isError()) {
-        return Parser.error(((ParserError<T>) second).getCause());
+        return Parser.error(input, ((ParserError<T>) second).cause());
       } else {
         Parser<T> result = this.second.feed(input);
         if (result.isDone()) {
           return Parser.done(result.bind());
         } else if (result.isError()) {
-          return Parser.error(((ParserError<T>) result).getCause());
+          return Parser.error(input, ((ParserError<T>) result).cause());
         } else {
           this.second = result;
           return this;

@@ -135,7 +135,7 @@ class ParserExtTest {
 
   @Test
   void many0TestErr() {
-    Parser<List<Character>> parser = many0(eqChar('a').andThen(c -> Parser.error("err")));
+    Parser<List<Character>> parser = many0(eqChar('a').andThen(c -> Parser.error(Input.string(""), "err")));
     parser = parser.feed(Input.string("abc"));
     assertTrue(parser.isDone());
     assertEquals(parser.bind(), Collections.emptyList());
@@ -143,7 +143,7 @@ class ParserExtTest {
     Parser<List<Character>> p2 = many0(Parser.lambda(input -> {
       char c = (char) input.head();
       if (c != 'a') {
-        return Parser.error(String.valueOf(c));
+        return Parser.error(input, String.valueOf(c));
       } else {
         input.step();
         return Parser.done(c);

@@ -59,4 +59,5 @@ class StringExtTest {
     assertTrue(parser.isDone());
     assertEquals(parser.bind(), "12345");
   }
+
 }

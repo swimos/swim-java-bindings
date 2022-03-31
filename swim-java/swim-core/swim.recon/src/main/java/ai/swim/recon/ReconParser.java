@@ -101,7 +101,7 @@ public final class ReconParser {
       return ParseResult.end();
     } else if (this.current != null) {
       if (this.current.isError()) {
-        return ParseResult.error(((ParserError<?>) this.current).getCause());
+        return ParseResult.error(((ParserError<?>) this.current).cause());
       } else if (this.input.isContinuation()) {
         ParseResult<ParseEvents> result = this.feed();
 
@@ -159,7 +159,7 @@ public final class ReconParser {
     if (this.current.isCont()) {
       return ParseResult.continuation();
     } else if (this.current.isError()) {
-      return ParseResult.error(((ParserError<ParserTransition>) this.current).getCause());
+      return ParseResult.error(((ParserError<ParserTransition>) this.current).cause());
     }
 
     ParserTransition output = this.current.bind();
@@ -185,7 +185,7 @@ public final class ReconParser {
               if (input.isDone()) {
                 return Parser.done(ReadEvent.extant());
               } else {
-                return Parser.error("Expected an empty input");
+                return Parser.error(input, "Expected an empty input");
               }
             }).map(ReadEvent::transition),
             preceded(multispace0(), parseInit())

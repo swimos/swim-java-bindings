@@ -50,11 +50,11 @@ final class HexadecimalParser extends Parser<Number> {
           return done(value);
         }
       } else {
-        return error("Expected a hex digit");
+        return error(input, "Expected a hex digit");
       }
     }
     if (input.isError()) {
-      return error("Expected a hex digit");
+      return error(input, "Expected a hex digit");
     }
     return new HexadecimalParser(value, size);
   }

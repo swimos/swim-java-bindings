@@ -15,13 +15,14 @@
 package ai.swim.codec.location;
 
 /**
- * Marker interface denoting an index into a source.
+ * Marker interface denoting an offset into a source.
  */
 public interface Location {
 
-  static Location of(int line, int column) {
-    return new StringLocation(line, column);
+  static Location of(int line, int column, int offset) {
+    return new StringLocation(line, column, offset);
   }
 
+  int offset();
 }
 

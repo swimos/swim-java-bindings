@@ -38,7 +38,7 @@ public class StatefulParser<S, T> extends Parser<T> {
       this.state = cont.getState();
       return this;
     } else if (result.isErr()) {
-      return Parser.error(((Err<S, T>) result).getCause());
+      return Parser.error(input, ((Err<S, T>) result).getCause());
     } else {
       throw new AssertionError();
     }

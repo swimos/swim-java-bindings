@@ -51,9 +51,9 @@ public class OptParser<T> extends Parser<Optional<T>> {
         return Parser.done(Optional.ofNullable(result.bind()));
       }
     } else if (input.isError()) {
-      return Parser.error(((InputError) input).getCause());
+      return Parser.error(((InputError) input));
     } else if (input.isDone()) {
-      return Parser.error("Insufficient data");
+      return Parser.error(input, "Insufficient data");
     } else {
       return this;
     }

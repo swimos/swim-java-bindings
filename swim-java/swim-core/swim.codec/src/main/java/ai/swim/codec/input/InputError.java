@@ -84,11 +84,6 @@ public class InputError extends Input {
   }
 
   @Override
-  public boolean compare(int[] with) {
-    return false;
-  }
-
-  @Override
   public Input clone() {
     throw new IllegalStateException();
   }

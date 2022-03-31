@@ -46,10 +46,10 @@ public class IdentifierParser extends Parser<Identifier> {
           data.appendCodePoint(c);
           state = State.Body;
         } else {
-          return error("Expected an identifier");
+          return error(input, "Expected an identifier");
         }
       } else if (input.isDone()) {
-        return error("Expected an identifier");
+        return error(input, "Expected an identifier");
       }
     }
     if (state == State.Body) {
@@ -81,7 +81,7 @@ public class IdentifierParser extends Parser<Identifier> {
     }
 
     if (input.isError()) {
-      return error("Expected an identifier");
+      return error(input, "Expected an identifier");
     }
 
     return this;

@@ -18,7 +18,7 @@ public abstract class ParseResult<O> {
   }
 
   public static <O> ParseResult<O> error(ParserError<O> parser) {
-    return new ResultError<>(parser.getCause());
+    return new ResultError<>(parser.cause());
   }
 
   public static <O> ParseResult<O> continuation() {

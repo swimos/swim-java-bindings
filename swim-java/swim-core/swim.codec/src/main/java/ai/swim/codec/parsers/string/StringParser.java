@@ -93,10 +93,10 @@ public class StringParser extends Parser<String> {
           quoteNeedle = c;
           stage = Stage.Contents;
         } else {
-          return error("Expected a string input");
+          return error(input, "String quotation mismatch");
         }
       } else if (input.isDone()) {
-        return error("Expected a string input");
+        return error(input, "Expected a string input");
       }
     }
 
@@ -120,10 +120,10 @@ public class StringParser extends Parser<String> {
               input = input.step();
               stage = Stage.Escaped;
             } else {
-              return error("Expected a string input");
+              return error(input, "Expected a string input");
             }
           } else if (input.isDone()) {
-            return error("Expected a string input");
+            return error(input, "Expected a string input");
           } else {
             break;
           }
@@ -143,10 +143,10 @@ public class StringParser extends Parser<String> {
             } else if (c == 't') {
               output.appendCodePoint('\t');
             } else if (c != 'u') {
-              return error("Expected an escape character");
+              return error(input, "Expected an escape character");
             }
           } else if (input.isDone()) {
-            return error("Expected an escape character");
+            return error(input, "Expected an escape character");
           }
 
           input = input.step();
@@ -166,7 +166,7 @@ public class StringParser extends Parser<String> {
             if (input.isContinuation()) {
               c = input.head();
               if (!unicodeParser.parseUnicodePoint(output, c)) {
-                return error("Expected a hex digit");
+                return error(input, "Expected a hex digit");
               } else if (unicodeParser.isDone()) {
                 stage = Stage.Contents;
               } else {
@@ -179,7 +179,7 @@ public class StringParser extends Parser<String> {
     } while (true);
 
     if (input.isError()) {
-      return error("Error: " + StringInput.codePointsToString(input.bind()));
+      return error(input, "Error: " + StringInput.codePointsToString(input.bind()));
     }
 
     return new StringParser(output, quoteNeedle, code, stage);

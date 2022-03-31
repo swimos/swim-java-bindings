@@ -48,7 +48,7 @@ public final class NumberParser extends Parser<Number> {
         }
         stage = Stage.Alt;
       } else if (input.isDone()) {
-        return error("Expected a number");
+        return error(input, "Expected a number");
       }
     }
 
@@ -77,10 +77,10 @@ public final class NumberParser extends Parser<Number> {
             continue;
           } else {
             if (floatLiteralBuilder != null) {
-              return parseLiteralFloat(floatLiteralBuilder, isNegative);
+              return parseLiteralFloat(floatLiteralBuilder, isNegative, input);
             }
 
-            return error("Expected a number");
+            return error(input, "Expected a number");
           }
         }
       }
@@ -128,17 +128,17 @@ public final class NumberParser extends Parser<Number> {
     } while (input.isContinuation());
 
     if (input.isError()) {
-      return error("Expected a number");
+      return error(input, "Expected a number");
     }
 
     if (input.isDone() && floatLiteralBuilder != null) {
-      return parseLiteralFloat(floatLiteralBuilder, isNegative);
+      return parseLiteralFloat(floatLiteralBuilder, isNegative, input);
     }
 
     return new NumberParser(isNegative, value, stage, floatLiteralBuilder);
   }
 
-  private static Parser<Number> parseLiteralFloat(StringBuilder floatLiteralBuilder, boolean isNegative) {
+  private static Parser<Number> parseLiteralFloat(StringBuilder floatLiteralBuilder, boolean isNegative, Input input) {
     String fs = floatLiteralBuilder.toString();
     if ("nan".equalsIgnoreCase(fs) && !isNegative) {
       return Parser.done(Float.NaN);
@@ -149,7 +149,7 @@ public final class NumberParser extends Parser<Number> {
         return Parser.done(Float.POSITIVE_INFINITY);
       }
     } else {
-      return error("Expected a number");
+      return error(input, "Expected a number");
     }
   }
 
