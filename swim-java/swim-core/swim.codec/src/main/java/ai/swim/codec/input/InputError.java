@@ -93,7 +93,7 @@ public class InputError extends Input {
     throw new IllegalStateException();
   }
 
-  public String getCause() {
+  public String cause() {
     return this.cause;
   }
 }

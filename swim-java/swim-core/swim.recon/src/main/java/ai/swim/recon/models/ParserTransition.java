@@ -30,13 +30,18 @@ public class ParserTransition {
     this.change = Objects.requireNonNullElse(change, new NoStateChange());
   }
 
-  public ParserTransition(ReadEvent event1, ReadEvent event2, StateChange change) {
-    this.events = ParseEvents.twoEvents(event1, event2);
-    this.change = Objects.requireNonNullElse(change, new NoStateChange());
+  public ParserTransition(ParseEvents events) {
+    this.events = events;
+    this.change = new NoStateChange();
   }
 
-  public ParserTransition(ReadEvent event1, ReadEvent event2, ReadEvent event3, StateChange change) {
-    this.events = ParseEvents.threeEvents(event1, event2, event3);
+  public ParserTransition(ReadEvent event) {
+    this.events = ParseEvents.singleEvent(event);
+    this.change = new NoStateChange();
+  }
+
+  public ParserTransition(ReadEvent event1, ReadEvent event2, StateChange change) {
+    this.events = ParseEvents.twoEvents(event1, event2);
     this.change = Objects.requireNonNullElse(change, new NoStateChange());
   }
 

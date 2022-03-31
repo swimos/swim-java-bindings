@@ -30,7 +30,7 @@ public final class DataParser {
 
   /**
    * Returns a new Base-64 decoder.
-   *
+   * <p>
    * Base-64 data must be preceded by a {@code %} symbol.
    */
   public static Parser<byte[]> blob() {

@@ -42,7 +42,7 @@ class StringExtTest {
       if (input.isDone()) {
         return Result.ok(state.toString());
       } else if (input.isError()) {
-        return Result.err(((InputError) input).getCause());
+        return Result.err(((InputError) input).cause());
       } else {
         throw new AssertionError();
       }

@@ -155,15 +155,19 @@ public class StringInput extends Input {
   }
 
   @Override
-  public void cloneFrom(Input input) {
+  public void setFrom(Input input) {
     if (input instanceof StringInput) {
+      // Strip off any already processed tokens and reset the markers back to zero.
+
       StringInput stringInput = (StringInput) input;
       this.isPartial = stringInput.isPartial;
-      this.data = stringInput.data;
+      this.data = stringInput.data.substring(stringInput.index);
       this.column = stringInput.column;
-      this.index = stringInput.index;
+      this.index = 0;
       this.line = stringInput.line;
-      this.offset = stringInput.offset;
+      this.offset = 0;
+    } else {
+      throw new UnsupportedOperationException("Cannot extend a StringInput from a: " + input.getClass().getCanonicalName());
     }
   }
 

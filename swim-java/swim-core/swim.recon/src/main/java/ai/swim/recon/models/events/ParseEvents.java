@@ -15,7 +15,6 @@
 package ai.swim.recon.models.events;
 
 import ai.swim.recon.event.ReadEvent;
-import ai.swim.recon.models.stage.FinalAttr;
 
 import java.util.Optional;
 
@@ -37,14 +36,6 @@ public abstract class ParseEvents {
     return new ThreeParseEvents(event1, event2, event3);
   }
 
-  public static ParseEvents terminateWithAttr(FinalAttr stage) {
-    return new TerminateWithAttrParseEvent(stage);
-  }
-
-  public static ParseEvents end() {
-    return new EndParseEvent();
-  }
-
   public boolean isNoEvent() {
     return false;
   }
@@ -61,15 +52,8 @@ public abstract class ParseEvents {
     return false;
   }
 
-  public boolean isTerminateWithAttr() {
-    return false;
-  }
 
-  public boolean isEnd() {
-    return false;
-  }
-
-  public Optional<EventOrEnd> takeEvent() {
+  public Optional<Event> takeEvent() {
     if (this.isSingleEvent()) {
       return Optional.of(new Event(((SingleParseEvent) this).getEvent(), null));
     } else if (this.isTwoEvents()) {
@@ -78,9 +62,7 @@ public abstract class ParseEvents {
     } else if (this.isThreeEvents()) {
       ThreeParseEvents parseEvents = (ThreeParseEvents) this;
       return Optional.of(new Event(parseEvents.getEvent1(), ParseEvents.twoEvents(parseEvents.getEvent2(), parseEvents.getEvent3())));
-    } else if (this.isEnd()) {
-      return Optional.of(EventOrEnd.end());
-    } else {
+    }  else {
       return Optional.empty();
     }
   }

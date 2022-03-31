@@ -2,7 +2,7 @@ package ai.swim.recon.models.events;
 
 import ai.swim.recon.event.ReadEvent;
 
-public class Event extends EventOrEnd {
+public class Event  {
   private final ReadEvent event;
   private final ParseEvents next;
 
@@ -19,8 +19,4 @@ public class Event extends EventOrEnd {
     return next;
   }
 
-  @Override
-  public boolean isEvent() {
-    return true;
-  }
 }

@@ -213,7 +213,6 @@ public abstract class ReconParserParts {
   }
 
   public static Parser<ParserTransition> parseSlotValue(ItemsKind itemsKind) {
-    System.out.println("Parse slot value");
     return alt(
         stringLiteral().map(t -> slotItem(itemsKind, ReadEvent.text(t))),
         identifier().map(i -> slotItem(itemsKind, mapIdentifier(i))),

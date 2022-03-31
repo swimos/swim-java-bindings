@@ -2,7 +2,7 @@ package ai.swim.structure.form.recognizer.structural;
 
 public class BitSet {
 
-  private int cap;
+  private final int cap;
   private long bits;
 
   public BitSet(int cap) {

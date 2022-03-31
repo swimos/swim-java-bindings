@@ -16,7 +16,6 @@ package ai.swim.recon.models.items;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.events.ParseEvents;
-import ai.swim.recon.models.state.PopAfterAttr;
 import ai.swim.recon.models.state.StateChange;
 
 public class AttrBodyItems implements ItemsKind {
@@ -57,6 +56,6 @@ public class AttrBodyItems implements ItemsKind {
 
   @Override
   public StateChange endStateChange() {
-    return new PopAfterAttr();
+    return StateChange.popAfterAttr();
   }
 }

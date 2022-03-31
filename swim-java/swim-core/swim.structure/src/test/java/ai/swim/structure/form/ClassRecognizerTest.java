@@ -189,7 +189,7 @@ class ClassRecognizerTest {
         value = feedResult.bind();
         return true;
       } else if (feedResult.isError()) {
-        throw (RuntimeException) feedResult.trap();
+        throw feedResult.trap();
       } else {
         return false;
       }
