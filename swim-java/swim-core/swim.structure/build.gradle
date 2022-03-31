@@ -1,0 +1,22 @@
+ext.moduleName = 'swim.structure'
+
+dependencies {
+    implementation project(':swim-structure-annotations')
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    annotationProcessor project(':swim-structure-processor')
+
+    testAnnotationProcessor project(':swim-structure-processor')
+
+    api project(':swim-recon')
+
+    api group: 'org.swimos', name: 'swim-codec', version: swimVersion
+    api group: 'org.swimos', name: 'swim-warp', version: swimVersion
+    api group: 'org.swimos', name: 'swim-recon', version: swimVersion
+    api group: 'org.swimos', name: 'swim-structure', version: swimVersion
+    api group: 'org.swimos', name: 'swim-util', version: swimVersion
+}
+
+repositories {
+    mavenCentral()
+}
+
