@@ -63,7 +63,7 @@ public class StringInput extends Input {
 
   @Override
   public Location location() {
-    return new StringLocation(this.line, this.column);
+    return new StringLocation(this.line, this.column, offset);
   }
 
   @Override
@@ -147,11 +147,6 @@ public class StringInput extends Input {
     }
 
     return output;
-  }
-
-  @Override
-  public boolean compare(int[] with) {
-    throw new IllegalStateException();
   }
 
   @Override

@@ -41,10 +41,10 @@ final class DecimalParser extends Parser<Number> {
           builder.appendCodePoint(c);
           step = 5;
         } else {
-          return error("Expected a decimal or exponent");
+          return error(input, "Expected a decimal or exponent");
         }
       } else if (input.isDone()) {
-        return error("Expected a decimal or exponent");
+        return error(input, "Expected a decimal or exponent");
       }
     }
     if (step == 2) {
@@ -55,12 +55,12 @@ final class DecimalParser extends Parser<Number> {
           builder.appendCodePoint(c);
           step = 3;
         } else if (c == '.') {
-          return error("Expected a digit");
+          return error(input, "Expected a digit");
         } else {
           return done(NumberParser.valueOf(builder.toString()));
         }
       } else if (input.isDone()) {
-        return error("Expected a digit");
+        return error(input, "Expected a digit");
       }
     }
     if (step == 3) {
@@ -98,7 +98,7 @@ final class DecimalParser extends Parser<Number> {
         }
         step = 6;
       } else if (input.isDone()) {
-        return error("Expected a digit");
+        return error(input, "Expected a digit");
       }
     }
     if (step == 6) {
@@ -109,10 +109,10 @@ final class DecimalParser extends Parser<Number> {
           builder.appendCodePoint(c);
           step = 7;
         } else {
-          return error("Expected a digit");
+          return error(input, "Expected a digit");
         }
       } else if (input.isDone()) {
-        return error("Expected a digit");
+        return error(input, "Expected a digit");
       }
     }
     if (step == 7) {
@@ -130,7 +130,7 @@ final class DecimalParser extends Parser<Number> {
       }
     }
     if (input.isError()) {
-      return error("Expected a decimal");
+      return error(input, "Expected a decimal");
     }
     return new DecimalParser(builder, step);
   }

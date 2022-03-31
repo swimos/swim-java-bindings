@@ -20,22 +20,29 @@ public class StringLocation implements Location {
 
   private final int line;
   private final int column;
+  private final int offset;
 
-  public StringLocation(int line, int column) {
+  public StringLocation(int line, int column, int offset) {
     this.line = line;
     this.column = column;
+    this.offset = offset;
   }
 
-  public static StringLocation of(int line, int column) {
-    return new StringLocation(line, column);
+  public static StringLocation of(int line, int column, int offset) {
+    return new StringLocation(line, column, offset);
   }
 
-  public int getLine() {
+  public int line() {
     return line;
   }
 
-  public int getColumn() {
+  public int column() {
     return column;
+  }
+
+  @Override
+  public int offset() {
+    return offset;
   }
 
   @Override
@@ -47,7 +54,7 @@ public class StringLocation implements Location {
       return false;
     }
     StringLocation location = (StringLocation) o;
-    return line == location.line && column == location.column;
+    return line == location.line && column == location.column && offset == location.offset;
   }
 
   @Override
@@ -60,6 +67,7 @@ public class StringLocation implements Location {
     return "StringLocation{" +
         "line=" + line +
         ", column=" + column +
+        ", offset=" + offset +
         '}';
   }
 

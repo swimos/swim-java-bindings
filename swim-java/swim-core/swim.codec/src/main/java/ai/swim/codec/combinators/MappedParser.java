@@ -41,7 +41,7 @@ public class MappedParser<I, O> extends Parser<O> {
     if (this.inner.isDone()) {
       return Parser.done(this.map.apply(this.inner.bind()));
     } else if (this.inner.isError()) {
-      return Parser.error(((ParserError<?>) this.inner).getCause());
+      return Parser.error(input, ((ParserError<?>) this.inner).cause());
     } else {
       return this;
     }

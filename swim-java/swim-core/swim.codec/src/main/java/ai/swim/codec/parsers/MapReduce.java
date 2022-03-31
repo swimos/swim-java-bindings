@@ -50,7 +50,7 @@ public class MapReduce<I, O> extends Parser<Optional<O>> {
       this.parser = result;
       return this;
     } else if (result.isError()) {
-      return Parser.error((ParserError<List<I>>) result);
+      return Parser.error(input.location(), (ParserError<List<I>>) result);
     } else if (result.isDone()) {
       List<I> list = result.bind();
       return Parser.done(list.stream().map(this.map).reduce(this.reduce));

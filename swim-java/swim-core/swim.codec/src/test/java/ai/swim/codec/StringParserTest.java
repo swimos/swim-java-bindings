@@ -48,11 +48,21 @@ class StringParserTest {
     assertEquals(parseResult.bind(), "a\nmulti\nline\t\ninput");
   }
 
-  abstract class ReadEvent {
+  @Test
+  void errors() {
+    Parser<String> parser = StringParser.stringLiteral();
+    parser = parser.feed(Input.string("\"abc'"));
+    assertTrue(parser.isError());
+
+    ParserError<String> parserError = (ParserError<String>) parser;
+    assertEquals(parserError.location().offset(), 5);
+  }
+
+  abstract static class ReadEvent {
 
   }
 
-  class StringReadEvent extends ReadEvent {
+  static class StringReadEvent extends ReadEvent {
     String value;
 
     StringReadEvent(String value) {

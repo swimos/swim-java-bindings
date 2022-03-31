@@ -87,7 +87,7 @@ public abstract class ReconParserParts {
         return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
             ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
       } else if (input.isError()) {
-        return Parser.error(((InputError) input).getCause());
+        return Parser.error(((InputError) input));
       } else if (input.isContinuation()) {
         Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
         if (parseResult.isDone()) {
@@ -99,7 +99,7 @@ public abstract class ReconParserParts {
                 ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
           }
         } else if (parseResult.isError()) {
-          return ParserError.error(((ParserError<?>) parseResult).getCause());
+          return ParserError.error(input, ((ParserError<?>) parseResult).cause());
         } else {
           return secondaryAttrCont(event);
         }
@@ -119,7 +119,7 @@ public abstract class ReconParserParts {
         return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endRecord(),
             new PushAttrNewRec(false)));
       } else if (input.isError()) {
-        return Parser.error(((InputError) input).getCause());
+        return Parser.error(((InputError) input));
       } else if (input.isContinuation()) {
         Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
         if (parseResult.isDone()) {
@@ -131,7 +131,7 @@ public abstract class ReconParserParts {
                 new PushAttrNewRec(false)));
           }
         } else if (parseResult.isError()) {
-          return ParserError.error(((ParserError<?>) parseResult).getCause());
+          return ParserError.error(input, ((ParserError<?>) parseResult).cause());
         } else {
           return primaryAttrCont(event);
         }

@@ -70,7 +70,7 @@ class IdentifierParserTest {
     Parser<Identifier> parseResult = parser.feed(Input.string("@"));
 
     assertTrue(parseResult.isError());
-    assertEquals(((ParserError<Identifier>) parseResult).getCause(), "Expected an identifier");
+    assertEquals(((ParserError<Identifier>) parseResult).cause(), "Expected an identifier");
   }
 
   @Test

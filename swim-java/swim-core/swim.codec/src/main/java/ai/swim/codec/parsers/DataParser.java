@@ -28,6 +28,11 @@ public final class DataParser {
     return c >= '0' && c <= '9' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c == '+' || c == '/';
   }
 
+  /**
+   * Returns a new Base-64 decoder.
+   *
+   * Base-64 data must be preceded by a {@code %} symbol.
+   */
   public static Parser<byte[]> blob() {
     return preceded(eqChar('%'), Parser.stateful(new StringBuilder(), (output, input) -> {
       int c;

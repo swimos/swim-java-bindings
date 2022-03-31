@@ -15,11 +15,14 @@
 package ai.swim.codec;
 
 import ai.swim.codec.input.Input;
+import ai.swim.codec.location.Location;
 
 public class ParserError<O> extends Parser<O> {
   private final String cause;
+  private final Location location;
 
-  public ParserError(String cause) {
+  public ParserError(Location location, String cause) {
+    this.location = location;
     this.cause = cause;
   }
 
@@ -28,7 +31,17 @@ public class ParserError<O> extends Parser<O> {
     throw new IllegalStateException();
   }
 
-  public String getCause() {
+  /**
+   * Returns the location that this error was produced.
+   */
+  public Location location() {
+    return location;
+  }
+
+  /**
+   * Returns the cause of this error.
+   */
+  public String cause() {
     return cause;
   }
 

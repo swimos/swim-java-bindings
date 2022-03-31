@@ -19,6 +19,7 @@ import ai.swim.codec.combinators.MappedParser;
 import ai.swim.codec.combinators.TryMappedParser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.input.InputError;
+import ai.swim.codec.location.Location;
 import ai.swim.codec.parsers.LambdaParser;
 import ai.swim.codec.parsers.Preceded;
 import ai.swim.codec.parsers.stateful.Result;
@@ -29,60 +30,120 @@ import java.util.function.Function;
 
 public abstract class Parser<O> {
 
+  /**
+   * A convenience method for creating a parser from a function.
+   */
   public static <O> Parser<O> lambda(Function<Input, Parser<O>> fn) {
     return new LambdaParser<>(fn);
   }
 
+  /**
+   * Creates a parser in the done state that will bind the provided output.
+   */
   public static <O> Parser<O> done(O output) {
     return new ParserDone<>(output);
   }
 
+  /**
+   * Creates a parser that is provided with its current state each time it is invoked.
+   * <p>
+   * Stateful parsers are useful for building parsers that are repeatedly invoked and produce a reduced output.
+   *
+   * @param state  the initial state.
+   * @param parser the parse function to apply.
+   * @param <S>    the type of the state.
+   * @param <T>    the type the parser produces.
+   * @return a stateful parser.
+   */
   public static <S, T> Parser<T> stateful(S state, BiFunction<S, Input, Result<S, T>> parser) {
     return new StatefulParser<>(state, parser);
   }
 
-  public static <O> Parser<O> error(String cause) {
-    return new ParserError<>(cause);
+  /**
+   * Creates a parser in an error state. The error is spanned by the location in the input and will has a description of
+   * the cause provided.
+   */
+  public static <O> Parser<O> error(Input input, String cause) {
+    return new ParserError<>(input.location(), cause);
   }
 
+  /**
+   * Creates a new parser in the error state from the provided {@code InputError}.
+   */
   public static <O> Parser<O> error(InputError inputError) {
-    return new ParserError<>(inputError.getCause());
+    return new ParserError<>(inputError.location(), inputError.getCause());
   }
 
-  public static <I, O> Parser<O> error(ParserError<I> error) {
-    return new ParserError<>(error.getCause());
+  /**
+   * Creates a new parser in the error state from the provided {@code ParserError} and spanned by {@code Location}.
+   */
+  public static <I, O> Parser<O> error(Location location, ParserError<I> error) {
+    return new ParserError<>(location, error.cause());
   }
 
+  /**
+   * Runs parser {@code by} and if it succeeds then the output is discarded and {@code then} is returned.
+   */
   public static <B, T> Parser<T> preceded(Parser<B> by, Parser<T> then) {
     return Preceded.preceded(by, then);
   }
 
+  /**
+   * Returns whether this parser is in the done state.
+   */
   public boolean isDone() {
     return false;
   }
 
+  /**
+   * Returns whether this parser is in an error state.
+   */
   public boolean isError() {
     return false;
   }
 
+  /**
+   * Returns whether this parser is in a continuation state.
+   */
   public boolean isCont() {
     return true;
   }
 
+  /**
+   * Incrementally parses as much data as possible from {@code input} and returns a new parser that represents how to
+   * parse more data.
+   */
   public abstract Parser<O> feed(Input input);
 
+  /**
+   * Returns the parsed result. Only guaranteed to return a result when in the
+   * <em>done</em> state.
+   *
+   * @throws IllegalStateException if this {@code Parser} is not in the
+   *                               <em>done</em> state.
+   */
   public O bind() {
     throw new IllegalStateException();
   }
 
+  /**
+   * Maps the output of this parser if it successfully produced an output.
+   */
   public <I> Parser<I> map(Function<O, I> with) {
     return MappedParser.map(this, with);
   }
 
+  /**
+   * Attempts to map the output of this parser if it successfully produced an output. If an exception is thrown, then
+   * a {@code ParserError} is returned with a cause that is a string representation of the exception's cause.
+   */
   public <I> Parser<I> tryMap(Function<O, I> with) {
     return TryMappedParser.tryMap(this, with);
   }
 
+  /**
+   * Runs this parser and if it succeeds then the function is invoked with its output and a new parser is returned.
+   */
   public <T> Parser<T> andThen(Function<O, Parser<T>> then) {
     return AndThen.andThen(this, then);
   }

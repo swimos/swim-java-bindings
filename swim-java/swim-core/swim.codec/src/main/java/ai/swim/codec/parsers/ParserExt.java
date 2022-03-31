@@ -25,13 +25,26 @@ import java.util.function.Predicate;
 
 public class ParserExt {
 
-  /***
-   * Runs n parsers until one makes progress or every parser errors. The parser that makes progress will be returned as
-   * a new parser.
+  /**
+   * Tests n parsers with a clone of the input until one makes progress.
+   * <p>
+   * An alternating parser has one of four states:
+   * - A parser produces a value; it is in the done state. If this condition is met then the parser itself is returned
+   * and the input is advanced.
+   * - More than one parser is in a continuation state. If this condition is met then the alt parser itself is returned
+   * with the set of parsers provided. In this state, the input will not be advanced.
+   * - A single parser is in the continuation state and every other parser produced an error. If this condition is met
+   * then the parser itself is returned. In this state, the input will be advanced before the parser is returned.
+   * - Every parser produced an error. The last error will be returned and the input will not be advanced.
+   * <p>
+   * The parsers provided must be able to determine if they are able to make progress as early as possible to determine
+   * which parser to return out of the set. If this condition is not met then the input will not be advanced
+   * accordingly.
    *
-   * Each arm in an alt group should have a unique token that identifies what parser should succeed, if this condition
-   * is not met then the state of the group will be undefined.
-   **/
+   * @param parsers to alternative between.
+   * @param <O>     the type that the parsers produce.
+   * @return see method documentation.
+   */
   @SafeVarargs
   public static <O> Parser<O> alt(Parser<O>... parsers) {
     return Parser.lambda(input -> {
@@ -83,6 +96,12 @@ public class ParserExt {
     });
   }
 
+  /**
+   * Applies the predicate 0 or more times to the input and produces a string representation of its output.
+   *
+   * @param predicate to apply against the input's head.
+   * @return a string representation of the input up until the parser failed.
+   */
   public static Parser<String> takeWhile0(Predicate<Character> predicate) {
     return Parser.stateful(new StringBuilder(), (state, input) -> {
       while (true) {
@@ -105,6 +124,13 @@ public class ParserExt {
     });
   }
 
+  /**
+   * Repeats the delegate parser zero or more times until it produces an error and returns the output as a list.
+   *
+   * @param delegate to apply.
+   * @param <O>      the type the parser produces.
+   * @return a list of the parser's output, an error or a continuation state.
+   */
   public static <O> Parser<List<O>> many0(Parser<O> delegate) {
     return Parser.stateful(new Many0State<>(new ArrayList<>(), delegate), (state, input) -> {
       while (true) {
@@ -131,6 +157,13 @@ public class ParserExt {
     });
   }
 
+  /**
+   * Applies a parser without advancing its input.
+   *
+   * @param parser to apply
+   * @param <O>    the type the parser produces.
+   * @return the parser's output, an error or a continuation.
+   */
   public static <O> Parser<O> peek(Parser<O> parser) {
     return Parser.lambda(input -> parser.feed(input.clone()));
   }

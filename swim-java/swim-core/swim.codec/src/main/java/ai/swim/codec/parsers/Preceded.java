@@ -36,13 +36,13 @@ public class Preceded<B, T> extends Parser<T> {
   @Override
   public Parser<T> feed(Input input) {
     if (input.isDone()) {
-      return Parser.error("Not enough input");
+      return Parser.error(input, "Not enough input");
     } else if (input.isError()) {
-      return Parser.error(((InputError) input).getCause());
+      return Parser.error(((InputError) input));
     } else if (input.isContinuation()) {
       Parser<B> result = this.by.feed(input);
       if (result.isError()) {
-        return Parser.error(((ParserError<B>) result).getCause());
+        return Parser.error(input, ((ParserError<B>) result).cause());
       } else if (result.isDone()) {
         return this.then.feed(input);
       } else {

@@ -71,11 +71,6 @@ public class InputDone extends Input {
   }
 
   @Override
-  public boolean compare(int[] with) {
-    return this.delegate.compare(with);
-  }
-
-  @Override
   public Input clone() {
     return new InputDone(this.delegate.clone());
   }

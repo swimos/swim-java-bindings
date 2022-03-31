@@ -56,7 +56,7 @@ class StatefulParserTest {
   void parseErr() {
     Parser<Object> parser = Parser.stateful(0, (s, input) -> Result.err("Err")).feed(Input.string(""));
     assertTrue(parser.isError());
-    assertEquals(((ParserError<?>) parser).getCause(), "Err");
+    assertEquals(((ParserError<?>) parser).cause(), "Err");
   }
 
 }
