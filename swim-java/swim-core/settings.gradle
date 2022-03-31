@@ -3,15 +3,6 @@ rootProject.name = 'swim-core'
 include 'swim.ffi'
 project(':swim.ffi').name = 'swim-ffi'
 
-include 'swim.structure'
-project(':swim.structure').name = 'swim-structure'
-
-include 'swim.form.annotations'
-project(':swim.form.annotations').name = 'swim-form-annotations'
-
-include 'swim.form.processor'
-project(':swim.form.processor').name = 'swim-form-processor'
-
 include 'swim.recon'
 project(':swim.recon').name = 'swim-recon'
 
