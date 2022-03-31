@@ -15,6 +15,10 @@
 package ai.swim.recon.models.state;
 
 public class PopAfterAttr extends StateChange {
+  PopAfterAttr() {
+
+  }
+
   @Override
   public boolean isPopAfterAttr() {
     return true;

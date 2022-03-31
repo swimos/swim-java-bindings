@@ -47,7 +47,7 @@ public class OptParser<T> extends Parser<Optional<T>> {
         return this;
       } else {
         // The parser succeeded. Advance the input buffer and return it's state.
-        input.cloneFrom(innerInput);
+        input.setFrom(innerInput);
         return Parser.done(Optional.ofNullable(result.bind()));
       }
     } else if (input.isError()) {

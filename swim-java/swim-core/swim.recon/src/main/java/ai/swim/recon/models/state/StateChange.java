@@ -15,6 +15,14 @@
 package ai.swim.recon.models.state;
 
 public abstract class StateChange {
+  public static StateChange popAfterAttr() {
+    return new PopAfterAttr();
+  }
+
+  public static StateChange popAfterItem() {
+    return new PopAfterItem();
+  }
+
   public boolean isNone() {
     return false;
   }

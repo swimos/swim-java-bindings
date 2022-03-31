@@ -22,8 +22,8 @@ import java.util.concurrent.CountDownLatch;
 
 class RByteReaderTest extends JniRunner {
 
-  private static CountDownLatch readLatch = new CountDownLatch(6);
-  private static CountDownLatch closeLatch = new CountDownLatch(1);
+  private static final CountDownLatch readLatch = new CountDownLatch(6);
+  private static final CountDownLatch closeLatch = new CountDownLatch(1);
 
   @Test
   void read() throws InterruptedException {

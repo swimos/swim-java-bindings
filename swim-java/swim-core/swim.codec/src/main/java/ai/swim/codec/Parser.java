@@ -71,7 +71,7 @@ public abstract class Parser<O> {
    * Creates a new parser in the error state from the provided {@code InputError}.
    */
   public static <O> Parser<O> error(InputError inputError) {
-    return new ParserError<>(inputError.location(), inputError.getCause());
+    return new ParserError<>(inputError.location(), inputError.cause());
   }
 
   /**

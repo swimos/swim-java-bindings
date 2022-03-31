@@ -75,7 +75,7 @@ public class ParserExt {
           cont = parseResult;
           advanced = source;
         } else if (parseResult.isDone()) {
-          input.cloneFrom(source);
+          input.setFrom(source);
           return parseResult;
         }
 
@@ -91,7 +91,7 @@ public class ParserExt {
         return alt(parsers);
       }
 
-      input.cloneFrom(advanced);
+      input.setFrom(advanced);
       return cont;
     });
   }
@@ -108,7 +108,7 @@ public class ParserExt {
         if (input.isDone()) {
           return Result.ok(state.toString());
         } else if (input.isError()) {
-          return Result.err(((InputError) input).getCause());
+          return Result.err(((InputError) input).cause());
         } else if (input.isContinuation()) {
           int c = input.head();
           if (predicate.test((char) c)) {
@@ -137,7 +137,7 @@ public class ParserExt {
         if (input.isDone()) {
           return Result.ok(state.output);
         } else if (input.isError()) {
-          return Result.err(((InputError) input).getCause());
+          return Result.err(((InputError) input).cause());
         } else if (input.isContinuation()) {
           Parser<O> result = state.parser.feed(input);
           if (result.isError()) {

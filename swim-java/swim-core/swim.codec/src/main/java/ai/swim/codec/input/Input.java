@@ -104,9 +104,9 @@ public abstract class Input {
   public abstract Input clone();
 
   /**
-   * Replaces this {@code Input}'s contents from the provided {@code Input}
+   * Replaces this {@code Input}'s contents from the provided {@code Input} and strip off any already read tokens.
    */
-  public void cloneFrom(Input innerInput) {
+  public void setFrom(Input innerInput) {
     throw new IllegalStateException();
   }
 
