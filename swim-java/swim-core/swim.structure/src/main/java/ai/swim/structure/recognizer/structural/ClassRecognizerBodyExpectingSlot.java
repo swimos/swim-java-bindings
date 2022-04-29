@@ -20,4 +20,9 @@ public class ClassRecognizerBodyExpectingSlot<T> extends ClassRecognizer<T> {
     return Recognizer.error(new RuntimeException("Expected a slot event"));
   }
 
+  @Override
+  public Recognizer<T> reset() {
+    return null;
+  }
+
 }

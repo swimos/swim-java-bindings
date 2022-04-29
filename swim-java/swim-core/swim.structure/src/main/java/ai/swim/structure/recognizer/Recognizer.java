@@ -35,6 +35,8 @@ public abstract class Recognizer<T> {
     throw new IllegalStateException();
   }
 
+  public abstract Recognizer<T> reset();
+
 }
 
 final class RecognizerDone<T> extends Recognizer<T> {
@@ -65,6 +67,10 @@ final class RecognizerDone<T> extends Recognizer<T> {
     return this;
   }
 
+  @Override
+  public Recognizer<T> reset() {
+    throw new IllegalStateException();
+  }
 }
 
 final class RecognizerError<T> extends Recognizer<T> {
@@ -95,4 +101,8 @@ final class RecognizerError<T> extends Recognizer<T> {
     return this;
   }
 
+  @Override
+  public Recognizer<T> reset() {
+    throw new IllegalStateException();
+  }
 }

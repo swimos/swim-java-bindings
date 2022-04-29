@@ -26,4 +26,9 @@ public class HashMapRecognizer<K, V> extends Recognizer<HashMap<K, V>> {
     throw new AssertionError();
   }
 
+  @Override
+  public Recognizer<HashMap<K, V>> reset() {
+    return null;
+  }
+
 }

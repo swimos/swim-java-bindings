@@ -26,4 +26,9 @@ public class HashSetRecognizer<V> extends Recognizer<HashSet<V>> {
     throw new AssertionError();
   }
 
+  @Override
+  public Recognizer<HashSet<V>> reset() {
+    return null;
+  }
+
 }

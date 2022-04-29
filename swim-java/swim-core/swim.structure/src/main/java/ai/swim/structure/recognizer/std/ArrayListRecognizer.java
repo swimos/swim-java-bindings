@@ -24,4 +24,9 @@ public class ArrayListRecognizer<V> extends Recognizer<V> {
     throw new AssertionError();
   }
 
+  @Override
+  public Recognizer<V> reset() {
+    return null;
+  }
+
 }

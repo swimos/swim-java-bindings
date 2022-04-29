@@ -59,6 +59,11 @@ public class ClassRecognizerInit<T> extends ClassRecognizer<T> {
     }
   }
 
+  @Override
+  public Recognizer<T> reset() {
+    return null;
+  }
+
   private Recognizer<T> nextState(LabelledFieldKey key) {
     Integer idx = this.indexFn.selectIndex(key);
 

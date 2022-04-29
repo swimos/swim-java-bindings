@@ -146,6 +146,11 @@ class ClassRecognizerTest {
       return this.recognizer.trap();
     }
 
+    @Override
+    public Recognizer<InnerPropClass> reset() {
+      return null;
+    }
+
   }
 
   static class InnerPropClass {
@@ -165,42 +170,7 @@ class ClassRecognizerTest {
 
   }
 
-  static class FieldRecognizingBuilder<I> implements RecognizingBuilder<I> {
 
-    public final Recognizer<I> recognizer;
-    public I value;
-
-    public FieldRecognizingBuilder(Class<I> clazz) {
-      this.recognizer = RecognizerProxy.lookup(clazz);
-    }
-
-    public FieldRecognizingBuilder(Recognizer<I> recognizer) {
-      this.recognizer = recognizer;
-    }
-
-    @Override
-    public boolean feed(ReadEvent event) {
-      if (this.value != null) {
-        throw new RuntimeException("Duplicate value");
-      }
-
-      Recognizer<I> feedResult = this.recognizer.feedEvent(event);
-      if (feedResult.isDone()) {
-        value = feedResult.bind();
-        return true;
-      } else if (feedResult.isError()) {
-        throw (RuntimeException) feedResult.trap();
-      } else {
-        return false;
-      }
-    }
-
-    @Override
-    public I bind() {
-      return Objects.requireNonNull(this.value);
-    }
-
-  }
 
   static class InnerPropClassBuilder implements RecognizingBuilder<InnerPropClass> {
 
@@ -228,12 +198,11 @@ class ClassRecognizerTest {
 
   static class OuterPropClass {
 
-    private final String c;
-    private final InnerPropClass d;
+    private String c;
+    public InnerPropClass d;
 
-    public OuterPropClass(String c, InnerPropClass d) {
-      this.c = c;
-      this.d = d;
+    public OuterPropClass() {
+
     }
 
     @Override
@@ -244,6 +213,9 @@ class ClassRecognizerTest {
           '}';
     }
 
+    public void setC(String c) {
+      this.c = c;
+    }
   }
 
   static class OuterPropClassBuilder implements RecognizingBuilder<OuterPropClass> {
@@ -265,13 +237,16 @@ class ClassRecognizerTest {
 
     @Override
     public OuterPropClass bind() {
-      return new OuterPropClass(this.cBuilder.bind(), this.dBuilder.bind());
+      OuterPropClass outerPropClass = new OuterPropClass();
+      outerPropClass.setC(this.cBuilder.bind());
+      outerPropClass.d = this.dBuilder.bind();
+
+      return outerPropClass;
     }
 
   }
 
   static class OuterClassRecognizer extends Recognizer<OuterPropClass> {
-
     public Recognizer<OuterPropClass> recognizer;
 
     public OuterClassRecognizer() {
@@ -320,6 +295,11 @@ class ClassRecognizerTest {
     @Override
     public RuntimeException trap() {
       return this.recognizer.trap();
+    }
+
+    @Override
+    public Recognizer<OuterPropClass> reset() {
+      return null;
     }
 
   }

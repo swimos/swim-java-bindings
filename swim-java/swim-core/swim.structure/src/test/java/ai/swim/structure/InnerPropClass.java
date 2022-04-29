@@ -107,12 +107,17 @@ public class InnerPropClass {
       return this.recognizer.trap();
     }
 
+    @Override
+    public Recognizer<InnerPropClass> reset() {
+      return null;
+    }
+
   }
 
   public static class InnerPropClassBuilder implements RecognizingBuilder<InnerPropClass> {
 
-    private final ClassRecognizerTest.FieldRecognizingBuilder<Integer> aBuilder = new ClassRecognizerTest.FieldRecognizingBuilder<>(Integer.class);
-    private final ClassRecognizerTest.FieldRecognizingBuilder<Integer> bBuilder = new ClassRecognizerTest.FieldRecognizingBuilder<>(Integer.class);
+    private final FieldRecognizingBuilder<Integer> aBuilder = new FieldRecognizingBuilder<>(Integer.class);
+    private final FieldRecognizingBuilder<Integer> bBuilder = new FieldRecognizingBuilder<>(Integer.class);
 
     @Override
     public boolean feedIndexed(int index, ReadEvent event) {
