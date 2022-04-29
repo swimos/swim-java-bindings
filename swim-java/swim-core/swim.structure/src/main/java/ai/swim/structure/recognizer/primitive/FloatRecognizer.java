@@ -20,6 +20,12 @@ import ai.swim.structure.recognizer.Recognizer;
 
 public class FloatRecognizer extends Recognizer<Float> {
 
+  public static final FloatRecognizer INSTANCE = new FloatRecognizer();
+
+  private FloatRecognizer() {
+
+  }
+
   @Override
   public Recognizer<Float> feedEvent(ReadEvent event) {
     if (event.isNumber()) {
@@ -28,6 +34,11 @@ public class FloatRecognizer extends Recognizer<Float> {
     } else {
       return Recognizer.error(new RuntimeException("Expected a float"));
     }
+  }
+
+  @Override
+  public Recognizer<Float> reset() {
+    return INSTANCE;
   }
 
 }

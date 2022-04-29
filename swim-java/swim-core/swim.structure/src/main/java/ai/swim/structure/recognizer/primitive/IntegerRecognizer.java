@@ -6,6 +6,10 @@ import ai.swim.structure.recognizer.Recognizer;
 
 public class IntegerRecognizer extends Recognizer<Integer> {
 
+  public static final Recognizer<Integer> INSTANCE = new IntegerRecognizer();
+
+  private IntegerRecognizer(){}
+
   @Override
   public Recognizer<Integer> feedEvent(ReadEvent event) {
     if (event.isNumber()) {
@@ -14,6 +18,11 @@ public class IntegerRecognizer extends Recognizer<Integer> {
     } else {
       return Recognizer.error(new RuntimeException("Expected an integer"));
     }
+  }
+
+  @Override
+  public Recognizer<Integer> reset() {
+    return INSTANCE;
   }
 
 }

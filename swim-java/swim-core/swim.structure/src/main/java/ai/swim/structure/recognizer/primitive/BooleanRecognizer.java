@@ -20,6 +20,12 @@ import ai.swim.structure.recognizer.Recognizer;
 
 public class BooleanRecognizer extends Recognizer<Boolean> {
 
+  public static final BooleanRecognizer INSTANCE = new BooleanRecognizer();
+
+  private BooleanRecognizer() {
+
+  }
+
   @Override
   public Recognizer<Boolean> feedEvent(ReadEvent event) {
     if (event.isBoolean()) {
@@ -28,6 +34,11 @@ public class BooleanRecognizer extends Recognizer<Boolean> {
     } else {
       return Recognizer.error(new RuntimeException("Expected a boolean"));
     }
+  }
+
+  @Override
+  public Recognizer<Boolean> reset() {
+    return INSTANCE;
   }
 
 }

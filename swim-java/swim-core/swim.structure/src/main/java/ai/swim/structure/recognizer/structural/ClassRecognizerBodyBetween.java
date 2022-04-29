@@ -36,4 +36,9 @@ public class ClassRecognizerBodyBetween<T> extends ClassRecognizer<T> {
     return Recognizer.error(new RuntimeException("Expected end of record or a text value"));
   }
 
+  @Override
+  public Recognizer<T> reset() {
+    return null;
+  }
+
 }

@@ -24,4 +24,9 @@ public class ClassRecognizerHeader<T> extends ClassRecognizer<T> {
     }
   }
 
+  @Override
+  public Recognizer<T> reset() {
+    return null;
+  }
+
 }

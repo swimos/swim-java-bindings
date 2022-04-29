@@ -35,7 +35,7 @@ public @interface AutoForm {
   @Target({ElementType.FIELD})
   @interface Property {
 
-    FormProperty[] value();
+    ai.swim.structure.annotations.FormProperty[] value();
 
   }
 
@@ -48,4 +48,9 @@ public @interface AutoForm {
 
   }
 
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.METHOD)
+  @interface Setter {
+    String value();
+  }
 }

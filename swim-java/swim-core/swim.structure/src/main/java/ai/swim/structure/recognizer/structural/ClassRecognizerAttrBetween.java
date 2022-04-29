@@ -35,4 +35,9 @@ public class ClassRecognizerAttrBetween<T> extends ClassRecognizer<T> {
     return Recognizer.error(new RuntimeException("Expected a record or an attribute"));
   }
 
+  @Override
+  public Recognizer<T> reset() {
+    return null;
+  }
+
 }

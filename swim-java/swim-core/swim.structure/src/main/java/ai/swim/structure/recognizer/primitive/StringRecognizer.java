@@ -6,6 +6,10 @@ import ai.swim.structure.recognizer.Recognizer;
 
 public class StringRecognizer extends Recognizer<String> {
 
+  public static final Recognizer<String> INSTANCE = new StringRecognizer();
+
+  private StringRecognizer(){}
+
   @Override
   public Recognizer<String> feedEvent(ReadEvent event) {
     if (event.isText()) {
@@ -14,6 +18,11 @@ public class StringRecognizer extends Recognizer<String> {
     } else {
       return Recognizer.error(new RuntimeException("todo"));
     }
+  }
+
+  @Override
+  public Recognizer<String> reset() {
+    return INSTANCE;
   }
 
 }

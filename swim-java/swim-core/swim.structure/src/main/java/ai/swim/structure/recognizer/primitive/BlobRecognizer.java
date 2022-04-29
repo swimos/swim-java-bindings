@@ -20,6 +20,12 @@ import ai.swim.structure.recognizer.Recognizer;
 
 public class BlobRecognizer extends Recognizer<byte[]> {
 
+  public static final BlobRecognizer INSTANCE = new BlobRecognizer();
+
+  private BlobRecognizer() {
+
+  }
+
   @Override
   public Recognizer<byte[]> feedEvent(ReadEvent event) {
     if (event.isBlob()) {
@@ -28,6 +34,11 @@ public class BlobRecognizer extends Recognizer<byte[]> {
     } else {
       return Recognizer.error(new RuntimeException("Expected a byte[]"));
     }
+  }
+
+  @Override
+  public Recognizer<byte[]> reset() {
+    return INSTANCE;
   }
 
 }
