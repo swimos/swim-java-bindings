@@ -13,7 +13,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel booleanRecognizer() {
     if (BOOLEAN_RECOGNIZER == null) {
-      BOOLEAN_RECOGNIZER = new PrimitiveRecognizerModel<>(Boolean.TYPE, false);
+      BOOLEAN_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Boolean.TYPE", false);
     }
 
     return BOOLEAN_RECOGNIZER;
@@ -21,7 +21,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel byteRecognizer() {
     if (BYTE_RECOGNIZER == null) {
-      BYTE_RECOGNIZER = new PrimitiveRecognizerModel<>(Byte.TYPE, (byte) 0);
+      BYTE_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Byte.TYPE", (byte) 0);
     }
 
     return BYTE_RECOGNIZER;
@@ -29,7 +29,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel shortRecognizer() {
     if (SHORT_RECOGNIZER == null) {
-      SHORT_RECOGNIZER = new PrimitiveRecognizerModel<>(Short.TYPE, (short) 0);
+      SHORT_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Short.TYPE", (short) 0);
     }
 
     return SHORT_RECOGNIZER;
@@ -37,7 +37,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel intRecognizer() {
     if (INT_RECOGNIZER == null) {
-      INT_RECOGNIZER = new PrimitiveRecognizerModel<>(Integer.TYPE, 0);
+      INT_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Integer.TYPE", 0);
     }
 
     return INT_RECOGNIZER;
@@ -45,7 +45,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel longRecognizer() {
     if (LONG_RECOGNIZER == null) {
-      LONG_RECOGNIZER = new PrimitiveRecognizerModel<>(Long.TYPE, 0L);
+      LONG_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Long.TYPE", 0L);
     }
 
     return LONG_RECOGNIZER;
@@ -53,7 +53,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel charRecognizer() {
     if (CHAR_RECOGNIZER == null) {
-      CHAR_RECOGNIZER = new PrimitiveRecognizerModel<>(Character.TYPE, '\u0000');
+      CHAR_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Character.TYPE", '\u0000');
     }
 
     return CHAR_RECOGNIZER;
@@ -61,7 +61,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel floatRecognizer() {
     if (FLOAT_RECOGNIZER == null) {
-      FLOAT_RECOGNIZER = new PrimitiveRecognizerModel<>(Float.TYPE, 0f);
+      FLOAT_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Float.TYPE", 0f);
     }
 
     return FLOAT_RECOGNIZER;
@@ -69,16 +69,16 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel doubleRecognizer() {
     if (DOUBLE_RECOGNIZER == null) {
-      DOUBLE_RECOGNIZER = new PrimitiveRecognizerModel<>(Double.TYPE, 0d);
+      DOUBLE_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Double.TYPE", 0d);
     }
 
     return DOUBLE_RECOGNIZER;
   }
 
   private final T defaultValue;
-  private final Class<T> type;
+  private final String type;
 
-  public PrimitiveRecognizerModel(Class<T> type, T defaultValue) {
+  public PrimitiveRecognizerModel(String type, T defaultValue) {
     this.type = type;
     this.defaultValue = defaultValue;
   }
@@ -87,15 +87,13 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
     return defaultValue;
   }
 
-  public Class<T> getType() {
-    return type;
+  @Override
+  public String toString() {
+    return "PrimitiveRecognizerModel{" + "defaultValue=" + defaultValue + ", type=" + type + '}';
   }
 
   @Override
-  public String toString() {
-    return "PrimitiveRecognizerModel{" +
-        "defaultValue=" + defaultValue +
-        ", type=" + type +
-        '}';
+  public String initializer() {
+    return this.type;
   }
 }

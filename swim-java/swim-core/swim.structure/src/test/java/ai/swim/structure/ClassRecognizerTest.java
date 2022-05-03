@@ -2,7 +2,6 @@ package ai.swim.structure;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.RecognizerProxy;
 import ai.swim.structure.recognizer.structural.ClassRecognizerInit;
 import ai.swim.structure.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
@@ -10,7 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 class ClassRecognizerTest {
 
@@ -171,7 +169,6 @@ class ClassRecognizerTest {
   }
 
 
-
   static class InnerPropClassBuilder implements RecognizingBuilder<InnerPropClass> {
 
     private final FieldRecognizingBuilder<Integer> aBuilder = new FieldRecognizingBuilder<>(Integer.class);
@@ -266,6 +263,10 @@ class ClassRecognizerTest {
       });
     }
 
+    private OuterClassRecognizer(Recognizer<OuterPropClass> recognizer) {
+      this.recognizer = recognizer;
+    }
+
     @Override
     public Recognizer<OuterPropClass> feedEvent(ReadEvent event) {
       this.recognizer = this.recognizer.feedEvent(event);
@@ -299,7 +300,7 @@ class ClassRecognizerTest {
 
     @Override
     public Recognizer<OuterPropClass> reset() {
-      return null;
+      return new OuterClassRecognizer(this.recognizer.reset());
     }
 
   }

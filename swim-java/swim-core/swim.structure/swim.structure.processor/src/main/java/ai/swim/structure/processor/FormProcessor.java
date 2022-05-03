@@ -18,6 +18,7 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.structure.ClassSchema;
+import ai.swim.structure.processor.writer.RecognizerWriter;
 import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -30,9 +31,8 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.io.IOException;
+import java.util.*;
 
 @AutoService(Processor.class)
 public class FormProcessor extends AbstractProcessor {
@@ -40,6 +40,7 @@ public class FormProcessor extends AbstractProcessor {
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     ProcessingContext processingContext = new ProcessingContext(this.processingEnv);
+    List<String> classNames = new ArrayList<>();
 
     for (Element element : roundEnv.getElementsAnnotatedWith(AutoForm.class)) {
       if (element.getKind() != ElementKind.CLASS) {
@@ -47,14 +48,25 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-      ElementMap elementMap = ElementMap.from(element.getEnclosedElements(), processingContext);
+      ElementMap elementMap = processingContext.getMap(element);
       if (elementMap == null) {
         return true;
       }
 
-      ScopedContext scopedContext = new ScopedContext(processingContext, (DeclaredType) element.asType());
+      ScopedContext scopedContext = new ScopedContext(processingContext, element);
       ClassSchema classSchema = ClassSchema.fromMap(scopedContext, elementMap);
-      System.out.println(classSchema);
+      if (classSchema == null) {
+        return true;
+      }
+
+      classNames.add(classSchema.className());
+
+      try {
+        RecognizerWriter.writeRecognizer(classSchema, scopedContext);
+      } catch (IOException e) {
+        this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
+        return true;
+      }
     }
 
     return true;

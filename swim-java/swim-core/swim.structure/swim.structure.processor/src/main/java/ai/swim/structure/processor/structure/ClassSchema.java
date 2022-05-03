@@ -5,26 +5,46 @@ import ai.swim.structure.processor.FieldView;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.structure.accessor.FieldAccessor;
 import ai.swim.structure.processor.structure.accessor.MethodAccessor;
-import ai.swim.structure.processor.structure.recognizer.Recognizable;
+import ai.swim.structure.processor.structure.recognizer.ElementRecognizer;
 import ai.swim.structure.processor.structure.recognizer.RecognizerModel;
 
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClassSchema {
-  private final ConstructorElement constructor;
-  private final List<Recognizable> recognizers;
+import static ai.swim.structure.processor.ElementUtils.setterFor;
 
-  private ClassSchema(ConstructorElement constructor, List<Recognizable> recognizers) {
+public class ClassSchema {
+  private final String className;
+  private final PackageElement packageElement;
+  private final ConstructorElement constructor;
+  private final List<ElementRecognizer> recognizers;
+
+  private ClassSchema(String className, PackageElement packageElement, ConstructorElement constructor, List<ElementRecognizer> recognizers) {
+    this.className = className;
+    this.packageElement = packageElement;
     this.constructor = constructor;
     this.recognizers = recognizers;
   }
 
+  public int fieldCount() {
+    return this.recognizers.size();
+  }
+
+  public PackageElement getPackageElement() {
+    return packageElement;
+  }
+
+  public List<ElementRecognizer> getRecognizers() {
+    return recognizers;
+  }
+
   public static ClassSchema fromMap(ScopedContext context, ElementMap elementMap) {
-    List<Recognizable> recognizers = new ArrayList<>();
+    List<ElementRecognizer> recognizers = new ArrayList<>();
 
     for (FieldView field : elementMap.getFields()) {
       RecognizerModel recognizer = RecognizerModel.from(field.getElement(), context);
@@ -33,7 +53,7 @@ public class ClassSchema {
       }
 
       if (!field.isPublic()) {
-        ExecutableElement setter = elementMap.setterFor(field.getName());
+        ExecutableElement setter = setterFor(elementMap.getMethods(),field.getName());
 
         if (setter == null) {
           context.log(Diagnostic.Kind.ERROR, "Private field: '" + field.getName() + "' has no setter");
@@ -53,18 +73,27 @@ public class ClassSchema {
           return null;
         }
 
-        recognizers.add(new Recognizable(new MethodAccessor(setter), recognizer));
+        recognizers.add(new ElementRecognizer(new MethodAccessor(setter), recognizer, field));
       } else {
-        recognizers.add(new Recognizable(new FieldAccessor(field), recognizer));
+        recognizers.add(new ElementRecognizer(new FieldAccessor(field), recognizer, field));
       }
     }
 
-    return new ClassSchema(elementMap.getConstructor(), recognizers);
+    Elements elementUtils = context.getProcessingContext().getProcessingEnvironment().getElementUtils();
+    PackageElement declaredPackage = elementUtils.getPackageOf(elementMap.getRoot());
+
+
+
+    return new ClassSchema(context.getRoot().getSimpleName().toString(), declaredPackage, elementMap.getConstructor(), recognizers);
   }
 
 
   @Override
   public String toString() {
     return "ClassSchema{" + "constructor=" + constructor + ", recognizers=" + recognizers + '}';
+  }
+
+  public String className() {
+    return this.className;
   }
 }
