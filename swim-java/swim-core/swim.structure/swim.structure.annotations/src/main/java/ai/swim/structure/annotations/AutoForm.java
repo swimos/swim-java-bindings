@@ -53,4 +53,9 @@ public @interface AutoForm {
   @interface Setter {
     String value();
   }
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.FIELD)
+  @interface Optional {
+  }
 }

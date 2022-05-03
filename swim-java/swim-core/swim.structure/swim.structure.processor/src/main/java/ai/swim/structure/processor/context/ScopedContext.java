@@ -1,14 +1,15 @@
 package ai.swim.structure.processor.context;
 
 import javax.annotation.processing.Messager;
+import javax.lang.model.element.Element;
 import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic;
 
 public class ScopedContext {
   private final ProcessingContext processingContext;
-  private final DeclaredType root;
+  private final Element root;
 
-  public ScopedContext(ProcessingContext processingContext, DeclaredType root) {
+  public ScopedContext(ProcessingContext processingContext, Element root) {
     this.processingContext = processingContext;
     this.root = root;
   }
@@ -17,7 +18,7 @@ public class ScopedContext {
     return processingContext;
   }
 
-  public DeclaredType getRoot() {
+  public Element getRoot() {
     return root;
   }
 

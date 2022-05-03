@@ -1,5 +1,7 @@
 package ai.swim.structure.processor;
 
+import ai.swim.structure.annotations.AutoForm;
+
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
@@ -35,5 +37,16 @@ public class FieldView {
 
   public VariableElement getElement() {
     return element;
+  }
+
+  public boolean isOptional() {
+    return this.element.getAnnotation(AutoForm.Optional.class) != null;
+  }
+
+  @Override
+  public String toString() {
+    return "FieldView{" +
+        "element=" + element +
+        '}';
   }
 }

@@ -7,18 +7,17 @@ import javax.lang.model.type.TypeKind;
 
 public abstract class RecognizerModel {
 
-
   public static RecognizerModel from(VariableElement element, ScopedContext context) {
-    RecognizerModel recognizer = RecognizerModel.fromPrimitiveType(element, context);
+    RecognizerModel recognizer = RecognizerModel.fromPrimitiveType(element);
 
-    if (recognizer!=null) {
+    if (recognizer != null) {
       return recognizer;
     }
 
     return null;
   }
 
-  public static RecognizerModel fromPrimitiveType(VariableElement element, ScopedContext context) {
+  public static RecognizerModel fromPrimitiveType(VariableElement element) {
     TypeKind kind = element.asType().getKind();
 
     switch (kind) {
@@ -43,4 +42,6 @@ public abstract class RecognizerModel {
     }
 
   }
+
+  public abstract String initializer();
 }
