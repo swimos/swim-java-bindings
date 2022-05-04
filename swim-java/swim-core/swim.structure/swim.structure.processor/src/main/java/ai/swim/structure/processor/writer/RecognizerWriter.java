@@ -1,5 +1,6 @@
 package ai.swim.structure.processor.writer;
 
+import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.structure.ClassSchema;
 import ai.swim.structure.processor.structure.recognizer.ElementRecognizer;
@@ -29,8 +30,13 @@ public class RecognizerWriter {
   public static void writeRecognizer(ClassSchema schema, ScopedContext context) throws IOException {
     BuilderWriter.write(schema, context);
 
+    AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
+        .addMember("value", "$T.class", context.getRoot().asType())
+        .build();
+
     TypeSpec.Builder classSpec = TypeSpec.classBuilder(recognizerClassName(schema.className()))
-        .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+        .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+        .addAnnotation(recognizerAnnotationSpec);
 
     ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
@@ -47,7 +53,6 @@ public class RecognizerWriter {
 
     JavaFile javaFile = JavaFile.builder(schema.getPackageElement().getQualifiedName().toString(), classSpec.build()).build();
     javaFile.writeTo(context.getProcessingContext().getProcessingEnvironment().getFiler());
-//    javaFile.writeTo(System.out);
   }
 
   private static String recognizerClassName(String mirror) {
@@ -72,7 +77,6 @@ public class RecognizerWriter {
     methods[0] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "feedEvent", ParameterSpec.builder(TypeName.get(typeElement.asType()), "event").build(), CodeBlock.of(
         "this.recognizer = this.recognizer.feedEvent(event);\nreturn this;"
     ));
-
     methods[1] = buildPolymorphicMethod(TypeName.get(boolean.class), "isCont", null, CodeBlock.of("return this.recognizer.isCont();"));
     methods[2] = buildPolymorphicMethod(TypeName.get(boolean.class), "isDone", null, CodeBlock.of("return this.recognizer.isDone();"));
     methods[3] = buildPolymorphicMethod(TypeName.get(boolean.class), "isError", null, CodeBlock.of("return this.recognizer.isError();"));
