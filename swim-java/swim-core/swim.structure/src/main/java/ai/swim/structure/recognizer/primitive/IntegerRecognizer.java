@@ -4,25 +4,49 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadNumberValue;
 import ai.swim.structure.recognizer.Recognizer;
 
-public class IntegerRecognizer extends Recognizer<Integer> {
+public class IntegerRecognizer {
 
-  public static final Recognizer<Integer> INSTANCE = new IntegerRecognizer();
+  public static final Recognizer<Integer> PRIMITIVE = new PrimitiveIntegerRecognizer();
+  public static final Recognizer<Integer> BOXED = new BoxedIntegerRecognizer();
 
-  private IntegerRecognizer(){}
+  private IntegerRecognizer() {
 
-  @Override
-  public Recognizer<Integer> feedEvent(ReadEvent event) {
-    if (event.isNumber()) {
-      ReadNumberValue readNumberValueEvent = (ReadNumberValue) event;
-      return Recognizer.done(readNumberValueEvent.value().intValue());
-    } else {
-      return Recognizer.error(new RuntimeException("Expected an integer"));
+  }
+
+  private static final class PrimitiveIntegerRecognizer extends Recognizer<Integer> {
+    @Override
+    public Recognizer<Integer> feedEvent(ReadEvent event) {
+      if (event.isNumber()) {
+        ReadNumberValue readNumberValueEvent = (ReadNumberValue) event;
+        return Recognizer.done(readNumberValueEvent.value().intValue(), this);
+      } else {
+        return Recognizer.error(new RuntimeException("Expected an integer"));
+      }
+    }
+
+    @Override
+    public Recognizer<Integer> reset() {
+      return this;
     }
   }
 
-  @Override
-  public Recognizer<Integer> reset() {
-    return INSTANCE;
-  }
+  private static final class BoxedIntegerRecognizer extends Recognizer<Integer> {
+    @Override
+    public Recognizer<Integer> feedEvent(ReadEvent event) {
+      if (event.isNumber()) {
+        ReadNumberValue readNumberValueEvent = (ReadNumberValue) event;
+        return Recognizer.done(readNumberValueEvent.value().intValue(), this);
+      } else if (event.isExtant()) {
+        return Recognizer.done(null, this);
+      } else {
+        return Recognizer.error(new RuntimeException("Expected an integer"));
+      }
+    }
 
+    @Override
+    public Recognizer<Integer> reset() {
+      return this;
+    }
+  }
 }
+

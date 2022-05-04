@@ -14,7 +14,7 @@ public class StringRecognizer extends Recognizer<String> {
   public Recognizer<String> feedEvent(ReadEvent event) {
     if (event.isText()) {
       ReadTextValue readTextValue = (ReadTextValue) event;
-      return Recognizer.done(readTextValue.value());
+      return Recognizer.done(readTextValue.value(), this);
     } else {
       return Recognizer.error(new RuntimeException("todo"));
     }

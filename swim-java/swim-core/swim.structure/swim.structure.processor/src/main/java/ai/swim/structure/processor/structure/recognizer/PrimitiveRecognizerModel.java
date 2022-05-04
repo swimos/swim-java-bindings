@@ -37,7 +37,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel intRecognizer() {
     if (INT_RECOGNIZER == null) {
-      INT_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Integer.TYPE", 0);
+      INT_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.primitive.IntegerRecognizer.PRIMITIVE", 0);
     }
 
     return INT_RECOGNIZER;
@@ -95,5 +95,10 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
   @Override
   public String initializer() {
     return this.type;
+  }
+
+  @Override
+  public Object defaultValue() {
+    return this.defaultValue;
   }
 }

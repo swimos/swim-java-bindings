@@ -19,43 +19,43 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
 public @interface AutoForm {
 
-  @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.TYPE})
+  @Retention(RetentionPolicy.RUNTIME)
   @interface Tag {
-
     String value();
-
   }
 
-  @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD})
+  @Retention(RetentionPolicy.RUNTIME)
   @interface Property {
-
     ai.swim.structure.annotations.FormProperty[] value();
-
   }
 
-
-  @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD})
+  @Retention(RetentionPolicy.RUNTIME)
   @interface Name {
-
     String value();
-
   }
 
-  @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.METHOD)
+  @Retention(RetentionPolicy.RUNTIME)
   @interface Setter {
     String value();
   }
 
-  @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.FIELD)
+  @Retention(RetentionPolicy.RUNTIME)
   @interface Optional {
+
+  }
+
+  @Target(ElementType.FIELD)
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface Ignore {
+
   }
 }

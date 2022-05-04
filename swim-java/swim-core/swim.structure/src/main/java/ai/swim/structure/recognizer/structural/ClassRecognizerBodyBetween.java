@@ -17,7 +17,7 @@ public class ClassRecognizerBodyBetween<T> extends ClassRecognizer<T> {
   public Recognizer<T> feedEvent(ReadEvent event) {
     if (event.isEndRecord()) {
       try {
-        return Recognizer.done(this.builder.bind());
+        return Recognizer.done(this.builder.bind(), this);
       } catch (RuntimeException e) {
         return Recognizer.error(e);
       }

@@ -30,7 +30,7 @@ public class BlobRecognizer extends Recognizer<byte[]> {
   public Recognizer<byte[]> feedEvent(ReadEvent event) {
     if (event.isBlob()) {
       ReadBlobValue readBlobValue = (ReadBlobValue) event;
-      return Recognizer.done(readBlobValue.value());
+      return Recognizer.done(readBlobValue.value(), this);
     } else {
       return Recognizer.error(new RuntimeException("Expected a byte[]"));
     }

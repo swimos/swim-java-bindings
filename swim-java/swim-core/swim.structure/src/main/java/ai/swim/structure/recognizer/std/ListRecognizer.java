@@ -38,9 +38,9 @@ public class ListRecognizer<E> extends Recognizer<List<E>> {
         return this.feedElement(event);
       case Between:
         if (event.isEndRecord() && !this.isAttrBody) {
-          return Recognizer.done(this.list);
+          return Recognizer.done(this.list, this);
         } else if (event.isEndAttribute() && this.isAttrBody) {
-          return Recognizer.done(this.list);
+          return Recognizer.done(this.list, this);
         } else {
           this.state = State.Item;
           return this.feedElement(event);
