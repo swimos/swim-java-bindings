@@ -1,6 +1,7 @@
 package ai.swim.structure.processor.structure.accessor;
 
 import ai.swim.structure.processor.FieldView;
+import com.squareup.javapoet.CodeBlock;
 
 public class FieldAccessor extends Accessor {
   private final FieldView field;
@@ -10,8 +11,8 @@ public class FieldAccessor extends Accessor {
   }
 
   @Override
-  public void write(Object with, Object var) {
-
+  public void write(CodeBlock.Builder builder, Object arg){
+    builder.add("$L = $L", this.field.getName(), arg);
   }
 
   @Override

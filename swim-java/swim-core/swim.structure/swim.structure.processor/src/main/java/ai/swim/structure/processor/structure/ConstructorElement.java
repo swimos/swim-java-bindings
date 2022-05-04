@@ -15,4 +15,8 @@ public class ConstructorElement {
         "constructor=" + constructor +
         '}';
   }
+
+  public ExecutableElement getElement() {
+    return constructor;
+  }
 }
