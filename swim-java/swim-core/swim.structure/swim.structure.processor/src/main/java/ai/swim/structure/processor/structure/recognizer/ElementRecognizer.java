@@ -38,8 +38,6 @@ public class ElementRecognizer {
   }
 
   public Accessor getAccessor() {
-    System.out.println("Get accessor: " + this.accessor.getClass());
-
     return accessor;
   }
 }

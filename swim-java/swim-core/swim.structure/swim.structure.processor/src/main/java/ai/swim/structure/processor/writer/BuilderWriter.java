@@ -17,11 +17,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import static ai.swim.structure.processor.writer.RecognizerWriter.RECOGNIZING_BUILDER_CLASS;
 import static ai.swim.structure.processor.writer.RecognizerWriter.TYPE_READ_EVENT;
 
 public class BuilderWriter {
   private static final String FIELD_RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.FieldRecognizingBuilder";
-  private static final String RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.RecognizingBuilder";
   private static final String RECOGNIZING_BUILDER_FEED_INDEX = "feedIndexed";
   private static final String RECOGNIZING_BUILDER_BIND = "bind";
 
@@ -30,19 +30,19 @@ public class BuilderWriter {
     Types typeUtils = processingEnvironment.getTypeUtils();
     Elements elementUtils = processingEnvironment.getElementUtils();
 
-    TypeSpec.Builder classSpec = TypeSpec.classBuilder(schema.className() + "Builder").addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+    TypeSpec.Builder classSpec = TypeSpec.classBuilder(schema.className() + "Builder")
+        .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
     TypeElement recognizingBuilderElement = elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS);
     DeclaredType recognizingBuilderType = typeUtils.getDeclaredType(recognizingBuilderElement, context.getRoot().asType());
 
     classSpec.addSuperinterface(TypeName.get(recognizingBuilderType));
-
     classSpec.addMethod(buildConstructor());
     classSpec.addFields(Arrays.asList(buildFields(schema, processingEnvironment)));
     classSpec.addMethods(Arrays.asList(buildMethods(schema, context)));
 
     JavaFile javaFile = JavaFile.builder(schema.getPackageElement().getQualifiedName().toString(), classSpec.build()).build();
-    javaFile.writeTo(System.out);
+    javaFile.writeTo(context.getProcessingContext().getProcessingEnvironment().getFiler());
   }
 
   private static MethodSpec[] buildMethods(ClassSchema schema, ScopedContext context) {
@@ -74,12 +74,8 @@ public class BuilderWriter {
 
     for (int i = 0; i < recognizers.size(); i++) {
       ElementRecognizer recognizer = recognizers.get(i);
-      System.out.println("Writing: " + recognizer.fieldName());
-
       body.add("case $L:", i);
       body.addStatement("\nreturn this.$L.feed(event)", buildFieldName(recognizer.fieldName()));
-
-      System.out.println("Wrote: " + recognizer.fieldName());
     }
 
     body.add("default:").addStatement("\nthrow new RuntimeException(\"Unknown idx: \" + index)").endControlFlow();
@@ -89,26 +85,19 @@ public class BuilderWriter {
   }
 
   private static MethodSpec buildBind(ClassSchema schema, ScopedContext context) {
-    ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
-    Elements elementUtils = processingEnvironment.getElementUtils();
-
-    MethodSpec.Builder builder = MethodSpec.methodBuilder(RECOGNIZING_BUILDER_FEED_INDEX)
+    MethodSpec.Builder builder = MethodSpec.methodBuilder(RECOGNIZING_BUILDER_BIND)
         .addModifiers(Modifier.PUBLIC)
         .addAnnotation(Override.class)
         .returns(TypeName.get(context.getRoot().asType()));
 
     CodeBlock.Builder body = CodeBlock.builder();
-    body.addStatement("$T obj = new $L", context.getRoot().asType(), schema.getConstructor().getElement());
+    body.add("$T obj = new $T();\n\n", context.getRoot().asType(), context.getRoot().asType());
 
     for (ElementRecognizer recognizer : schema.getRecognizers()) {
-      body.add("obj.");
-
-      String arg = String.format("this.%s.bind()", recognizer.fieldName());
-      recognizer.getAccessor().write(body, arg);
-      body.add(";\n");
+      recognizer.getAccessor().write(body, "obj", String.format("this.%s.bind()", buildFieldName(recognizer.fieldName())));
     }
 
-    body.add("return obj;");
+    body.add("\nreturn obj;");
     builder.addCode(body.build());
 
     return builder.build();
@@ -139,8 +128,6 @@ public class BuilderWriter {
 
       DeclaredType memberRecognizingBuilder = typeUtils.getDeclaredType(fieldFieldRecognizingBuilder, recognizerType);
       FieldSpec.Builder fieldSpec = FieldSpec.builder(TypeName.get(memberRecognizingBuilder), buildFieldName(recognizer.fieldName()), Modifier.PRIVATE, Modifier.FINAL);
-
-      System.out.println("Writing code block with init: " + recognizer.initializer());
 
       fieldSpec.initializer(CodeBlock.of("new $L<>($L)", FIELD_RECOGNIZING_BUILDER_CLASS, recognizer.initializer()));
 

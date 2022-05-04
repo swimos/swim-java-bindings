@@ -6,6 +6,7 @@ import ai.swim.structure.processor.structure.ConstructorElement;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -51,10 +52,23 @@ public class ElementInspector {
       return null;
     }
 
-    System.out.println(elementMap);
+    if (!inspectGenerics(element, environment)) {
+      return null;
+    }
 
     this.cache.put(element.toString(), elementMap);
     return elementMap;
+  }
+
+  private boolean inspectGenerics(Element element,  ProcessingEnvironment environment) {
+    DeclaredType declaredType = (DeclaredType) element.asType();
+
+    if (declaredType.getTypeArguments().size() != 0) {
+      environment.getMessager().printMessage(Diagnostic.Kind.ERROR, "Class: '" + element + "' has generic type arguments which are not yet supported");
+      return false;
+    }
+
+    return true;
   }
 
   private boolean inspectClass(Element rootElement, ElementMap elementMap) {
