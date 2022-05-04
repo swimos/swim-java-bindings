@@ -2,6 +2,7 @@ package ai.swim.structure;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.annotations.AutoForm;
+import ai.swim.structure.recognizer.Recognizer;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,7 +19,7 @@ public class T {
   }
 
   @AutoForm
-  public static class Prop<E extends Number> extends PropParent {
+  public static class Prop extends PropParent {
     public static class Temp {
 
     }
@@ -26,6 +27,7 @@ public class T {
     private float a;
     private List<Integer> b;
     public int c;
+
     @AutoForm.Optional
     private Integer skipped;
 
@@ -38,7 +40,6 @@ public class T {
       this.b = b;
     }
   }
-
 
   @Test
   public void t() {

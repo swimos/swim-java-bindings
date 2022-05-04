@@ -75,7 +75,14 @@ public class ElementMap {
     this.methods.add(method);
   }
 
+  /**
+   * Returns the root element representing either a class or enumeration.
+   *
+   * If this is a class, then the kind of the element is guaranteed to be ElementKind#Class and the TypeMirror is
+   * guaranteed to be a DeclaredType.
+   */
   public Element getRoot() {
     return root;
   }
+
 }

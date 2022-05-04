@@ -31,10 +31,6 @@ public class ClassSchema {
     this.recognizers = recognizers;
   }
 
-  public int fieldCount() {
-    return this.recognizers.size();
-  }
-
   public PackageElement getPackageElement() {
     return packageElement;
   }
@@ -56,8 +52,10 @@ public class ClassSchema {
         continue;
       }
 
-      if (!field.isPublic()) {
-        ExecutableElement setter = setterFor(elementMap.getMethods(),field.getName());
+      if (field.isPublic()) {
+        recognizers.add(new ElementRecognizer(new FieldAccessor(field), recognizer, field));
+      } else {
+        ExecutableElement setter = setterFor(elementMap.getMethods(), field.getName());
 
         if (setter == null) {
           context.log(Diagnostic.Kind.ERROR, "Private field: '" + field.getName() + "' has no setter");
@@ -78,14 +76,11 @@ public class ClassSchema {
         }
 
         recognizers.add(new ElementRecognizer(new MethodAccessor(setter), recognizer, field));
-      } else {
-        recognizers.add(new ElementRecognizer(new FieldAccessor(field), recognizer, field));
       }
     }
 
     Elements elementUtils = context.getProcessingContext().getProcessingEnvironment().getElementUtils();
     PackageElement declaredPackage = elementUtils.getPackageOf(elementMap.getRoot());
-
 
 
     return new ClassSchema(context.getRoot().getSimpleName().toString(), declaredPackage, elementMap.getConstructor(), recognizers);
