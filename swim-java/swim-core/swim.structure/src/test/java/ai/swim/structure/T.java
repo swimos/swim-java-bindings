@@ -1,9 +1,9 @@
 package ai.swim.structure;
 
+import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.annotations.AutoForm;
 import org.junit.jupiter.api.Test;
 
-import javax.swing.*;
 import java.util.List;
 
 public class T {
@@ -25,6 +25,7 @@ public class T {
 
     private float a;
     private List<Integer> b;
+    public int c;
     @AutoForm.Optional
     private Integer skipped;
 

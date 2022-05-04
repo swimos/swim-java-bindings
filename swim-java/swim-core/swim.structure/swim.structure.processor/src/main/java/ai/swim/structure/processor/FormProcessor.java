@@ -29,9 +29,7 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic;
-import java.io.IOException;
 import java.util.*;
 
 @AutoService(Processor.class)
@@ -63,7 +61,8 @@ public class FormProcessor extends AbstractProcessor {
 
       try {
         RecognizerWriter.writeRecognizer(classSchema, scopedContext);
-      } catch (IOException e) {
+      } catch (Throwable e) {
+        e.printStackTrace();
         this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
         return true;
       }
