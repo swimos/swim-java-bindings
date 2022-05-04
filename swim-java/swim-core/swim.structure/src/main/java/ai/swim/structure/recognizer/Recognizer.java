@@ -5,8 +5,8 @@ import ai.swim.recon.event.ReadEvent;
 // todo: number recognizers will truncate values
 public abstract class Recognizer<T> {
 
-  public static <T> Recognizer<T> done(T target) {
-    return new RecognizerDone<>(target);
+  public static <T> Recognizer<T> done(T target, Recognizer<T> delegate) {
+    return new RecognizerDone<>(target, delegate);
   }
 
   public static <T> Recognizer<T> error(RuntimeException error) {
@@ -42,9 +42,11 @@ public abstract class Recognizer<T> {
 final class RecognizerDone<T> extends Recognizer<T> {
 
   final T target;
+  private final Recognizer<T> delegate;
 
-  RecognizerDone(T target) {
+  RecognizerDone(T target, Recognizer<T> delegate) {
     this.target = target;
+    this.delegate = delegate;
   }
 
   @Override
@@ -69,7 +71,7 @@ final class RecognizerDone<T> extends Recognizer<T> {
 
   @Override
   public Recognizer<T> reset() {
-    throw new IllegalStateException();
+    return this.delegate.reset();
   }
 }
 

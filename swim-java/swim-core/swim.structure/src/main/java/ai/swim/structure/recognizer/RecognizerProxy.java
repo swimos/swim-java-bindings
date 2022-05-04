@@ -11,8 +11,8 @@ public class RecognizerProxy {
 
   static {
     ConcurrentHashMap<Class<?>, Recognizer<?>> recognizers = new ConcurrentHashMap<>();
-    recognizers.put(Integer.class, IntegerRecognizer.INSTANCE);
-    recognizers.put(String.class,  StringRecognizer.INSTANCE);
+    recognizers.put(Integer.class, IntegerRecognizer.PRIMITIVE);
+    recognizers.put(String.class, StringRecognizer.INSTANCE);
 
     // todo build at compile time
 

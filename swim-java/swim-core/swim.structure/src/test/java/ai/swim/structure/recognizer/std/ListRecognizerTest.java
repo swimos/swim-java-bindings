@@ -1,0 +1,25 @@
+package ai.swim.structure.recognizer.std;
+
+import ai.swim.recon.event.ReadEvent;
+import ai.swim.structure.RecognizerTestUtil;
+import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.primitive.IntegerRecognizer;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+class ListRecognizerTest {
+  @Test
+  void testRecognizer() throws Exception {
+    Recognizer<List<Integer>> recognizer = new ListRecognizer<>(IntegerRecognizer.PRIMITIVE, false);
+    List<ReadEvent> events = List.of(
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.number(2),
+        ReadEvent.number(3),
+        ReadEvent.endRecord()
+    );
+
+    RecognizerTestUtil.runTest(recognizer, events);
+  }
+}

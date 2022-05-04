@@ -30,7 +30,7 @@ public class FloatRecognizer extends Recognizer<Float> {
   public Recognizer<Float> feedEvent(ReadEvent event) {
     if (event.isNumber()) {
       ReadNumberValue readNumberValueEvent = (ReadNumberValue) event;
-      return Recognizer.done(readNumberValueEvent.value().floatValue());
+      return Recognizer.done(readNumberValueEvent.value().floatValue(), this);
     } else {
       return Recognizer.error(new RuntimeException("Expected a float"));
     }

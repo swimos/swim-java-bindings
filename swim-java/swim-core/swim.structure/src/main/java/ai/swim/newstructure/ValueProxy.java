@@ -119,7 +119,7 @@ class PropProxy extends Proxy<Prop> {
   private static final ConstructorLambda<Prop> constructor = Prop::new;
 
   private final FieldProxy<Prop, String> fieldA = FieldProxy.of("a", Prop::setA, StringRecognizer.INSTANCE);
-  private final FieldProxy<Prop, Integer> fieldB = FieldProxy.of("b", Prop::setB, IntegerRecognizer.INSTANCE);
+  private final FieldProxy<Prop, Integer> fieldB = FieldProxy.of("b", Prop::setB, IntegerRecognizer.PRIMITIVE);
   private final FieldProxy<Prop, Long> fieldC = FieldProxy.of("c", (prop, field) -> prop.c = field, null);
   private final Prop instance = new Prop();
 

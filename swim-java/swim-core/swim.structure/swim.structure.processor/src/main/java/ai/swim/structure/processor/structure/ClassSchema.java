@@ -1,6 +1,6 @@
 package ai.swim.structure.processor.structure;
 
-import ai.swim.structure.processor.ElementMap;
+import ai.swim.structure.processor.ClassMap;
 import ai.swim.structure.processor.FieldView;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.structure.accessor.FieldAccessor;
@@ -12,6 +12,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,23 +40,31 @@ public class ClassSchema {
     return recognizers;
   }
 
-  public ConstructorElement getConstructor() {
-    return constructor;
-  }
-
-  public static ClassSchema fromMap(ScopedContext context, ElementMap elementMap) {
+  public static ClassSchema fromMap(ScopedContext context, ClassMap classMap) {
     List<ElementRecognizer> recognizers = new ArrayList<>();
+    Types typeUtils = context.getProcessingContext().getProcessingEnvironment().getTypeUtils();
 
-    for (FieldView field : elementMap.getFields()) {
+    for (FieldView field : classMap.getFields()) {
+      if (field.isIgnored()) {
+        continue;
+      }
+
       RecognizerModel recognizer = RecognizerModel.from(field.getElement(), context);
       if (recognizer == null) {
+        if (field.isOptional()) {
+          // todo wrap field in an OptionalRecognizer instead of skipping it
+          continue;
+        }
+
+//        context.log(Diagnostic.Kind.ERROR, "Failed to find a recognizer for field: '" + field.getName() + "'");
+//        return null;
         continue;
       }
 
       if (field.isPublic()) {
         recognizers.add(new ElementRecognizer(new FieldAccessor(field), recognizer, field));
       } else {
-        ExecutableElement setter = setterFor(elementMap.getMethods(), field.getName());
+        ExecutableElement setter = setterFor(classMap.getMethods(), field.getName());
 
         if (setter == null) {
           context.log(Diagnostic.Kind.ERROR, "Private field: '" + field.getName() + "' has no setter");
@@ -70,8 +79,9 @@ public class ClassSchema {
 
         VariableElement variableElement = parameters.get(0);
 
-        if (!variableElement.asType().equals(field.getElement().asType())) {
-          context.log(Diagnostic.Kind.ERROR, "setter for field '" + field.getName() + "' accepts an incorrect type");
+        if (!typeUtils.isSameType(variableElement.asType(), field.getElement().asType())){
+          String cause = String.format("Expected type: '%s', found: '%s'", variableElement.asType(), field.getElement().asType());
+          context.log(Diagnostic.Kind.ERROR, "setter for field '" + field.getName() + "' accepts an incorrect type. Cause: "+cause);
           return null;
         }
 
@@ -80,12 +90,10 @@ public class ClassSchema {
     }
 
     Elements elementUtils = context.getProcessingContext().getProcessingEnvironment().getElementUtils();
-    PackageElement declaredPackage = elementUtils.getPackageOf(elementMap.getRoot());
+    PackageElement declaredPackage = elementUtils.getPackageOf(classMap.getRoot());
 
-
-    return new ClassSchema(context.getRoot().getSimpleName().toString(), declaredPackage, elementMap.getConstructor(), recognizers);
+    return new ClassSchema(context.getRoot().getSimpleName().toString(), declaredPackage, classMap.getConstructor(), recognizers);
   }
-
 
   @Override
   public String toString() {

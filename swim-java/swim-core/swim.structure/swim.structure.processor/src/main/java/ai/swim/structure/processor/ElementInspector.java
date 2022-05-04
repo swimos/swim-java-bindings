@@ -17,14 +17,14 @@ import java.util.Map;
 
 public class ElementInspector {
 
-  private final Map<String, ElementMap> cache;
+  private final Map<String, ClassMap> cache;
 
   public ElementInspector() {
     cache = new HashMap<>();
   }
 
-  public ElementMap getOrInspect(Element element, ProcessingEnvironment environment) {
-    ElementMap map = this.cache.get(element.toString());
+  public ClassMap getOrInspect(Element element, ProcessingEnvironment environment) {
+    ClassMap map = this.cache.get(element.toString());
 
     if (map != null) {
       return map;
@@ -33,7 +33,7 @@ public class ElementInspector {
     return inspectAndInsertClass(element, environment);
   }
 
-  private ElementMap inspectAndInsertClass(Element element, ProcessingEnvironment environment) {
+  private ClassMap inspectAndInsertClass(Element element, ProcessingEnvironment environment) {
     Messager messager = environment.getMessager();
     ConstructorElement constructor = getConstructor(element, messager);
 
@@ -41,14 +41,14 @@ public class ElementInspector {
       return null;
     }
 
-    ElementMap elementMap = new ElementMap(element, constructor);
+    ClassMap classMap = new ClassMap(element, constructor);
 
 
-    if (!inspectClass(element, elementMap)) {
+    if (!inspectClass(element, classMap)) {
       return null;
     }
 
-    if (!inspectSuperclasses(element, elementMap, environment)) {
+    if (!inspectSuperclasses(element, classMap, environment)) {
       return null;
     }
 
@@ -56,8 +56,8 @@ public class ElementInspector {
       return null;
     }
 
-    this.cache.put(element.toString(), elementMap);
-    return elementMap;
+    this.cache.put(element.toString(), classMap);
+    return classMap;
   }
 
   private boolean inspectGenerics(Element element,  ProcessingEnvironment environment) {
@@ -71,14 +71,14 @@ public class ElementInspector {
     return true;
   }
 
-  private boolean inspectClass(Element rootElement, ElementMap elementMap) {
+  private boolean inspectClass(Element rootElement, ClassMap classMap) {
     for (Element element : rootElement.getEnclosedElements()) {
       switch (element.getKind()) {
         case FIELD:
-          elementMap.addField(FieldView.from((VariableElement) element));
+          classMap.addField(FieldView.from((VariableElement) element));
           break;
         case METHOD:
-          elementMap.addMethod((ExecutableElement) element);
+          classMap.addMethod((ExecutableElement) element);
           break;
       }
     }
@@ -86,7 +86,7 @@ public class ElementInspector {
     return true;
   }
 
-  private boolean inspectSuperclasses(Element element, ElementMap elementMap, ProcessingEnvironment environment) {
+  private boolean inspectSuperclasses(Element element, ClassMap classMap, ProcessingEnvironment environment) {
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
     Messager messager = environment.getMessager();
@@ -105,12 +105,12 @@ public class ElementInspector {
         return false;
       }
 
-      ElementMap superTypeMap = getOrInspect(typeElement, environment);
+      ClassMap superTypeMap = getOrInspect(typeElement, environment);
       if (superTypeMap == null) {
         return false;
       }
 
-      if (!validateAndMerge(elementMap, superTypeMap, messager)) {
+      if (!validateAndMerge(classMap, superTypeMap, messager)) {
         return false;
       }
     }
@@ -118,15 +118,15 @@ public class ElementInspector {
     return true;
   }
 
-  private static boolean validateAndMerge(ElementMap elementMap, ElementMap superTypeMap, Messager messager) {
-    for (FieldView field : elementMap.getFields()) {
+  private static boolean validateAndMerge(ClassMap classMap, ClassMap superTypeMap, Messager messager) {
+    for (FieldView field : classMap.getFields()) {
       if (superTypeMap.getField(field.getName().toString()) != null) {
-        messager.printMessage(Diagnostic.Kind.ERROR, "Class '" + elementMap.getRoot() + "' contains a field (" + field.getName().toString() + ") with the same name as one in its superclass");
+        messager.printMessage(Diagnostic.Kind.ERROR, "Class '" + classMap.getRoot() + "' contains a field (" + field.getName().toString() + ") with the same name as one in its superclass");
         return false;
       }
     }
 
-    elementMap.merge(superTypeMap);
+    classMap.merge(superTypeMap);
 
     return true;
   }

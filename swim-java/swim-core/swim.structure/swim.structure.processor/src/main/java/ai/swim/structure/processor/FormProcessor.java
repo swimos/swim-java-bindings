@@ -29,6 +29,7 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import java.util.*;
 
@@ -38,7 +39,6 @@ public class FormProcessor extends AbstractProcessor {
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     ProcessingContext processingContext = new ProcessingContext(this.processingEnv);
-    List<String> classNames = new ArrayList<>();
 
     for (Element element : roundEnv.getElementsAnnotatedWith(AutoForm.class)) {
       if (element.getKind() != ElementKind.CLASS) {
@@ -46,18 +46,17 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-      ElementMap elementMap = processingContext.getMap(element);
-      if (elementMap == null) {
+      ClassMap classMap = processingContext.getMap(element);
+      if (classMap == null) {
         return true;
       }
 
       ScopedContext scopedContext = new ScopedContext(processingContext, element);
-      ClassSchema classSchema = ClassSchema.fromMap(scopedContext, elementMap);
+      ClassSchema classSchema = ClassSchema.fromMap(scopedContext, classMap);
+
       if (classSchema == null) {
         return true;
       }
-
-      classNames.add(classSchema.className());
 
       try {
         RecognizerWriter.writeRecognizer(classSchema, scopedContext);

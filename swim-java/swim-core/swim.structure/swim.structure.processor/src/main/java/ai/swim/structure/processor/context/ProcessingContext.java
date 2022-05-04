@@ -1,12 +1,10 @@
 package ai.swim.structure.processor.context;
 
 import ai.swim.structure.processor.ElementInspector;
-import ai.swim.structure.processor.ElementMap;
+import ai.swim.structure.processor.ClassMap;
 
-import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
-import java.util.Map;
 
 public class ProcessingContext {
 
@@ -22,7 +20,7 @@ public class ProcessingContext {
     return processingEnvironment;
   }
 
-  public ElementMap getMap(Element element) {
+  public ClassMap getMap(Element element) {
     return this.inspector.getOrInspect(element, this.processingEnvironment);
   }
 

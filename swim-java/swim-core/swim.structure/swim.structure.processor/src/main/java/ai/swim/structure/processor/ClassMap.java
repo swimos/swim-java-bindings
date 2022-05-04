@@ -7,13 +7,13 @@ import javax.lang.model.element.ExecutableElement;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ElementMap {
+public class ClassMap {
   private final Element root;
   private final ConstructorElement constructor;
   private final List<FieldView> memberVariables;
   private final List<ExecutableElement> methods;
 
-  public ElementMap(Element root, ConstructorElement constructor) {
+  public ClassMap(Element root, ConstructorElement constructor) {
     this.root = root;
     this.constructor = constructor;
     this.memberVariables = new ArrayList<>();
@@ -52,7 +52,7 @@ public class ElementMap {
     return this.constructor;
   }
 
-  public void merge(ElementMap with) {
+  public void merge(ClassMap with) {
     this.methods.addAll(with.methods);
     this.memberVariables.addAll(with.memberVariables);
   }

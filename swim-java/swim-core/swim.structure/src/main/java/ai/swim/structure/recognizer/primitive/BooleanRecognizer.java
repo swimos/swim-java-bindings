@@ -30,7 +30,7 @@ public class BooleanRecognizer extends Recognizer<Boolean> {
   public Recognizer<Boolean> feedEvent(ReadEvent event) {
     if (event.isBoolean()) {
       ReadBooleanValue readBooleanValue = (ReadBooleanValue) event;
-      return Recognizer.done(readBooleanValue.value());
+      return Recognizer.done(readBooleanValue.value(), this);
     } else {
       return Recognizer.error(new RuntimeException("Expected a boolean"));
     }

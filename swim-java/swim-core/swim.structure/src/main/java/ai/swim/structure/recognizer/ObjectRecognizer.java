@@ -7,7 +7,7 @@ public class ObjectRecognizer extends Recognizer<Object> {
   @Override
   public Recognizer<Object> feedEvent(ReadEvent event) {
     if (event.isNumber()) {
-      return Recognizer.done(((ReadNumberValue) event).value());
+      return Recognizer.done(((ReadNumberValue) event).value(), this);
     }
 
     throw new AssertionError();
