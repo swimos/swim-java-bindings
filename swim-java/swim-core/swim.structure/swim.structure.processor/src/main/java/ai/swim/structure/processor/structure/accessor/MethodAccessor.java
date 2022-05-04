@@ -1,5 +1,7 @@
 package ai.swim.structure.processor.structure.accessor;
 
+import com.squareup.javapoet.CodeBlock;
+
 import javax.lang.model.element.ExecutableElement;
 
 public class MethodAccessor extends Accessor {
@@ -10,8 +12,8 @@ public class MethodAccessor extends Accessor {
   }
 
   @Override
-  public void write(Object with, Object var) {
-
+  public void write(CodeBlock.Builder builder, Object arg) {
+    builder.add("$L($L)", this.method.getSimpleName(), arg);
   }
 
   @Override

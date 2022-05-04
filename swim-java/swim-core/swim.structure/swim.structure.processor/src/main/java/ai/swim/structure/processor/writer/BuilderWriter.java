@@ -92,13 +92,26 @@ public class BuilderWriter {
     ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
 
-    TypeElement readEventType = elementUtils.getTypeElement(TYPE_READ_EVENT);
     MethodSpec.Builder builder = MethodSpec.methodBuilder(RECOGNIZING_BUILDER_FEED_INDEX)
         .addModifiers(Modifier.PUBLIC)
         .addAnnotation(Override.class)
         .returns(TypeName.get(context.getRoot().asType()));
 
-    return null;
+    CodeBlock.Builder body = CodeBlock.builder();
+    body.addStatement("$T obj = new $L", context.getRoot().asType(), schema.getConstructor().getElement());
+
+    for (ElementRecognizer recognizer : schema.getRecognizers()) {
+      body.add("obj.");
+
+      String arg = String.format("this.%s.bind()", recognizer.fieldName());
+      recognizer.getAccessor().write(body, arg);
+      body.add(";\n");
+    }
+
+    body.add("return obj;");
+    builder.addCode(body.build());
+
+    return builder.build();
   }
 
   private static MethodSpec buildConstructor() {

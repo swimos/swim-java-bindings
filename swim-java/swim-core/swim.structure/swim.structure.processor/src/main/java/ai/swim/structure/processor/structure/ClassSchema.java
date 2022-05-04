@@ -43,6 +43,10 @@ public class ClassSchema {
     return recognizers;
   }
 
+  public ConstructorElement getConstructor() {
+    return constructor;
+  }
+
   public static ClassSchema fromMap(ScopedContext context, ElementMap elementMap) {
     List<ElementRecognizer> recognizers = new ArrayList<>();
 

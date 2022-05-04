@@ -36,4 +36,10 @@ public class ElementRecognizer {
   public String initializer() {
     return this.recognizer.initializer();
   }
+
+  public Accessor getAccessor() {
+    System.out.println("Get accessor: " + this.accessor.getClass());
+
+    return accessor;
+  }
 }
