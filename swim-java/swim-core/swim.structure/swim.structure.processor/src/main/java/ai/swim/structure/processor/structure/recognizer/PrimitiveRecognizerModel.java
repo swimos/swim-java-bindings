@@ -13,7 +13,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel booleanRecognizer() {
     if (BOOLEAN_RECOGNIZER == null) {
-      BOOLEAN_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Boolean.TYPE", false);
+      BOOLEAN_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.ScalarRecognizer.PRIMITIVE_BOOLEAN", false);
     }
 
     return BOOLEAN_RECOGNIZER;
@@ -37,7 +37,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel intRecognizer() {
     if (INT_RECOGNIZER == null) {
-      INT_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.primitive.IntegerRecognizer.PRIMITIVE", 0);
+      INT_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.ScalarRecognizer.PRIMITIVE_INTEGER", 0);
     }
 
     return INT_RECOGNIZER;
@@ -61,7 +61,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel floatRecognizer() {
     if (FLOAT_RECOGNIZER == null) {
-      FLOAT_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Float.TYPE", 0f);
+      FLOAT_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.ScalarRecognizer.PRIMITIVE_FLOAT", 0f);
     }
 
     return FLOAT_RECOGNIZER;

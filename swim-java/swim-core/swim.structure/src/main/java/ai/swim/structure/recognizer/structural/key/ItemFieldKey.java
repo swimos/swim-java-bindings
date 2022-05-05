@@ -17,4 +17,10 @@ public class ItemFieldKey extends LabelledFieldKey {
     return name;
   }
 
+  @Override
+  public String toString() {
+    return "ItemFieldKey{" +
+        "name='" + name + '\'' +
+        '}';
+  }
 }

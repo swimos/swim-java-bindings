@@ -2,6 +2,8 @@ package ai.swim.structure.recognizer;
 
 import ai.swim.recon.event.ReadEvent;
 
+import java.util.function.Function;
+
 // todo: number recognizers will truncate values
 public abstract class Recognizer<T> {
 
@@ -37,6 +39,20 @@ public abstract class Recognizer<T> {
 
   public abstract Recognizer<T> reset();
 
+  public <Y> Recognizer<Y> map(Function<T, Y> mapFn) {
+    return new MappingRecognizer<>(this, mapFn);
+  }
+
+  public Recognizer<T> required() {
+    return new RecognizerRequired<>(this);
+  }
+
+  /***
+   * Returns whether this recognizer has been run at least once.
+   */
+  public boolean hasInit() {
+    return true;
+  }
 }
 
 final class RecognizerDone<T> extends Recognizer<T> {

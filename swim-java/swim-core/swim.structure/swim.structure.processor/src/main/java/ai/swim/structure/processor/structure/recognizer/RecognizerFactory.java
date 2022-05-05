@@ -15,13 +15,15 @@ public class RecognizerFactory {
 
   public static RecognizerFactory initFrom(ProcessingEnvironment processingEnvironment) {
     Elements elementUtils = processingEnvironment.getElementUtils();
-
     HashMap<TypeMirror, RecognizerModel> recognizers = new HashMap<>();
-    recognizers.put(_getOrThrow(elementUtils, Integer.class), RecognizerReference.BOXED_INTEGER);
-//    recognizers.put(_getOrThrow(elementUtils, Long.class), new LongRecognizer());
-//    recognizers.put(_getOrThrow(elementUtils, Float.class), new FloatRecognizer());
-//    recognizers.put(_getOrThrow(elementUtils, Integer.class), new IntegerRecognizer());
-//    recognizers.put(_getOrThrow(elementUtils, Integer.class), new IntegerRecognizer());
+
+    // init core types
+    RecognizerReference.RecognizerReferenceFactory factory = new RecognizerReference.RecognizerReferenceFactory("ai.swim.structure.recognizer.ScalarRecognizer");
+    recognizers.put(_getOrThrow(elementUtils, Integer.class), factory.recognizerFor("BOXED_INTEGER"));
+    recognizers.put(_getOrThrow(elementUtils, Long.class), factory.recognizerFor("BOXED_LONG"));
+    recognizers.put(_getOrThrow(elementUtils, Float.class),factory.recognizerFor("BOXED_FLOAT"));
+    recognizers.put(_getOrThrow(elementUtils, Boolean.class), factory.recognizerFor("BOXED_BOOLEAN"));
+    recognizers.put(_getOrThrow(elementUtils, String.class), factory.recognizerFor("STRING"));
 
     return new RecognizerFactory(recognizers);
   }
@@ -29,7 +31,7 @@ public class RecognizerFactory {
   private static <T> TypeMirror _getOrThrow(Elements elementUtils, Class<T> clazz) {
     TypeElement typeElement = elementUtils.getTypeElement(clazz.getCanonicalName());
     if (typeElement == null) {
-      throw new RuntimeException("Failed to initialise recognizer factory with class: " + String.valueOf(clazz));
+      throw new RuntimeException("Failed to initialise recognizer factory with class: " + clazz);
     }
 
     return typeElement.asType();

@@ -3,7 +3,7 @@ package ai.swim.structure.recognizer.std;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.RecognizerTestUtil;
 import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.primitive.IntegerRecognizer;
+import ai.swim.structure.recognizer.ScalarRecognizer;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.List;
 class ListRecognizerTest {
   @Test
   void testRecognizer() throws Exception {
-    Recognizer<List<Integer>> recognizer = new ListRecognizer<>(IntegerRecognizer.PRIMITIVE, false);
+    Recognizer<List<Integer>> recognizer = new ListRecognizer<>(ScalarRecognizer.PRIMITIVE_INTEGER, false);
     List<ReadEvent> events = List.of(
         ReadEvent.startBody(),
         ReadEvent.number(1),

@@ -2,8 +2,6 @@ package ai.swim.structure.processor.structure.recognizer;
 
 public class RecognizerReference extends RecognizerModel {
 
-  public static final RecognizerModel BOXED_INTEGER = new RecognizerReference("ai.swim.structure.recognizer.primitive.IntegerRecognizer.BOXED");
-
   private final String initializer;
 
   public RecognizerReference(String initializer) {
@@ -14,4 +12,17 @@ public class RecognizerReference extends RecognizerModel {
   public String initializer() {
     return this.initializer;
   }
+
+  public static class RecognizerReferenceFactory {
+    private final String packageName;
+
+    public RecognizerReferenceFactory(String packageName) {
+      this.packageName = packageName;
+    }
+
+    public RecognizerReference recognizerFor(String name) {
+      return new RecognizerReference(String.format("%s.%s", this.packageName, name));
+    }
+  }
 }
+
