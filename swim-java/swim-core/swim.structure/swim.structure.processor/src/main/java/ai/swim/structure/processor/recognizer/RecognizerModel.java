@@ -1,13 +1,11 @@
-package ai.swim.structure.processor.structure.recognizer;
+package ai.swim.structure.processor.recognizer;
 
 import ai.swim.structure.processor.context.ScopedContext;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import java.util.Collection;
-import java.util.Map;
 import java.util.function.Function;
 
 import static ai.swim.structure.processor.ElementUtils.isSubType;

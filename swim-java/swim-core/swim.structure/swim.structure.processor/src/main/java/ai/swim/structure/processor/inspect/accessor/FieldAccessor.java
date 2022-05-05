@@ -1,6 +1,6 @@
-package ai.swim.structure.processor.structure.accessor;
+package ai.swim.structure.processor.inspect.accessor;
 
-import ai.swim.structure.processor.FieldView;
+import ai.swim.structure.processor.inspect.FieldView;
 import com.squareup.javapoet.CodeBlock;
 
 public class FieldAccessor extends Accessor {

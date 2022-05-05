@@ -1,4 +1,4 @@
-package ai.swim.structure.processor.structure.accessor;
+package ai.swim.structure.processor.inspect.accessor;
 
 import com.squareup.javapoet.CodeBlock;
 

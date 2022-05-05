@@ -1,16 +1,11 @@
-package ai.swim.structure.processor.structure.recognizer;
+package ai.swim.structure.processor.recognizer;
 
 import ai.swim.structure.processor.context.ScopedContext;
 
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.PackageElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 import java.util.List;
 
 public class ListRecognizerModel extends ClassRecognizerModel {
@@ -39,7 +34,7 @@ public class ListRecognizerModel extends ClassRecognizerModel {
       RecognizerModel delegate = RecognizerModel.from(listType.asElement(), context);
 
       if (delegate == null) {
-        return new ListRecognizerModel(new RuntimeRecognizerLookupModel(listType.toString()));
+        return new ListRecognizerModel(new RuntimeRecognizer(listType.toString()));
       } else {
         return new ListRecognizerModel(delegate);
       }

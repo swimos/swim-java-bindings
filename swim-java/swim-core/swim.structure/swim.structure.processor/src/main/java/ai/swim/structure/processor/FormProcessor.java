@@ -17,7 +17,8 @@ package ai.swim.structure.processor;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.structure.ClassSchema;
+import ai.swim.structure.processor.recognizer.ClassMap;
+import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.writer.RecognizerWriter;
 import com.google.auto.service.AutoService;
 
@@ -40,14 +41,14 @@ public class FormProcessor extends AbstractProcessor {
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-
     for (Element element : roundEnv.getElementsAnnotatedWith(AutoForm.class)) {
       if (element.getKind() != ElementKind.CLASS) {
         this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, element + " cannot be annotated with @" + AutoForm.class.getSimpleName() + ". It may only be used on classes");
         return true;
       }
 
-      ClassMap classMap = this.processingContext.getMap(element);
+      // Anything that we're processing will be a class map
+      ClassMap classMap = (ClassMap) this.processingContext.getRecognizer(element);
       if (classMap == null) {
         return true;
       }
@@ -63,11 +64,6 @@ public class FormProcessor extends AbstractProcessor {
   }
 
   private void write() {
-    for (ClassMap classMap : this.classMaps) {
-      System.out.println("Built: " + classMap.getRoot());
-      System.out.println(this.processingContext.inspector.cache);
-    }
-
     for (ClassMap classMap : this.classMaps) {
       ScopedContext scopedContext = new ScopedContext(processingContext, classMap.getRoot());
       ClassSchema classSchema = ClassSchema.fromMap(scopedContext, classMap);

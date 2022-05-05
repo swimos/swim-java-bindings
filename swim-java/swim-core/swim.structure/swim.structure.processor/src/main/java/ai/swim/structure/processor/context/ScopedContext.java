@@ -1,12 +1,10 @@
 package ai.swim.structure.processor.context;
 
-import ai.swim.structure.processor.structure.recognizer.RecognizerFactory;
+import ai.swim.structure.processor.recognizer.RecognizerFactory;
 
 import javax.annotation.processing.Messager;
 import javax.lang.model.element.Element;
-import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic;
-import java.util.Locale;
 
 public class ScopedContext {
   private final ProcessingContext processingContext;

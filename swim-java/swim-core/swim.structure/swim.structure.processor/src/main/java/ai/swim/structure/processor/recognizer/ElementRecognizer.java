@@ -1,7 +1,7 @@
-package ai.swim.structure.processor.structure.recognizer;
+package ai.swim.structure.processor.recognizer;
 
-import ai.swim.structure.processor.FieldView;
-import ai.swim.structure.processor.structure.accessor.Accessor;
+import ai.swim.structure.processor.inspect.FieldView;
+import ai.swim.structure.processor.inspect.accessor.Accessor;
 
 import javax.lang.model.type.TypeMirror;
 

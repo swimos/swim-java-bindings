@@ -1,12 +1,13 @@
-package ai.swim.structure.processor.structure;
+package ai.swim.structure.processor.schema;
 
-import ai.swim.structure.processor.ClassMap;
-import ai.swim.structure.processor.FieldView;
+import ai.swim.structure.processor.inspect.FieldView;
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.structure.accessor.FieldAccessor;
-import ai.swim.structure.processor.structure.accessor.MethodAccessor;
-import ai.swim.structure.processor.structure.recognizer.ElementRecognizer;
-import ai.swim.structure.processor.structure.recognizer.RecognizerModel;
+import ai.swim.structure.processor.inspect.ConstructorElement;
+import ai.swim.structure.processor.inspect.accessor.FieldAccessor;
+import ai.swim.structure.processor.inspect.accessor.MethodAccessor;
+import ai.swim.structure.processor.recognizer.ClassMap;
+import ai.swim.structure.processor.recognizer.ElementRecognizer;
+import ai.swim.structure.processor.recognizer.RecognizerModel;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;

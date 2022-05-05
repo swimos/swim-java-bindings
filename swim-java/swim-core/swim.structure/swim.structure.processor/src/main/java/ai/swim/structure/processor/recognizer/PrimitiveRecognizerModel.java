@@ -1,4 +1,4 @@
-package ai.swim.structure.processor.structure.recognizer;
+package ai.swim.structure.processor.recognizer;
 
 public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 

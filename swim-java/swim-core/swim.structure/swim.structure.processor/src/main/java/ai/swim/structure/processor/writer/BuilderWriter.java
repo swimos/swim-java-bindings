@@ -1,8 +1,8 @@
 package ai.swim.structure.processor.writer;
 
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.structure.ClassSchema;
-import ai.swim.structure.processor.structure.recognizer.ElementRecognizer;
+import ai.swim.structure.processor.schema.ClassSchema;
+import ai.swim.structure.processor.recognizer.ElementRecognizer;
 import com.squareup.javapoet.*;
 
 import javax.annotation.processing.ProcessingEnvironment;

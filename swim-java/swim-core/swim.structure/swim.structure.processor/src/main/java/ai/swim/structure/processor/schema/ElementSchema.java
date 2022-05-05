@@ -1,4 +1,4 @@
-package ai.swim.structure.processor.structure;
+package ai.swim.structure.processor.schema;
 
 import javax.lang.model.element.Element;
 
