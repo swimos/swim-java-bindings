@@ -1,15 +1,16 @@
 package ai.swim.structure.processor.structure.recognizer;
 
 public class RuntimeRecognizerLookupModel extends RecognizerModel {
-  private final static RecognizerModel instance = new RuntimeRecognizerLookupModel();
+
+  private final String type;
+
+  public RuntimeRecognizerLookupModel(String type) {
+    this.type = type;
+  }
 
   @Override
   public String initializer() {
-    throw new AssertionError("RuntimeRecognizerLookupModel");
-  }
-
-  public static RecognizerModel instance() {
-    return instance;
+    return String.format("%s.class", type);
   }
 
 }

@@ -2,6 +2,7 @@ package ai.swim.structure.processor.context;
 
 import ai.swim.structure.processor.ElementInspector;
 import ai.swim.structure.processor.ClassMap;
+import ai.swim.structure.processor.structure.recognizer.RecognizerFactory;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -9,11 +10,11 @@ import javax.lang.model.element.Element;
 public class ProcessingContext {
 
   private final ProcessingEnvironment processingEnvironment;
-  private final ElementInspector inspector;
+  private final RecognizerFactory factory;
 
   public ProcessingContext(ProcessingEnvironment processingEnvironment) {
     this.processingEnvironment = processingEnvironment;
-    inspector = new ElementInspector();
+    this.factory = RecognizerFactory.initFrom(processingEnvironment);
   }
 
   public ProcessingEnvironment getProcessingEnvironment() {
@@ -21,7 +22,11 @@ public class ProcessingContext {
   }
 
   public ClassMap getMap(Element element) {
-    return this.inspector.getOrInspect(element, this.processingEnvironment);
+    return this.factory.getOrInspect(element, this);
+  }
+
+  public RecognizerFactory getFactory() {
+    return factory;
   }
 
   @Override

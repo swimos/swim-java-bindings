@@ -146,7 +146,6 @@ public class BuilderWriter {
 
     for (int i = 0; i < recognizerCount; i++) {
       ElementRecognizer recognizer = recognizers.get(i);
-
       TypeMirror recognizerType = recognizer.type();
 
       if (recognizer.type().getKind().isPrimitive()) {

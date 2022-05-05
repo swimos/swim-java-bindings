@@ -1,16 +1,24 @@
 package ai.swim.structure.processor.structure.recognizer;
 
+import ai.swim.structure.processor.ClassMap;
+import ai.swim.structure.processor.ElementInspector;
+import ai.swim.structure.processor.context.ProcessingContext;
+
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import java.util.HashMap;
+import java.util.Map;
 
 public class RecognizerFactory {
   private final HashMap<TypeMirror, RecognizerModel> recognizers;
+  private final Map<String, ClassMap> classMap;
 
   private RecognizerFactory(HashMap<TypeMirror, RecognizerModel> recognizers) {
     this.recognizers = recognizers;
+    classMap = new HashMap<>();
   }
 
   public static RecognizerFactory initFrom(ProcessingEnvironment processingEnvironment) {
@@ -39,5 +47,26 @@ public class RecognizerFactory {
 
   public RecognizerModel lookup(TypeMirror element) {
     return this.recognizers.get(element);
+  }
+
+  public ClassMap getOrInspect(Element element, ProcessingContext context) {
+    ClassMap map = this.classMap.get(element.toString());
+
+    if (map != null) {
+      return map;
+    }
+
+    return inspectAndInsertClass(element, context);
+  }
+
+  private ClassMap inspectAndInsertClass(Element element, ProcessingContext context) {
+    ClassMap classMap = ElementInspector.inspect(element, context);
+
+    if (classMap == null) {
+      return null;
+    }
+
+    this.classMap.put(element.toString(), classMap);
+    return classMap;
   }
 }
