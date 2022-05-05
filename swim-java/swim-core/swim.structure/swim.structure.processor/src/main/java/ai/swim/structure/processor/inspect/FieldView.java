@@ -1,4 +1,4 @@
-package ai.swim.structure.processor;
+package ai.swim.structure.processor.inspect;
 
 import ai.swim.structure.annotations.AutoForm;
 

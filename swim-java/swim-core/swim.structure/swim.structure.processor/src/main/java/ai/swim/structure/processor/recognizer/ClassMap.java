@@ -1,13 +1,14 @@
-package ai.swim.structure.processor;
+package ai.swim.structure.processor.recognizer;
 
-import ai.swim.structure.processor.structure.ConstructorElement;
+import ai.swim.structure.processor.inspect.FieldView;
+import ai.swim.structure.processor.inspect.ConstructorElement;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClassMap {
+public class ClassMap extends ClassRecognizerModel {
   private final Element root;
   private final ConstructorElement constructor;
   private final List<FieldView> memberVariables;
@@ -24,16 +25,6 @@ public class ClassMap {
     for (FieldView memberVariable : this.memberVariables) {
       if (memberVariable.getName().contentEquals(name)) {
         return memberVariable;
-      }
-    }
-
-    return null;
-  }
-
-  public ExecutableElement getMethod(String name) {
-    for (ExecutableElement method : this.methods) {
-      if (method.getSimpleName().contentEquals(name)) {
-        return method;
       }
     }
 
@@ -77,7 +68,7 @@ public class ClassMap {
 
   /**
    * Returns the root element representing either a class or enumeration.
-   *
+   * <p>
    * If this is a class, then the kind of the element is guaranteed to be ElementKind#Class and the TypeMirror is
    * guaranteed to be a DeclaredType.
    */
@@ -85,4 +76,8 @@ public class ClassMap {
     return root;
   }
 
+  @Override
+  public String initializer() {
+    return String.format("new %s", this.constructor);
+  }
 }

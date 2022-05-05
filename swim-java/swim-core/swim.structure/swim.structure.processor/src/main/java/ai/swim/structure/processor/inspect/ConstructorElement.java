@@ -1,4 +1,4 @@
-package ai.swim.structure.processor.structure;
+package ai.swim.structure.processor.inspect;
 
 import javax.lang.model.element.ExecutableElement;
 

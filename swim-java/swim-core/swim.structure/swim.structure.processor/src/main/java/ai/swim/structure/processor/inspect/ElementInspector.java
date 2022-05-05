@@ -1,9 +1,10 @@
-package ai.swim.structure.processor;
+package ai.swim.structure.processor.inspect;
 
 import ai.swim.structure.annotations.AutoForm;
+import ai.swim.structure.processor.recognizer.ClassMap;
 import ai.swim.structure.processor.context.ProcessingContext;
-import ai.swim.structure.processor.structure.ConstructorElement;
-import ai.swim.structure.processor.structure.recognizer.RecognizerFactory;
+import ai.swim.structure.processor.recognizer.RecognizerFactory;
+import ai.swim.structure.processor.recognizer.RecognizerModel;
 
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -95,13 +96,15 @@ public class ElementInspector {
       }
 
       RecognizerFactory factory = context.getFactory();
-      ClassMap superTypeMap = factory.getOrInspect(typeElement, context);
-      if (superTypeMap == null) {
+      RecognizerModel superTypeModel = factory.getOrInspect(typeElement, context);
+      if (superTypeModel == null) {
         return false;
       }
 
-      if (!validateAndMerge(classMap, superTypeMap, messager)) {
-        return false;
+      if (superTypeModel instanceof ClassMap) {
+        if (!validateAndMerge(classMap, (ClassMap) superTypeModel, messager)) {
+          return false;
+        }
       }
     }
 
