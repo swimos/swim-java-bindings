@@ -32,4 +32,8 @@ public abstract class ClassRecognizer<T> extends Recognizer<T> {
     return new ClassRecognizerInit<>(tagSpec, builder, fieldCount, indexFn);
   }
 
+  @Override
+  public Recognizer<T> reset() {
+    return new ClassRecognizerInit<>(this.tagSpec, this.builder.reset(), this.bitSet.size(), this.indexFn);
+  }
 }

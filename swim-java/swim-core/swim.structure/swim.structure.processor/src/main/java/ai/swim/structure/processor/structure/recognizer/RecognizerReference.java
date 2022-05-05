@@ -13,10 +13,10 @@ public class RecognizerReference extends RecognizerModel {
     return this.initializer;
   }
 
-  public static class RecognizerReferenceFactory {
+  public static class Formatter {
     private final String packageName;
 
-    public RecognizerReferenceFactory(String packageName) {
+    public Formatter(String packageName) {
       this.packageName = packageName;
     }
 

@@ -24,6 +24,7 @@ public class BuilderWriter {
   private static final String FIELD_RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.FieldRecognizingBuilder";
   private static final String RECOGNIZING_BUILDER_FEED_INDEX = "feedIndexed";
   private static final String RECOGNIZING_BUILDER_BIND = "bind";
+  private static final String RECOGNIZING_BUILDER_RESET = "reset";
 
   public static void write(ClassSchema schema, ScopedContext context) throws IOException {
     ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
@@ -46,9 +47,10 @@ public class BuilderWriter {
   }
 
   private static MethodSpec[] buildMethods(ClassSchema schema, ScopedContext context) {
-    MethodSpec[] methods = new MethodSpec[2];
+    MethodSpec[] methods = new MethodSpec[3];
     methods[0] = buildFeedIndexed(schema, context.getProcessingContext().getProcessingEnvironment());
     methods[1] = buildBind(schema, context);
+    methods[2] = buildReset(schema, context);
 
     return methods;
   }
@@ -103,6 +105,32 @@ public class BuilderWriter {
     return builder.build();
   }
 
+  private static MethodSpec buildReset(ClassSchema schema, ScopedContext context) {
+    ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
+    Elements elementUtils = processingEnvironment.getElementUtils();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+
+    TypeElement recognizingBuilderElement = elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS);
+    DeclaredType recognizingBuilderType = typeUtils.getDeclaredType(recognizingBuilderElement, context.getRoot().asType());
+
+    MethodSpec.Builder builder = MethodSpec.methodBuilder(RECOGNIZING_BUILDER_RESET)
+        .addModifiers(Modifier.PUBLIC)
+        .addAnnotation(Override.class)
+        .returns(TypeName.get(recognizingBuilderType));
+
+    CodeBlock.Builder body = CodeBlock.builder();
+
+    for (ElementRecognizer recognizer : schema.getRecognizers()) {
+      String fieldName = buildFieldName(recognizer.fieldName());
+      body.addStatement("this.$L = this.$L.reset()", fieldName, fieldName);
+    }
+
+    body.addStatement("return this");
+    builder.addCode(body.build());
+
+    return builder.build();
+  }
+
   private static MethodSpec buildConstructor() {
     return MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build();
   }
@@ -110,7 +138,7 @@ public class BuilderWriter {
   private static FieldSpec[] buildFields(ClassSchema schema, ProcessingEnvironment processingEnvironment) {
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
-    TypeElement fieldFieldRecognizingBuilder = elementUtils.getTypeElement(FIELD_RECOGNIZING_BUILDER_CLASS);
+    TypeElement fieldFieldRecognizingBuilder = elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS);
 
     List<ElementRecognizer> recognizers = schema.getRecognizers();
     int recognizerCount = recognizers.size();
@@ -127,7 +155,7 @@ public class BuilderWriter {
       }
 
       DeclaredType memberRecognizingBuilder = typeUtils.getDeclaredType(fieldFieldRecognizingBuilder, recognizerType);
-      FieldSpec.Builder fieldSpec = FieldSpec.builder(TypeName.get(memberRecognizingBuilder), buildFieldName(recognizer.fieldName()), Modifier.PRIVATE, Modifier.FINAL);
+      FieldSpec.Builder fieldSpec = FieldSpec.builder(TypeName.get(memberRecognizingBuilder), buildFieldName(recognizer.fieldName()), Modifier.PRIVATE);
 
       fieldSpec.initializer(CodeBlock.of("new $L<>($L)", FIELD_RECOGNIZING_BUILDER_CLASS, recognizer.initializer()));
 

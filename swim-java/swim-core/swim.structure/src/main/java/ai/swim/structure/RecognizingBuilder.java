@@ -14,4 +14,5 @@ public interface RecognizingBuilder<I> {
 
   I bind();
 
+  RecognizingBuilder<I> reset();
 }
