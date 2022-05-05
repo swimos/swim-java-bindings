@@ -4,6 +4,7 @@ import ai.swim.recon.event.*;
 
 import java.util.function.Function;
 
+@SuppressWarnings("unused")
 public class ScalarRecognizer<T> extends Recognizer<T> {
 
   private static final Function<ReadEvent, Integer> INTEGER_FN = (event) -> {

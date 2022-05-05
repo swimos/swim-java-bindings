@@ -24,4 +24,8 @@ public class BitSet {
     }
   }
 
+
+  public int size() {
+    return this.cap;
+  }
 }

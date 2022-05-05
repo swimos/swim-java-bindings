@@ -39,4 +39,9 @@ public class FieldRecognizingBuilder<I> implements RecognizingBuilder<I> {
     return this.value;
   }
 
+  @Override
+  public RecognizingBuilder<I> reset() {
+    return new FieldRecognizingBuilder<>(this.recognizer.reset());
+  }
+
 }

@@ -18,12 +18,12 @@ public class RecognizerFactory {
     HashMap<TypeMirror, RecognizerModel> recognizers = new HashMap<>();
 
     // init core types
-    RecognizerReference.RecognizerReferenceFactory factory = new RecognizerReference.RecognizerReferenceFactory("ai.swim.structure.recognizer.ScalarRecognizer");
-    recognizers.put(_getOrThrow(elementUtils, Integer.class), factory.recognizerFor("BOXED_INTEGER"));
-    recognizers.put(_getOrThrow(elementUtils, Long.class), factory.recognizerFor("BOXED_LONG"));
-    recognizers.put(_getOrThrow(elementUtils, Float.class),factory.recognizerFor("BOXED_FLOAT"));
-    recognizers.put(_getOrThrow(elementUtils, Boolean.class), factory.recognizerFor("BOXED_BOOLEAN"));
-    recognizers.put(_getOrThrow(elementUtils, String.class), factory.recognizerFor("STRING"));
+    RecognizerReference.Formatter formatter = new RecognizerReference.Formatter("ai.swim.structure.recognizer.ScalarRecognizer");
+    recognizers.put(_getOrThrow(elementUtils, Integer.class), formatter.recognizerFor("BOXED_INTEGER"));
+    recognizers.put(_getOrThrow(elementUtils, Long.class), formatter.recognizerFor("BOXED_LONG"));
+    recognizers.put(_getOrThrow(elementUtils, Float.class), formatter.recognizerFor("BOXED_FLOAT"));
+    recognizers.put(_getOrThrow(elementUtils, Boolean.class), formatter.recognizerFor("BOXED_BOOLEAN"));
+    recognizers.put(_getOrThrow(elementUtils, String.class), formatter.recognizerFor("STRING"));
 
     return new RecognizerFactory(recognizers);
   }

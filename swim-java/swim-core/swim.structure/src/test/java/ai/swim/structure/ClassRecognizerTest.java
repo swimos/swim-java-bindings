@@ -172,8 +172,8 @@ class ClassRecognizerTest {
 
   static class InnerPropClassBuilder implements RecognizingBuilder<InnerPropClass> {
 
-    private final FieldRecognizingBuilder<Integer> aBuilder = new FieldRecognizingBuilder<>(Integer.class);
-    private final FieldRecognizingBuilder<Integer> bBuilder = new FieldRecognizingBuilder<>(Integer.class);
+    private FieldRecognizingBuilder<Integer> aBuilder = new FieldRecognizingBuilder<>(Integer.class);
+    private FieldRecognizingBuilder<Integer> bBuilder = new FieldRecognizingBuilder<>(Integer.class);
 
     @Override
     public boolean feedIndexed(int index, ReadEvent event) {
@@ -190,6 +190,14 @@ class ClassRecognizerTest {
     @Override
     public InnerPropClass bind() {
       return new InnerPropClass(this.aBuilder.bind(), this.bBuilder.bind());
+    }
+
+    @Override
+    public RecognizingBuilder<InnerPropClass> reset() {
+      this.aBuilder = (FieldRecognizingBuilder<Integer>) this.aBuilder.reset();
+      this.bBuilder = (FieldRecognizingBuilder<Integer>) this.bBuilder.reset();
+
+      return this;
     }
 
   }
@@ -218,8 +226,8 @@ class ClassRecognizerTest {
 
   static class OuterPropClassBuilder implements RecognizingBuilder<OuterPropClass> {
 
-    private final FieldRecognizingBuilder<String> cBuilder = new FieldRecognizingBuilder<>(String.class);
-    private final FieldRecognizingBuilder<InnerPropClass> dBuilder = new FieldRecognizingBuilder<>(new InnerClassRecognizer());
+    private FieldRecognizingBuilder<String> cBuilder = new FieldRecognizingBuilder<>(String.class);
+    private FieldRecognizingBuilder<InnerPropClass> dBuilder = new FieldRecognizingBuilder<>(new InnerClassRecognizer());
 
     @Override
     public boolean feedIndexed(int index, ReadEvent event) {
@@ -240,6 +248,14 @@ class ClassRecognizerTest {
       outerPropClass.d = this.dBuilder.bind();
 
       return outerPropClass;
+    }
+
+    @Override
+    public RecognizingBuilder<OuterPropClass> reset() {
+      this.cBuilder = (FieldRecognizingBuilder<String>) this.cBuilder.reset();
+      this.dBuilder = (FieldRecognizingBuilder<InnerPropClass>) this.dBuilder.reset();
+
+      return this;
     }
 
   }
