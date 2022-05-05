@@ -2,10 +2,15 @@ package ai.swim.structure.processor.structure.recognizer;
 
 import ai.swim.structure.processor.context.ScopedContext;
 
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 import java.util.List;
 
 public class ListRecognizerModel extends ClassRecognizerModel {
@@ -15,7 +20,7 @@ public class ListRecognizerModel extends ClassRecognizerModel {
     this.delegate = delegate;
   }
 
-  public static ClassRecognizerModel from(VariableElement element, ScopedContext context) {
+  public static ClassRecognizerModel from(Element element, ScopedContext context) {
     DeclaredType variableType = (DeclaredType) element.asType();
     List<? extends TypeMirror> typeArguments = variableType.getTypeArguments();
 
@@ -23,18 +28,24 @@ public class ListRecognizerModel extends ClassRecognizerModel {
       throw new IllegalArgumentException("Attempted to build a list type that has more than one type parameter");
     }
 
+    // here we're at List<List<Integer>>
+
     TypeMirror typeMirror = typeArguments.get(0);
 
+    // now we're at List<Integer>
+
     if (typeMirror.getKind() == TypeKind.DECLARED) {
-      RecognizerModel delegate = context.getRecognizerFactory().lookup(typeMirror);
+      DeclaredType listType = (DeclaredType) typeMirror;
+      RecognizerModel delegate = RecognizerModel.from(listType.asElement(), context);
 
       if (delegate == null) {
-        return new ListRecognizerModel(RuntimeRecognizerLookupModel.instance());
+        return new ListRecognizerModel(new RuntimeRecognizerLookupModel(listType.toString()));
       } else {
         return new ListRecognizerModel(delegate);
       }
     } else {
-      return new ListRecognizerModel(RuntimeRecognizerLookupModel.instance());
+//      return new ListRecognizerModel(RuntimeRecognizerLookupModel.instance());
+      throw new AssertionError("Type mirror unhandled: " + typeMirror.getKind());
     }
   }
 

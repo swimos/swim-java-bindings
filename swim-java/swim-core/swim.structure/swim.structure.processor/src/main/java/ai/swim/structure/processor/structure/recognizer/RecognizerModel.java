@@ -3,6 +3,7 @@ package ai.swim.structure.processor.structure.recognizer;
 import ai.swim.structure.processor.context.ScopedContext;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import java.util.Collection;
@@ -13,7 +14,7 @@ import static ai.swim.structure.processor.ElementUtils.isSubType;
 
 public abstract class RecognizerModel {
 
-  public static RecognizerModel from(VariableElement element, ScopedContext context) {
+  public static RecognizerModel from(Element element, ScopedContext context) {
     RecognizerModel recognizer = RecognizerModel.fromPrimitiveType(element);
 
     if (recognizer != null) {
@@ -29,7 +30,7 @@ public abstract class RecognizerModel {
     return context.getRecognizerFactory().lookup(element.asType());
   }
 
-  private static RecognizerModel fromStdClass(VariableElement element, ScopedContext context) {
+  private static RecognizerModel fromStdClass(Element element, ScopedContext context) {
     ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
 
     if (isSubType(processingEnvironment, element, Collection.class)) {
@@ -43,7 +44,7 @@ public abstract class RecognizerModel {
     return null;
   }
 
-  public static RecognizerModel fromPrimitiveType(VariableElement element) {
+  public static RecognizerModel fromPrimitiveType(Element element) {
     TypeKind kind = element.asType().getKind();
     switch (kind) {
       case BOOLEAN:

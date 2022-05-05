@@ -1,7 +1,9 @@
 package ai.swim.structure.processor;
 
 import ai.swim.structure.annotations.AutoForm;
+import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.structure.ConstructorElement;
+import ai.swim.structure.processor.structure.recognizer.RecognizerFactory;
 
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -11,30 +13,15 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ElementInspector {
 
-  private final Map<String, ClassMap> cache;
-
-  public ElementInspector() {
-    cache = new HashMap<>();
+  private ElementInspector() {
   }
 
-  public ClassMap getOrInspect(Element element, ProcessingEnvironment environment) {
-    ClassMap map = this.cache.get(element.toString());
-
-    if (map != null) {
-      return map;
-    }
-
-    return inspectAndInsertClass(element, environment);
-  }
-
-  private ClassMap inspectAndInsertClass(Element element, ProcessingEnvironment environment) {
-    Messager messager = environment.getMessager();
+  public static ClassMap inspect(Element element, ProcessingContext context) {
+    Messager messager = context.getProcessingEnvironment().getMessager();
     ConstructorElement constructor = getConstructor(element, messager);
 
     if (constructor == null) {
@@ -48,22 +35,22 @@ public class ElementInspector {
       return null;
     }
 
-    if (!inspectSuperclasses(element, classMap, environment)) {
+    if (!inspectSuperclasses(element, classMap, context)) {
       return null;
     }
 
-    if (!inspectGenerics(element, environment)) {
+    if (!inspectGenerics(element, context)) {
       return null;
     }
 
-    this.cache.put(element.toString(), classMap);
     return classMap;
   }
 
-  private boolean inspectGenerics(Element element,  ProcessingEnvironment environment) {
+  private static boolean inspectGenerics(Element element, ProcessingContext context) {
     DeclaredType declaredType = (DeclaredType) element.asType();
 
     if (declaredType.getTypeArguments().size() != 0) {
+      ProcessingEnvironment environment = context.getProcessingEnvironment();
       environment.getMessager().printMessage(Diagnostic.Kind.ERROR, "Class: '" + element + "' has generic type arguments which are not yet supported");
       return false;
     }
@@ -71,7 +58,7 @@ public class ElementInspector {
     return true;
   }
 
-  private boolean inspectClass(Element rootElement, ClassMap classMap) {
+  private static boolean inspectClass(Element rootElement, ClassMap classMap) {
     for (Element element : rootElement.getEnclosedElements()) {
       switch (element.getKind()) {
         case FIELD:
@@ -86,10 +73,12 @@ public class ElementInspector {
     return true;
   }
 
-  private boolean inspectSuperclasses(Element element, ClassMap classMap, ProcessingEnvironment environment) {
+  private static boolean inspectSuperclasses(Element element, ClassMap classMap, ProcessingContext context) {
+    ProcessingEnvironment environment = context.getProcessingEnvironment();
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
     Messager messager = environment.getMessager();
+
     List<? extends TypeMirror> superTypes = typeUtils.directSupertypes(element.asType());
 
     for (TypeMirror superType : superTypes) {
@@ -105,7 +94,8 @@ public class ElementInspector {
         return false;
       }
 
-      ClassMap superTypeMap = getOrInspect(typeElement, environment);
+      RecognizerFactory factory = context.getFactory();
+      ClassMap superTypeMap = factory.getOrInspect(typeElement, context);
       if (superTypeMap == null) {
         return false;
       }
@@ -131,7 +121,7 @@ public class ElementInspector {
     return true;
   }
 
-  private ConstructorElement getConstructor(Element rootElement, Messager messager) {
+  private static ConstructorElement getConstructor(Element rootElement, Messager messager) {
     for (Element element : rootElement.getEnclosedElements()) {
       ElementKind elementKind = element.getKind();
 

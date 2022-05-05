@@ -29,16 +29,17 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import java.util.*;
 
 @AutoService(Processor.class)
 public class FormProcessor extends AbstractProcessor {
 
+  private final List<ClassMap> classMaps = new ArrayList<>();
+  private ProcessingContext processingContext;
+
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-    ProcessingContext processingContext = new ProcessingContext(this.processingEnv);
 
     for (Element element : roundEnv.getElementsAnnotatedWith(AutoForm.class)) {
       if (element.getKind() != ElementKind.CLASS) {
@@ -46,16 +47,33 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-      ClassMap classMap = processingContext.getMap(element);
+      ClassMap classMap = this.processingContext.getMap(element);
       if (classMap == null) {
         return true;
       }
 
-      ScopedContext scopedContext = new ScopedContext(processingContext, element);
+      this.classMaps.add(classMap);
+    }
+
+    if (roundEnv.processingOver()) {
+      write();
+    }
+
+    return true;
+  }
+
+  private void write() {
+    for (ClassMap classMap : this.classMaps) {
+      System.out.println("Built: " + classMap.getRoot());
+      System.out.println(this.processingContext.inspector.cache);
+    }
+
+    for (ClassMap classMap : this.classMaps) {
+      ScopedContext scopedContext = new ScopedContext(processingContext, classMap.getRoot());
       ClassSchema classSchema = ClassSchema.fromMap(scopedContext, classMap);
 
       if (classSchema == null) {
-        return true;
+        return;
       }
 
       try {
@@ -63,16 +81,15 @@ public class FormProcessor extends AbstractProcessor {
       } catch (Throwable e) {
         e.printStackTrace();
         this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
-        return true;
+        return;
       }
     }
-
-    return true;
   }
 
   @Override
   public synchronized void init(ProcessingEnvironment processingEnv) {
     super.init(processingEnv);
+    this.processingContext = new ProcessingContext(processingEnv);
   }
 
   @Override
