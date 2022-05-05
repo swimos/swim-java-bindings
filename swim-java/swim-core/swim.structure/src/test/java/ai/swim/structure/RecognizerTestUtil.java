@@ -21,7 +21,7 @@ import java.util.List;
 
 public class RecognizerTestUtil {
 
-  public static <T> T runTest(Recognizer<T> recognizer, List<ReadEvent> events) throws Exception {
+  public static <T> T runTest(Recognizer<T> recognizer, List<ReadEvent> events) {
     for (ReadEvent event : events) {
       recognizer = recognizer.feedEvent(event);
       if (recognizer.isError()) {

@@ -4,15 +4,13 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerProxy;
 
-import java.util.Objects;
-
 public class FieldRecognizingBuilder<I> implements RecognizingBuilder<I> {
 
   public final Recognizer<I> recognizer;
   public I value;
 
   public FieldRecognizingBuilder(Class<I> clazz) {
-    this.recognizer = RecognizerProxy.lookup(clazz);
+    this.recognizer = RecognizerProxy.getInstance().lookup(clazz);
   }
 
   public FieldRecognizingBuilder(Recognizer<I> recognizer) {
@@ -38,7 +36,7 @@ public class FieldRecognizingBuilder<I> implements RecognizingBuilder<I> {
 
   @Override
   public I bind() {
-    return Objects.requireNonNull(this.value);
+    return this.value;
   }
 
 }
