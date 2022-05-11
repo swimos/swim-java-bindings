@@ -50,4 +50,31 @@ public class ElementUtils {
     return typeUtils.isSubtype(variableType, targetDeclaredType);
   }
 
+  public static ExecutableElement getNoArgConstructor(Element rootElement) {
+    for (Element element : rootElement.getEnclosedElements()) {
+      ElementKind elementKind = element.getKind();
+
+      if (elementKind == ElementKind.CONSTRUCTOR) {
+        ExecutableElement constructor = (ExecutableElement) element;
+        boolean isPublic = false;
+
+        for (Modifier modifier : constructor.getModifiers()) {
+          if (modifier == Modifier.PUBLIC) {
+            isPublic = true;
+            break;
+          }
+        }
+
+        if (!isPublic) {
+          continue;
+        }
+
+        if (constructor.getParameters().size() == 0) {
+          return constructor;
+        }
+      }
+    }
+
+    return null;
+  }
 }

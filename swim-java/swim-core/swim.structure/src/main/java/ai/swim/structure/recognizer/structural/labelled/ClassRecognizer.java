@@ -1,7 +1,9 @@
-package ai.swim.structure.recognizer.structural;
+package ai.swim.structure.recognizer.structural.labelled;
 
 import ai.swim.structure.RecognizingBuilder;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.structural.BitSet;
+import ai.swim.structure.recognizer.structural.IndexFn;
 import ai.swim.structure.recognizer.structural.tag.TagSpec;
 
 public abstract class ClassRecognizer<T> extends Recognizer<T> {
@@ -26,10 +28,6 @@ public abstract class ClassRecognizer<T> extends Recognizer<T> {
     this.bitSet = bitSet;
     this.indexFn = indexFn;
     this.index = index;
-  }
-
-  public static <T> ClassRecognizer<T> init(TagSpec tagSpec, RecognizingBuilder<T> builder, int fieldCount, IndexFn indexFn) {
-    return new ClassRecognizerInit<>(tagSpec, builder, fieldCount, indexFn);
   }
 
   @Override

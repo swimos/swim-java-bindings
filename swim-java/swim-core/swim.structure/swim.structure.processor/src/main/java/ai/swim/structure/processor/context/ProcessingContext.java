@@ -1,7 +1,6 @@
 package ai.swim.structure.processor.context;
 
 import ai.swim.structure.processor.recognizer.RecognizerFactory;
-import ai.swim.structure.processor.recognizer.RecognizerModel;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -20,10 +19,6 @@ public class ProcessingContext {
     return processingEnvironment;
   }
 
-  public RecognizerModel getRecognizer(Element element) {
-    return this.factory.getOrInspect(element, this);
-  }
-
   public RecognizerFactory getFactory() {
     return factory;
   }
@@ -33,5 +28,9 @@ public class ProcessingContext {
     return "ProcessingContext{" +
         "processingEnvironment=" + processingEnvironment +
         '}';
+  }
+
+  public ScopedContext enter(Element root) {
+    return new ScopedContext(this, root);
   }
 }

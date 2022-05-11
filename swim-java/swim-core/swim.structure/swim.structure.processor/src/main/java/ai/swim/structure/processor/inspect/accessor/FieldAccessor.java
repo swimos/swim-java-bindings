@@ -1,24 +1,23 @@
 package ai.swim.structure.processor.inspect.accessor;
 
-import ai.swim.structure.processor.inspect.FieldView;
 import com.squareup.javapoet.CodeBlock;
 
 public class FieldAccessor extends Accessor {
-  private final FieldView field;
+  private final String fieldName;
 
-  public FieldAccessor(FieldView field) {
-    this.field = field;
+  public FieldAccessor(String fieldName) {
+    this.fieldName = fieldName;
   }
 
   @Override
   public void write(CodeBlock.Builder builder, String instance, Object arg) {
-    builder.add("$L.$L = $L;\n", instance, this.field.getName(), arg);
+    builder.add("$L.$L = $L;\n", instance, fieldName, arg);
   }
 
   @Override
   public String toString() {
     return "FieldAccessor{" +
-        "field=" + field +
+        "fieldName=" + fieldName +
         '}';
   }
 }

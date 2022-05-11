@@ -1,10 +1,14 @@
 package ai.swim.structure.processor.inspect;
 
 import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.processor.recognizer.ClassMap;
-import ai.swim.structure.processor.context.ProcessingContext;
+import ai.swim.structure.annotations.FieldKind;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.context.ScopedMessager;
+import ai.swim.structure.processor.inspect.accessor.FieldAccessor;
+import ai.swim.structure.processor.inspect.accessor.MethodAccessor;
 import ai.swim.structure.processor.recognizer.RecognizerFactory;
 import ai.swim.structure.processor.recognizer.RecognizerModel;
+import ai.swim.structure.processor.schema.FieldModel;
 
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -13,26 +17,32 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import javax.tools.Diagnostic;
+import java.util.ArrayList;
 import java.util.List;
+
+import static ai.swim.structure.processor.ElementUtils.getNoArgConstructor;
+import static ai.swim.structure.processor.ElementUtils.setterFor;
 
 public class ElementInspector {
 
   private ElementInspector() {
+
   }
 
-  public static ClassMap inspect(Element element, ProcessingContext context) {
-    Messager messager = context.getProcessingEnvironment().getMessager();
-    ConstructorElement constructor = getConstructor(element, messager);
+  public static ClassMap inspect(Element element, ScopedContext context) {
+    ProcessingEnvironment env = context.getProcessingEnvironment();
+    ConstructorElement constructor = getConstructor(element, context.getMessager());
 
     if (constructor == null) {
       return null;
     }
 
-    ClassMap classMap = new ClassMap(element, constructor);
+    Elements elementUtils = env.getElementUtils();
+    PackageElement declaredPackage = elementUtils.getPackageOf(element);
 
+    ClassMap classMap = new ClassMap(element, constructor, declaredPackage);
 
-    if (!inspectClass(element, classMap)) {
+    if (!inspectClass(element, classMap, context)) {
       return null;
     }
 
@@ -47,23 +57,25 @@ public class ElementInspector {
     return classMap;
   }
 
-  private static boolean inspectGenerics(Element element, ProcessingContext context) {
+  private static boolean inspectGenerics(Element element, ScopedContext context) {
     DeclaredType declaredType = (DeclaredType) element.asType();
 
     if (declaredType.getTypeArguments().size() != 0) {
-      ProcessingEnvironment environment = context.getProcessingEnvironment();
-      environment.getMessager().printMessage(Diagnostic.Kind.ERROR, "Class: '" + element + "' has generic type arguments which are not yet supported");
+      ScopedMessager messager = context.getMessager();
+      messager.error("Class: has generic type arguments which are not supported by the form annotation processor");
       return false;
     }
 
     return true;
   }
 
-  private static boolean inspectClass(Element rootElement, ClassMap classMap) {
+  private static boolean inspectClass(Element rootElement, ClassMap classMap, ScopedContext ctx) {
+    List<FieldView> fieldViews = new ArrayList<>();
+
     for (Element element : rootElement.getEnclosedElements()) {
       switch (element.getKind()) {
         case FIELD:
-          classMap.addField(FieldView.from((VariableElement) element));
+          fieldViews.add(FieldView.from((VariableElement) element, getFieldKind(element)));
           break;
         case METHOD:
           classMap.addMethod((ExecutableElement) element);
@@ -71,14 +83,75 @@ public class ElementInspector {
       }
     }
 
+    Manifest manifest = new Manifest();
+
+    for (FieldView field : fieldViews) {
+      if (field.isIgnored()) {
+        continue;
+      }
+
+      if (!manifest.validate(field, ctx.getMessager())) {
+        return false;
+      }
+
+      RecognizerModel recognizerModel = RecognizerModel.from(field.getElement(), ctx);
+
+      if (!field.isPublic()) {
+        ExecutableElement setter = setterFor(classMap.getMethods(), field.getName());
+
+        if (!validateSetter(setter, field.getName(), field.getElement().asType(), ctx)) {
+          return false;
+        }
+
+        classMap.addField(new FieldModel(new MethodAccessor(setter), recognizerModel, field));
+      } else {
+        classMap.addField(new FieldModel(new FieldAccessor(field.getName().toString()), recognizerModel, field));
+      }
+    }
+
     return true;
   }
 
-  private static boolean inspectSuperclasses(Element element, ClassMap classMap, ProcessingContext context) {
+  private static boolean validateSetter(ExecutableElement setter, Name name, TypeMirror expectedType, ScopedContext ctx) {
+    ScopedMessager messager = ctx.getMessager();
+    Types typeUtils = ctx.getProcessingEnvironment().getTypeUtils();
+
+    if (setter == null) {
+      messager.error("Private field: '" + name + "' has no setter");
+      return false;
+    }
+
+    List<? extends VariableElement> parameters = setter.getParameters();
+    if (parameters.size() != 1) {
+      messager.error("expected a setter for field '" + name + "' that takes one parameter");
+      return false;
+    }
+
+    VariableElement variableElement = parameters.get(0);
+
+    if (!typeUtils.isSameType(variableElement.asType(), expectedType)) {
+      String cause = String.format("Expected type: '%s', found: '%s'", variableElement.asType(), expectedType);
+      messager.error("setter for field '" + name + "' accepts an incorrect type. Cause: " + cause);
+      return false;
+    }
+
+    return true;
+  }
+
+  private static FieldKind getFieldKind(Element element) {
+    AutoForm.Kind kind = element.getAnnotation(AutoForm.Kind.class);
+    if (kind == null) {
+      return FieldKind.Slot;
+    } else {
+      return kind.value();
+    }
+  }
+
+  private static boolean inspectSuperclasses(Element element, ClassMap classMap, ScopedContext context) {
     ProcessingEnvironment environment = context.getProcessingEnvironment();
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
-    Messager messager = environment.getMessager();
+    ScopedMessager messager = context.getMessager();
 
     List<? extends TypeMirror> superTypes = typeUtils.directSupertypes(element.asType());
 
@@ -91,12 +164,13 @@ public class ElementInspector {
 
       AutoForm autoForm = typeElement.getAnnotation(AutoForm.class);
       if (autoForm == null) {
-        messager.printMessage(Diagnostic.Kind.ERROR, "Class '" + element + "' extends from '" + superType + "' that is not" + " annotated with @" + AutoForm.class.getSimpleName() + ". Either annotate it or manually implement a form");
+        messager.error("Class extends from '" + superType + "' that is not" + " annotated with @" + AutoForm.class.getSimpleName() + ". Either annotate it or manually implement a form");
         return false;
       }
 
       RecognizerFactory factory = context.getFactory();
       RecognizerModel superTypeModel = factory.getOrInspect(typeElement, context);
+
       if (superTypeModel == null) {
         return false;
       }
@@ -111,10 +185,12 @@ public class ElementInspector {
     return true;
   }
 
-  private static boolean validateAndMerge(ClassMap classMap, ClassMap superTypeMap, Messager messager) {
-    for (FieldView field : classMap.getFields()) {
-      if (superTypeMap.getField(field.getName().toString()) != null) {
-        messager.printMessage(Diagnostic.Kind.ERROR, "Class '" + classMap.getRoot() + "' contains a field (" + field.getName().toString() + ") with the same name as one in its superclass");
+  private static boolean validateAndMerge(ClassMap classMap, ClassMap superTypeMap, ScopedMessager messager) {
+    for (FieldView field : classMap.getFieldViews()) {
+      FieldView parentField = superTypeMap.getFieldView(field.getName().toString());
+
+      if (parentField != null && !parentField.isIgnored()) {
+        messager.error("Class contains a field (" + field.getName().toString() + ") with the same name as one in its superclass");
         return false;
       }
     }
@@ -124,33 +200,15 @@ public class ElementInspector {
     return true;
   }
 
-  private static ConstructorElement getConstructor(Element rootElement, Messager messager) {
-    for (Element element : rootElement.getEnclosedElements()) {
-      ElementKind elementKind = element.getKind();
+  private static ConstructorElement getConstructor(Element rootElement, ScopedMessager messager) {
+    ExecutableElement constructor = getNoArgConstructor(rootElement);
 
-      if (elementKind == ElementKind.CONSTRUCTOR) {
-        ExecutableElement constructor = (ExecutableElement) element;
-        boolean isPublic = false;
-
-        for (Modifier modifier : constructor.getModifiers()) {
-          if (modifier == Modifier.PUBLIC) {
-            isPublic = true;
-            break;
-          }
-        }
-
-        if (!isPublic) {
-          continue;
-        }
-
-        if (constructor.getParameters().size() == 0) {
-          return new ConstructorElement(constructor);
-        }
-      }
+    if (constructor == null) {
+      messager.error("Class must contain a public constructor with no arguments");
+      return null;
     }
 
-    messager.printMessage(Diagnostic.Kind.ERROR, "Class '" + rootElement + "' must contain a public constructor with no arguments");
-    return null;
+    return new ConstructorElement(constructor);
   }
 
 }

@@ -28,7 +28,6 @@ public class MappingRecognizer<I, O> extends Recognizer<O> {
 
   @Override
   public Recognizer<O> reset() {
-    this.delegate = this.delegate.reset();
-    return this;
+    return new MappingRecognizer<>(this.delegate.reset(), this.mapFn);
   }
 }

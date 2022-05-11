@@ -6,6 +6,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeKind;
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.Function;
 
 import static ai.swim.structure.processor.ElementUtils.isSubType;
@@ -19,25 +20,35 @@ public abstract class RecognizerModel {
       return recognizer;
     }
 
-    recognizer = RecognizerModel.fromStdClass(element, context);
+    recognizer = RecognizerModel.fromStdType(element, context);
 
     if (recognizer != null) {
       return recognizer;
     }
 
-    return context.getRecognizerFactory().lookup(element.asType());
+    recognizer = context.getRecognizerFactory().lookup(element);
+
+    if (recognizer != null) {
+      return recognizer;
+    }
+
+    // We're out of options now. The recognizer isn't available to us now, so we'll have to hope that it's been
+    // registered with the recognizer proxy for a runtime lookup, or it will be derived at runtime and incur the penalty
+    // of reflection.
+    return RecognizerReference.classLookup(element.asType());
   }
 
-  private static RecognizerModel fromStdClass(Element element, ScopedContext context) {
-    ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
+  private static RecognizerModel fromStdType(Element element, ScopedContext context) {
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
 
     if (isSubType(processingEnvironment, element, Collection.class)) {
       return ListRecognizerModel.from(element, context);
     }
 
-//    if (isSubType(processingEnvironment, element, Map.class)) {
+    if (isSubType(processingEnvironment, element, Map.class)) {
 //      return ClassRecognizerModel.map(element, context);
-//    }
+      throw new AssertionError("Map implementation");
+    }
 
     return null;
   }
@@ -66,9 +77,9 @@ public abstract class RecognizerModel {
     }
   }
 
-  public abstract String initializer();
+  public abstract String recognizerInitializer();
 
-  public  Object defaultValue() {
+  public Object defaultValue() {
     return null;
   }
 

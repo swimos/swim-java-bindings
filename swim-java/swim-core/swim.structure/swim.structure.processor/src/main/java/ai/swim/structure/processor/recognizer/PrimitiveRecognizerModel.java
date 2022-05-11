@@ -93,7 +93,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
   }
 
   @Override
-  public String initializer() {
+  public String recognizerInitializer() {
     return this.type;
   }
 
