@@ -3,7 +3,8 @@ package ai.swim.structure.processor.writer;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
-import ai.swim.structure.processor.recognizer.ElementRecognizer;
+import ai.swim.structure.processor.schema.FieldModel;
+import ai.swim.structure.processor.schema.PartitionedFields;
 import com.squareup.javapoet.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -22,9 +23,8 @@ public class RecognizerWriter {
   static final String RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.RecognizingBuilder";
 
   private static final String RECOGNIZER_CLASS = "ai.swim.structure.recognizer.Recognizer";
-  private static final String CLASS_RECOGNIZER_INIT = "ai.swim.structure.recognizer.structural.ClassRecognizerInit";
+  private static final String CLASS_RECOGNIZER_INIT = "ai.swim.structure.recognizer.structural.labelled.ClassRecognizerInit";
   private static final String FIXED_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FixedTagSpec";
-  private static final String INDEX_FN = "ai.swim.structure.recognizer.structural.IndexFn";
   private static final String ITEM_FIELD_KEY = "ai.swim.structure.recognizer.structural.key.ItemFieldKey";
 
   public static void writeRecognizer(ClassSchema schema, ScopedContext context) throws IOException {
@@ -34,11 +34,11 @@ public class RecognizerWriter {
         .addMember("value", "$T.class", context.getRoot().asType())
         .build();
 
-    TypeSpec.Builder classSpec = TypeSpec.classBuilder(recognizerClassName(schema.className()))
+    TypeSpec.Builder classSpec = TypeSpec.classBuilder(schema.getRecognizerName())
         .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
         .addAnnotation(recognizerAnnotationSpec);
 
-    ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
 
@@ -51,12 +51,8 @@ public class RecognizerWriter {
     classSpec.addMethods(Arrays.asList(buildConstructors(schema, context)));
     classSpec.addMethods(Arrays.asList(buildMethods(schema, context)));
 
-    JavaFile javaFile = JavaFile.builder(schema.getPackageElement().getQualifiedName().toString(), classSpec.build()).build();
-    javaFile.writeTo(context.getProcessingContext().getProcessingEnvironment().getFiler());
-  }
-
-  private static String recognizerClassName(String mirror) {
-    return mirror + "Recognizer";
+    JavaFile javaFile = JavaFile.builder(schema.getDeclaredPackage().getQualifiedName().toString(), classSpec.build()).build();
+    javaFile.writeTo(context.getProcessingEnvironment().getFiler());
   }
 
   private static FieldSpec buildRecognizerField(TypeName recognizerTypeName) {
@@ -64,7 +60,7 @@ public class RecognizerWriter {
   }
 
   private static MethodSpec[] buildMethods(ClassSchema schema, ScopedContext context) {
-    ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
 
@@ -82,7 +78,7 @@ public class RecognizerWriter {
     methods[3] = buildPolymorphicMethod(TypeName.get(boolean.class), "isError", null, CodeBlock.of("return this.recognizer.isError();"));
     methods[4] = buildPolymorphicMethod(TypeName.get(context.getRoot().asType()), "bind", null, CodeBlock.of("return this.recognizer.bind();"));
     methods[5] = buildPolymorphicMethod(TypeName.get(RuntimeException.class), "trap", null, CodeBlock.of("return this.recognizer.trap();"));
-    methods[6] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "reset", null, CodeBlock.of("return new $L(this.recognizer.reset());", recognizerClassName(schema.className())));
+    methods[6] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "reset", null, CodeBlock.of("return new $L(this.recognizer.reset());", schema.getRecognizerName()));
 
     return methods;
   }
@@ -110,7 +106,7 @@ public class RecognizerWriter {
   }
 
   private static MethodSpec buildDefaultConstructor(ClassSchema schema, ScopedContext context) {
-    ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
 
@@ -120,14 +116,19 @@ public class RecognizerWriter {
     TypeElement classRecognizerInitElement = elementUtils.getTypeElement(CLASS_RECOGNIZER_INIT);
     DeclaredType classRecognizerDeclaredType = typeUtils.getDeclaredType(classRecognizerInitElement, context.getRoot().asType());
     TypeElement fixedTagSpecElement = elementUtils.getTypeElement(FIXED_TAG_SPEC);
-    String objectBuilder = String.format("%s.%sBuilder", schema.getPackageElement().getQualifiedName(), schema.className());
+    String objectBuilder = String.format("%s.%sBuilder", schema.getDeclaredPackage().getQualifiedName(), schema.getJavaClassName());
 
-    body.add("this.recognizer = new $T(new $T($T.class.getSimpleName()), new $L(), $L, ",
+    String tag = schema.getTag();
+
+    PartitionedFields partitionedFields = schema.getPartitionedFields();
+    int fieldCount = partitionedFields.count();
+
+    body.add("this.recognizer = new $T(new $T(\"$L\"), new $L(), $L, ",
         classRecognizerDeclaredType,
         fixedTagSpecElement,
-        context.getRoot().asType(),
+        tag,
         objectBuilder,
-        schema.getRecognizers().size()
+        fieldCount
     );
 
     body.add("(key) -> {\n");
@@ -137,12 +138,13 @@ public class RecognizerWriter {
     body.addStatement("$T itemFieldKey = ($T) key", itemFieldKeyElement, itemFieldKeyElement);
     body.beginControlFlow("switch (itemFieldKey.getName())");
 
-    List<ElementRecognizer> recognizers = schema.getRecognizers();
+
+    List<FieldModel> recognizers = schema.getPartitionedFields().flatten();
 
     for (int i = 0; i < recognizers.size(); i++) {
-      ElementRecognizer recognizer = recognizers.get(i);
+      FieldModel recognizer = recognizers.get(i);
 
-      body.add("case \"$L\":", recognizer.fieldName());
+      body.add("case \"$L\":", recognizer.propertyName());
       body.addStatement("\t return $L", i);
     }
 
@@ -159,7 +161,7 @@ public class RecognizerWriter {
   }
 
   private static MethodSpec buildResetConstructor(ScopedContext context) {
-    ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
 

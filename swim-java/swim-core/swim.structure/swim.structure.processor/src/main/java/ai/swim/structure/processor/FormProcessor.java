@@ -17,7 +17,7 @@ package ai.swim.structure.processor;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.ClassMap;
+import ai.swim.structure.processor.inspect.ClassMap;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.writer.RecognizerWriter;
 import com.google.auto.service.AutoService;
@@ -48,7 +48,8 @@ public class FormProcessor extends AbstractProcessor {
       }
 
       // Anything that we're processing will be a class map
-      ClassMap classMap = (ClassMap) this.processingContext.getRecognizer(element);
+      ScopedContext scopedContext = this.processingContext.enter(element);
+      ClassMap classMap = (ClassMap) scopedContext.getRecognizer(element);
       if (classMap == null) {
         return true;
       }
@@ -57,6 +58,11 @@ public class FormProcessor extends AbstractProcessor {
     }
 
     if (roundEnv.processingOver()) {
+      // The files written out by this method call must **not** generate any classes that use the @AutoForm annotation
+      // as they will **not** be subject to any further annotation processing as this is now the final round.
+      //
+      // As we are generating files on the final round, this causes the compiler to emit a warning message, but it is
+      // safe to ignore.
       write();
     }
 
@@ -64,13 +70,11 @@ public class FormProcessor extends AbstractProcessor {
   }
 
   private void write() {
-    for (ClassMap classMap : this.classMaps) {
-      ScopedContext scopedContext = new ScopedContext(processingContext, classMap.getRoot());
-      ClassSchema classSchema = ClassSchema.fromMap(scopedContext, classMap);
+    this.processingContext.getFactory().addAll(this.classMaps);
 
-      if (classSchema == null) {
-        return;
-      }
+    for (ClassMap classMap : this.classMaps) {
+      ClassSchema classSchema = ClassSchema.fromMap(classMap);
+      ScopedContext scopedContext = this.processingContext.enter(classMap.getRoot());
 
       try {
         RecognizerWriter.writeRecognizer(classSchema, scopedContext);

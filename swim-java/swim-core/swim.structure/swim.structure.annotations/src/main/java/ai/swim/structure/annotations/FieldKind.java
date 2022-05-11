@@ -14,10 +14,10 @@
 
 package ai.swim.structure.annotations;
 
-public enum FormProperty {
-  Skip,
+public enum FieldKind {
   Body,
   Header,
   HeaderBody,
   Attr,
+  Slot
 }

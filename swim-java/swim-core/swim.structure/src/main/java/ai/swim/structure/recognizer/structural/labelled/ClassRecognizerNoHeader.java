@@ -1,8 +1,10 @@
-package ai.swim.structure.recognizer.structural;
+package ai.swim.structure.recognizer.structural.labelled;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.RecognizingBuilder;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.structural.BitSet;
+import ai.swim.structure.recognizer.structural.IndexFn;
 import ai.swim.structure.recognizer.structural.tag.TagSpec;
 
 public class ClassRecognizerNoHeader<T> extends ClassRecognizer<T> {

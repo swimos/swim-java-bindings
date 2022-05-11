@@ -40,6 +40,15 @@ public class FieldRecognizingBuilder<I> implements RecognizingBuilder<I> {
   }
 
   @Override
+  public I bindOr(I defaultValue) {
+    if (this.value == null) {
+      return defaultValue;
+    } else {
+      return this.value;
+    }
+  }
+
+  @Override
   public RecognizingBuilder<I> reset() {
     return new FieldRecognizingBuilder<>(this.recognizer.reset());
   }

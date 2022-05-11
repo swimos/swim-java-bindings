@@ -1,16 +1,29 @@
 package ai.swim.structure.processor.recognizer;
 
+import javax.lang.model.type.TypeMirror;
+
 public class RecognizerReference extends RecognizerModel {
 
   private final String initializer;
 
-  public RecognizerReference(String initializer) {
+  private RecognizerReference(String initializer) {
     this.initializer = initializer;
   }
 
+  public static RecognizerModel classLookup(TypeMirror mirror) {
+    return new RecognizerReference(String.format("%s.class", mirror.toString()));
+  }
+
   @Override
-  public String initializer() {
+  public String recognizerInitializer() {
     return this.initializer;
+  }
+
+  @Override
+  public String toString() {
+    return "RecognizerReference{" +
+        "initializer='" + initializer + '\'' +
+        '}';
   }
 
   public static class Formatter {

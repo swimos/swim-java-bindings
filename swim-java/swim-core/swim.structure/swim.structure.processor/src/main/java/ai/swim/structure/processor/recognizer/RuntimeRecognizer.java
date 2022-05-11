@@ -9,7 +9,7 @@ public class RuntimeRecognizer extends RecognizerModel {
   }
 
   @Override
-  public String initializer() {
+  public String recognizerInitializer() {
     return String.format("%s.class", type);
   }
 

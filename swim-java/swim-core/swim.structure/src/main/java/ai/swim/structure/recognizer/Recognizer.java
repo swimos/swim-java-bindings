@@ -4,7 +4,25 @@ import ai.swim.recon.event.ReadEvent;
 
 import java.util.function.Function;
 
-// todo: number recognizers will truncate values
+
+/**
+ * Todo: docs
+ *
+ * <h2>Loading</h2>>
+ * It is preferred for recognizers to be manually registered with the recognizer proxy so that no reflection has to be
+ * used each time it is used. Alternatively, a recognizer can be annotated with @Autoloaded(targetClass.class) and it
+ * will be automatically registered with the recognizer proxy when it is initialised.
+ *
+ * <h2>Derivation</h2>
+ * In most cases, a recognizer can be derived if it is annotated with @AutoForm. This will generate both a recognizer
+ * and a builder for the target class.
+ *
+ * <h2>Structure</h2>
+ * Recognizers that are accessed through the recognizer proxy or are used by classes that depend on it should contain
+ * a no-arg constructor. If this is not possible, then a manual implementation of a recognizer is required.
+ *
+ * @param <T>
+ */
 public abstract class Recognizer<T> {
 
   public static <T> Recognizer<T> done(T target, Recognizer<T> delegate) {
@@ -37,6 +55,9 @@ public abstract class Recognizer<T> {
     throw new IllegalStateException();
   }
 
+  /***
+   * Reset this recognizer back to its initial state and return a new instance.
+   */
   public abstract Recognizer<T> reset();
 
   public <Y> Recognizer<Y> map(Function<T, Y> mapFn) {
@@ -47,11 +68,12 @@ public abstract class Recognizer<T> {
     return new RecognizerRequired<>(this);
   }
 
-  /***
-   * Returns whether this recognizer has been run at least once.
-   */
-  public boolean hasInit() {
-    return true;
+  public Recognizer<T> asAttrRecognizer() {
+    return new SimpleAttrBodyRecognizer<>(this);
+  }
+
+  public Recognizer<T> asBodyRecognizer() {
+    return new SimpleRecBodyRecognizer<>(this);
   }
 }
 

@@ -23,16 +23,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AutoForm {
 
-  @Target({ElementType.TYPE})
-  @Retention(RetentionPolicy.RUNTIME)
-  @interface Tag {
-    String value();
-  }
+  String tag() default "";
 
   @Target({ElementType.FIELD})
   @Retention(RetentionPolicy.RUNTIME)
-  @interface Property {
-    ai.swim.structure.annotations.FormProperty[] value();
+  @interface Kind {
+    FieldKind value();
   }
 
   @Target({ElementType.FIELD})
@@ -58,4 +54,5 @@ public @interface AutoForm {
   @interface Ignore {
 
   }
+
 }

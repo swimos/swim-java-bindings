@@ -18,7 +18,7 @@ package ai.swim.structure;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.structural.ClassRecognizerInit;
+import ai.swim.structure.recognizer.structural.labelled.ClassRecognizerInit;
 import ai.swim.structure.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 

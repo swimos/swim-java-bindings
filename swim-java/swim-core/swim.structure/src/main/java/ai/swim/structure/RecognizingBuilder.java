@@ -14,5 +14,9 @@ public interface RecognizingBuilder<I> {
 
   I bind();
 
+  default I bindOr(I defaultValue) {
+    throw new UnsupportedOperationException();
+  }
+
   RecognizingBuilder<I> reset();
 }

@@ -1,10 +1,11 @@
-package ai.swim.structure.recognizer.structural;
+package ai.swim.structure.recognizer.structural.labelled;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadStartAttribute;
 import ai.swim.recon.event.ReadTextValue;
 import ai.swim.structure.RecognizingBuilder;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.structural.IndexFn;
 import ai.swim.structure.recognizer.structural.key.HeaderFieldKey;
 import ai.swim.structure.recognizer.structural.key.LabelledFieldKey;
 import ai.swim.structure.recognizer.structural.key.TagFieldKey;

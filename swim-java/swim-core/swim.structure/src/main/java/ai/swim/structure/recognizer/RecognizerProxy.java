@@ -10,6 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 public class RecognizerProxy {
@@ -62,11 +63,11 @@ public class RecognizerProxy {
           try {
             return (Recognizer<?>) constructor.newInstance();
           } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(String.format("Failed to created a new instance of recognizer '%s'", clazz.getCanonicalName()), e);
           }
         });
       } catch (NoSuchMethodException e) {
-        throw new RuntimeException(e);
+        throw new RuntimeException(String.format("Recognizer '%s' does not contain a zero-arg constructor", clazz.getCanonicalName()), e);
       }
     }
   }

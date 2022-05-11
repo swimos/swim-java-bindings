@@ -1,14 +1,16 @@
 package ai.swim.structure.processor.recognizer;
 
-import ai.swim.structure.processor.inspect.ElementInspector;
 import ai.swim.structure.processor.context.ProcessingContext;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.inspect.ClassMap;
+import ai.swim.structure.processor.inspect.ElementInspector;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import java.util.HashMap;
+import java.util.List;
 
 public class RecognizerFactory {
   private final HashMap<String, RecognizerModel> recognizers;
@@ -41,12 +43,12 @@ public class RecognizerFactory {
     return typeElement.asType().toString();
   }
 
-  public RecognizerModel lookup(TypeMirror element) {
-    return this.recognizers.get(element.toString());
+  public RecognizerModel lookup(Element element) {
+    return this.recognizers.get(element.asType().toString());
   }
 
-  public RecognizerModel getOrInspect(Element element, ProcessingContext context) {
-    RecognizerModel map = this.recognizers.get(element.toString());
+  public RecognizerModel getOrInspect(Element element, ScopedContext context) {
+    RecognizerModel map = this.recognizers.get(element.asType().toString());
 
     if (map != null) {
       return map;
@@ -55,7 +57,7 @@ public class RecognizerFactory {
     return inspectAndInsertClass(element, context);
   }
 
-  private RecognizerModel inspectAndInsertClass(Element element, ProcessingContext context) {
+  private RecognizerModel inspectAndInsertClass(Element element, ScopedContext context) {
     ClassMap classMap = ElementInspector.inspect(element, context);
 
     if (classMap == null) {
@@ -65,4 +67,11 @@ public class RecognizerFactory {
     this.recognizers.put(element.asType().toString(), classMap);
     return classMap;
   }
+
+  public void addAll(List<ClassMap> derived) {
+    for (ClassMap classMap : derived) {
+      recognizers.put(classMap.getRoot().asType().toString(), classMap);
+    }
+  }
+
 }

@@ -2,7 +2,7 @@ package ai.swim.structure.processor.writer;
 
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
-import ai.swim.structure.processor.recognizer.ElementRecognizer;
+import ai.swim.structure.processor.schema.FieldModel;
 import com.squareup.javapoet.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -27,11 +27,11 @@ public class BuilderWriter {
   private static final String RECOGNIZING_BUILDER_RESET = "reset";
 
   public static void write(ClassSchema schema, ScopedContext context) throws IOException {
-    ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Types typeUtils = processingEnvironment.getTypeUtils();
     Elements elementUtils = processingEnvironment.getElementUtils();
 
-    TypeSpec.Builder classSpec = TypeSpec.classBuilder(schema.className() + "Builder")
+    TypeSpec.Builder classSpec = TypeSpec.classBuilder(schema.getJavaClassName() + "Builder")
         .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
     TypeElement recognizingBuilderElement = elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS);
@@ -42,13 +42,13 @@ public class BuilderWriter {
     classSpec.addFields(Arrays.asList(buildFields(schema, processingEnvironment)));
     classSpec.addMethods(Arrays.asList(buildMethods(schema, context)));
 
-    JavaFile javaFile = JavaFile.builder(schema.getPackageElement().getQualifiedName().toString(), classSpec.build()).build();
-    javaFile.writeTo(context.getProcessingContext().getProcessingEnvironment().getFiler());
+    JavaFile javaFile = JavaFile.builder(schema.getDeclaredPackage().getQualifiedName().toString(), classSpec.build()).build();
+    javaFile.writeTo(context.getProcessingEnvironment().getFiler());
   }
 
   private static MethodSpec[] buildMethods(ClassSchema schema, ScopedContext context) {
     MethodSpec[] methods = new MethodSpec[3];
-    methods[0] = buildFeedIndexed(schema, context.getProcessingContext().getProcessingEnvironment());
+    methods[0] = buildFeedIndexed(schema, context.getProcessingEnvironment());
     methods[1] = buildBind(schema, context);
     methods[2] = buildReset(schema, context);
 
@@ -72,10 +72,10 @@ public class BuilderWriter {
     CodeBlock.Builder body = CodeBlock.builder();
     body.beginControlFlow("switch (index)");
 
-    List<ElementRecognizer> recognizers = schema.getRecognizers();
+    List<FieldModel> recognizers = schema.getPartitionedFields().flatten();
 
     for (int i = 0; i < recognizers.size(); i++) {
-      ElementRecognizer recognizer = recognizers.get(i);
+      FieldModel recognizer = recognizers.get(i);
       body.add("case $L:", i);
       body.addStatement("\nreturn this.$L.feed(event)", buildFieldName(recognizer.fieldName()));
     }
@@ -95,8 +95,12 @@ public class BuilderWriter {
     CodeBlock.Builder body = CodeBlock.builder();
     body.add("$T obj = new $T();\n\n", context.getRoot().asType(), context.getRoot().asType());
 
-    for (ElementRecognizer recognizer : schema.getRecognizers()) {
-      recognizer.getAccessor().write(body, "obj", String.format("this.%s.bind()", buildFieldName(recognizer.fieldName())));
+    for (FieldModel recognizer : schema.getPartitionedFields().flatten()) {
+      if (recognizer.isOptional()) {
+        recognizer.getAccessor().write(body, "obj", String.format("this.%s.bindOr(%s)", buildFieldName(recognizer.fieldName()), recognizer.defaultValue()));
+      } else {
+        recognizer.getAccessor().write(body, "obj", String.format("this.%s.bind()", buildFieldName(recognizer.fieldName())));
+      }
     }
 
     body.add("\nreturn obj;");
@@ -106,7 +110,7 @@ public class BuilderWriter {
   }
 
   private static MethodSpec buildReset(ClassSchema schema, ScopedContext context) {
-    ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
 
@@ -120,7 +124,7 @@ public class BuilderWriter {
 
     CodeBlock.Builder body = CodeBlock.builder();
 
-    for (ElementRecognizer recognizer : schema.getRecognizers()) {
+    for (FieldModel recognizer : schema.getPartitionedFields().flatten()) {
       String fieldName = buildFieldName(recognizer.fieldName());
       body.addStatement("this.$L = this.$L.reset()", fieldName, fieldName);
     }
@@ -140,15 +144,15 @@ public class BuilderWriter {
     Types typeUtils = processingEnvironment.getTypeUtils();
     TypeElement fieldFieldRecognizingBuilder = elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS);
 
-    List<ElementRecognizer> recognizers = schema.getRecognizers();
+    List<FieldModel> recognizers = schema.getPartitionedFields().flatten();
     int recognizerCount = recognizers.size();
     FieldSpec[] fields = new FieldSpec[recognizerCount];
 
     for (int i = 0; i < recognizerCount; i++) {
-      ElementRecognizer recognizer = recognizers.get(i);
+      FieldModel recognizer = recognizers.get(i);
       TypeMirror recognizerType = recognizer.type();
 
-      if (recognizer.type().getKind().isPrimitive()) {
+      if (recognizerType.getKind().isPrimitive()) {
         TypeElement boxedClass = typeUtils.boxedClass((PrimitiveType) recognizer.type());
         recognizerType = boxedClass.asType();
       }
@@ -156,7 +160,7 @@ public class BuilderWriter {
       DeclaredType memberRecognizingBuilder = typeUtils.getDeclaredType(fieldFieldRecognizingBuilder, recognizerType);
       FieldSpec.Builder fieldSpec = FieldSpec.builder(TypeName.get(memberRecognizingBuilder), buildFieldName(recognizer.fieldName()), Modifier.PRIVATE);
 
-      fieldSpec.initializer(CodeBlock.of("new $L<>($L)", FIELD_RECOGNIZING_BUILDER_CLASS, recognizer.initializer()));
+      fieldSpec.initializer(CodeBlock.of("new $L<>($L)$L", FIELD_RECOGNIZING_BUILDER_CLASS, recognizer.initializer(), recognizer.transformation()));
 
       fields[i] = fieldSpec.build();
     }
