@@ -23,7 +23,7 @@ public class RecognizerWriter {
   static final String RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.RecognizingBuilder";
 
   private static final String RECOGNIZER_CLASS = "ai.swim.structure.recognizer.Recognizer";
-  private static final String CLASS_RECOGNIZER_INIT = "ai.swim.structure.recognizer.structural.labelled.ClassRecognizerInit";
+  private static final String CLASS_RECOGNIZER_INIT = "ai.swim.structure.recognizer.structural.LabelledClassRecognizer";
   private static final String FIXED_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FixedTagSpec";
   private static final String ITEM_FIELD_KEY = "ai.swim.structure.recognizer.structural.key.ItemFieldKey";
 
