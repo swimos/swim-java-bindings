@@ -2,7 +2,7 @@ package ai.swim.structure;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.structural.labelled.ClassRecognizerInit;
+import ai.swim.structure.recognizer.structural.LabelledClassRecognizer;
 import ai.swim.structure.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-class ClassRecognizerTest {
+class LabelledClassRecognizerTest {
 
   @Test
   void recognizeClass() throws Exception {
@@ -97,7 +97,7 @@ class ClassRecognizerTest {
     private Recognizer<InnerPropClass> recognizer;
 
     public InnerClassRecognizer() {
-      this.recognizer = new ClassRecognizerInit<>(new FixedTagSpec(InnerPropClass.class.getSimpleName()), new InnerPropClassBuilder(), 2, (key) -> {
+      this.recognizer = new LabelledClassRecognizer<>(new FixedTagSpec(InnerPropClass.class.getSimpleName()), new InnerPropClassBuilder(), 2, (key) -> {
         if (key.isItem()) {
           ItemFieldKey itemFieldKey = (ItemFieldKey) key;
           switch (itemFieldKey.getName()) {
@@ -263,7 +263,7 @@ class ClassRecognizerTest {
     public Recognizer<OuterPropClass> recognizer;
 
     public OuterClassRecognizer() {
-      this.recognizer = new ClassRecognizerInit<>(new FixedTagSpec(OuterPropClass.class.getSimpleName()), new OuterPropClassBuilder(), 2, (key) -> {
+      this.recognizer = new LabelledClassRecognizer<>(new FixedTagSpec(OuterPropClass.class.getSimpleName()), new OuterPropClassBuilder(), 2, (key) -> {
         if (key.isItem()) {
           ItemFieldKey itemFieldKey = (ItemFieldKey) key;
           switch (itemFieldKey.getName()) {

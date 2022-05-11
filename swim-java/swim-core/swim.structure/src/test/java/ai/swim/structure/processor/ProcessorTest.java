@@ -7,7 +7,7 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.ScalarRecognizer;
-import ai.swim.structure.recognizer.structural.labelled.ClassRecognizerInit;
+import ai.swim.structure.recognizer.structural.LabelledClassRecognizer;
 import ai.swim.structure.recognizer.structural.key.ItemFieldKey;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
@@ -378,7 +378,7 @@ public class ProcessorTest {
     private Recognizer<WrittenDependant> recognizer;
 
     public WrittenDependantRecognizer() {
-      this.recognizer = new ClassRecognizerInit<>(new FixedTagSpec(WrittenDependant.class.getSimpleName()), new WrittenDependantBuilder(), 1, (key) -> {
+      this.recognizer = new LabelledClassRecognizer<>(new FixedTagSpec(WrittenDependant.class.getSimpleName()), new WrittenDependantBuilder(), 1, (key) -> {
         if (key.isItem()) {
           ItemFieldKey itemFieldKey = (ItemFieldKey) key;
           if ("a".equals(itemFieldKey.getName())) {
