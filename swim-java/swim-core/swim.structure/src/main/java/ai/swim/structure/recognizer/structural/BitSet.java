@@ -1,8 +1,7 @@
 package ai.swim.structure.recognizer.structural;
 
 public class BitSet {
-
-  private int cap;
+  private final int cap;
   private long bits;
 
   public BitSet(int cap) {
@@ -24,8 +23,8 @@ public class BitSet {
     }
   }
 
-
   public int size() {
     return this.cap;
   }
+
 }

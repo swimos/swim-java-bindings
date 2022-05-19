@@ -138,7 +138,7 @@ final class RecognizerError<T> extends Recognizer<T> {
 
   @Override
   public Recognizer<T> feedEvent(ReadEvent event) {
-    return this;
+    throw new IllegalStateException();
   }
 
   @Override

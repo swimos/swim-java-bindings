@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HeaderFields {
-  private FieldModel tagBody;
-  private final List<FieldModel> headerFields;
-  private final List<FieldModel> attributes;
+  public FieldModel tagName;
+  public FieldModel tagBody;
+  public final List<FieldModel> headerFields;
+  public final List<FieldModel> attributes;
 
   public HeaderFields() {
     this.headerFields = new ArrayList<>();
@@ -15,6 +16,10 @@ public class HeaderFields {
 
   public boolean hasTagBody() {
     return this.tagBody != null;
+  }
+
+  public boolean hasTagName() {
+    return this.tagName != null;
   }
 
   public void setTagBody(FieldModel tagBody) {

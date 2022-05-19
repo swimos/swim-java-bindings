@@ -37,7 +37,7 @@ public class ListRecognizerModel extends ClassRecognizerModel {
 
   @Override
   public String recognizerInitializer() {
-    return String.format("new ai.swim.structure.recognizer.std.ListRecognizer<>(%s, false)", this.delegate.recognizerInitializer());
+    return String.format("new ai.swim.structure.recognizer.std.ListRecognizer<>(%s)", this.delegate.recognizerInitializer());
   }
 
 }
