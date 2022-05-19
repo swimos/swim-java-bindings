@@ -34,7 +34,7 @@ class EnumRecognizerTest {
     );
 
     Level level = runTest(recognizer, events);
-    System.out.println(level);
+    assertEquals(level, Level.Warn);
   }
 
 }

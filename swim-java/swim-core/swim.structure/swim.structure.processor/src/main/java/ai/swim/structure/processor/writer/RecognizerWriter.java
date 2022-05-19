@@ -4,6 +4,7 @@ import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
+import ai.swim.structure.processor.schema.HeaderFields;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import com.squareup.javapoet.*;
 
@@ -19,16 +20,20 @@ import java.util.List;
 
 public class RecognizerWriter {
 
-  static final String TYPE_READ_EVENT = "ai.swim.recon.event.ReadEvent";
-  static final String RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.RecognizingBuilder";
+  public static final String TYPE_READ_EVENT = "ai.swim.recon.event.ReadEvent";
+  public static final String RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.RecognizingBuilder";
 
-  private static final String RECOGNIZER_CLASS = "ai.swim.structure.recognizer.Recognizer";
-  private static final String CLASS_RECOGNIZER_INIT = "ai.swim.structure.recognizer.structural.LabelledClassRecognizer";
-  private static final String FIXED_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FixedTagSpec";
-  private static final String ITEM_FIELD_KEY = "ai.swim.structure.recognizer.structural.key.ItemFieldKey";
+  public static final String RECOGNIZER_CLASS = "ai.swim.structure.recognizer.Recognizer";
+  public static final String LABELLED_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.labelled.LabelledClassRecognizer";
+  public static final String DELEGATE_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.delegate.DelegateClassRecognizer";
+
+  public static final String FIXED_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FixedTagSpec";
+  public static final String FIELD_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FieldTagSpec";
+  public static final String LABELLED_ITEM_FIELD_KEY = "ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey.ItemFieldKey";
+  public static final String DELEGATE_HEADER_SLOT_KEY = "ai.swim.structure.recognizer.structural.delegate.HeaderFieldKey.HeaderSlotKey";
+  public static final String DELEGATE_ORDINAL_ATTR_KEY = "ai.swim.structure.recognizer.structural.delegate.OrdinalFieldKey.OrdinalFieldKeyAttr";
 
   public static void writeRecognizer(ClassSchema schema, ScopedContext context) throws IOException {
-    BuilderWriter.write(schema, context);
 
     AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
         .addMember("value", "$T.class", context.getRoot().asType())
@@ -50,6 +55,8 @@ public class RecognizerWriter {
     classSpec.addField(buildRecognizerField(recognizerTypeName));
     classSpec.addMethods(Arrays.asList(buildConstructors(schema, context)));
     classSpec.addMethods(Arrays.asList(buildMethods(schema, context)));
+
+    BuilderWriter.writeInto(classSpec, schema, context);
 
     JavaFile javaFile = JavaFile.builder(schema.getDeclaredPackage().getQualifiedName().toString(), classSpec.build()).build();
     javaFile.writeTo(context.getProcessingEnvironment().getFiler());
@@ -106,38 +113,98 @@ public class RecognizerWriter {
   }
 
   private static MethodSpec buildDefaultConstructor(ClassSchema schema, ScopedContext context) {
+    MethodSpec.Builder methodBuilder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
+
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
 
-    MethodSpec.Builder methodBuilder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
-    CodeBlock.Builder body = CodeBlock.builder();
+    PartitionedFields partitionedFields = schema.getPartitionedFields();
+    String recognizerName = partitionedFields.body.isReplaced() ? DELEGATE_CLASS_RECOGNIZER : LABELLED_CLASS_RECOGNIZER;
+    CodeBlock indexFn = partitionedFields.body.isReplaced() ? buildOrdinalIndexFn(schema, context) : buildStandardIndexFn(schema, context);
 
-    TypeElement classRecognizerInitElement = elementUtils.getTypeElement(CLASS_RECOGNIZER_INIT);
-    DeclaredType classRecognizerDeclaredType = typeUtils.getDeclaredType(classRecognizerInitElement, context.getRoot().asType());
-    TypeElement fixedTagSpecElement = elementUtils.getTypeElement(FIXED_TAG_SPEC);
-    String objectBuilder = String.format("%s.%sBuilder", schema.getDeclaredPackage().getQualifiedName(), schema.getJavaClassName());
+    TypeElement classRecognizerElement = elementUtils.getTypeElement(recognizerName);
+    DeclaredType classRecognizerDeclaredType = typeUtils.getDeclaredType(classRecognizerElement, context.getRoot().asType());
 
     String tag = schema.getTag();
+    TypeElement fieldTagSpecElement = elementUtils.getTypeElement(tag == null ? FIELD_TAG_SPEC : FIXED_TAG_SPEC);
+
+    CodeBlock fieldSpec = tag == null ? CodeBlock.of("new $T()", fieldTagSpecElement) : CodeBlock.of("$T(\"$L\")", fieldTagSpecElement, tag);
+    String fmtArgs = String.format("this.recognizer = new $T(new %s, new $L(), $L, $L);", fieldSpec);
+
+    CodeBlock body = CodeBlock.of(fmtArgs, classRecognizerDeclaredType, context.getFormatter().builderClassName(), schema.getPartitionedFields().count(), indexFn);
+
+    return methodBuilder.addCode(body).build();
+  }
+
+  private static CodeBlock buildOrdinalIndexFn(ClassSchema schema, ScopedContext context) {
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Elements elementUtils = processingEnvironment.getElementUtils();
 
     PartitionedFields partitionedFields = schema.getPartitionedFields();
-    int fieldCount = partitionedFields.count();
+    HeaderFields headerFieldSet = partitionedFields.headerFields;
 
-    body.add("this.recognizer = new $T(new $T(\"$L\"), new $L(), $L, ",
-        classRecognizerDeclaredType,
-        fixedTagSpecElement,
-        tag,
-        objectBuilder,
-        fieldCount
-    );
+    int idx = 0;
+    CodeBlock.Builder body = CodeBlock.builder();
+    body.beginControlFlow("(key) ->");
 
-    body.add("(key) -> {\n");
+    if (headerFieldSet.hasTagName()) {
+      idx += 1;
+      body.beginControlFlow("if (key.isTag())");
+      body.addStatement("return 0");
+      body.endControlFlow();
+    }
+
+    if (headerFieldSet.hasTagBody() || !headerFieldSet.headerFields.isEmpty()) {
+      body.beginControlFlow("if (key.isHeader())");
+      body.addStatement("return $L", idx);
+      body.endControlFlow();
+
+      idx += 1;
+    }
+
+    if (!headerFieldSet.attributes.isEmpty()) {
+      TypeElement attrKey = elementUtils.getTypeElement(DELEGATE_ORDINAL_ATTR_KEY);
+
+      body.beginControlFlow("if (key.isAttr())");
+      body.addStatement("$T attrKey = ($T) key", attrKey, attrKey);
+
+      WriterUtils.writeIndexSwitchBlock(
+          body,
+          "switch (attrKey.getName())",
+          idx,
+          (offset, i) -> {
+            if (i == headerFieldSet.attributes.size()) {
+              return null;
+            } else {
+              FieldModel recognizer = headerFieldSet.attributes.get(i - offset);
+              return String.format("case \"%s:\r\n\t return %s", recognizer.propertyName(), i);
+            }
+          }
+      );
+    }
+
+    body.beginControlFlow("if (key.isFirstItem())");
+    body.addStatement("return $L", idx + headerFieldSet.attributes.size());
+    body.endControlFlow();
+
+    body.addStatement("return null");
+    body.endControlFlow();
+
+    return body.build();
+  }
+
+  private static CodeBlock buildStandardIndexFn(ClassSchema schema, ScopedContext context) {
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Elements elementUtils = processingEnvironment.getElementUtils();
+
+    CodeBlock.Builder body = CodeBlock.builder();
+    body.beginControlFlow("(key) ->");
     body.beginControlFlow("if (key.isItem())");
 
-    TypeElement itemFieldKeyElement = elementUtils.getTypeElement(ITEM_FIELD_KEY);
+    TypeElement itemFieldKeyElement = elementUtils.getTypeElement(LABELLED_ITEM_FIELD_KEY);
     body.addStatement("$T itemFieldKey = ($T) key", itemFieldKeyElement, itemFieldKeyElement);
     body.beginControlFlow("switch (itemFieldKey.getName())");
-
 
     List<FieldModel> recognizers = schema.getPartitionedFields().flatten();
 
@@ -153,11 +220,9 @@ public class RecognizerWriter {
     body.endControlFlow();
     body.endControlFlow();
     body.addStatement("return null");
-    body.add("});");
+    body.endControlFlow();
 
-    methodBuilder.addCode(body.build());
-
-    return methodBuilder.build();
+    return body.build();
   }
 
   private static MethodSpec buildResetConstructor(ScopedContext context) {

@@ -33,9 +33,9 @@ public class SimpleRecBodyRecognizer<T> extends Recognizer<T> {
           this.state = State.AfterValue;
         } else if (this.delegate.isError()) {
           return Recognizer.error(this.delegate.trap());
-        } else {
-          return this;
         }
+
+        return this;
       case AfterValue:
         if (event.isEndRecord()) {
           return Recognizer.done(this.delegate.bind(), this);

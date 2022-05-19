@@ -10,11 +10,13 @@ public class ScopedContext {
   private final ProcessingContext processingContext;
   private final Element root;
   private final ScopedMessager messager;
+  private final NameFormatter formatter;
 
   public ScopedContext(ProcessingContext processingContext, Element root) {
     this.processingContext = processingContext;
     this.root = root;
     this.messager = new ScopedMessager(this.processingContext.getProcessingEnvironment().getMessager(), root);
+    this.formatter = new NameFormatter(root.getSimpleName().toString());
   }
 
   public Element getRoot() {
@@ -41,4 +43,7 @@ public class ScopedContext {
     return this.processingContext.getFactory();
   }
 
+  public NameFormatter getFormatter() {
+    return formatter;
+  }
 }

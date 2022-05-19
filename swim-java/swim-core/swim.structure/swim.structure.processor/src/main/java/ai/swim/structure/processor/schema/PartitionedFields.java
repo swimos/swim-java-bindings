@@ -3,8 +3,8 @@ package ai.swim.structure.processor.schema;
 import java.util.List;
 
 public class PartitionedFields {
-  HeaderFields headerFields;
-  Body body;
+  public HeaderFields headerFields;
+  public Body body;
 
   public PartitionedFields(HeaderFields headerFields, Body body) {
     this.headerFields = headerFields;
@@ -55,5 +55,9 @@ public class PartitionedFields {
     List<FieldModel> fieldModels = this.headerFields.flatten();
     fieldModels.addAll(this.body.getFields());
     return fieldModels;
+  }
+
+  public boolean hasHeaderFields() {
+    return !this.headerFields.headerFields.isEmpty();
   }
 }

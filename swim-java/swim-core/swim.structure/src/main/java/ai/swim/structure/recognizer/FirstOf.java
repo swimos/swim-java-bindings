@@ -34,7 +34,8 @@ public class FirstOf<T> extends Recognizer<T> {
         if (right.isDone()) {
           return Recognizer.done(right.bind(), this);
         } else if (right.isError()) {
-          if (state == State.Right) {
+          if (state == State.Both) {
+            state = State.Left;
             return this;
           } else {
             return Recognizer.error(right.trap());

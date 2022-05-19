@@ -2,8 +2,8 @@ package ai.swim.structure;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.structural.LabelledClassRecognizer;
-import ai.swim.structure.recognizer.structural.key.ItemFieldKey;
+import ai.swim.structure.recognizer.structural.labelled.LabelledClassRecognizer;
+import ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
 
@@ -99,7 +99,7 @@ class LabelledClassRecognizerTest {
     public InnerClassRecognizer() {
       this.recognizer = new LabelledClassRecognizer<>(new FixedTagSpec(InnerPropClass.class.getSimpleName()), new InnerPropClassBuilder(), 2, (key) -> {
         if (key.isItem()) {
-          ItemFieldKey itemFieldKey = (ItemFieldKey) key;
+          LabelledFieldKey.ItemFieldKey itemFieldKey = (LabelledFieldKey.ItemFieldKey) key;
           switch (itemFieldKey.getName()) {
             case "a":
               return 0;
@@ -265,7 +265,7 @@ class LabelledClassRecognizerTest {
     public OuterClassRecognizer() {
       this.recognizer = new LabelledClassRecognizer<>(new FixedTagSpec(OuterPropClass.class.getSimpleName()), new OuterPropClassBuilder(), 2, (key) -> {
         if (key.isItem()) {
-          ItemFieldKey itemFieldKey = (ItemFieldKey) key;
+          LabelledFieldKey.ItemFieldKey itemFieldKey = (LabelledFieldKey.ItemFieldKey) key;
           switch (itemFieldKey.getName()) {
             case "c":
               return 0;

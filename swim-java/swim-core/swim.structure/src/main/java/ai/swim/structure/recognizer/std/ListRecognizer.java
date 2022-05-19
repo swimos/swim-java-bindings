@@ -19,6 +19,10 @@ public class ListRecognizer<E> extends Recognizer<List<E>> {
     Init, Item, Between
   }
 
+  public ListRecognizer(Recognizer<E> delegate) {
+    this(delegate, false);
+  }
+
   public ListRecognizer(Recognizer<E> delegate, boolean isAttrBody) {
     this.delegate = delegate;
     this.isAttrBody = isAttrBody;
