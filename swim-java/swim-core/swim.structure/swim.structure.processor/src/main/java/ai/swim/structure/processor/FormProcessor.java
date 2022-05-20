@@ -47,6 +47,12 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
+      if (!element.asType().toString().equals("ai.swim.structure.recognizer.structural.delegate.AutoDelegateTest.PropClass")) {
+        continue;
+      }
+
+      System.out.println(element.asType());
+
       // Anything that we're processing will be a class map
       ScopedContext scopedContext = this.processingContext.enter(element);
       ClassMap classMap = (ClassMap) scopedContext.getRecognizer(element);

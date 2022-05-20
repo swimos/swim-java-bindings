@@ -1,8 +1,11 @@
 package ai.swim.structure.processor.schema;
 
 import ai.swim.structure.processor.inspect.ClassMap;
+import ai.swim.structure.processor.writer.FieldDiscriminate;
 
 import javax.lang.model.element.PackageElement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClassSchema {
   private final ClassMap classMap;
@@ -23,6 +26,10 @@ public class ClassSchema {
 
   public PartitionedFields getPartitionedFields() {
     return partitionedFields;
+  }
+
+  public List<FieldDiscriminate> discriminate() {
+    return this.partitionedFields.discriminate();
   }
 
   @Override
