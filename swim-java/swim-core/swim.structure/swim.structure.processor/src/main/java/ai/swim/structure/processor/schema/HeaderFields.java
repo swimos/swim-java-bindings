@@ -55,4 +55,18 @@ public class HeaderFields {
     fieldModels.addAll(attributes);
     return fieldModels;
   }
+
+  public void addHeaderFields(List<FieldModel> newHeaderFields) {
+    this.headerFields.addAll(newHeaderFields);
+  }
+
+  @Override
+  public String toString() {
+    return "HeaderFields{" +
+        "tagName=" + tagName +
+        ", tagBody=" + tagBody +
+        ", headerFields=" + headerFields +
+        ", attributes=" + attributes +
+        '}';
+  }
 }

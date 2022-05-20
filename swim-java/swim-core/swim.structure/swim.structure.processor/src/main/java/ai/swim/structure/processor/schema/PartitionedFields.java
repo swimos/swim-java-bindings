@@ -1,6 +1,10 @@
 package ai.swim.structure.processor.schema;
 
+import ai.swim.structure.processor.writer.FieldDiscriminate;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PartitionedFields {
   public HeaderFields headerFields;
@@ -18,10 +22,12 @@ public class PartitionedFields {
     for (FieldModel field : fields) {
       switch (field.getFieldKind()) {
         case Body:
-          if (!headerFields.hasTagBody()) {
-            headerFields.addHeaderField(field);
-            body.setReplaced();
-          }
+          List<FieldModel> newHeaderFields = body.replace(field);
+          headerFields.addHeaderFields(newHeaderFields);
+
+          System.out.println(body);
+          System.out.println(headerFields);
+
           break;
         case Header:
           headerFields.addHeaderField(field);
@@ -59,5 +65,38 @@ public class PartitionedFields {
 
   public boolean hasHeaderFields() {
     return !this.headerFields.headerFields.isEmpty();
+  }
+
+  public List<FieldDiscriminate> discriminate() {
+    List<FieldDiscriminate> discriminates = new ArrayList<>();
+
+    FieldModel tagName = this.headerFields.tagName;
+    if (tagName != null) {
+      discriminates.add(FieldDiscriminate.tag(tagName));
+    }
+
+    if (headerFields.hasTagBody() && !headerFields.headerFields.isEmpty()) {
+      discriminates.add(FieldDiscriminate.header(headerFields.headerFields));
+    }
+
+    discriminates.addAll(headerFields.attributes.stream().map(FieldDiscriminate::attribute).collect(Collectors.toList()));
+
+    List<FieldModel> bodyFields = body.getFields();
+
+    if (body.isReplaced()) {
+      discriminates.add(FieldDiscriminate.body(bodyFields.get(0)));
+    } else {
+      discriminates.addAll(bodyFields.stream().map(FieldDiscriminate::item).collect(Collectors.toList()));
+    }
+
+    return discriminates;
+  }
+
+  @Override
+  public String toString() {
+    return "PartitionedFields{" +
+        "headerFields=" + headerFields +
+        ", body=" + body +
+        '}';
   }
 }

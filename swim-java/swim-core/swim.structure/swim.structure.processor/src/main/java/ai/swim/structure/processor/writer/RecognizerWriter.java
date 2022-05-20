@@ -34,12 +34,11 @@ public class RecognizerWriter {
   public static final String DELEGATE_ORDINAL_ATTR_KEY = "ai.swim.structure.recognizer.structural.delegate.OrdinalFieldKey.OrdinalFieldKeyAttr";
 
   public static void writeRecognizer(ClassSchema schema, ScopedContext context) throws IOException {
-
     AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
         .addMember("value", "$T.class", context.getRoot().asType())
         .build();
 
-    TypeSpec.Builder classSpec = TypeSpec.classBuilder(schema.getRecognizerName())
+    TypeSpec.Builder classSpec = TypeSpec.classBuilder(context.getNameFactory().recognizerClassName())
         .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
         .addAnnotation(recognizerAnnotationSpec);
 
@@ -56,7 +55,7 @@ public class RecognizerWriter {
     classSpec.addMethods(Arrays.asList(buildConstructors(schema, context)));
     classSpec.addMethods(Arrays.asList(buildMethods(schema, context)));
 
-    BuilderWriter.writeInto(classSpec, schema, context);
+    BuilderWriter.writeBuilder(classSpec, schema, context);
 
     JavaFile javaFile = JavaFile.builder(schema.getDeclaredPackage().getQualifiedName().toString(), classSpec.build()).build();
     javaFile.writeTo(context.getProcessingEnvironment().getFiler());
@@ -132,7 +131,7 @@ public class RecognizerWriter {
     CodeBlock fieldSpec = tag == null ? CodeBlock.of("new $T()", fieldTagSpecElement) : CodeBlock.of("$T(\"$L\")", fieldTagSpecElement, tag);
     String fmtArgs = String.format("this.recognizer = new $T(new %s, new $L(), $L, $L);", fieldSpec);
 
-    CodeBlock body = CodeBlock.of(fmtArgs, classRecognizerDeclaredType, context.getFormatter().builderClassName(), schema.getPartitionedFields().count(), indexFn);
+    CodeBlock body = CodeBlock.of(fmtArgs, classRecognizerDeclaredType, context.getNameFactory().builderClassName(), schema.getPartitionedFields().count(), indexFn);
 
     return methodBuilder.addCode(body).build();
   }

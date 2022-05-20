@@ -5,18 +5,26 @@ import ai.swim.structure.processor.recognizer.RecognizerModel;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.PackageElement;
+import javax.lang.model.util.Elements;
 
 public class ScopedContext {
   private final ProcessingContext processingContext;
   private final Element root;
   private final ScopedMessager messager;
-  private final NameFormatter formatter;
+  private final NameFactory formatter;
 
   public ScopedContext(ProcessingContext processingContext, Element root) {
+    ProcessingEnvironment processingEnvironment = processingContext.getProcessingEnvironment();
+
     this.processingContext = processingContext;
     this.root = root;
-    this.messager = new ScopedMessager(this.processingContext.getProcessingEnvironment().getMessager(), root);
-    this.formatter = new NameFormatter(root.getSimpleName().toString());
+    this.messager = new ScopedMessager(processingEnvironment.getMessager(), root);
+
+    Elements elementUtils = processingEnvironment.getElementUtils();
+    PackageElement packageElement = elementUtils.getPackageOf(root);
+
+    this.formatter = new NameFactory(root.getSimpleName().toString(), packageElement);
   }
 
   public Element getRoot() {
@@ -43,7 +51,7 @@ public class ScopedContext {
     return this.processingContext.getFactory();
   }
 
-  public NameFormatter getFormatter() {
+  public NameFactory getNameFactory() {
     return formatter;
   }
 }

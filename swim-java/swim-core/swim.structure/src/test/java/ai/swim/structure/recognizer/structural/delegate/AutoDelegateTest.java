@@ -6,7 +6,7 @@ import ai.swim.structure.annotations.FieldKind;
 public class AutoDelegateTest {
 
   @AutoForm
-  public static class Prop {
+  public static class PropClass {
     @AutoForm.Kind(FieldKind.Header)
     private int a;
     @AutoForm.Kind(FieldKind.Header)
@@ -14,7 +14,7 @@ public class AutoDelegateTest {
     @AutoForm.Kind(FieldKind.Body)
     private String c;
 
-    public Prop() {
+    public PropClass() {
 
     }
 
