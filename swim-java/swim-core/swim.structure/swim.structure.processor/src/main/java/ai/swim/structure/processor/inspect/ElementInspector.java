@@ -10,7 +10,6 @@ import ai.swim.structure.processor.recognizer.RecognizerFactory;
 import ai.swim.structure.processor.recognizer.RecognizerModel;
 import ai.swim.structure.processor.schema.FieldModel;
 
-import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
@@ -162,8 +161,10 @@ public class ElementInspector {
 
       TypeElement typeElement = elementUtils.getTypeElement(superType.toString());
 
+      boolean isAbstract = typeElement.getModifiers().contains(Modifier.ABSTRACT);
       AutoForm autoForm = typeElement.getAnnotation(AutoForm.class);
-      if (autoForm == null) {
+
+      if (autoForm == null && !isAbstract) {
         messager.error("Class extends from '" + superType + "' that is not" + " annotated with @" + AutoForm.class.getSimpleName() + ". Either annotate it or manually implement a form");
         return false;
       }

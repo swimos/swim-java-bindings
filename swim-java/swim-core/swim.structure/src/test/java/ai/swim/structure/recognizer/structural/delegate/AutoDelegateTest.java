@@ -1,9 +1,33 @@
 package ai.swim.structure.recognizer.structural.delegate;
 
+import ai.swim.codec.Parser;
+import ai.swim.codec.ParserError;
+import ai.swim.codec.input.Input;
+import ai.swim.structure.FormParser;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
+import ai.swim.structure.recognizer.Recognizer;
+import org.junit.jupiter.api.Test;
+
+import java.util.Objects;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class AutoDelegateTest {
+
+  <T> void runTestOk(Recognizer<T> recognizer, T expected, String input) {
+    Parser<T> parser = new FormParser<>(recognizer);
+    parser = parser.feed(Input.string(input));
+    if (parser.isDone()) {
+      assertEquals(parser.bind(), expected);
+    } else if (parser.isError()) {
+      fail(((ParserError<T>) parser).cause());
+    } else {
+      fail();
+    }
+  }
+
 
   @AutoForm
   public static class PropClass {
@@ -18,6 +42,12 @@ public class AutoDelegateTest {
 
     }
 
+    public PropClass(int a, String b, String c) {
+      this.a = a;
+      this.b = b;
+      this.c = c;
+    }
+
     public void setA(int a) {
       this.a = a;
     }
@@ -29,6 +59,319 @@ public class AutoDelegateTest {
     public void setC(String c) {
       this.c = c;
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof PropClass)) return false;
+      PropClass propClass = (PropClass) o;
+      return a == propClass.a && Objects.equals(b, propClass.b) && Objects.equals(c, propClass.c);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(a, b, c);
+    }
+
+    @Override
+    public String toString() {
+      return "PropClass{" +
+          "a=" + a +
+          ", b='" + b + '\'' +
+          ", c='" + c + '\'' +
+          '}';
+    }
   }
 
+  @Test
+  void testFieldManipulation() {
+    runTestOk(new PropClassRecognizer(), new PropClass(1, "b", "c"), "@PropClass(a:1,b:b){c}");
+  }
+
+  @AutoForm
+  public static class PropClass2 {
+    @AutoForm.Kind(FieldKind.Attr)
+    private int a;
+    @AutoForm.Kind(FieldKind.Header)
+    private int b;
+    @AutoForm.Kind(FieldKind.Body)
+    private int c;
+
+    public PropClass2() {
+
+    }
+
+    public PropClass2(int a, int b, int c) {
+      this.a = a;
+      this.b = b;
+      this.c = c;
+    }
+
+    public void setA(int a) {
+      this.a = a;
+    }
+
+    public void setB(int b) {
+      this.b = b;
+    }
+
+    public void setC(int c) {
+      this.c = c;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof PropClass2)) return false;
+      PropClass2 that = (PropClass2) o;
+      return a == that.a && Objects.equals(b, that.b) && Objects.equals(c, that.c);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(a, b, c);
+    }
+
+    @Override
+    public String toString() {
+      return "PropClass2{" +
+          "a=" + a +
+          ", b='" + b + '\'' +
+          ", c='" + c + '\'' +
+          '}';
+    }
+  }
+
+  @Test
+  void testFieldManipulation2() {
+    runTestOk(new PropClass2Recognizer(), new PropClass2(1, 2, 3), "@PropClass2(b:2)@a(1){3}");
+  }
+
+  public static abstract class AbstractBase {
+    @AutoForm.Name("KEY")
+    private String key;
+
+    public AbstractBase() {
+
+    }
+
+    public AbstractBase(String key) {
+      this.key = key;
+    }
+
+    public void setKey(String key) {
+      this.key = key;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof AbstractBase)) return false;
+      AbstractBase that = (AbstractBase) o;
+      return Objects.equals(key, that.key);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(key);
+    }
+  }
+
+  @AutoForm
+  public static class Impl1 extends AbstractBase {
+    private String value;
+
+    public Impl1() {
+
+    }
+
+    public Impl1(String key, String value) {
+      super(key);
+      this.value = value;
+    }
+
+    public void setValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof Impl1)) return false;
+      if (!super.equals(o)) return false;
+      Impl1 impl1 = (Impl1) o;
+      return Objects.equals(value, impl1.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(value);
+    }
+  }
+
+  @Test
+  void testAbstractClassImpl() {
+    runTestOk(new Impl1Recognizer(), new Impl1("key", "value"), "@Impl1{KEY:key,value:value}");
+  }
+
+  @AutoForm
+  public static class Inner {
+    private int first;
+    private String second;
+
+    public Inner() {
+
+    }
+
+    public Inner(int first, String second) {
+      this.first = first;
+      this.second = second;
+    }
+
+    public void setFirst(int first) {
+      this.first = first;
+    }
+
+    public void setSecond(String second) {
+      this.second = second;
+    }
+
+    @Override
+    public String toString() {
+      return "Inner{" +
+          "first=" + first +
+          ", second='" + second + '\'' +
+          '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof Inner)) return false;
+      Inner inner = (Inner) o;
+      return first == inner.first && Objects.equals(second, inner.second);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(first, second);
+    }
+  }
+
+  @AutoForm
+  public static class Outer {
+    private String node;
+    @AutoForm.Kind(FieldKind.Body)
+    private Inner inner;
+
+    public Outer() {
+
+    }
+
+    public Outer(String node, Inner inner) {
+      this.node = node;
+      this.inner = inner;
+    }
+
+    public void setNode(String node) {
+      this.node = node;
+    }
+
+    public void setInner(Inner inner) {
+      this.inner = inner;
+    }
+
+    @Override
+    public String toString() {
+      return "Outer{" +
+          "node='" + node + '\'' +
+          ", inner=" + inner +
+          '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof Outer)) return false;
+      Outer outer = (Outer) o;
+      return Objects.equals(node, outer.node) && Objects.equals(inner, outer.inner);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(node, inner);
+    }
+  }
+
+  @Test
+  void testNested() {
+    runTestOk(new OuterRecognizer(), new Outer("node_uri", new Inner(1034, "inside")), "@Outer(node: node_uri) @Inner { first: 1034, second: inside }");
+  }
+
+  @AutoForm
+  public static class Prop3 {
+    @AutoForm.Kind(FieldKind.HeaderBody)
+    public int count;
+    @AutoForm.Kind(FieldKind.Header)
+    public String node;
+    @AutoForm.Kind(FieldKind.Header)
+    String lane;
+    int first;
+    String second;
+
+    public Prop3() {
+
+    }
+
+    public Prop3(int count, String node, String lane, int first, String second) {
+      this.count = count;
+      this.node = node;
+      this.lane = lane;
+      this.first = first;
+      this.second = second;
+    }
+
+    public void setLane(String lane) {
+      this.lane = lane;
+    }
+
+    public void setFirst(int first) {
+      this.first = first;
+    }
+
+    public void setSecond(String second) {
+      this.second = second;
+    }
+
+    @Override
+    public String toString() {
+      return "Prop3{" +
+          "count=" + count +
+          ", node='" + node + '\'' +
+          ", lane='" + lane + '\'' +
+          ", first=" + first +
+          ", second='" + second + '\'' +
+          '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof Prop3)) return false;
+      Prop3 prop3 = (Prop3) o;
+      return count == prop3.count && first == prop3.first && Objects.equals(node, prop3.node) && Objects.equals(lane, prop3.lane) && Objects.equals(second, prop3.second);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(count, node, lane, first, second);
+    }
+  }
+
+  @Test
+  void testComplexHeader() {
+    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3(6, node: node_uri, lane: lane_uri) { first: -34, second: \"name\" }");
+    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3(6, lane: lane_uri, node: node_uri) { first: -34, second: \"name\" }");
+    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3({6, lane: lane_uri, node: node_uri}) { first: -34, second: \"name\" }");
+  }
 }

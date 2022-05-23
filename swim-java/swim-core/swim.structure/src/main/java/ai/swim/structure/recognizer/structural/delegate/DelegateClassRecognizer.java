@@ -24,7 +24,6 @@ public class DelegateClassRecognizer<T> extends ClassRecognizer<DelegateClassRec
 
   @Override
   public Recognizer<T> feedEvent(ReadEvent event) {
-    System.out.println("DelegateClassRecognizer: " + state);
     switch (state) {
       case Init:
         return onInit(event, OrdinalFieldKey.HEADER);
@@ -56,7 +55,6 @@ public class DelegateClassRecognizer<T> extends ClassRecognizer<DelegateClassRec
   }
 
   private Recognizer<T> onAttrBetween(ReadEvent event) {
-    System.out.println("Onattrbetween: " + event);
     if (event.isStartBody()) {
       Integer idx = this.indexFn.selectIndex(OrdinalFieldKey.FIRST_ITEM);
       if (idx == null) {
@@ -95,7 +93,7 @@ public class DelegateClassRecognizer<T> extends ClassRecognizer<DelegateClassRec
           }
         }
       } else {
-        if (this.bitSet.get(idx)) {
+        if (!this.bitSet.get(idx)) {
           this.index = idx;
           this.state = State.AttrItem;
           return this;

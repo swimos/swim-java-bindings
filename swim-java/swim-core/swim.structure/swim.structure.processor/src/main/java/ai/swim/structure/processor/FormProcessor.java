@@ -19,7 +19,7 @@ import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.inspect.ClassMap;
 import ai.swim.structure.processor.schema.ClassSchema;
-import ai.swim.structure.processor.writer.RecognizerWriter;
+import ai.swim.structure.processor.writer.Recognizer;
 import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -47,11 +47,9 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-      if (!element.asType().toString().equals("ai.swim.structure.recognizer.structural.delegate.AutoDelegateTest.PropClass")) {
-        continue;
-      }
-
-      System.out.println(element.asType());
+//      if (!element.asType().toString().equals("ai.swim.structure.recognizer.structural.delegate.AutoDelegateTest.Prop3")) {
+//        continue;
+//      }
 
       // Anything that we're processing will be a class map
       ScopedContext scopedContext = this.processingContext.enter(element);
@@ -83,7 +81,7 @@ public class FormProcessor extends AbstractProcessor {
       ScopedContext scopedContext = this.processingContext.enter(classMap.getRoot());
 
       try {
-        RecognizerWriter.writeRecognizer(classSchema, scopedContext);
+        Recognizer.writeRecognizer(classSchema, scopedContext);
       } catch (Throwable e) {
         e.printStackTrace();
         this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());

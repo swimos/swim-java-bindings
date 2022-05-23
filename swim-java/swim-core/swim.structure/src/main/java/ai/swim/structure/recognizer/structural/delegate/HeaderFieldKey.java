@@ -36,5 +36,12 @@ public abstract class HeaderFieldKey {
     public String getName() {
       return name;
     }
+
+    @Override
+    public String toString() {
+      return "HeaderSlotKey{" +
+          "name='" + name + '\'' +
+          '}';
+    }
   }
 }

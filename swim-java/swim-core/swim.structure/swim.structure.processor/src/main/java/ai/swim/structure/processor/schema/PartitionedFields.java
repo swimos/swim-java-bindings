@@ -24,33 +24,31 @@ public class PartitionedFields {
         case Body:
           List<FieldModel> newHeaderFields = body.replace(field);
           headerFields.addHeaderFields(newHeaderFields);
-
-          System.out.println(body);
-          System.out.println(headerFields);
-
           break;
         case Header:
           headerFields.addHeaderField(field);
           break;
         case HeaderBody:
-          if (!body.isReplaced()) {
-            headerFields.setTagBody(field);
-          }
-          break;
+          if (!headerFields.hasTagBody()){
+          headerFields.setTagBody(field);
+        }
+        break;
         case Attr:
           headerFields.addAttribute(field);
           break;
         case Slot:
-          if (headerFields.hasTagBody()) {
-            headerFields.addHeaderField(field);
-          } else {
+          if (!body.isReplaced()) {
             body.addField(field);
+          } else {
+            headerFields.addHeaderField(field);
           }
           break;
       }
     }
 
-    return new PartitionedFields(headerFields, body);
+    PartitionedFields partitionedFields = new PartitionedFields(headerFields, body);
+    System.out.println(partitionedFields);
+    return partitionedFields;
   }
 
   public int count() {
@@ -75,8 +73,8 @@ public class PartitionedFields {
       discriminates.add(FieldDiscriminate.tag(tagName));
     }
 
-    if (headerFields.hasTagBody() && !headerFields.headerFields.isEmpty()) {
-      discriminates.add(FieldDiscriminate.header(headerFields.headerFields));
+    if (headerFields.hasTagBody() || !headerFields.headerFields.isEmpty()) {
+      discriminates.add(FieldDiscriminate.header(headerFields.tagBody,headerFields.headerFields));
     }
 
     discriminates.addAll(headerFields.attributes.stream().map(FieldDiscriminate::attribute).collect(Collectors.toList()));
