@@ -35,8 +35,8 @@ public abstract class FieldDiscriminate {
     };
   }
 
-  public static FieldDiscriminate header(List<FieldModel> fields) {
-    return new HeaderFields(fields) {
+  public static FieldDiscriminate header(FieldModel tagBody, List<FieldModel> fields) {
+    return new HeaderFields(tagBody,fields) {
       @Override
       public boolean isHeader() {
         return true;
@@ -81,12 +81,21 @@ public abstract class FieldDiscriminate {
     public FieldModel getField() {
       return field;
     }
+
+    @Override
+    public String toString() {
+      return "SingleField{" +
+          "field=" + field +
+          '}';
+    }
   }
 
   public static class HeaderFields extends FieldDiscriminate {
     private final List<FieldModel> fields;
+    private final FieldModel tagBody;
 
-    public HeaderFields(List<FieldModel> fields) {
+    public HeaderFields(FieldModel tagBody, List<FieldModel> fields) {
+      this.tagBody = tagBody;
       this.fields = fields;
     }
 
@@ -95,8 +104,20 @@ public abstract class FieldDiscriminate {
       return true;
     }
 
+    public FieldModel getTagBody() {
+      return tagBody;
+    }
+
     public List<FieldModel> getFields() {
       return fields;
+    }
+
+    @Override
+    public String toString() {
+      return "HeaderFields{" +
+          "tagBody=" + tagBody +
+          "fields=" + fields +
+          '}';
     }
   }
 

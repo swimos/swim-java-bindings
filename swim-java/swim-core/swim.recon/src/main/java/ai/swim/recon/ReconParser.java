@@ -437,4 +437,15 @@ public final class ReconParser {
     }
   }
 
+  @Override
+  public String toString() {
+    return "ReconParser{" +
+        "input=" + input +
+        ", state=" + state +
+        ", current=" + current +
+        ", pending=" + pending +
+        ", complete=" + complete +
+        ", clearIfNone=" + clearIfNone +
+        '}';
+  }
 }

@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-public class RecognizerWriter {
+public class Recognizer {
 
   public static final String TYPE_READ_EVENT = "ai.swim.recon.event.ReadEvent";
   public static final String RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.RecognizingBuilder";
@@ -30,6 +30,7 @@ public class RecognizerWriter {
   public static final String FIXED_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FixedTagSpec";
   public static final String FIELD_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FieldTagSpec";
   public static final String LABELLED_ITEM_FIELD_KEY = "ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey.ItemFieldKey";
+  public static final String LABELLED_ATTR_FIELD_KEY = "ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey.AttrFieldKey";
   public static final String DELEGATE_HEADER_SLOT_KEY = "ai.swim.structure.recognizer.structural.delegate.HeaderFieldKey.HeaderSlotKey";
   public static final String DELEGATE_ORDINAL_ATTR_KEY = "ai.swim.structure.recognizer.structural.delegate.OrdinalFieldKey.OrdinalFieldKeyAttr";
 
@@ -55,7 +56,7 @@ public class RecognizerWriter {
     classSpec.addMethods(Arrays.asList(buildConstructors(schema, context)));
     classSpec.addMethods(Arrays.asList(buildMethods(schema, context)));
 
-    BuilderWriter.writeBuilder(classSpec, schema, context);
+    BuilderWriter.write(classSpec, schema, context);
 
     JavaFile javaFile = JavaFile.builder(schema.getDeclaredPackage().getQualifiedName().toString(), classSpec.build()).build();
     javaFile.writeTo(context.getProcessingEnvironment().getFiler());
@@ -74,10 +75,13 @@ public class RecognizerWriter {
     DeclaredType typedRecognizer = typeUtils.getDeclaredType(recognizerTypeElement, context.getRoot().asType());
     TypeElement typeElement = elementUtils.getTypeElement(TYPE_READ_EVENT);
 
-    MethodSpec[] methods = new MethodSpec[7];
+    MethodSpec[] methods = new MethodSpec[8];
 
     methods[0] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "feedEvent", ParameterSpec.builder(TypeName.get(typeElement.asType()), "event").build(), CodeBlock.of(
-        "this.recognizer = this.recognizer.feedEvent(event);\nreturn this;"
+        "this.recognizer = this.recognizer.feedEvent(event);" +
+            "\n\tif (this.recognizer.isError()) {\nreturn Recognizer.error(this.recognizer.trap());"
+            + "\n}" +
+            "\nreturn this;"
     ));
     methods[1] = buildPolymorphicMethod(TypeName.get(boolean.class), "isCont", null, CodeBlock.of("return this.recognizer.isCont();"));
     methods[2] = buildPolymorphicMethod(TypeName.get(boolean.class), "isDone", null, CodeBlock.of("return this.recognizer.isDone();"));
@@ -85,6 +89,7 @@ public class RecognizerWriter {
     methods[4] = buildPolymorphicMethod(TypeName.get(context.getRoot().asType()), "bind", null, CodeBlock.of("return this.recognizer.bind();"));
     methods[5] = buildPolymorphicMethod(TypeName.get(RuntimeException.class), "trap", null, CodeBlock.of("return this.recognizer.trap();"));
     methods[6] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "reset", null, CodeBlock.of("return new $L(this.recognizer.reset());", schema.getRecognizerName()));
+    methods[7] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "asBodyRecognizer", null, CodeBlock.of("return this;"));
 
     return methods;
   }
@@ -170,17 +175,19 @@ public class RecognizerWriter {
 
       WriterUtils.writeIndexSwitchBlock(
           body,
-          "switch (attrKey.getName())",
+          "attrKey.getName()",
           idx,
           (offset, i) -> {
-            if (i == headerFieldSet.attributes.size()) {
+            if (i - offset == headerFieldSet.attributes.size()) {
               return null;
             } else {
               FieldModel recognizer = headerFieldSet.attributes.get(i - offset);
-              return String.format("case \"%s:\r\n\t return %s", recognizer.propertyName(), i);
+              return String.format("case \"%s\":\r\n\t return %s;\r\n", recognizer.propertyName(), i);
             }
           }
       );
+
+      body.endControlFlow();
     }
 
     body.beginControlFlow("if (key.isFirstItem())");
@@ -199,25 +206,63 @@ public class RecognizerWriter {
 
     CodeBlock.Builder body = CodeBlock.builder();
     body.beginControlFlow("(key) ->");
-    body.beginControlFlow("if (key.isItem())");
 
-    TypeElement itemFieldKeyElement = elementUtils.getTypeElement(LABELLED_ITEM_FIELD_KEY);
-    body.addStatement("$T itemFieldKey = ($T) key", itemFieldKeyElement, itemFieldKeyElement);
-    body.beginControlFlow("switch (itemFieldKey.getName())");
+    PartitionedFields partitionedFields = schema.getPartitionedFields();
+    HeaderFields headerFields = partitionedFields.headerFields;
 
-    List<FieldModel> recognizers = schema.getPartitionedFields().flatten();
+    int idx = 0;
 
-    for (int i = 0; i < recognizers.size(); i++) {
-      FieldModel recognizer = recognizers.get(i);
-
-      body.add("case \"$L\":", recognizer.propertyName());
-      body.addStatement("\t return $L", i);
+    if (headerFields.hasTagBody() || partitionedFields.hasHeaderFields()) {
+      body.beginControlFlow("if (key.isHeader())");
+      body.addStatement("return $L", idx);
+      body.endControlFlow();
+      idx+=1;
     }
 
-    body.add("default:");
-    body.addStatement("\tthrow new RuntimeException(\"Unexpected key: \" + key)");
-    body.endControlFlow();
-    body.endControlFlow();
+    if (!headerFields.attributes.isEmpty()) {
+      body.beginControlFlow("if (key.isAttribute())");
+      TypeElement attrFieldKeyElement = elementUtils.getTypeElement(LABELLED_ATTR_FIELD_KEY);
+
+      body.addStatement("$T attrFieldKey = ($T) key", attrFieldKeyElement, attrFieldKeyElement);
+      body.beginControlFlow("switch (attrFieldKey.getKey())");
+
+      int attrCount = headerFields.attributes.size();
+
+      for (int i = 0; i < attrCount; i++) {
+        FieldModel recognizer = headerFields.attributes.get(i);
+
+        body.add("case \"$L\":", recognizer.propertyName());
+        body.addStatement("\t return $L", i + idx);
+      }
+
+      body.endControlFlow();
+      body.endControlFlow();
+
+      idx += attrCount;
+    }
+
+    List<FieldModel> items = partitionedFields.body.getFields();
+
+    if (!items.isEmpty()) {
+      body.beginControlFlow("if (key.isItem())");
+
+      TypeElement itemFieldKeyElement = elementUtils.getTypeElement(LABELLED_ITEM_FIELD_KEY);
+      body.addStatement("$T itemFieldKey = ($T) key", itemFieldKeyElement, itemFieldKeyElement);
+      body.beginControlFlow("switch (itemFieldKey.getName())");
+
+      for (int i = 0; i < items.size(); i++) {
+        FieldModel recognizer = items.get(i);
+
+        body.add("case \"$L\":", recognizer.propertyName());
+        body.addStatement("\t return $L", i + idx);
+      }
+
+      body.add("default:");
+      body.addStatement("\tthrow new RuntimeException(\"Unexpected key: \" + key)");
+      body.endControlFlow();
+      body.endControlFlow();
+    }
+
     body.addStatement("return null");
     body.endControlFlow();
 
