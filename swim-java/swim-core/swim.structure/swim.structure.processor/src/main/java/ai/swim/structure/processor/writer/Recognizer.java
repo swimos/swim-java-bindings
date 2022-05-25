@@ -1,7 +1,11 @@
 package ai.swim.structure.processor.writer;
 
 import ai.swim.structure.annotations.AutoloadedRecognizer;
+import ai.swim.structure.processor.context.NameFactory;
 import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.inspect.ClassMap;
+import ai.swim.structure.processor.recognizer.RecognizerInstance;
+import ai.swim.structure.processor.recognizer.RecognizerModel;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.HeaderFields;
@@ -17,6 +21,8 @@ import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+
+import static ai.swim.structure.processor.writer.PolymorphicClassRecognizer.buildPolymorphicClassRecognizer;
 
 public class Recognizer {
 
@@ -35,38 +41,72 @@ public class Recognizer {
   public static final String DELEGATE_ORDINAL_ATTR_KEY = "ai.swim.structure.recognizer.structural.delegate.OrdinalFieldKey.OrdinalFieldKeyAttr";
 
   public static void writeRecognizer(ClassSchema schema, ScopedContext context) throws IOException {
-    AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
-        .addMember("value", "$T.class", context.getRoot().asType())
-        .build();
+    ClassMap classMap = schema.getClassMap();
+    NameFactory nameFactory = context.getNameFactory();
+    List<RecognizerModel> subTypes = classMap.getSubTypes();
+    TypeSpec typeSpec;
 
-    TypeSpec.Builder classSpec = TypeSpec.classBuilder(context.getNameFactory().recognizerClassName())
-        .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-        .addAnnotation(recognizerAnnotationSpec);
+    if (classMap.isAbstract()) {
+      typeSpec = buildPolymorphicClassRecognizer(subTypes, context).build();
+    } else if (!subTypes.isEmpty()) {
+      TypeSpec.Builder concreteRecognizer = writeClassRecognizer(true, schema, context);
+      subTypes.add(new RecognizerInstance(nameFactory.concreteRecognizerClassName()));
+
+      TypeSpec.Builder classRecognizer = buildPolymorphicClassRecognizer(subTypes, context);
+      classRecognizer.addType(concreteRecognizer.build());
+
+      typeSpec = classRecognizer.build();
+    } else {
+      typeSpec = writeClassRecognizer(false, schema, context).build();
+    }
+
+    JavaFile javaFile = JavaFile.builder(schema.getDeclaredPackage().getQualifiedName().toString(), typeSpec).build();
+    javaFile.writeTo(context.getProcessingEnvironment().getFiler());
+  }
+
+  private static TypeSpec.Builder writeClassRecognizer(boolean isPolymorphic, ClassSchema schema, ScopedContext context) {
+    NameFactory nameFactory = context.getNameFactory();
+    Modifier modifier = isPolymorphic ? Modifier.PRIVATE : Modifier.PUBLIC;
+    String className = isPolymorphic ? nameFactory.concreteRecognizerClassName() : nameFactory.recognizerClassName();
+
+    TypeSpec.Builder classSpec = TypeSpec.classBuilder(className)
+        .addModifiers(modifier, Modifier.FINAL);
+
+    if (isPolymorphic) {
+      classSpec.addModifiers(Modifier.STATIC);
+    }
+
+    if (!isPolymorphic) {
+      AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
+          .addMember("value", "$T.class", context.getRoot().asType())
+          .build();
+      classSpec.addAnnotation(recognizerAnnotationSpec);
+    }
 
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
 
     TypeElement recognizerTypeElement = elementUtils.getTypeElement(RECOGNIZER_CLASS);
+
     DeclaredType recognizerType = typeUtils.getDeclaredType(recognizerTypeElement, context.getRoot().asType());
     TypeName recognizerTypeName = TypeName.get(recognizerType);
 
     classSpec.superclass(TypeName.get(recognizerType));
     classSpec.addField(buildRecognizerField(recognizerTypeName));
     classSpec.addMethods(Arrays.asList(buildConstructors(schema, context)));
-    classSpec.addMethods(Arrays.asList(buildMethods(schema, context)));
+    classSpec.addMethods(Arrays.asList(buildMethods(schema, context, className)));
 
     BuilderWriter.write(classSpec, schema, context);
 
-    JavaFile javaFile = JavaFile.builder(schema.getDeclaredPackage().getQualifiedName().toString(), classSpec.build()).build();
-    javaFile.writeTo(context.getProcessingEnvironment().getFiler());
+    return classSpec;
   }
 
   private static FieldSpec buildRecognizerField(TypeName recognizerTypeName) {
     return FieldSpec.builder(recognizerTypeName, "recognizer", Modifier.PRIVATE).build();
   }
 
-  private static MethodSpec[] buildMethods(ClassSchema schema, ScopedContext context) {
+  private static MethodSpec[] buildMethods(ClassSchema schema, ScopedContext context, String className) {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
@@ -88,7 +128,7 @@ public class Recognizer {
     methods[3] = buildPolymorphicMethod(TypeName.get(boolean.class), "isError", null, CodeBlock.of("return this.recognizer.isError();"));
     methods[4] = buildPolymorphicMethod(TypeName.get(context.getRoot().asType()), "bind", null, CodeBlock.of("return this.recognizer.bind();"));
     methods[5] = buildPolymorphicMethod(TypeName.get(RuntimeException.class), "trap", null, CodeBlock.of("return this.recognizer.trap();"));
-    methods[6] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "reset", null, CodeBlock.of("return new $L(this.recognizer.reset());", schema.getRecognizerName()));
+    methods[6] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "reset", null, CodeBlock.of("return new $L(this.recognizer.reset());", className));
     methods[7] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "asBodyRecognizer", null, CodeBlock.of("return this;"));
 
     return methods;
@@ -216,7 +256,7 @@ public class Recognizer {
       body.beginControlFlow("if (key.isHeader())");
       body.addStatement("return $L", idx);
       body.endControlFlow();
-      idx+=1;
+      idx += 1;
     }
 
     if (!headerFields.attributes.isEmpty()) {

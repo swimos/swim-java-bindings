@@ -8,6 +8,7 @@ import org.reflections.util.ClasspathHelper;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -25,6 +26,8 @@ public class RecognizerProxy {
     ConcurrentHashMap<Class<?>, Supplier<Recognizer<?>>> recognizers = new ConcurrentHashMap<>();
     recognizers.put(Integer.class, () -> ScalarRecognizer.BOXED_INTEGER);
     recognizers.put(String.class, () -> ScalarRecognizer.STRING);
+    recognizers.put(Object.class, ObjectRecognizer::new);
+
     loadFromClassPath(recognizers);
 
     return recognizers;
@@ -99,4 +102,7 @@ public class RecognizerProxy {
     this.recognizers.put(clazz, (Supplier<Recognizer<?>>) recognizer);
   }
 
+  public Set<Map.Entry<Class<?>, Supplier<Recognizer<?>>>> getAllRecognizers() {
+    return this.recognizers.entrySet();
+  }
 }

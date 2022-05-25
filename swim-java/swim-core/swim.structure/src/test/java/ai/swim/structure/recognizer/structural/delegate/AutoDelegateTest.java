@@ -28,7 +28,6 @@ public class AutoDelegateTest {
     }
   }
 
-
   @AutoForm
   public static class PropClass {
     @AutoForm.Kind(FieldKind.Header)
@@ -374,4 +373,270 @@ public class AutoDelegateTest {
     runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3(6, lane: lane_uri, node: node_uri) { first: -34, second: \"name\" }");
     runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3({6, lane: lane_uri, node: node_uri}) { first: -34, second: \"name\" }");
   }
+
+  @AutoForm(subTypes = {
+      @AutoForm.Type(LaneAddressed.class),
+      @AutoForm.Type(HostAddressed.class)
+  })
+  public static abstract class Envelope {
+
+  }
+
+  @AutoForm(subTypes = @AutoForm.Type(CommandMessage.class))
+  public static abstract class LaneAddressed extends Envelope {
+    @AutoForm.Name("node")
+    private String nodeUri;
+    @AutoForm.Name("lane")
+    private String laneUri;
+    @AutoForm.Kind(FieldKind.Body)
+    private Object body;
+
+    public LaneAddressed() {
+
+    }
+
+    public LaneAddressed(String nodeUri, String laneUri, Object body) {
+      this.nodeUri = nodeUri;
+      this.laneUri = laneUri;
+      this.body = body;
+    }
+
+    public void setNodeUri(String nodeUri) {
+      this.nodeUri = nodeUri;
+    }
+
+    public void setLaneUri(String laneUri) {
+      this.laneUri = laneUri;
+    }
+
+    public void setBody(Object body) {
+      this.body = body;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof LaneAddressed)) return false;
+      LaneAddressed that = (LaneAddressed) o;
+      return Objects.equals(nodeUri, that.nodeUri) && Objects.equals(laneUri, that.laneUri) && Objects.equals(body, that.body);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(nodeUri, laneUri, body);
+    }
+
+    @Override
+    public String toString() {
+      return "LaneAddressed{" +
+          "nodeUri='" + nodeUri + '\'' +
+          ", laneUri='" + laneUri + '\'' +
+          ", body='" + body + '\'' +
+          '}';
+    }
+  }
+
+  @AutoForm("command")
+  public static class CommandMessage extends LaneAddressed {
+    public CommandMessage() {
+
+    }
+
+    public CommandMessage(String nodeUri, String laneUri, Object body) {
+      super(nodeUri, laneUri, body);
+    }
+  }
+
+  @AutoForm(subTypes = @AutoForm.Type(AuthRequest.class))
+  public static abstract class HostAddressed extends Envelope {
+    @AutoForm.Kind(FieldKind.Body)
+    Object body;
+
+    public HostAddressed() {
+
+    }
+
+    public HostAddressed(Object body) {
+      this.body = body;
+    }
+
+    public void setBody(Object body) {
+      this.body = body;
+    }
+  }
+
+  @AutoForm("auth")
+  public static class AuthRequest extends HostAddressed {
+    public AuthRequest() {
+
+    }
+
+    public AuthRequest(Object body) {
+      super(body);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof AuthRequest)) return false;
+      AuthRequest that = (AuthRequest) o;
+      return Objects.equals(body, that.body);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(body);
+    }
+
+    @Override
+    public String toString() {
+      return "AuthRequest{" +
+          "body='" + body + '\'' +
+          '}';
+    }
+  }
+
+  @Test
+  void envelopes() {
+    runTestOk(new EnvelopeRecognizer(), new CommandMessage("node_uri", "lane_uri", 13), "@command(node:node_uri,lane:lane_uri){13}");
+    runTestOk(new EnvelopeRecognizer(), new AuthRequest(13), "@auth{13}");
+  }
+
+  @AutoForm(subTypes = {
+      @AutoForm.Type(Base2.class),
+      @AutoForm.Type(Con2.class)
+  })
+  public static abstract class Base {
+
+  }
+
+  @AutoForm(subTypes = {
+      @AutoForm.Type(ImpBase2.class)
+  })
+  public static abstract class Base2 extends Base {
+
+  }
+
+  @AutoForm(subTypes = {@AutoForm.Type(Imp3.class)})
+  public static class ImpBase2 extends Base2 {
+    String a;
+
+    public ImpBase2() {
+
+    }
+
+    public ImpBase2(String a) {
+      this.a = a;
+    }
+
+    public void setA(String a) {
+      this.a = a;
+    }
+
+    @Override
+    public String toString() {
+      return "ImpBase2{" +
+          "a='" + a + '\'' +
+          '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof ImpBase2)) return false;
+      ImpBase2 impBase2 = (ImpBase2) o;
+      return Objects.equals(a, impBase2.a);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(a);
+    }
+  }
+
+  @AutoForm
+  public static class Imp3 extends ImpBase2 {
+    String c;
+
+    public Imp3() {
+
+    }
+
+    public Imp3(String c) {
+      this.c = c;
+    }
+
+    public void setC(String c) {
+      this.c = c;
+    }
+
+    @Override
+    public String toString() {
+      return "Imp3{" +
+          "c='" + c + '\'' +
+          '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof Imp3)) return false;
+      Imp3 imp3 = (Imp3) o;
+      return Objects.equals(c, imp3.c);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(c);
+    }
+  }
+
+  @AutoForm
+  public static class Con2 extends Base {
+    String b;
+
+    public Con2() {
+
+    }
+
+    public Con2(String b) {
+      this.b = b;
+    }
+
+    public void setB(String b) {
+      this.b = b;
+    }
+
+    @Override
+    public String toString() {
+      return "Con2{" +
+          "b='" + b + '\'' +
+          '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof Con2)) return false;
+      Con2 con2 = (Con2) o;
+      return Objects.equals(b, con2.b);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(b);
+    }
+  }
+
+  @Test
+  void abstractClasses() {
+    runTestOk(new BaseRecognizer(), new Imp3("hello"), "@Imp3{c:hello}");
+    runTestOk(new Imp3Recognizer(), new Imp3("hello"), "@Imp3{c:hello}");
+    runTestOk(new BaseRecognizer(), new Con2("hello"), "@Con2{b:hello}");
+    runTestOk(new Con2Recognizer(), new Con2("hello"), "@Con2{b:hello}");
+    runTestOk(new BaseRecognizer(), new ImpBase2("hello"), "@ImpBase2{a:hello}");
+    runTestOk(new Base2Recognizer(), new ImpBase2("hello"), "@ImpBase2{a:hello}");
+    runTestOk(new ImpBase2Recognizer(), new ImpBase2("hello"), "@ImpBase2{a:hello}");
+  }
+
 }

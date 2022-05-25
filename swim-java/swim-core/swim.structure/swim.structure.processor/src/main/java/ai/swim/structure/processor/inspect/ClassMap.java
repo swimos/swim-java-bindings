@@ -2,6 +2,7 @@ package ai.swim.structure.processor.inspect;
 
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.recognizer.ClassRecognizerModel;
+import ai.swim.structure.processor.recognizer.RecognizerModel;
 import ai.swim.structure.processor.schema.FieldModel;
 
 import javax.lang.model.element.Element;
@@ -18,6 +19,8 @@ public class ClassMap extends ClassRecognizerModel {
   private final List<FieldModel> memberVariables;
   private final List<ExecutableElement> methods;
   private final PackageElement declaredPackage;
+  private List<RecognizerModel> subTypes;
+  private boolean isAbstract;
 
   public ClassMap(Element root, ConstructorElement constructor, PackageElement declaredPackage) {
     this.root = root;
@@ -25,6 +28,17 @@ public class ClassMap extends ClassRecognizerModel {
     this.memberVariables = new ArrayList<>();
     this.methods = new ArrayList<>();
     this.declaredPackage = declaredPackage;
+    this.subTypes = new ArrayList<>();
+  }
+
+  public FieldView getFieldViewByPropertyName(String propertyName) {
+    for (FieldModel memberVariable : this.memberVariables) {
+      if (memberVariable.propertyName().equals(propertyName)) {
+        return memberVariable.getFieldView();
+      }
+    }
+
+    return null;
   }
 
   public FieldView getFieldView(String name) {
@@ -48,10 +62,10 @@ public class ClassMap extends ClassRecognizerModel {
   public String getTag() {
     AutoForm autoForm = this.root.getAnnotation(AutoForm.class);
 
-    if (autoForm.tag().isBlank()) {
+    if (autoForm.value().isBlank()) {
       return getJavaClassName();
     } else {
-      return autoForm.tag();
+      return autoForm.value();
     }
   }
 
@@ -112,5 +126,21 @@ public class ClassMap extends ClassRecognizerModel {
 
   public List<FieldModel> getFieldModels() {
     return this.memberVariables;
+  }
+
+  public void setSubTypes(List<RecognizerModel> subTypes) {
+    this.subTypes = subTypes;
+  }
+
+  public void setAbstract(boolean isAbstract) {
+    this.isAbstract = isAbstract;
+  }
+
+  public boolean isAbstract() {
+    return isAbstract;
+  }
+
+  public List<RecognizerModel> getSubTypes() {
+    return subTypes;
   }
 }

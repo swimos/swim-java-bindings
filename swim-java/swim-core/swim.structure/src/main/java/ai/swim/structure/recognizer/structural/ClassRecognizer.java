@@ -7,13 +7,13 @@ import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import ai.swim.structure.recognizer.structural.tag.TagSpec;
 
-public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
-  protected final TagSpec tagSpec;
+public abstract class ClassRecognizer<State, Key, T> extends ClassRecognizerBase<T> {
   protected final RecognizingBuilder<T> builder;
   protected final BitSet bitSet;
   protected final IndexFn<Key> indexFn;
   protected int index;
   protected State state;
+  protected final TagSpec tagSpec;
 
   protected ClassRecognizer(TagSpec tagSpec, RecognizingBuilder<T> builder, int fieldCount, IndexFn<Key> indexFn, State state) {
     this.tagSpec = tagSpec;
@@ -100,4 +100,5 @@ public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
       return Recognizer.error(e);
     }
   }
+
 }

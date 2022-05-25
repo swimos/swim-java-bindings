@@ -1,6 +1,5 @@
 package ai.swim.structure.processor.recognizer;
 
-import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.inspect.ClassMap;
 import ai.swim.structure.processor.inspect.ElementInspector;
@@ -54,7 +53,7 @@ public class RecognizerFactory {
       return map;
     }
 
-    return inspectAndInsertClass(element, context);
+    return inspectAndInsertClass(element, new ScopedContext(context.getProcessingContext(), element));
   }
 
   private RecognizerModel inspectAndInsertClass(Element element, ScopedContext context) {

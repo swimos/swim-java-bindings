@@ -585,7 +585,7 @@ public class ProcessorTest {
     assertEquals(obj, expected);
   }
 
-  @AutoForm(tag = "tag")
+  @AutoForm(value = "tag")
   public static class TagClass {
     private int a;
 
