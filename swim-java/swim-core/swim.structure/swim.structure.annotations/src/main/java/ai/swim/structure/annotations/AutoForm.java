@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AutoForm {
 
-  String tag() default "";
+  String value() default "";
 
   @Target({ElementType.FIELD})
   @Retention(RetentionPolicy.RUNTIME)
@@ -53,6 +53,16 @@ public @interface AutoForm {
   @Retention(RetentionPolicy.RUNTIME)
   @interface Ignore {
 
+  }
+
+  Type[] subTypes() default {};
+
+  @Target({ElementType.FIELD})
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface Type {
+    Class<?> value();
+
+    String name() default "";
   }
 
 }

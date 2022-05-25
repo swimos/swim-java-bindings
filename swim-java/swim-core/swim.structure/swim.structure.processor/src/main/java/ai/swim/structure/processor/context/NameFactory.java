@@ -50,4 +50,8 @@ public class NameFactory {
   public String recognizerClassName() {
     return String.format("%sRecognizer", this.name);
   }
+
+  public String concreteRecognizerClassName() {
+    return String.format("%sConcreteRecognizer", this.name);
+  }
 }

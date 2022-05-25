@@ -47,13 +47,15 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-//      if (!element.asType().toString().equals("ai.swim.structure.recognizer.structural.delegate.AutoDelegateTest.Prop3")) {
+//      if (!element.asType().toString().equals("ai.swim.structure.recognizer.structural.delegate.AutoDelegateTest.LaneAddressed")) {
 //        continue;
 //      }
 
-      // Anything that we're processing will be a class map
       ScopedContext scopedContext = this.processingContext.enter(element);
+
+      // Anything that we're processing will be a class map
       ClassMap classMap = (ClassMap) scopedContext.getRecognizer(element);
+
       if (classMap == null) {
         return true;
       }

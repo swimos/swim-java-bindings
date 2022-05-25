@@ -8,11 +8,13 @@ import ai.swim.structure.processor.inspect.accessor.FieldAccessor;
 import ai.swim.structure.processor.inspect.accessor.MethodAccessor;
 import ai.swim.structure.processor.recognizer.RecognizerFactory;
 import ai.swim.structure.processor.recognizer.RecognizerModel;
+import ai.swim.structure.processor.recognizer.RecognizerReference;
 import ai.swim.structure.processor.schema.FieldModel;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -108,6 +110,68 @@ public class ElementInspector {
       }
     }
 
+    if (!inspectSubTypes(rootElement, classMap, ctx)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private static boolean inspectSubTypes(Element rootElement, ClassMap classMap, ScopedContext ctx) {
+    boolean isAbstract = rootElement.getModifiers().stream().anyMatch(modifier -> modifier.equals(Modifier.ABSTRACT));
+    ScopedMessager messager = ctx.getMessager();
+
+    AutoForm autoForm = rootElement.getAnnotation(AutoForm.class);
+    if (autoForm == null) {
+      // This is fine as it's a class that has an abstract supertype that we can't deserialize directly into.
+      return true;
+    }
+
+    AutoForm.Type[] subTypes = autoForm.subTypes();
+
+    if (!isAbstract && subTypes.length == 0) {
+      return true;
+    } else if (isAbstract && subTypes.length == 0) {
+      messager.error("Class missing subtypes");
+      return false;
+    }
+
+    ProcessingEnvironment processingEnvironment = ctx.getProcessingEnvironment();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+
+    List<RecognizerModel> subTypeRecognizers = new ArrayList<>(subTypes.length);
+    TypeMirror rootType = rootElement.asType();
+
+    for (AutoForm.Type subType : subTypes) {
+      Element subTypeElement = null;
+      TypeMirror subTypeMirror = null;
+
+      try {
+        // this will always throw
+        Class<?> value = subType.value();
+      } catch (MirroredTypeException e) {
+        subTypeMirror = e.getTypeMirror();
+        subTypeElement = typeUtils.asElement(e.getTypeMirror());
+      }
+
+      if (typeUtils.isSameType(subTypeMirror, rootType)) {
+        messager.error("Subtype cannot be root type");
+        return false;
+      }
+
+      System.out.println("Checking if: "+subTypeMirror+" is a sub type of: " + rootType);
+
+      if (!typeUtils.isSubtype(subTypeMirror, rootType)) {
+        messager.error(String.format("%s is not a subtype of %s", subTypeMirror, rootType));
+        return false;
+      }
+
+      subTypeRecognizers.add(RecognizerReference.classLookup(subTypeElement.asType()));
+    }
+
+    classMap.setAbstract(isAbstract);
+    classMap.setSubTypes(subTypeRecognizers);
+
     return true;
   }
 
@@ -188,7 +252,7 @@ public class ElementInspector {
 
   private static boolean validateAndMerge(ClassMap classMap, ClassMap superTypeMap, ScopedMessager messager) {
     for (FieldView field : classMap.getFieldViews()) {
-      FieldView parentField = superTypeMap.getFieldView(field.getName().toString());
+      FieldView parentField = superTypeMap.getFieldViewByPropertyName(field.propertyName());
 
       if (parentField != null && !parentField.isIgnored()) {
         messager.error("Class contains a field (" + field.getName().toString() + ") with the same name as one in its superclass");

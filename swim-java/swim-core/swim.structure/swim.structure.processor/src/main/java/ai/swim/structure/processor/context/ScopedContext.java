@@ -54,4 +54,8 @@ public class ScopedContext {
   public NameFactory getNameFactory() {
     return formatter;
   }
+
+  public ProcessingContext getProcessingContext() {
+    return processingContext;
+  }
 }

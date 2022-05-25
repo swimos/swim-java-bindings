@@ -51,4 +51,8 @@ public class ClassSchema {
   public String getRecognizerName() {
     return this.classMap.recognizerName();
   }
+
+  public ClassMap getClassMap() {
+    return classMap;
+  }
 }
