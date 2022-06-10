@@ -1,7 +1,4 @@
 rootProject.name = 'swim-core'
 
-include 'swim.ffi'
-project(':swim.ffi').name = 'swim-ffi'
-
 include 'swim.codec'
 project(':swim.codec').name = 'swim-codec'

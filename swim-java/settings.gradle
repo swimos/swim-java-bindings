@@ -1,9 +1,5 @@
 rootProject.name = 'swim-java'
 
-include 'swim.ffi'
-project(':swim.ffi').projectDir = file('swim-core/swim.ffi')
-project(':swim.ffi').name = 'swim-ffi'
-
 include 'swim.codec'
 project(':swim.codec').projectDir = file('swim-core/swim.codec')
 project(':swim.codec').name = 'swim-codec'
