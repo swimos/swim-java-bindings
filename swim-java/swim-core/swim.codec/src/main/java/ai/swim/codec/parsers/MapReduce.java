@@ -29,7 +29,7 @@ public class MapReduce<I, O> extends Parser<Optional<O>> {
   private final Function<I, O> map;
   private Parser<List<I>> parser;
 
-  public MapReduce(Parser<List<I>> parser, Function<I, O> map, BinaryOperator<O> reduce) {
+  private MapReduce(Parser<List<I>> parser, Function<I, O> map, BinaryOperator<O> reduce) {
     this.parser = parser;
     this.map = map;
     this.reduce = reduce;

@@ -23,7 +23,7 @@ public class Preceded<B, T> extends Parser<T> {
   private final Parser<T> then;
   private Parser<B> by;
 
-  public Preceded(Parser<B> by, Parser<T> then) {
+  private Preceded(Parser<B> by, Parser<T> then) {
     this.by = by;
     this.then = then;
   }

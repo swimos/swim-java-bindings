@@ -22,7 +22,7 @@ import java.util.Optional;
 public class OptParser<T> extends Parser<Optional<T>> {
   private Parser<T> inner;
 
-  OptParser(Parser<T> inner) {
+  private OptParser(Parser<T> inner) {
     this.inner = inner;
   }
 
