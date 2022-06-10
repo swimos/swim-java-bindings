@@ -2,6 +2,9 @@ package ai.swim.codec.input;
 
 import ai.swim.codec.location.Location;
 
+/**
+ * An input in the done state that has no more symbols to produce.
+ */
 public class InputDone extends Input {
 
   private final Input delegate;
@@ -64,7 +67,6 @@ public class InputDone extends Input {
   public int len() {
     return this.delegate.len();
   }
-
 
   @Override
   public void take(int[] into) {

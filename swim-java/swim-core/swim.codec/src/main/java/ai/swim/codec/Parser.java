@@ -23,6 +23,11 @@ import ai.swim.codec.parsers.combinators.TryMappedParser;
 
 import java.util.function.Function;
 
+/**
+ * An incremental parser.
+ *
+ * @param <O> the type this parser produces.
+ */
 public abstract class Parser<O> {
 
   /**
