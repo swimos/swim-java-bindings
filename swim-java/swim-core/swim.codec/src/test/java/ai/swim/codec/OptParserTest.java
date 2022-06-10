@@ -19,16 +19,20 @@ import org.junit.jupiter.api.Test;
 
 import static ai.swim.codec.Parser.preceded;
 import static ai.swim.codec.parsers.OptParser.opt;
-import static ai.swim.codec.parsers.StringParsersExt.eqChar;
 import static ai.swim.codec.parsers.number.NumberParser.numericLiteral;
+import static ai.swim.codec.parsers.text.EqChar.eqChar;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OptParserTest {
 
+  private static Parser<String> parser() {
+    return preceded(opt(eqChar('@')), numericLiteral().map(n -> Integer.toString(n.intValue())));
+  }
+
   @Test
   void testOptMatch() {
-    Parser<String> parser = preceded(opt(eqChar('@')), numericLiteral().map(String::valueOf));
+    Parser<String> parser = parser();
     parser = parser.feed(Input.string("@1234"));
 
     assertTrue(parser.isDone());
@@ -37,7 +41,7 @@ class OptParserTest {
 
   @Test
   void testOptNoMatch() {
-    Parser<String> parser = preceded(opt(eqChar('@')), numericLiteral().map(String::valueOf));
+    Parser<String> parser = parser();
     parser = parser.feed(Input.string("1234"));
 
     assertTrue(parser.isDone());
@@ -46,15 +50,15 @@ class OptParserTest {
 
   @Test
   void testOptCont() {
-    Parser<String> parser = preceded(opt(eqChar('@')), numericLiteral().map(String::valueOf));
+    Parser<String> parser = parser();
 
-    parser = parser.feed(Input.string("").isPartial(true));
+    parser = parser.feed(Input.string("").setPartial(true));
     assertTrue(parser.isCont());
 
-    parser = parser.feed(Input.string("@").isPartial(true));
+    parser = parser.feed(Input.string("@").setPartial(true));
     assertTrue(parser.isCont());
 
-    parser = parser.feed(Input.string("1234").isPartial(true));
+    parser = parser.feed(Input.string("1234").setPartial(true));
     assertTrue(parser.isCont());
 
     parser = parser.feed(Input.string("5"));

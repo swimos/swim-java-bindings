@@ -37,7 +37,7 @@ class DataParserTest {
     Parser<byte[]> parser = blob();
 
     for (char c : input.toCharArray()) {
-      parser = parser.feed(Input.string(String.valueOf(c)).isPartial(true));
+      parser = parser.feed(Input.string(String.valueOf(c)).setPartial(true));
       assertFalse(parser.isDone());
       assertTrue(parser.isCont());
     }

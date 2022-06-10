@@ -17,7 +17,6 @@ package ai.swim.codec.parsers;
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
-import ai.swim.codec.input.InputError;
 
 public class Preceded<B, T> extends Parser<T> {
 
@@ -37,8 +36,6 @@ public class Preceded<B, T> extends Parser<T> {
   public Parser<T> feed(Input input) {
     if (input.isDone()) {
       return Parser.error(input, "Not enough input");
-    } else if (input.isError()) {
-      return Parser.error(((InputError) input));
     } else if (input.isContinuation()) {
       Parser<B> result = this.by.feed(input);
       if (result.isError()) {

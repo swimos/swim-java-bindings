@@ -16,7 +16,6 @@ package ai.swim.codec.parsers;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
-import ai.swim.codec.input.InputError;
 
 import java.util.Optional;
 
@@ -37,9 +36,6 @@ public class OptParser<T> extends Parser<Optional<T>> {
       Input innerInput = input.clone();
       Parser<T> result = this.inner.feed(innerInput);
       if (result.isError()) {
-        // We failed to parse so there was no match. The parser could have failed because the token didn't match what
-        // was available or because there was an input error. If it was the latter, as the input buffer isn't advanced
-        // the error will be picked up again.
         return Parser.done(Optional.empty());
       } else if (result.isCont()) {
         // Insufficient input available.
@@ -50,12 +46,11 @@ public class OptParser<T> extends Parser<Optional<T>> {
         input.setFrom(innerInput);
         return Parser.done(Optional.ofNullable(result.bind()));
       }
-    } else if (input.isError()) {
-      return Parser.error(((InputError) input));
     } else if (input.isDone()) {
       return Parser.error(input, "Insufficient data");
     } else {
       return this;
     }
   }
+
 }

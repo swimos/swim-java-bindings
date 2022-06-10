@@ -15,42 +15,48 @@
 package ai.swim.codec;
 
 import ai.swim.codec.input.Input;
-import ai.swim.codec.input.InputError;
-import ai.swim.codec.parsers.stateful.Result;
 import org.junit.jupiter.api.Test;
 
-import static ai.swim.codec.Parser.preceded;
-import static ai.swim.codec.parsers.StringParsersExt.eqChar;
+import static ai.swim.codec.parsers.text.EqChar.eqChar;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PrecededTest {
 
-  Parser<String> parser() {
-    return preceded(eqChar('@'), Parser.stateful(new StringBuilder(), (state, input) -> {
+  public static class Prop extends Parser<String> {
+    private final StringBuilder state;
+
+    private Prop() {
+      state = new StringBuilder();
+    }
+
+    public static Parser<String> parser() {
+      return preceded(eqChar('@'), new Prop());
+    }
+
+    @Override
+    public Parser<String> feed(Input input) {
       while (input.isContinuation()) {
         int head = input.head();
         if (Character.isLetter(head)) {
           state.appendCodePoint(head);
           input = input.step();
         } else {
-          return Result.err("Expected a letter");
+          return Parser.error(input, "Expected a letter");
         }
       }
 
       if (input.isDone()) {
-        return Result.ok(state.toString());
-      } else if (input.isError()) {
-        return Result.err(((InputError) input).cause());
+        return Parser.done(state.toString());
       } else {
         throw new AssertionError();
       }
-    }));
+    }
   }
 
   @Test
   void precededTestFin() {
-    Parser<String> parser = parser();
+    Parser<String> parser = Prop.parser();
     parser = parser.feed(Input.string("@abc"));
 
     assertTrue(parser.isDone());

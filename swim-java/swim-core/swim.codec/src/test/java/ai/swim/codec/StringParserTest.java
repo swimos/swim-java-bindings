@@ -15,7 +15,7 @@
 package ai.swim.codec;
 
 import ai.swim.codec.input.Input;
-import ai.swim.codec.parsers.string.StringParser;
+import ai.swim.codec.parsers.text.StringParser;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,7 +31,7 @@ class StringParserTest {
   @Test
   public void t2() {
     Parser<ReadEvent> parser = StringParser.stringLiteral().map(StringReadEvent::new);
-    Parser<ReadEvent> parseResult = parser.feed(Input.string("\"abc").isPartial(true));
+    Parser<ReadEvent> parseResult = parser.feed(Input.string("\"abc").setPartial(true));
     assertFalse(parseResult.isDone());
     assertFalse(parseResult.isError());
 
