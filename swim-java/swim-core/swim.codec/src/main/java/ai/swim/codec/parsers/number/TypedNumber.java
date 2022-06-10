@@ -15,28 +15,6 @@ public abstract class TypedNumber {
     this.value = value;
   }
 
-  public boolean isByte() {
-    return false;
-  }
-
-  public byte byteValue() {
-    if (!isByte()) {
-      throw new IllegalStateException("Not a byte value");
-    }
-    return (byte) value;
-  }
-
-  public boolean isShort() {
-    return false;
-  }
-
-  public short shortValue() {
-    if (!isShort()) {
-      throw new IllegalStateException("Not a short value");
-    }
-    return (short) value;
-  }
-
   public boolean isInt() {
     return false;
   }
@@ -121,24 +99,6 @@ public abstract class TypedNumber {
       throw new IllegalStateException("Not a big decimal value");
     }
     return (BigDecimal) value;
-  }
-
-  public static TypedNumber byteNumber(byte value) {
-    return new TypedNumber(value) {
-      @Override
-      public boolean isByte() {
-        return true;
-      }
-    };
-  }
-
-  public static TypedNumber shortNumber(short value) {
-    return new TypedNumber(value) {
-      @Override
-      public boolean isShort() {
-        return true;
-      }
-    };
   }
 
   public static TypedNumber intNumber(int value) {
