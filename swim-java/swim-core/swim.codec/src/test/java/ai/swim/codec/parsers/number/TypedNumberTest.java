@@ -14,12 +14,6 @@ class TypedNumberTest {
 
   @Test
   void types() {
-    assertTrue(TypedNumber.byteNumber(Byte.MAX_VALUE).isByte());
-    assertEquals(TypedNumber.byteNumber(Byte.MAX_VALUE).byteValue(), Byte.MAX_VALUE);
-
-    assertTrue(TypedNumber.shortNumber(Short.MAX_VALUE).isShort());
-    assertEquals(TypedNumber.shortNumber(Short.MAX_VALUE).shortValue(), Short.MAX_VALUE);
-
     assertTrue(TypedNumber.intNumber(Integer.MAX_VALUE).isInt());
     assertEquals(TypedNumber.intNumber(Integer.MAX_VALUE).intValue(), Integer.MAX_VALUE);
 
