@@ -17,20 +17,20 @@ package ai.swim.codec.parsers.number;
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 
-import static ai.swim.codec.parsers.string.StringParser.decodeDigit;
-import static ai.swim.codec.parsers.string.StringParser.isDigit;
+import static ai.swim.codec.parsers.text.StringParser.decodeDigit;
+import static ai.swim.codec.parsers.text.StringParser.isDigit;
 
-final class HexadecimalParser extends Parser<Number> {
+final class HexadecimalParser extends Parser<TypedNumber> {
 
   final long value;
   final int size;
 
-  HexadecimalParser(long value, int size) {
+  private HexadecimalParser(long value, int size) {
     this.value = value;
     this.size = size;
   }
 
-  static Parser<Number> parse(Input input, long value, int size) {
+  private static Parser<TypedNumber> parse(Input input, long value, int size) {
     int c;
     while (input.isContinuation()) {
       c = input.head();
@@ -45,26 +45,24 @@ final class HexadecimalParser extends Parser<Number> {
     if (!input.isEmpty()) {
       if (size > 0) {
         if (size <= 8) {
-          return done((int) value);
+          return done(TypedNumber.intNumber((int) value));
         } else {
-          return done(value);
+          return done(TypedNumber.longNumber(value));
         }
       } else {
         return error(input, "Expected a hex digit");
       }
     }
-    if (input.isError()) {
-      return error(input, "Expected a hex digit");
-    }
+
     return new HexadecimalParser(value, size);
   }
 
-  static Parser<Number> parse(Input input) {
+  static Parser<TypedNumber> parse(Input input) {
     return parse(input, 0L, 0);
   }
 
   @Override
-  public Parser<Number> feed(Input input) {
+  public Parser<TypedNumber> feed(Input input) {
     return parse(input, this.value, this.size);
   }
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.combinators;
+package ai.swim.codec.parsers.combinators;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
@@ -25,7 +25,7 @@ public class AndThen<O, T> extends Parser<T> {
   private Parser<O> first;
   private Parser<T> second;
 
-  AndThen(Parser<O> first, Function<O, Parser<T>> then) {
+  private AndThen(Parser<O> first, Function<O, Parser<T>> then) {
     this.first = first;
     this.then = then;
   }

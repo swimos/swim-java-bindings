@@ -14,28 +14,16 @@
 
 package ai.swim.codec;
 
-import ai.swim.codec.combinators.AndThen;
-import ai.swim.codec.combinators.MappedParser;
-import ai.swim.codec.combinators.TryMappedParser;
 import ai.swim.codec.input.Input;
-import ai.swim.codec.input.InputError;
 import ai.swim.codec.location.Location;
-import ai.swim.codec.parsers.LambdaParser;
 import ai.swim.codec.parsers.Preceded;
-import ai.swim.codec.parsers.stateful.Result;
-import ai.swim.codec.parsers.stateful.StatefulParser;
+import ai.swim.codec.parsers.combinators.AndThen;
+import ai.swim.codec.parsers.combinators.MappedParser;
+import ai.swim.codec.parsers.combinators.TryMappedParser;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public abstract class Parser<O> {
-
-  /**
-   * A convenience method for creating a parser from a function.
-   */
-  public static <O> Parser<O> lambda(Function<Input, Parser<O>> fn) {
-    return new LambdaParser<>(fn);
-  }
 
   /**
    * Creates a parser in the done state that will bind the provided output.
@@ -45,33 +33,11 @@ public abstract class Parser<O> {
   }
 
   /**
-   * Creates a parser that is provided with its current state each time it is invoked.
-   * <p>
-   * Stateful parsers are useful for building parsers that are repeatedly invoked and produce a reduced output.
-   *
-   * @param state  the initial state.
-   * @param parser the parse function to apply.
-   * @param <S>    the type of the state.
-   * @param <T>    the type the parser produces.
-   * @return a stateful parser.
-   */
-  public static <S, T> Parser<T> stateful(S state, BiFunction<S, Input, Result<S, T>> parser) {
-    return new StatefulParser<>(state, parser);
-  }
-
-  /**
    * Creates a parser in an error state. The error is spanned by the location in the input and will has a description of
    * the cause provided.
    */
   public static <O> Parser<O> error(Input input, String cause) {
     return new ParserError<>(input.location(), cause);
-  }
-
-  /**
-   * Creates a new parser in the error state from the provided {@code InputError}.
-   */
-  public static <O> Parser<O> error(InputError inputError) {
-    return new ParserError<>(inputError.location(), inputError.cause());
   }
 
   /**

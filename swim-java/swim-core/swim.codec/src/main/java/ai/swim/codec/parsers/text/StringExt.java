@@ -12,21 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.parsers.stateful;
+package ai.swim.codec.parsers.text;
 
-public class Err<S, T> extends Result<S, T> {
-  private final String cause;
+import ai.swim.codec.Parser;
 
-  public Err(String cause) {
-    this.cause = cause;
+import java.util.Optional;
+
+import static ai.swim.codec.parsers.OptParser.opt;
+import static ai.swim.codec.parsers.text.EqChar.eqChar;
+
+public class StringExt {
+
+  public static Parser<Optional<Character>> space0() {
+    return opt(eqChar(' '));
   }
 
-  public String getCause() {
-    return cause;
-  }
-
-  @Override
-  public boolean isErr() {
-    return true;
-  }
 }

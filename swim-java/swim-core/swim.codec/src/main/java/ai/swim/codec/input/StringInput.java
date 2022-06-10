@@ -82,23 +82,23 @@ public class StringInput extends Input {
   }
 
   @Override
-  public Input isPartial(boolean isPartial) {
+  public Input setPartial(boolean isPartial) {
     this.isPartial = isPartial;
     return this;
   }
 
   @Override
-  public boolean isError() {
-    return false;
-  }
-
-  @Override
-  public int[] bind() {
+  public void bind(int[] into) {
     if (this.isDone()) {
-      return new int[]{};
+      return;
     }
 
-    return this.data.substring(this.offset).chars().toArray();
+    int len = Math.min(this.len(), into.length);
+
+    for (int i = 0; i < len; i++) {
+      int cursor = this.index + i;
+      into[i] = this.data.codePointAt(cursor);
+    }
   }
 
   @Override
@@ -135,23 +135,21 @@ public class StringInput extends Input {
   }
 
   @Override
-  public int[] take(int n) {
+  public void take(int[] into) {
+    int n = into.length;
+
     if (!this.has(n)) {
       throw new IllegalStateException();
     }
 
-    int[] output = new int[n];
-
     for (int i = 0; i < n; i++) {
-      output[i] = this.advance();
+      into[i] = this.advance();
     }
-
-    return output;
   }
 
   @Override
   public Input clone() {
-    return new StringInput(this.data, this.line, this.column, this.index, this.offset).isPartial(this.isPartial);
+    return new StringInput(this.data, this.line, this.column, this.index, this.offset).setPartial(this.isPartial);
   }
 
   @Override
@@ -176,7 +174,7 @@ public class StringInput extends Input {
     Objects.requireNonNull(from);
     if (from instanceof StringInput) {
       StringInput stringInput = (StringInput) from;
-      return new StringInput(this.data + stringInput.data, this.line, this.column, this.index, this.offset).isPartial(stringInput.isPartial);
+      return new StringInput(this.data + stringInput.data, this.line, this.column, this.index, this.offset).setPartial(stringInput.isPartial);
     } else {
       throw new IllegalArgumentException("Cannot extend a StringInput from a: " + from.getClass().getCanonicalName());
     }

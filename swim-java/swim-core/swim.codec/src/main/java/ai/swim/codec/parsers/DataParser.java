@@ -15,14 +15,24 @@
 package ai.swim.codec.parsers;
 
 import ai.swim.codec.Parser;
-import ai.swim.codec.parsers.stateful.Result;
+import ai.swim.codec.input.Input;
 
 import java.util.Base64;
 
-import static ai.swim.codec.Parser.preceded;
-import static ai.swim.codec.parsers.StringParsersExt.eqChar;
+import static ai.swim.codec.parsers.text.EqChar.eqChar;
 
-public final class DataParser {
+
+public final class DataParser extends Parser<byte[]> {
+
+  private final StringBuilder output;
+
+  private DataParser() {
+    output = new StringBuilder();
+  }
+
+  private DataParser(StringBuilder output) {
+    this.output = output;
+  }
 
   private static boolean isDigit(int c) {
     return c >= '0' && c <= '9' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c == '+' || c == '/';
@@ -34,36 +44,39 @@ public final class DataParser {
    * Base-64 data must be preceded by a {@code %} symbol.
    */
   public static Parser<byte[]> blob() {
-    return preceded(eqChar('%'), Parser.stateful(new StringBuilder(), (output, input) -> {
-      int c;
-      while (input.isContinuation()) {
-        c = input.head();
-
-        if (isDigit(c) || c == '=') {
-          output.appendCodePoint(c);
-          input = input.step();
-        } else {
-          if (output.length() == 0) {
-            return Result.err("Invalid base64 sequence");
-          } else {
-            return decode(output);
-          }
-        }
-      }
-
-      if (input.isDone()) {
-        return decode(output);
-      } else {
-        return Result.cont(output);
-      }
-    }));
+    return preceded(eqChar('%'), new DataParser());
   }
 
-  private static Result<StringBuilder, byte[]> decode(StringBuilder output) {
+  private static Parser<byte[]> decode(Input input, StringBuilder output) {
     try {
-      return Result.ok(Base64.getDecoder().decode(output.toString()));
+      return Parser.done(Base64.getDecoder().decode(output.toString()));
     } catch (IllegalArgumentException e) {
-      return Result.err(e.toString());
+      return Parser.error(input, e.toString());
+    }
+  }
+
+  @Override
+  public Parser<byte[]> feed(Input input) {
+    int c;
+    while (input.isContinuation()) {
+      c = input.head();
+
+      if (isDigit(c) || c == '=') {
+        output.appendCodePoint(c);
+        input = input.step();
+      } else {
+        if (output.length() == 0) {
+          return Parser.error(input, "Invalid base64 sequence");
+        } else {
+          return decode(input, output);
+        }
+      }
+    }
+
+    if (input.isDone()) {
+      return decode(input, output);
+    } else {
+      return new DataParser(output);
     }
   }
 

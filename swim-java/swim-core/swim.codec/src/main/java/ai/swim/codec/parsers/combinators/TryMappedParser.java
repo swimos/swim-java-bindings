@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.combinators;
+package ai.swim.codec.parsers.combinators;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
@@ -20,30 +20,33 @@ import ai.swim.codec.input.Input;
 
 import java.util.function.Function;
 
-public class MappedParser<I, O> extends Parser<O> {
+public class TryMappedParser<I, O> extends Parser<O> {
 
   private final Function<I, O> map;
   private Parser<I> inner;
 
-  private MappedParser(Parser<I> inner, Function<I, O> map) {
+  private TryMappedParser(Parser<I> inner, Function<I, O> map) {
     this.inner = inner;
     this.map = map;
   }
 
-  public static <I, O> MappedParser<I, O> map(Parser<I> parser, Function<I, O> with) {
-    return new MappedParser<>(parser, with);
+  public static <I, O> TryMappedParser<I, O> tryMap(Parser<I> parser, Function<I, O> with) {
+    return new TryMappedParser<>(parser, with);
   }
 
   @Override
   public Parser<O> feed(Input input) {
-    this.inner = this.inner.feed(input);
-
-    if (this.inner.isDone()) {
-      return Parser.done(this.map.apply(this.inner.bind()));
-    } else if (this.inner.isError()) {
-      return Parser.error(input, ((ParserError<?>) this.inner).cause());
-    } else {
-      return this;
+    try {
+      this.inner = this.inner.feed(input);
+      if (this.inner.isDone()) {
+        return Parser.done(this.map.apply(this.inner.bind()));
+      } else if (this.inner.isError()) {
+        return Parser.error(input, ((ParserError<O>) this.inner).cause());
+      } else {
+        return this;
+      }
+    } catch (Exception e) {
+      return Parser.error(input, e.getMessage());
     }
   }
 

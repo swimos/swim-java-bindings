@@ -19,17 +19,17 @@ import ai.swim.codec.input.Input;
 
 import java.math.BigInteger;
 
-final class BigIntegerParser extends Parser<Number> {
+final class BigIntegerParser extends Parser<TypedNumber> {
 
   final int sign;
   final BigInteger value;
 
-  BigIntegerParser(int sign, BigInteger value) {
+  private BigIntegerParser(int sign, BigInteger value) {
     this.sign = sign;
     this.value = value;
   }
 
-  static Parser<Number> parse(Input input, int sign, BigInteger value) {
+  static Parser<TypedNumber> parse(Input input, int sign, BigInteger value) {
     while (input.isContinuation()) {
       final int c = input.head();
       if (c >= '0' && c <= '9') {
@@ -40,13 +40,13 @@ final class BigIntegerParser extends Parser<Number> {
       }
     }
     if (!input.isEmpty()) {
-      return done(value);
+      return done(TypedNumber.bigIntNumber(value));
     }
     return new BigIntegerParser(sign, value);
   }
 
   @Override
-  public Parser<Number> feed(Input input) {
+  public Parser<TypedNumber> feed(Input input) {
     return parse(input, this.sign, this.value);
   }
 

@@ -12,7 +12,7 @@ public class InputDone extends Input {
 
   @Override
   public boolean has(int n) {
-    throw new IllegalStateException();
+    return false;
   }
 
   @Override
@@ -46,13 +46,8 @@ public class InputDone extends Input {
   }
 
   @Override
-  public Input isPartial(boolean isPartial) {
+  public Input setPartial(boolean isPartial) {
     return this;
-  }
-
-  @Override
-  public boolean isError() {
-    return false;
   }
 
   @Override
@@ -61,13 +56,19 @@ public class InputDone extends Input {
   }
 
   @Override
+  public void bind(int[] into) {
+
+  }
+
+  @Override
   public int len() {
     return this.delegate.len();
   }
 
+
   @Override
-  public int[] take(int tagLength) {
-    throw new IllegalStateException();
+  public void take(int[] into) {
+
   }
 
   @Override

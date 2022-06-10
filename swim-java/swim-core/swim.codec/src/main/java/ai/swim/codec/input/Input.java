@@ -3,9 +3,9 @@ package ai.swim.codec.input;
 import ai.swim.codec.location.Location;
 
 /**
- * A non-blocking token stream reader that provides single and multiple token lookahead.
+ * A non-blocking symbol reader that provides single and multiple symbol lookahead.
  * <p>
- * The tokens that an {@code Input} provides are modelled as primitive {@code int}s that commonly represent Unicode
+ * The symbols that an {@code Input} provides are modelled as primitive {@code int}s that commonly represent Unicode
  * code points or raw octets.
  */
 public abstract class Input {
@@ -25,12 +25,12 @@ public abstract class Input {
   }
 
   /**
-   * Returns whether this {@code Input} has n tokens available.
+   * Returns whether this {@code Input} has n symbols available.
    */
   public abstract boolean has(int n);
 
   /**
-   * Returns the current lookahead token, if this {@code Input} is in the
+   * Returns the current lookahead symbol, if this {@code Input} is in the
    * <em>continuation</em> state.
    *
    * @throws IllegalStateException if this {@code Input} is not in the <em>cont</em>
@@ -40,8 +40,7 @@ public abstract class Input {
 
   /**
    * Returns an {@code Input} equivalent to this {@code Input}, but advanced to
-   * the next token. Returns an {@code Input} in the <em>error</em> state if
-   * this {@code Input} is not in the <em>cont</em> state.
+   * the next symbol.
    */
   public abstract Input step();
 
@@ -53,36 +52,45 @@ public abstract class Input {
   public abstract Location location();
 
   /**
-   * Returns if the {@code Input} is not able to produce another token if it is advanced and another one will not be
+   * Returns if the {@code Input} is not able to produce another symbol if it is advanced and another one will not be
    * available in the future.
    */
   public abstract boolean isDone();
 
   /**
-   * Returns if the {@code Input} is able to produce a token if it is advanced.
+   * Returns if the {@code Input} is able to produce a symbol if it is advanced.
    */
   public abstract boolean isContinuation();
 
   /**
-   * Returns if the {@code Input} is not able to produce another token if it is advanced but a token may be available
+   * Returns if the {@code Input} is not able to produce another symbol if it is advanced but a symbol may be available
    * in the future.
    */
   public abstract boolean isEmpty();
 
   /**
-   * Set this {@code Input} to be a partial representation of the data.
+   * Set this {@code Input} to be a partial representation of the data. If true, then this {@code Input} represents
+   * a segment of a larger piece of data. If false, then this {@code Input} is the final segment of the data and no more
+   * will be available.
+   * <p>
+   * Analogous to fragmented websocket frames.
    */
-  public abstract Input isPartial(boolean isPartial);
+  public abstract Input setPartial(boolean isPartial);
 
   /**
-   * Returns whether this {@code Input} is in the error state.
+   * Binds the remaining symbols that are available in this {@code Input}.
    */
-  public abstract boolean isError();
+  public int[] bind() {
+    int[] into = new int[this.len()];
+    bind(into);
+
+    return into;
+  }
 
   /**
-   * Binds the remaining tokens that are available in this {@code Input} and advances the offset.
+   * Binds the remaining symbols into the provided array.
    */
-  public abstract int[] bind();
+  public abstract void bind(int[] into);
 
   /**
    * Returns the difference between the source length of this {@code Input} and its offset.
@@ -90,21 +98,31 @@ public abstract class Input {
   public abstract int len();
 
   /**
-   * Takes n tokens from the source.
+   * Takes n symbols from the source.
    *
    * @throws IllegalStateException if this {@code Input} has insufficient data available.
    */
-  public abstract int[] take(int n);
+  public int[] take(int n) {
+    int[] into = new int[n];
+    take(into);
+
+    return into;
+  }
 
   /**
-   * Returns an independently positioned view into the token stream,
+   * Populates the provided array with as many symbols that are available.
+   */
+  public abstract void take(int[] into);
+
+  /**
+   * Returns an independently positioned view into the symbol stream,
    * initialized with identical state to this {@code Input}.
    */
   @Override
   public abstract Input clone();
 
   /**
-   * Replaces this {@code Input}'s contents from the provided {@code Input} and strip off any already read tokens.
+   * Replaces this {@code Input}'s contents from the provided {@code Input} and strip off any already read symbols.
    */
   public void setFrom(Input innerInput) {
     throw new IllegalStateException();
@@ -119,4 +137,5 @@ public abstract class Input {
    * @throws IllegalArgumentException if the type of the argument is not the same as this instance.
    */
   public abstract Input extend(Input from);
+
 }

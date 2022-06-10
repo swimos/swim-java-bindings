@@ -12,21 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.parsers.stateful;
+package ai.swim.codec.parsers.text;
 
-public class Ok<S, T> extends Result<S, T> {
-  private final T output;
+class UnicodeParser {
+  int unicodeIdx;
+  int code;
+  boolean done;
 
-  public Ok(T output) {
-    this.output = output;
+  boolean parseUnicodePoint(StringBuilder builder, int c) {
+    if (StringParser.isDigit(c)) {
+      code = 16 * code + StringParser.decodeDigit(c);
+      if (unicodeIdx <= 3) {
+        unicodeIdx += 1;
+      } else {
+        builder.appendCodePoint(code);
+        code = 0;
+        done = true;
+      }
+      return true;
+    } else {
+      return false;
+    }
   }
 
-  public T getOutput() {
-    return output;
+  boolean isDone() {
+    return done;
   }
 
-  @Override
-  public boolean isOk() {
-    return true;
-  }
 }

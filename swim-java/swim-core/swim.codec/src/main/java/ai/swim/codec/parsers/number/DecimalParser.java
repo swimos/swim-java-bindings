@@ -17,17 +17,17 @@ package ai.swim.codec.parsers.number;
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 
-final class DecimalParser extends Parser<Number> {
+final class DecimalParser extends Parser<TypedNumber> {
 
   final StringBuilder builder;
   final int step;
 
-  DecimalParser(StringBuilder builder, int step) {
+  private DecimalParser(StringBuilder builder, int step) {
     this.builder = builder;
     this.step = step;
   }
 
-  static Parser<Number> parse(Input input, StringBuilder builder, int step) {
+  static Parser<TypedNumber> parse(Input input, StringBuilder builder, int step) {
     int c;
     if (step == 1) {
       if (input.isContinuation()) {
@@ -129,13 +129,11 @@ final class DecimalParser extends Parser<Number> {
         return done(NumberParser.valueOf(builder.toString()));
       }
     }
-    if (input.isError()) {
-      return error(input, "Expected a decimal");
-    }
+
     return new DecimalParser(builder, step);
   }
 
-  static Parser<Number> parse(Input input, int sign, long value) {
+  static Parser<TypedNumber> parse(Input input, int sign, long value) {
     final StringBuilder builder = new StringBuilder();
     if (sign < 0 && value == 0L) {
       builder.append('-').append('0');
@@ -146,7 +144,7 @@ final class DecimalParser extends Parser<Number> {
   }
 
   @Override
-  public Parser<Number> feed(Input input) {
+  public Parser<TypedNumber> feed(Input input) {
     return parse(input, this.builder, this.step);
   }
 

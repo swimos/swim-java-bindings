@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.codec.parsers.string;
+package ai.swim.codec.parsers.text;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
-import ai.swim.codec.input.StringInput;
 
-import static ai.swim.codec.parsers.ParserExt.peek;
-import static ai.swim.codec.parsers.StringParsersExt.eqChar;
+import static ai.swim.codec.parsers.combinators.Chain.chain;
+import static ai.swim.codec.parsers.combinators.Peek.peek;
+import static ai.swim.codec.parsers.text.EqChar.eqChar;
 
 public class StringParser extends Parser<String> {
 
@@ -37,7 +37,7 @@ public class StringParser extends Parser<String> {
   }
 
   public static Parser<String> stringLiteral() {
-    return peek(eqChar('\"')).andThen(c -> new StringParser(new StringBuilder(), 0, 0, Stage.Head));
+    return chain(peek(eqChar('\"')), new StringParser(new StringBuilder(), 0, 0, Stage.Head));
   }
 
   static boolean isSpace(int c) {
@@ -177,10 +177,6 @@ public class StringParser extends Parser<String> {
       }
       break;
     } while (true);
-
-    if (input.isError()) {
-      return error(input, "Error: " + StringInput.codePointsToString(input.bind()));
-    }
 
     return new StringParser(output, quoteNeedle, code, stage);
   }

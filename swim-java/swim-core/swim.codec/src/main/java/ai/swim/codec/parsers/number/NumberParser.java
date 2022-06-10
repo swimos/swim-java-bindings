@@ -20,10 +20,11 @@ import ai.swim.codec.input.Input;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-import static ai.swim.codec.parsers.ParserExt.peek;
-import static ai.swim.codec.parsers.StringParsersExt.oneOf;
+import static ai.swim.codec.parsers.combinators.Peek.peek;
+import static ai.swim.codec.parsers.text.OneOf.oneOf;
 
-public final class NumberParser extends Parser<Number> {
+
+public final class NumberParser extends Parser<TypedNumber> {
 
   private final boolean isNegative;
   private final long value;
@@ -37,7 +38,7 @@ public final class NumberParser extends Parser<Number> {
     this.floatLiteralBuilder = floatLiteralBuilder;
   }
 
-  static Parser<Number> parse(Input input, boolean isNegative, long value, Stage stage, StringBuilder floatLiteralBuilder) {
+  static Parser<TypedNumber> parse(Input input, boolean isNegative, long value, Stage stage, StringBuilder floatLiteralBuilder) {
     int c;
     if (stage == Stage.Sign) {
       if (input.isContinuation()) {
@@ -127,10 +128,6 @@ public final class NumberParser extends Parser<Number> {
       break;
     } while (input.isContinuation());
 
-    if (input.isError()) {
-      return error(input, "Expected a number");
-    }
-
     if (input.isDone() && floatLiteralBuilder != null) {
       return parseLiteralFloat(floatLiteralBuilder, isNegative, input);
     }
@@ -138,22 +135,22 @@ public final class NumberParser extends Parser<Number> {
     return new NumberParser(isNegative, value, stage, floatLiteralBuilder);
   }
 
-  private static Parser<Number> parseLiteralFloat(StringBuilder floatLiteralBuilder, boolean isNegative, Input input) {
+  private static Parser<TypedNumber> parseLiteralFloat(StringBuilder floatLiteralBuilder, boolean isNegative, Input input) {
     String fs = floatLiteralBuilder.toString();
     if ("nan".equalsIgnoreCase(fs) && !isNegative) {
-      return Parser.done(Float.NaN);
+      return Parser.done(TypedNumber.floatNumber(Float.NaN));
     } else if ("inf".equalsIgnoreCase(fs) || "infinity".equalsIgnoreCase(fs)) {
       if (isNegative) {
-        return Parser.done(Float.NEGATIVE_INFINITY);
+        return Parser.done(TypedNumber.floatNumber(Float.NEGATIVE_INFINITY));
       } else {
-        return Parser.done(Float.POSITIVE_INFINITY);
+        return Parser.done(TypedNumber.floatNumber(Float.POSITIVE_INFINITY));
       }
     } else {
       return error(input, "Expected a number");
     }
   }
 
-  public static Parser<Number> numericLiteral() {
+  public static Parser<TypedNumber> numericLiteral() {
     return preceded(
         peek(oneOf('-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.')),
         new NumberParser(false, 0, Stage.Sign, null)
@@ -164,38 +161,38 @@ public final class NumberParser extends Parser<Number> {
     return c == 'N' || c == 'n' || c == 'A' || c == 'a' || c == 'I' || c == 'i' || c == 'F' || c == 'f' || c == 'T' || c == 't' || c == 'Y' || c == 'y';
   }
 
-  public static Number valueOf(long value) {
+  public static TypedNumber valueOf(long value) {
     if ((long) (int) value == value) {
-      return (int) value;
+      return TypedNumber.intNumber((int) value);
     } else {
-      return value;
+      return TypedNumber.longNumber(value);
     }
   }
 
-  public static Number valueOf(String value) {
+  public static TypedNumber valueOf(String value) {
     try {
       final long longValue = Long.parseLong(value);
       if ((long) (int) longValue == longValue) {
-        return (int) longValue;
+        return TypedNumber.intNumber((int) longValue);
       } else {
-        return longValue;
+        return TypedNumber.longNumber(longValue);
       }
     } catch (NumberFormatException e1) {
       try {
         final double doubleValue = Double.parseDouble(value);
         if ((double) (float) doubleValue == doubleValue) {
-          return (float) doubleValue;
+          return TypedNumber.floatNumber((float) doubleValue);
         } else {
-          return doubleValue;
+          return TypedNumber.doubleNumber(doubleValue);
         }
       } catch (NumberFormatException e2) {
-        return new BigDecimal(value);
+        return TypedNumber.bigDecimalNumber(new BigDecimal(value));
       }
     }
   }
 
   @Override
-  public Parser<Number> feed(Input input) {
+  public Parser<TypedNumber> feed(Input input) {
     return parse(input, this.isNegative, this.value, this.stage, this.floatLiteralBuilder);
   }
 

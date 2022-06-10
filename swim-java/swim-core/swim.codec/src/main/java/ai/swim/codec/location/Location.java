@@ -14,9 +14,6 @@
 
 package ai.swim.codec.location;
 
-/**
- * Marker interface denoting an offset into a source.
- */
 public interface Location {
 
   static Location of(int line, int column, int offset) {
