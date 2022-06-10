@@ -3,7 +3,6 @@ package ai.swim.recon;
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
-import ai.swim.codec.input.InputError;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.events.Event;
@@ -18,9 +17,9 @@ import ai.swim.recon.result.ResultError;
 import java.util.*;
 
 import static ai.swim.codec.Parser.preceded;
-import static ai.swim.codec.parsers.ParserExt.alt;
-import static ai.swim.codec.parsers.string.StringExt.multispace0;
-import static ai.swim.codec.parsers.string.StringExt.space0;
+import static ai.swim.codec.parsers.combinators.Alt.alt;
+import static ai.swim.codec.parsers.text.Multispace0.multispace0;
+import static ai.swim.codec.parsers.text.StringExt.space0;
 import static ai.swim.recon.ReconParserParts.*;
 
 /**
@@ -58,7 +57,7 @@ public final class ReconParser {
     if (this.complete) {
       return false;
     } else if (this.current == null) {
-      return this.input.isError();
+      return false;
     } else {
       return this.current.isError();
     }
@@ -72,8 +71,6 @@ public final class ReconParser {
   public ResultError<ReadEvent> error() {
     if (this.current != null && this.current.isError()) {
       return new ResultError<>(((ParserError<ParserTransition>) this.current).cause());
-    } else if (this.input.isError()) {
-      return new ResultError<>(((InputError) this.input).cause());
     } else {
       throw new IllegalStateException("Parser is not in an error state");
     }
@@ -158,9 +155,7 @@ public final class ReconParser {
           return result.cast();
         }
 
-        if (this.input.isError()) {
-          return ParseResult.error(((InputError) this.input));
-        } else if (!this.complete && this.input.isDone()) {
+        if (!this.complete && this.input.isDone()) {
           return ParseResult.error("Not enough data");
         } else {
           return ParseResult.continuation();
@@ -217,19 +212,26 @@ public final class ReconParser {
     return this.feed();
   }
 
+  private static Parser<ParserTransition> initParser() {
+    return alt(
+        new Parser<>() {
+          @Override
+          public Parser<ParserTransition> feed(Input input) {
+            if (input.isDone()) {
+              return Parser.done(ReadEvent.extant().transition());
+            } else {
+              return Parser.error(input, "Expected an empty input");
+            }
+          }
+        },
+        preceded(multispace0(), parseInit())
+    );
+  }
+
   private ParseResult<ParseEvents> nextEvent() {
     switch (this.state.getLast()) {
       case Init:
-        return parseEvent(alt(
-            Parser.lambda(input -> {
-              if (input.isDone()) {
-                return Parser.done(ReadEvent.extant());
-              } else {
-                return Parser.error(input, "Expected an empty input");
-              }
-            }).map(ReadEvent::transition),
-            preceded(multispace0(), parseInit())
-        ), true);
+        return parseEvent(initParser(), true);
       case AfterAttr:
         if (input.isDone()) {
           this.current = null;

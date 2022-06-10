@@ -14,6 +14,7 @@
 
 package ai.swim.recon.event;
 
+import ai.swim.codec.parsers.number.TypedNumber;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.state.StateChange;
 
@@ -24,7 +25,7 @@ public abstract class ReadEvent {
   }
 
   public static ReadEvent extant() {
-    return new ReadExtant();
+    return ReadExtant.INSTANCE;
   }
 
   public static ReadEvent blob(byte[] blob) {
@@ -36,27 +37,41 @@ public abstract class ReadEvent {
   }
 
   public static ReadEvent endAttribute() {
-    return new ReadEndAttribute();
+    return ReadEndAttribute.INSTANCE;
   }
 
   public static ReadEvent startBody() {
-    return new ReadStartBody();
+    return ReadStartBody.INSTANCE;
   }
 
   public static ReadEvent text(String value) {
     return new ReadTextValue(value);
   }
 
-  public static ReadEvent number(Number value) {
-    return new ReadNumberValue(value);
+  public static ReadEvent number(TypedNumber value) {
+    if (value.isInt()) {
+      return new ReadIntValue(value.intValue());
+    } else if (value.isLong()) {
+      return new ReadLongValue(value.longValue());
+    } else if (value.isFloat()) {
+      return new ReadFloatValue(value.floatValue());
+    } else if (value.isDouble()) {
+      return new ReadDoubleValue(value.doubleValue());
+    } else if (value.isBigInt()) {
+      return new ReadBigIntValue(value.bigIntValue());
+    } else if (value.isBigDecimal()) {
+      return new ReadBigDecimalValue(value.bigDecimalValue());
+    } else {
+      throw new AssertionError(value);
+    }
   }
 
   public static ReadEvent slot() {
-    return new ReadSlot();
+    return ReadSlot.INSTANCE;
   }
 
   public static ReadEvent endRecord() {
-    return new ReadEndRecord();
+    return ReadEndRecord.INSTANCE;
   }
 
   public boolean isExtant() {

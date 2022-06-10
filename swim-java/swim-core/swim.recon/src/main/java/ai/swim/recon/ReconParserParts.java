@@ -16,7 +16,6 @@ package ai.swim.recon;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
-import ai.swim.codec.input.InputError;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadTextValue;
 import ai.swim.recon.models.ParserTransition;
@@ -34,11 +33,13 @@ import java.util.Optional;
 import static ai.swim.codec.Parser.preceded;
 import static ai.swim.codec.parsers.DataParser.blob;
 import static ai.swim.codec.parsers.OptParser.opt;
-import static ai.swim.codec.parsers.ParserExt.alt;
-import static ai.swim.codec.parsers.ParserExt.peek;
-import static ai.swim.codec.parsers.StringParsersExt.*;
+import static ai.swim.codec.parsers.combinators.Alt.alt;
+import static ai.swim.codec.parsers.combinators.Peek.peek;
 import static ai.swim.codec.parsers.number.NumberParser.numericLiteral;
-import static ai.swim.codec.parsers.string.StringParser.stringLiteral;
+import static ai.swim.codec.parsers.text.EqChar.eqChar;
+import static ai.swim.codec.parsers.text.LineEnding.lineEnding;
+import static ai.swim.codec.parsers.text.OneOf.oneOf;
+import static ai.swim.codec.parsers.text.StringParser.stringLiteral;
 import static ai.swim.recon.IdentifierParser.identifier;
 
 public abstract class ReconParserParts {
@@ -88,8 +89,6 @@ public abstract class ReconParserParts {
       if (input.isDone()) {
         return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
             ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
-      } else if (input.isError()) {
-        return Parser.error(((InputError) input));
       } else if (input.isContinuation()) {
         Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
         if (parseResult.isDone()) {
@@ -120,8 +119,6 @@ public abstract class ReconParserParts {
       if (input.isDone()) {
         return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endRecord(),
             new PushAttrNewRec(false)));
-      } else if (input.isError()) {
-        return Parser.error(((InputError) input));
       } else if (input.isContinuation()) {
         Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
         if (parseResult.isDone()) {

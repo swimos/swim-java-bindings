@@ -14,7 +14,9 @@
 
 package ai.swim.recon.event;
 
-public class ReadEndAttribute extends ReadEvent {
+class ReadEndAttribute extends ReadEvent {
+
+  static final ReadEvent INSTANCE = new ReadEndAttribute();
 
   @Override
   public boolean isEndAttribute() {

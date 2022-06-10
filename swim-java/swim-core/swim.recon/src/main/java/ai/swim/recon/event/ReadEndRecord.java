@@ -14,7 +14,9 @@
 
 package ai.swim.recon.event;
 
-public class ReadEndRecord extends ReadEvent {
+ class ReadEndRecord extends ReadEvent {
+
+   static final ReadEvent INSTANCE = new ReadEndRecord();
 
   @Override
   public boolean isEndRecord() {

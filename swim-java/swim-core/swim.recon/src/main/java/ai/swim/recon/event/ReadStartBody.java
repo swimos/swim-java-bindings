@@ -14,7 +14,9 @@
 
 package ai.swim.recon.event;
 
-public class ReadStartBody extends ReadEvent {
+class ReadStartBody extends ReadEvent {
+
+  static final ReadEvent INSTANCE = new ReadStartBody();
 
   @Override
   public boolean isStartBody() {

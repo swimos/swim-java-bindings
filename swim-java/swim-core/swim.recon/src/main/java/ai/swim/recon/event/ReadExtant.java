@@ -14,7 +14,13 @@
 
 package ai.swim.recon.event;
 
-public class ReadExtant extends ReadEvent {
+class ReadExtant extends ReadEvent {
+
+  static final ReadExtant INSTANCE = new ReadExtant();
+
+  private ReadExtant() {
+
+  }
 
   @Override
   public boolean isExtant() {
