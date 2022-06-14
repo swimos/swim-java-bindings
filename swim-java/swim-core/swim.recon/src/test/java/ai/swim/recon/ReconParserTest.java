@@ -21,7 +21,6 @@ class ReconParserTest {
 
   private void testIncrementalOk(String string, List<ReadEvent> expected) {
     ReconParser parser = new ReconParser().feed(Input.string(String.valueOf(string.charAt(0))).setPartial(true));
-
     List<ReadEvent> actual = new ArrayList<>(expected.size());
 
     for (int i = 1; i < string.length(); i++) {
