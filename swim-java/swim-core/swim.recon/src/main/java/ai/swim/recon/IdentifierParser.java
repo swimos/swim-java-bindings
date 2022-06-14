@@ -80,10 +80,6 @@ public class IdentifierParser extends Parser<Identifier> {
       }
     }
 
-    if (input.isError()) {
-      return error(input, "Expected an identifier");
-    }
-
     return this;
   }
 

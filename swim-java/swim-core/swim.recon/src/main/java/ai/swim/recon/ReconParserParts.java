@@ -16,10 +16,11 @@ package ai.swim.recon;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
+import ai.swim.codec.input.Input;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadTextValue;
+import ai.swim.recon.models.ParseState;
 import ai.swim.recon.models.ParserTransition;
-import ai.swim.recon.models.events.ParseEvents;
 import ai.swim.recon.models.identifier.BooleanIdentifier;
 import ai.swim.recon.models.identifier.Identifier;
 import ai.swim.recon.models.identifier.StringIdentifier;
@@ -28,6 +29,7 @@ import ai.swim.recon.models.state.ChangeState;
 import ai.swim.recon.models.state.PushAttrNewRec;
 import ai.swim.recon.models.state.StateChange;
 
+import java.util.List;
 import java.util.Optional;
 
 import static ai.swim.codec.Parser.preceded;
@@ -59,7 +61,7 @@ public abstract class ReconParserParts {
         numericLiteral().map(n -> ReadEvent.number(n).transition()),
         blob().map(b -> ReadEvent.blob(b).transition()),
         secondaryAttr(),
-        eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(), new ChangeState(ParseEvents.ParseState.RecordBodyStartOrNl)))
+        eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(), new ChangeState(ParseState.RecordBodyStartOrNl)))
     );
   }
 
@@ -85,29 +87,32 @@ public abstract class ReconParserParts {
   }
 
   private static Parser<ParserTransition> secondaryAttrCont(ReadEvent event) {
-    return Parser.lambda(input -> {
-      if (input.isDone()) {
-        return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
-            ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
-      } else if (input.isContinuation()) {
-        Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
-        if (parseResult.isDone()) {
-          if (parseResult.bind().isPresent()) {
-            return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
-                StateChange.pushAttr()));
+    return new Parser<>() {
+      @Override
+      public Parser<ParserTransition> feed(Input input) {
+        if (input.isDone()) {
+          return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
+              ReadEvent.endAttribute(), new ChangeState(ParseState.AfterAttr)));
+        } else if (input.isContinuation()) {
+          Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
+          if (parseResult.isDone()) {
+            if (parseResult.bind().isPresent()) {
+              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
+                  StateChange.pushAttr()));
+            } else {
+              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
+                  ReadEvent.endAttribute(), new ChangeState(ParseState.AfterAttr)));
+            }
+          } else if (parseResult.isError()) {
+            return ParserError.error(input, ((ParserError<?>) parseResult).cause());
           } else {
-            return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
-                ReadEvent.endAttribute(), new ChangeState(ParseEvents.ParseState.AfterAttr)));
+            return this;
           }
-        } else if (parseResult.isError()) {
-          return ParserError.error(input, ((ParserError<?>) parseResult).cause());
         } else {
-          return secondaryAttrCont(event);
+          return this;
         }
-      } else {
-        return secondaryAttrCont(event);
       }
-    });
+    };
   }
 
   public static Parser<ParserTransition> primaryAttr() {
@@ -115,29 +120,32 @@ public abstract class ReconParserParts {
   }
 
   public static Parser<ParserTransition> primaryAttrCont(ReadEvent event) {
-    return Parser.lambda(input -> {
-      if (input.isDone()) {
-        return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endRecord(),
-            new PushAttrNewRec(false)));
-      } else if (input.isContinuation()) {
-        Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
-        if (parseResult.isDone()) {
-          if (parseResult.bind().isPresent()) {
-            return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
-                new PushAttrNewRec(true)));
+    return new Parser<>() {
+      @Override
+      public Parser<ParserTransition> feed(Input input) {
+        if (input.isDone()) {
+          return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endRecord(),
+              new PushAttrNewRec(false)));
+        } else if (input.isContinuation()) {
+          Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
+          if (parseResult.isDone()) {
+            if (parseResult.bind().isPresent()) {
+              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
+                  new PushAttrNewRec(true)));
+            } else {
+              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endAttribute(),
+                  new PushAttrNewRec(false)));
+            }
+          } else if (parseResult.isError()) {
+            return ParserError.error(input, ((ParserError<?>) parseResult).cause());
           } else {
-            return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endAttribute(),
-                new PushAttrNewRec(false)));
+            return this;
           }
-        } else if (parseResult.isError()) {
-          return ParserError.error(input, ((ParserError<?>) parseResult).cause());
         } else {
-          return primaryAttrCont(event);
+          return this;
         }
-      } else {
-        return primaryAttrCont(event);
       }
-    });
+    };
   }
 
   public static Parser<ParserTransition> parseAfterAttr() {
@@ -150,7 +158,7 @@ public abstract class ReconParserParts {
             blob().map(ReadEvent::blob)
         ).map(event -> new ParserTransition(event, StateChange.popAfterItem())),
         eqChar('{').map(c ->
-            new ParserTransition(ReadEvent.startBody(), new ChangeState(ParseEvents.ParseState.RecordBodyStartOrNl))
+            new ParserTransition(ReadEvent.startBody(), new ChangeState(ParseState.RecordBodyStartOrNl))
         ),
         peek(alt(
             oneOf(',', ';', ')', '}').map(Object::toString),
@@ -177,12 +185,12 @@ public abstract class ReconParserParts {
         eqChar(':').map(c -> new ParserTransition(ReadEvent.extant(), ReadEvent.slot(), new ChangeState(itemsKind.startSlot()))),
         eqChar(itemsKind.endDelim()).map(c -> {
           ReadEvent event = itemsKind.endEvent();
-          ParseEvents events;
+          List<ReadEvent> events;
 
           if (itemsRequired) {
-            events = ParseEvents.twoEvents(ReadEvent.extant(), event);
+            events = List.of(ReadEvent.extant(), event);
           } else {
-            events = ParseEvents.singleEvent(event);
+            events = List.of(event);
           }
 
           return new ParserTransition(events, itemsKind.endStateChange());
@@ -192,14 +200,14 @@ public abstract class ReconParserParts {
     );
   }
 
-  public static Parser<Optional<ParseEvents.ParseState>> parseAfterValue(ItemsKind itemsKind) {
+  public static Parser<Optional<ParseState>> parseAfterValue(ItemsKind itemsKind) {
     return alt(
         eqChar(':').map(i -> Optional.of(itemsKind.startSlot())),
         parseAfterSlot(itemsKind)
     );
   }
 
-  public static Parser<Optional<ParseEvents.ParseState>> parseAfterSlot(ItemsKind itemsKind) {
+  public static Parser<Optional<ParseState>> parseAfterSlot(ItemsKind itemsKind) {
     return alt(
         lineEnding().map(i -> Optional.of(itemsKind.startOrNl())),
         separator().map(i -> Optional.of(itemsKind.afterSep())),

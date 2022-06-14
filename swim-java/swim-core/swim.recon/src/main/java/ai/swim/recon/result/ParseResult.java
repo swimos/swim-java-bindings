@@ -1,6 +1,7 @@
 package ai.swim.recon.result;
 
 import ai.swim.codec.ParserError;
+import ai.swim.codec.location.Location;
 
 public abstract class ParseResult<O> {
 
@@ -8,12 +9,12 @@ public abstract class ParseResult<O> {
     return new ResultOk<>(item);
   }
 
-  public static <O> ParseResult<O> error(String cause) {
-    return new ResultError<>(cause);
+  public static <O> ParseResult<O> error(ParserError<O> parser) {
+    return new ResultError<>(parser.cause(), parser.location());
   }
 
-  public static <O> ParseResult<O> error(ParserError<O> parser) {
-    return new ResultError<>(parser.cause());
+  public static <O> ParseResult<O> error(String cause, Location location) {
+    return new ResultError<>(cause, location);
   }
 
   public static <O> ParseResult<O> continuation() {

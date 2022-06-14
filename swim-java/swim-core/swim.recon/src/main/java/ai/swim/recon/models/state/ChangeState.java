@@ -14,15 +14,15 @@
 
 package ai.swim.recon.models.state;
 
-import ai.swim.recon.models.events.ParseEvents;
+import ai.swim.recon.models.ParseState;
 
 import java.util.Objects;
 
 public class ChangeState extends StateChange {
 
-  private final ParseEvents.ParseState state;
+  private final ParseState state;
 
-  public ChangeState(ParseEvents.ParseState state) {
+  public ChangeState(ParseState state) {
     this.state = state;
   }
 
@@ -43,7 +43,7 @@ public class ChangeState extends StateChange {
     return Objects.hash(state);
   }
 
-  public ParseEvents.ParseState getState() {
+  public ParseState getState() {
     return state;
   }
 

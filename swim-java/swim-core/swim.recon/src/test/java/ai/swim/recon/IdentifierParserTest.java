@@ -76,7 +76,7 @@ class IdentifierParserTest {
   @Test
   void identifierTestContinuation() {
     Parser<Identifier> parser = IdentifierParser.identifier();
-    Parser<Identifier> parseResult = parser.feed(Input.string("tr").isPartial(true));
+    Parser<Identifier> parseResult = parser.feed(Input.string("tr").setPartial(true));
 
     assertTrue(parseResult.isCont());
     parseResult = parseResult.feed(Input.string("ue"));

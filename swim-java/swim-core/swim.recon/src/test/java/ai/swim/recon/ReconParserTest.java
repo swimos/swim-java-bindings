@@ -1,6 +1,7 @@
 package ai.swim.recon;
 
 import ai.swim.codec.input.Input;
+import ai.swim.codec.location.StringLocation;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.result.ParseResult;
 import ai.swim.recon.result.ResultError;
@@ -19,7 +20,8 @@ class ReconParserTest {
   }
 
   private void testIncrementalOk(String string, List<ReadEvent> expected) {
-    ReconParser parser = new ReconParser(Input.string(String.valueOf(string.charAt(0))).isPartial(true));
+    ReconParser parser = new ReconParser().feed(Input.string(String.valueOf(string.charAt(0))).setPartial(true));
+
     List<ReadEvent> actual = new ArrayList<>(expected.size());
 
     for (int i = 1; i < string.length(); i++) {
@@ -36,7 +38,7 @@ class ReconParserTest {
       String s = String.valueOf(string.charAt(i));
       boolean isPartial = i != string.length() - 1;
 
-      parser = parser.feed(Input.string(s).isPartial(isPartial));
+      parser = parser.feed(Input.string(s).setPartial(isPartial));
     }
 
     // A sufficiently large enough loop to drain any pending events but not cause an infinite loop
@@ -63,7 +65,7 @@ class ReconParserTest {
   }
 
   void testCompleteOk(String input, List<ReadEvent> expected) {
-    ReconParser parser = new ReconParser(Input.string(input));
+    ReconParser parser = new ReconParser().feed(Input.string(input));
 
     for (ReadEvent event : expected) {
       assertEquals(ParseResult.ok(event), parser.next());
@@ -116,7 +118,7 @@ class ReconParserTest {
 
   @Test
   void emptyInput() {
-    ReconParser parser = new ReconParser(Input.string(""));
+    ReconParser parser = new ReconParser().feed(Input.string(""));
     assertEquals(ParseResult.ok(ReadEvent.extant()), parser.next());
     assertEquals(ParseResult.end(), parser.next());
     assertEquals(ParseResult.end(), parser.next());
@@ -614,4 +616,19 @@ class ReconParserTest {
 
     runTestOk("{@key {1}: @value {2}}", events);
   }
+
+  @Test
+  void error() {
+    ReconParser parser = new ReconParser().feed(Input.string("@!!!!"));
+
+    ParseResult<ReadEvent> parseResult = parser.next();
+    assertTrue(parser.isError());
+    assertTrue(parser.error().isError());
+    assertTrue(parseResult.isError());
+
+    ResultError<ReadEvent> error = (ResultError<ReadEvent>) parseResult;
+    assertEquals(error.getLocation(), new StringLocation(1, 1, 0));
+    assertEquals(error.getCause(), "Expected '{', found '@'");
+  }
+
 }

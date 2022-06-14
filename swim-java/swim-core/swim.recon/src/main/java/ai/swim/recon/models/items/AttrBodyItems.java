@@ -15,7 +15,7 @@
 package ai.swim.recon.models.items;
 
 import ai.swim.recon.event.ReadEvent;
-import ai.swim.recon.models.events.ParseEvents;
+import ai.swim.recon.models.ParseState;
 import ai.swim.recon.models.state.StateChange;
 
 public class AttrBodyItems implements ItemsKind {
@@ -24,28 +24,28 @@ public class AttrBodyItems implements ItemsKind {
   }
 
   @Override
-  public ParseEvents.ParseState startOrNl() {
-    return ParseEvents.ParseState.AttrBodyStartOrNl;
+  public ParseState startOrNl() {
+    return ParseState.AttrBodyStartOrNl;
   }
 
   @Override
-  public ParseEvents.ParseState afterSep() {
-    return ParseEvents.ParseState.AttrBodyAfterSep;
+  public ParseState afterSep() {
+    return ParseState.AttrBodyAfterSep;
   }
 
   @Override
-  public ParseEvents.ParseState startSlot() {
-    return ParseEvents.ParseState.AttrBodySlot;
+  public ParseState startSlot() {
+    return ParseState.AttrBodySlot;
   }
 
   @Override
-  public ParseEvents.ParseState afterValue() {
-    return ParseEvents.ParseState.AttrBodyAfterValue;
+  public ParseState afterValue() {
+    return ParseState.AttrBodyAfterValue;
   }
 
   @Override
-  public ParseEvents.ParseState afterSlot() {
-    return ParseEvents.ParseState.AttrBodyAfterSlot;
+  public ParseState afterSlot() {
+    return ParseState.AttrBodyAfterSlot;
   }
 
   @Override

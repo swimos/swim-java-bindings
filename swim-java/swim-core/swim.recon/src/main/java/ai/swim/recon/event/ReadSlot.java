@@ -14,9 +14,9 @@
 
 package ai.swim.recon.event;
 
- class ReadSlot extends ReadEvent {
+class ReadSlot extends ReadEvent {
 
-   static final ReadEvent INSTANCE = new ReadSlot();
+  static final ReadEvent INSTANCE = new ReadSlot();
 
   @Override
   public boolean isSlot() {

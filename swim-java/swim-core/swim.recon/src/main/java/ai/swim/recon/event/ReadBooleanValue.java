@@ -18,9 +18,9 @@ import java.util.Objects;
 
 public class ReadBooleanValue extends ReadEvent {
 
-  private final Boolean value;
+  private final boolean value;
 
-  public ReadBooleanValue(Boolean value) {
+  public ReadBooleanValue(boolean value) {
     this.value = value;
   }
 

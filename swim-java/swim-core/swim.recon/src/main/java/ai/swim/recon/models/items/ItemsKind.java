@@ -15,7 +15,7 @@
 package ai.swim.recon.models.items;
 
 import ai.swim.recon.event.ReadEvent;
-import ai.swim.recon.models.events.ParseEvents.ParseState;
+import ai.swim.recon.models.ParseState;
 import ai.swim.recon.models.state.StateChange;
 
 public interface ItemsKind {

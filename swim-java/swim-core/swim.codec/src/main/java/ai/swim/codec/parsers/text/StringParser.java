@@ -36,6 +36,10 @@ public class StringParser extends Parser<String> {
     this.stage = stage;
   }
 
+  public StringParser() {
+    this(new StringBuilder(),0,0, Stage.Head);
+  }
+
   public static Parser<String> stringLiteral() {
     return chain(peek(eqChar('\"')), new StringParser(new StringBuilder(), 0, 0, Stage.Head));
   }

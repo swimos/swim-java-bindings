@@ -4,9 +4,8 @@ import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
 import ai.swim.recon.event.ReadEvent;
+import ai.swim.recon.models.ParseState;
 import ai.swim.recon.models.ParserTransition;
-import ai.swim.recon.models.events.Event;
-import ai.swim.recon.models.events.ParseEvents;
 import ai.swim.recon.models.items.ItemsKind;
 import ai.swim.recon.models.state.ChangeState;
 import ai.swim.recon.models.state.PushAttrNewRec;
@@ -27,21 +26,45 @@ import static ai.swim.recon.ReconParserParts.*;
  */
 public final class ReconParser {
 
-  private final Input input;
-  private final Deque<ParseEvents.ParseState> state;
+  private Input input;
+  private final Deque<ParseState> state;
   private Parser<ParserTransition> current;
-  private ParseEvents pending;
+  private PendingEvents pending;
   private boolean complete;
   private boolean clearIfNone;
 
-  public ReconParser(Input input) {
-    this.input = Objects.requireNonNull(input);
-    this.state = new ArrayDeque<>(Collections.singleton(ParseEvents.ParseState.Init));
+  private static class PendingEvents {
+    private final List<ReadEvent> events;
+    private int idx;
+
+    private PendingEvents(List<ReadEvent> events) {
+      this.events = events;
+      this.idx = 0;
+    }
+
+    public boolean done() {
+      return idx >= events.size();
+    }
+
+    public ReadEvent next() {
+      if (done()) {
+        return null;
+      } else {
+        ReadEvent event = events.get(idx);
+        idx += 1;
+
+        return event;
+      }
+    }
+  }
+
+  public ReconParser() {
+    this.state = new ArrayDeque<>(Collections.singleton(ParseState.Init));
     this.complete = false;
     this.clearIfNone = false;
   }
 
-  private ReconParser(Input input, Deque<ParseEvents.ParseState> state, Parser<ParserTransition> current, ParseEvents pending, boolean complete, boolean clearIfNone) {
+  private ReconParser(Input input, Deque<ParseState> state, Parser<ParserTransition> current, PendingEvents pending, boolean complete, boolean clearIfNone) {
     this.input = input;
     this.state = state;
     this.current = current;
@@ -70,7 +93,8 @@ public final class ReconParser {
    */
   public ResultError<ReadEvent> error() {
     if (this.current != null && this.current.isError()) {
-      return new ResultError<>(((ParserError<ParserTransition>) this.current).cause());
+      ParserError<?> error = (ParserError<?>) this.current;
+      return new ResultError<>(error.cause(), error.location());
     } else {
       throw new IllegalStateException("Parser is not in an error state");
     }
@@ -83,7 +107,11 @@ public final class ReconParser {
     if (this.complete) {
       return false;
     } else if (this.current == null) {
-      return this.input.isContinuation();
+      if (this.input == null) {
+        return true;
+      } else {
+        return this.input.isContinuation();
+      }
     } else {
       return this.current.isCont();
     }
@@ -93,7 +121,11 @@ public final class ReconParser {
    * Returns whether the input is done.
    */
   public boolean isDone() {
-    return this.input.isDone();
+    if (input == null) {
+      return false;
+    } else {
+      return input.isDone();
+    }
   }
 
   /**
@@ -113,11 +145,20 @@ public final class ReconParser {
    * any consumed tokens from the {@code input}.
    */
   public ReconParser feed(Input input) {
+    Objects.requireNonNull(input);
+
     if (this.complete) {
       throw new IllegalStateException("Cannot feed a completed parser more data");
     }
 
-    return new ReconParser(this.input.extend(Objects.requireNonNull(input)), this.state, this.current, this.pending, this.complete, this.clearIfNone);
+    Input newInput;
+    if (this.input == null) {
+      newInput = input;
+    } else {
+      newInput = this.input.extend(input);
+    }
+
+    return new ReconParser(newInput, this.state, this.current, this.pending, this.complete, this.clearIfNone);
   }
 
   /**
@@ -130,12 +171,15 @@ public final class ReconParser {
    * - {@code ParseError}: the {@code Input} is invalid.
    */
   public ParseResult<ReadEvent> next() {
+    if (input == null) {
+      throw new IllegalStateException("No input provided to recon parser");
+    }
+
     // If there are any pending events then drain them before attempting to parse anything else
-    if (this.pending != null) {
-      Optional<Event> optEvent = pending.takeEvent();
-      if (optEvent.isPresent()) {
-        return onEvent(optEvent.get());
-      }
+    ParseResult<ReadEvent> event = drainEvent();
+
+    if (event != null) {
+      return event;
     }
 
     if (this.complete) {
@@ -143,20 +187,22 @@ public final class ReconParser {
     } else if (this.current != null) {
       // The current parser didn't complete in its last iteration, attempt to feed it more data.
       if (this.current.isError()) {
-        return ParseResult.error(((ParserError<?>) this.current).cause());
+        ParserError<?> parserError = (ParserError<?>) this.current;
+        return new ResultError<>(parserError.cause(), parserError.location());
       } else if (this.input.isContinuation()) {
-        ParseResult<ParseEvents> result = this.feed();
+        ParseResult<List<ReadEvent>> result = this.feed();
         if (result.isOk()) {
-          Optional<Event> optEvent = result.bind().takeEvent();
-          if (optEvent.isPresent()) {
-            return onEvent(optEvent.get());
+          List<ReadEvent> events = result.bind();
+          if (!events.isEmpty()) {
+            this.pending = new PendingEvents(events);
+            return drainEvent();
           }
         } else {
           return result.cast();
         }
 
         if (!this.complete && this.input.isDone()) {
-          return ParseResult.error("Not enough data");
+          return ParseResult.error("Not enough data", this.input.location());
         } else {
           return ParseResult.continuation();
         }
@@ -166,11 +212,12 @@ public final class ReconParser {
     if (this.state.peekLast() != null) {
       // Continue parsing tokens while the input has remaining tokens.
       while (true) {
-        ParseResult<ParseEvents> result = this.nextEvent();
+        ParseResult<List<ReadEvent>> result = this.nextEvent();
         if (result.isOk()) {
-          Optional<Event> optEvent = result.bind().takeEvent();
-          if (optEvent.isPresent()) {
-            return onEvent(optEvent.get());
+          List<ReadEvent> events = result.bind();
+          if (!events.isEmpty()) {
+            this.pending = new PendingEvents(events);
+            return drainEvent();
           }
         } else {
           return result.cast();
@@ -183,18 +230,27 @@ public final class ReconParser {
     return ParseResult.end();
   }
 
-  private ParseResult<ReadEvent> onEvent(Event event) {
-    this.pending = event.getNext();
-    return ParseResult.ok(event.getEvent());
+  private ParseResult<ReadEvent> drainEvent() {
+    if (pending == null) {
+      return null;
+    }
+
+    ReadEvent event = pending.next();
+    if (pending.done()) {
+      pending = null;
+    }
+
+    return ParseResult.ok(event);
   }
 
-  private ParseResult<ParseEvents> feed() {
+  private ParseResult<List<ReadEvent>> feed() {
     this.current = this.current.feed(this.input);
 
     if (this.current.isCont()) {
       return ParseResult.continuation();
     } else if (this.current.isError()) {
-      return ParseResult.error(((ParserError<ParserTransition>) this.current).cause());
+      ParserError<?> parserError = (ParserError<?>) this.current;
+      return new ResultError<>(parserError.cause(), parserError.location());
     }
 
     ParserTransition output = this.current.bind();
@@ -203,7 +259,7 @@ public final class ReconParser {
     return ParseResult.ok(output.getEvents());
   }
 
-  private ParseResult<ParseEvents> parseEvent(Parser<ParserTransition> parser, boolean clearIfNone) {
+  private ParseResult<List<ReadEvent>> parseEvent(Parser<ParserTransition> parser, boolean clearIfNone) {
     if (this.current == null) {
       this.current = parser;
       this.clearIfNone = clearIfNone;
@@ -228,7 +284,7 @@ public final class ReconParser {
     );
   }
 
-  private ParseResult<ParseEvents> nextEvent() {
+  private ParseResult<List<ReadEvent>> nextEvent() {
     switch (this.state.getLast()) {
       case Init:
         return parseEvent(initParser(), true);
@@ -236,7 +292,7 @@ public final class ReconParser {
         if (input.isDone()) {
           this.current = null;
           this.complete = true;
-          return ParseResult.ok(ParseEvents.twoEvents(ReadEvent.startBody(), ReadEvent.endRecord()));
+          return ParseResult.ok(List.of(ReadEvent.startBody(), ReadEvent.endRecord()));
         } else {
           return parseEvent(preceded(multispace0(), parseAfterAttr()), false);
         }
@@ -251,14 +307,14 @@ public final class ReconParser {
       case RecordBodyAfterValue:
         return parseEvent(preceded(space0(), parseAfterValue(ItemsKind.record())).map(s -> {
           if (s.isPresent()) {
-            ParseEvents.ParseState parseState = s.get();
+            ParseState parseState = s.get();
             this.state.removeLast();
             this.state.addLast(parseState);
 
-            if (parseState == ParseEvents.ParseState.RecordBodySlot) {
+            if (parseState == ParseState.RecordBodySlot) {
               return new ParserTransition(ReadEvent.slot());
             } else {
-              return new ParserTransition(ParseEvents.noEvent());
+              return new ParserTransition();
             }
           } else {
             this.transition(StateChange.popAfterItem(), false);
@@ -270,7 +326,7 @@ public final class ReconParser {
           if (s.isPresent()) {
             this.state.removeLast();
             this.state.addLast(s.get());
-            return new ParserTransition(ParseEvents.noEvent());
+            return new ParserTransition();
           } else {
             this.transition(StateChange.popAfterItem(), false);
             return new ParserTransition(ReadEvent.endRecord());
@@ -281,7 +337,7 @@ public final class ReconParser {
           if (s.isPresent()) {
             this.state.removeLast();
             this.state.addLast(s.get());
-            return new ParserTransition(ParseEvents.noEvent());
+            return new ParserTransition();
           } else {
             this.transition(StateChange.popAfterAttr(), false);
             return new ParserTransition(ReadEvent.endAttribute());
@@ -290,14 +346,14 @@ public final class ReconParser {
       case AttrBodyAfterValue:
         return parseEvent(preceded(space0(), parseAfterValue(ItemsKind.attr())).map(s -> {
           if (s.isPresent()) {
-            ParseEvents.ParseState parseState = s.get();
+            ParseState parseState = s.get();
             this.state.removeLast();
             this.state.addLast(parseState);
 
-            if (parseState == ParseEvents.ParseState.AttrBodySlot) {
+            if (parseState == ParseState.AttrBodySlot) {
               return new ParserTransition(ReadEvent.slot());
             } else {
-              return new ParserTransition(ParseEvents.noEvent());
+              return new ParserTransition();
             }
           } else {
             this.transition(StateChange.popAfterAttr(), false);
@@ -327,55 +383,55 @@ public final class ReconParser {
       }
     } else if (stateChange.isPopAfterAttr()) {
       this.state.pollLast();
-      ParseEvents.ParseState last = this.state.pollLast();
+      ParseState last = this.state.pollLast();
       if (last != null) {
-        this.state.addLast(ParseEvents.ParseState.AfterAttr);
+        this.state.addLast(ParseState.AfterAttr);
       }
     } else if (stateChange.isPopAfterItem()) {
       this.state.pollLast();
-      ParseEvents.ParseState parseState = this.state.pollLast();
+      ParseState parseState = this.state.pollLast();
       if (parseState != null) {
         switch (parseState) {
           case Init:
-            this.state.addLast(ParseEvents.ParseState.AfterAttr);
+            this.state.addLast(ParseState.AfterAttr);
             break;
           case AttrBodyStartOrNl:
           case AttrBodyAfterSep:
-            this.state.addLast(ParseEvents.ParseState.AttrBodyAfterValue);
+            this.state.addLast(ParseState.AttrBodyAfterValue);
             break;
           case AttrBodySlot:
-            this.state.addLast(ParseEvents.ParseState.AttrBodyAfterSlot);
+            this.state.addLast(ParseState.AttrBodyAfterSlot);
             break;
           case RecordBodyStartOrNl:
           case RecordBodyAfterSep:
-            this.state.addLast(ParseEvents.ParseState.RecordBodyAfterValue);
+            this.state.addLast(ParseState.RecordBodyAfterValue);
             break;
           case RecordBodySlot:
-            this.state.addLast(ParseEvents.ParseState.RecordBodyAfterSlot);
+            this.state.addLast(ParseState.RecordBodyAfterSlot);
             break;
           default:
             throw new IllegalStateException("Invalid state transition from: " + parseState + ", to: " + stateChange);
         }
       }
     } else if (stateChange.isChangeState()) {
-      ParseEvents.ParseState last = this.state.pollLast();
+      ParseState last = this.state.pollLast();
       if (last != null) {
         this.state.addLast(((ChangeState) stateChange).getState());
       }
     } else if (stateChange.isPushAttr()) {
-      this.state.addLast(ParseEvents.ParseState.AttrBodyStartOrNl);
+      this.state.addLast(ParseState.AttrBodyStartOrNl);
     } else if (stateChange.isPushAttrNewRec()) {
       PushAttrNewRec pushAttr = (PushAttrNewRec) stateChange;
       if (pushAttr.hasBody()) {
-        this.state.addLast(ParseEvents.ParseState.Init);
-        this.state.addLast(ParseEvents.ParseState.AttrBodyStartOrNl);
+        this.state.addLast(ParseState.Init);
+        this.state.addLast(ParseState.AttrBodyStartOrNl);
       } else {
-        this.state.addLast(ParseEvents.ParseState.AfterAttr);
+        this.state.addLast(ParseState.AfterAttr);
       }
     } else if (stateChange.isPushAttrNewRec()) {
-      this.state.addLast(ParseEvents.ParseState.AttrBodyStartOrNl);
+      this.state.addLast(ParseState.AttrBodyStartOrNl);
     } else if (stateChange.isPushBody()) {
-      this.state.addLast(ParseEvents.ParseState.RecordBodyStartOrNl);
+      this.state.addLast(ParseState.RecordBodyStartOrNl);
     } else {
       throw new AssertionError();
     }

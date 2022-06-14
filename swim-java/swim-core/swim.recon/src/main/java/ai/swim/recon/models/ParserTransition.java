@@ -15,41 +15,42 @@
 package ai.swim.recon.models;
 
 import ai.swim.recon.event.ReadEvent;
-import ai.swim.recon.models.events.ParseEvents;
 import ai.swim.recon.models.state.StateChange;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 public class ParserTransition {
-  private final ParseEvents events;
+  private final List<ReadEvent> events;
   private final StateChange change;
 
   public ParserTransition(ReadEvent event, StateChange change) {
-    this.events = ParseEvents.singleEvent(event);
+    this.events = List.of(event);
     this.change = Objects.requireNonNullElse(change, StateChange.none());
   }
 
-  public ParserTransition(ParseEvents events) {
-    this.events = events;
+  public ParserTransition() {
+    this.events = Collections.emptyList();
     this.change = StateChange.none();
   }
 
   public ParserTransition(ReadEvent event) {
-    this.events = ParseEvents.singleEvent(event);
+    this.events = List.of(event);
     this.change = StateChange.none();
   }
 
   public ParserTransition(ReadEvent event1, ReadEvent event2, StateChange change) {
-    this.events = ParseEvents.twoEvents(event1, event2);
+    this.events = List.of(event1, event2);
     this.change = Objects.requireNonNullElse(change, StateChange.none());
   }
 
-  public ParserTransition(ParseEvents events, StateChange change) {
+  public ParserTransition(List<ReadEvent> events, StateChange change) {
     this.events = events;
     this.change = change;
   }
 
-  public ParseEvents getEvents() {
+  public List<ReadEvent> getEvents() {
     return events;
   }
 
@@ -59,12 +60,8 @@ public class ParserTransition {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
+    if (this == o) return true;
+    if (!(o instanceof ParserTransition)) return false;
     ParserTransition that = (ParserTransition) o;
     return Objects.equals(events, that.events) && Objects.equals(change, that.change);
   }

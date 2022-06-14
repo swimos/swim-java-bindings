@@ -12,56 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.recon.models.events;
+package ai.swim.recon.event.number;
 
 import ai.swim.recon.event.ReadEvent;
 
 import java.util.Objects;
 
-public class TwoParseEvents extends ParseEvents {
-  private final ReadEvent event1;
-  private final ReadEvent event2;
+public abstract class ReadNumberValue<N> extends ReadEvent {
 
-  TwoParseEvents(ReadEvent event1, ReadEvent event2) {
-    this.event1 = event1;
-    this.event2 = event2;
+  private final N value;
+
+  public ReadNumberValue(N value) {
+    this.value = value;
   }
 
-  public ReadEvent getEvent1() {
-    return event1;
-  }
-
-  public ReadEvent getEvent2() {
-    return event2;
-  }
-
-  @Override
-  public boolean isTwoEvents() {
-    return true;
+  public N value() {
+    return this.value;
   }
 
   @Override
   public String toString() {
-    return "TwoParseEvents{" +
-        "event1=" + event1 +
-        ", event2=" + event2 +
+    return "ReadNumberValue{" +
+        "value=" + value +
         '}';
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    TwoParseEvents that = (TwoParseEvents) o;
-    return Objects.equals(event1, that.event1) && Objects.equals(event2, that.event2);
+    if (this == o) return true;
+    if (!(o instanceof ReadNumberValue)) return false;
+    if (!super.equals(o)) return false;
+    ReadNumberValue<?> that = (ReadNumberValue<?>) o;
+    return Objects.equals(value, that.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(event1, event2);
+    return Objects.hash(value);
   }
 }

@@ -15,8 +15,12 @@
 package ai.swim.recon.event;
 
 import ai.swim.codec.parsers.number.TypedNumber;
+import ai.swim.recon.event.number.*;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.state.StateChange;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public abstract class ReadEvent {
 
@@ -46,6 +50,30 @@ public abstract class ReadEvent {
 
   public static ReadEvent text(String value) {
     return new ReadTextValue(value);
+  }
+
+  public static ReadEvent number(int value) {
+    return new ReadIntValue(value);
+  }
+
+  public static ReadEvent number(long value) {
+    return new ReadLongValue(value);
+  }
+
+  public static ReadEvent number(float value) {
+    return new ReadFloatValue(value);
+  }
+
+  public static ReadEvent number(double value) {
+    return new ReadDoubleValue(value);
+  }
+
+  public static ReadEvent number(BigInteger value) {
+    return new ReadBigIntValue(value);
+  }
+
+  public static ReadEvent number(BigDecimal value) {
+    return new ReadBigDecimalValue(value);
   }
 
   public static ReadEvent number(TypedNumber value) {
@@ -82,7 +110,27 @@ public abstract class ReadEvent {
     return false;
   }
 
-  public boolean isNumber() {
+  public boolean isReadInt() {
+    return false;
+  }
+
+  public boolean isReadLong() {
+    return false;
+  }
+
+  public boolean isReadFloat() {
+    return false;
+  }
+
+  public boolean isReadDouble() {
+    return false;
+  }
+
+  public boolean isReadBigInt() {
+    return false;
+  }
+
+  public boolean isReadBigDecimal() {
     return false;
   }
 
