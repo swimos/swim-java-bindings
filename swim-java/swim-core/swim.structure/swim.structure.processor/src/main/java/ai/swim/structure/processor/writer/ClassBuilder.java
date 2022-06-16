@@ -50,7 +50,7 @@ public class ClassBuilder extends Builder {
 
         FieldModel tagBody = headerFields.getTagBody();
 
-        if (tagBody!=null){
+        if (tagBody != null) {
           tagBody.getAccessor().write(body, "obj", String.format("header.%s", tagBody.fieldName()));
         }
       } else {
@@ -144,7 +144,7 @@ public class ClassBuilder extends Builder {
         "headerSlotKey.getName()",
         idx,
         (offset, i) -> {
-          if (i-offset == headerFieldSet.headerFields.size()) {
+          if (i - offset == headerFieldSet.headerFields.size()) {
             return null;
           } else {
             FieldModel recognizer = headerFieldSet.headerFields.get(i - offset);

@@ -61,8 +61,6 @@ public @interface AutoForm {
   @Retention(RetentionPolicy.RUNTIME)
   @interface Type {
     Class<?> value();
-
-    String name() default "";
   }
 
 }

@@ -102,7 +102,7 @@ public class DelegateClassRecognizer<T> extends ClassRecognizer<DelegateClassRec
         }
       }
     } else {
-      return Recognizer.error(new RuntimeException("Expected a record body or attribute"));
+      return Recognizer.error(new RuntimeException("Expected a record body or attribute. Found: " + event));
     }
   }
 

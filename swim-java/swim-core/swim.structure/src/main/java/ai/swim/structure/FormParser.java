@@ -23,7 +23,7 @@ public class FormParser<T> extends Parser<T> {
   @Override
   public Parser<T> feed(Input input) {
     if (parser == null) {
-      this.parser = new ReconParser(input);
+      this.parser = new ReconParser().feed(input);
     }
 
     while (this.parser.hasEvents()) {
@@ -35,7 +35,7 @@ public class FormParser<T> extends Parser<T> {
         } else if (recognizer.isError()) {
           return Parser.error(input, recognizer.trap().toString());
         }
-      }else if (result.isError()) {
+      } else if (result.isError()) {
         throw new AssertionError();
       }
 

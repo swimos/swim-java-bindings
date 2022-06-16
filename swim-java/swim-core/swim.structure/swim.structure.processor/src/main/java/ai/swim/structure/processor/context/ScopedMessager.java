@@ -13,12 +13,12 @@ public class ScopedMessager {
     this.root = root;
   }
 
-  public void log(Diagnostic.Kind kind, String event){
+  public void log(Diagnostic.Kind kind, String event) {
     String message = String.format("%s: %s", this.root, event);
     this.messager.printMessage(kind, message);
   }
 
-  public void error(String event){
-    this.log(Diagnostic.Kind.ERROR,event);
+  public void error(String event) {
+    this.log(Diagnostic.Kind.ERROR, event);
   }
 }

@@ -36,7 +36,7 @@ public abstract class FieldDiscriminate {
   }
 
   public static FieldDiscriminate header(FieldModel tagBody, List<FieldModel> fields) {
-    return new HeaderFields(tagBody,fields) {
+    return new HeaderFields(tagBody, fields) {
       @Override
       public boolean isHeader() {
         return true;

@@ -62,8 +62,8 @@ class OuterPropClass {
 
   static class OuterPropClassBuilder implements RecognizingBuilder<OuterPropClass> {
 
-    private  FieldRecognizingBuilder<String> cBuilder = new FieldRecognizingBuilder<>(String.class);
-    private  FieldRecognizingBuilder<InnerPropClass> dBuilder = new FieldRecognizingBuilder<>(new InnerPropClass.InnerClassRecognizer());
+    private FieldRecognizingBuilder<String> cBuilder = new FieldRecognizingBuilder<>(String.class);
+    private FieldRecognizingBuilder<InnerPropClass> dBuilder = new FieldRecognizingBuilder<>(new InnerPropClass.InnerClassRecognizer());
 
     @Override
     public boolean feedIndexed(int index, ReadEvent event) {

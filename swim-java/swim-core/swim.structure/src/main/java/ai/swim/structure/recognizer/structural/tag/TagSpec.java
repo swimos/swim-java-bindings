@@ -10,8 +10,4 @@ public abstract class TagSpec {
     return false;
   }
 
-  public boolean isFixedSet() {
-    return false;
-  }
-
 }

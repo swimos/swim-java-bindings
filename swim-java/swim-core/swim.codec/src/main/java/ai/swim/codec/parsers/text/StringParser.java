@@ -37,7 +37,7 @@ public class StringParser extends Parser<String> {
   }
 
   public StringParser() {
-    this(new StringBuilder(),0,0, Stage.Head);
+    this(new StringBuilder(), 0, 0, Stage.Head);
   }
 
   public static Parser<String> stringLiteral() {

@@ -2,6 +2,8 @@ package ai.swim.structure.recognizer;
 
 
 import ai.swim.structure.annotations.AutoloadedRecognizer;
+import ai.swim.structure.recognizer.structural.PolymorphicRecognizer;
+import ai.swim.structure.recognizer.structural.StructuralRecognizer;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
 
@@ -24,7 +26,10 @@ public class RecognizerProxy {
 
   private static ConcurrentHashMap<Class<?>, Supplier<Recognizer<?>>> loadRecognizers() {
     ConcurrentHashMap<Class<?>, Supplier<Recognizer<?>>> recognizers = new ConcurrentHashMap<>();
-    recognizers.put(Integer.class, () -> ScalarRecognizer.BOXED_INTEGER);
+    recognizers.put(Integer.class, () -> ScalarRecognizer.INTEGER);
+    recognizers.put(Long.class, () -> ScalarRecognizer.LONG);
+    recognizers.put(Byte[].class, () -> ScalarRecognizer.BLOB);
+    recognizers.put(Boolean.class, () -> ScalarRecognizer.BOOLEAN);
     recognizers.put(String.class, () -> ScalarRecognizer.STRING);
     recognizers.put(Object.class, ObjectRecognizer::new);
 
@@ -90,6 +95,15 @@ public class RecognizerProxy {
       throw new RuntimeException("Failed to find recognizer for: " + clazz.getCanonicalName());
     } else {
       return (Recognizer<T>) recognizer.get();
+    }
+  }
+
+  public <C> StructuralRecognizer<C> lookupStructural(Class<C> clazz) {
+    Recognizer<C> recognizer = lookup(clazz);
+    if (recognizer instanceof StructuralRecognizer<C>) {
+      return (StructuralRecognizer<C>) recognizer;
+    } else {
+      throw new ClassCastException(String.format("Recognizer for %s is not a structural recognizer", clazz));
     }
   }
 

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-// todo refactor into Either<One, Many>
 public class Body {
   private boolean isReplaced;
   private List<FieldModel> fields;

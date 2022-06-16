@@ -639,4 +639,192 @@ public class AutoDelegateTest {
     runTestOk(new ImpBase2Recognizer(), new ImpBase2("hello"), "@ImpBase2{a:hello}");
   }
 
+  @AutoForm(subTypes = {
+      @AutoForm.Type(IF2.class),
+      @AutoForm.Type(IFAbs.class)
+  })
+  public interface IF1 {
+
+  }
+
+  @AutoForm(subTypes = @AutoForm.Type(IF2Impl.class))
+  public interface IF2 extends IF1 {
+
+  }
+
+  @AutoForm
+  public static class IF2Impl implements IF2 {
+    @Override
+    public boolean equals(Object obj) {
+      return obj instanceof IF2Impl;
+    }
+  }
+
+  @AutoForm(subTypes = @AutoForm.Type(IFAbsImpl.class))
+  public static abstract class IFAbs implements IF1 {
+
+  }
+
+  @AutoForm
+  public static class IFAbsImpl extends IFAbs {
+    @Override
+    public boolean equals(Object obj) {
+      return obj instanceof IFAbsImpl;
+    }
+  }
+
+  @Test
+  void testInterfaceHierarchy() {
+    runTestOk(new IF1Recognizer(), new IFAbsImpl(), "@IFAbsImpl");
+    runTestOk(new IF1Recognizer(), new IF2Impl(), "@IF2Impl");
+    runTestOk(new IF2Recognizer(), new IF2Impl(), "@IF2Impl");
+    runTestOk(new IFAbsRecognizer(), new IFAbsImpl(), "@IFAbsImpl");
+  }
+
+  @AutoForm(subTypes = @AutoForm.Type(Mixed.class))
+  public static abstract class MixedBase {
+
+  }
+
+  @AutoForm(subTypes = @AutoForm.Type(Mixed.class))
+  public interface MixedInterface {
+
+  }
+
+  @AutoForm
+  public static class Mixed extends MixedBase implements MixedInterface {
+    @Override
+    public boolean equals(Object obj) {
+      return obj instanceof Mixed;
+    }
+  }
+
+  @Test
+  void testMixedHierarchy() {
+    runTestOk(new MixedBaseRecognizer(), new Mixed(), "@Mixed");
+    runTestOk(new MixedInterfaceRecognizer(), new Mixed(), "@Mixed");
+    runTestOk(new MixedRecognizer(), new Mixed(), "@Mixed");
+  }
+
+  @AutoForm(subTypes = {
+      @AutoForm.Type(MapUpdate.class),
+      @AutoForm.Type(MapRemove.class),
+      @AutoForm.Type(MapClear.class),
+      @AutoForm.Type(MapTake.class),
+      @AutoForm.Type(MapDrop.class),
+  })
+  public static abstract class MapEnvelope {
+
+  }
+
+  @AutoForm("update")
+  public static class MapUpdate extends MapEnvelope {
+    @AutoForm.Kind(FieldKind.Header)
+    public Object key;
+    @AutoForm.Kind(FieldKind.Body)
+    public Object value;
+
+    public MapUpdate() {
+
+    }
+
+    public MapUpdate(Object key, Object value) {
+      this.key = key;
+      this.value = value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof MapUpdate)) return false;
+      MapUpdate update = (MapUpdate) o;
+      return Objects.equals(key, update.key) && Objects.equals(value, update.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(key, value);
+    }
+  }
+
+  @AutoForm("remove")
+  public static class MapRemove extends MapEnvelope {
+    @AutoForm.Kind(FieldKind.Header)
+    public Object key;
+
+    public MapRemove() {
+
+    }
+
+    public MapRemove(Object key) {
+      this.key = key;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof MapRemove)) return false;
+      MapRemove mapRemove = (MapRemove) o;
+      return Objects.equals(key, mapRemove.key);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(key);
+    }
+  }
+
+  @AutoForm("clear")
+  public static class MapClear extends MapEnvelope {
+    @Override
+    public boolean equals(Object obj) {
+      return obj instanceof MapClear;
+    }
+  }
+
+  @AutoForm("clear")
+  public static class MapTake extends MapEnvelope {
+    @AutoForm.Kind(FieldKind.HeaderBody)
+    public int count;
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof MapTake)) return false;
+      MapTake mapTake = (MapTake) o;
+      return count == mapTake.count;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(count);
+    }
+  }
+
+  @AutoForm("drop")
+  public static class MapDrop extends MapEnvelope {
+    @AutoForm.Kind(FieldKind.HeaderBody)
+    public int count;
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof MapDrop)) return false;
+      MapDrop mapDrop = (MapDrop) o;
+      return count == mapDrop.count;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(count);
+    }
+  }
+
+  @Test
+  void testComplexEnvelope() {
+    runTestOk(new MapEnvelopeRecognizer(), new MapUpdate(1,2), "@update(key:1)2");
+    runTestOk(new MapEnvelopeRecognizer(), new MapRemove(1), "@remove(key:1)");
+    runTestOk(new MapEnvelopeRecognizer(), new MapClear(), "@clear)");
+  }
+
 }
