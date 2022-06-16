@@ -7,7 +7,7 @@ import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import ai.swim.structure.recognizer.structural.tag.TagSpec;
 
-public abstract class ClassRecognizer<State, Key, T> extends ClassRecognizerBase<T> {
+public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
   protected final RecognizingBuilder<T> builder;
   protected final BitSet bitSet;
   protected final IndexFn<Key> indexFn;

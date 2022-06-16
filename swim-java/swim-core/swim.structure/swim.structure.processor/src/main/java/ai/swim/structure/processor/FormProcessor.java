@@ -17,8 +17,9 @@ package ai.swim.structure.processor;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.inspect.ClassMap;
+import ai.swim.structure.processor.recognizer.StructuralRecognizer;
 import ai.swim.structure.processor.schema.ClassSchema;
+import ai.swim.structure.processor.schema.Schema;
 import ai.swim.structure.processor.writer.Recognizer;
 import com.google.auto.service.AutoService;
 
@@ -28,7 +29,6 @@ import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import java.util.*;
@@ -36,14 +36,14 @@ import java.util.*;
 @AutoService(Processor.class)
 public class FormProcessor extends AbstractProcessor {
 
-  private final List<ClassMap> classMaps = new ArrayList<>();
+  private final List<Schema> schemas = new ArrayList<>();
   private ProcessingContext processingContext;
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     for (Element element : roundEnv.getElementsAnnotatedWith(AutoForm.class)) {
-      if (element.getKind() != ElementKind.CLASS) {
-        this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, element + " cannot be annotated with @" + AutoForm.class.getSimpleName() + ". It may only be used on classes");
+      if (!element.getKind().isClass() && !element.getKind().isInterface()) {
+        this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, element + " cannot be annotated with @" + AutoForm.class.getSimpleName() + ". It may only be used on classes and interfaces");
         return true;
       }
 
@@ -53,14 +53,14 @@ public class FormProcessor extends AbstractProcessor {
 
       ScopedContext scopedContext = this.processingContext.enter(element);
 
-      // Anything that we're processing will be a class map
-      ClassMap classMap = (ClassMap) scopedContext.getRecognizer(element);
+      // Anything that we're processing will be structural
+      StructuralRecognizer recognizer = (StructuralRecognizer) scopedContext.getRecognizer(element);
 
-      if (classMap == null) {
+      if (recognizer == null) {
         return true;
       }
 
-      this.classMaps.add(classMap);
+      this.schemas.add(Schema.from(recognizer));
     }
 
     if (roundEnv.processingOver()) {
@@ -76,14 +76,9 @@ public class FormProcessor extends AbstractProcessor {
   }
 
   private void write() {
-    this.processingContext.getFactory().addAll(this.classMaps);
-
-    for (ClassMap classMap : this.classMaps) {
-      ClassSchema classSchema = ClassSchema.fromMap(classMap);
-      ScopedContext scopedContext = this.processingContext.enter(classMap.getRoot());
-
+    for (Schema schema: this.schemas) {
       try {
-        Recognizer.writeRecognizer(classSchema, scopedContext);
+        schema.write(this.processingContext.enter(schema.root()));
       } catch (Throwable e) {
         e.printStackTrace();
         this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());

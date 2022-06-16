@@ -3,9 +3,7 @@ package ai.swim.structure.processor.writer;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.processor.context.NameFactory;
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.inspect.ClassMap;
-import ai.swim.structure.processor.recognizer.RecognizerInstance;
-import ai.swim.structure.processor.recognizer.RecognizerModel;
+import ai.swim.structure.processor.recognizer.*;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.HeaderFields;
@@ -21,8 +19,9 @@ import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static ai.swim.structure.processor.writer.PolymorphicClassRecognizer.buildPolymorphicClassRecognizer;
+import static ai.swim.structure.processor.writer.PolymorphicRecognizer.buildPolymorphicRecognizer;
 
 public class Recognizer {
 
@@ -30,6 +29,7 @@ public class Recognizer {
   public static final String RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.RecognizingBuilder";
 
   public static final String RECOGNIZER_CLASS = "ai.swim.structure.recognizer.Recognizer";
+  public static final String STRUCTURAL_RECOGNIZER_CLASS = "ai.swim.structure.recognizer.structural.StructuralRecognizer";
   public static final String LABELLED_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.labelled.LabelledClassRecognizer";
   public static final String DELEGATE_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.delegate.DelegateClassRecognizer";
 
@@ -42,17 +42,17 @@ public class Recognizer {
 
   public static void writeRecognizer(ClassSchema schema, ScopedContext context) throws IOException {
     ClassMap classMap = schema.getClassMap();
+    List<StructuralRecognizer> subTypes = classMap.getSubTypes();
     NameFactory nameFactory = context.getNameFactory();
-    List<RecognizerModel> subTypes = classMap.getSubTypes();
     TypeSpec typeSpec;
 
     if (classMap.isAbstract()) {
-      typeSpec = buildPolymorphicClassRecognizer(subTypes, context).build();
+      typeSpec = buildPolymorphicRecognizer(subTypes, context).build();
     } else if (!subTypes.isEmpty()) {
       TypeSpec.Builder concreteRecognizer = writeClassRecognizer(true, schema, context);
       subTypes.add(new RecognizerInstance(nameFactory.concreteRecognizerClassName()));
 
-      TypeSpec.Builder classRecognizer = buildPolymorphicClassRecognizer(subTypes, context);
+      TypeSpec.Builder classRecognizer = buildPolymorphicRecognizer(subTypes, context);
       classRecognizer.addType(concreteRecognizer.build());
 
       typeSpec = classRecognizer.build();
@@ -74,9 +74,7 @@ public class Recognizer {
 
     if (isPolymorphic) {
       classSpec.addModifiers(Modifier.STATIC);
-    }
-
-    if (!isPolymorphic) {
+    } else {
       AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
           .addMember("value", "$T.class", context.getRoot().asType())
           .build();
@@ -87,26 +85,25 @@ public class Recognizer {
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
 
-    TypeElement recognizerTypeElement = elementUtils.getTypeElement(RECOGNIZER_CLASS);
+    TypeElement superclassRecognizerTypeElement = elementUtils.getTypeElement(STRUCTURAL_RECOGNIZER_CLASS);
+    DeclaredType superclassRecognizerType = typeUtils.getDeclaredType(superclassRecognizerTypeElement, context.getRoot().asType());
+    TypeName superclassRecognizerTypeName = TypeName.get(superclassRecognizerType);
 
+    TypeElement recognizerTypeElement = elementUtils.getTypeElement(RECOGNIZER_CLASS);
     DeclaredType recognizerType = typeUtils.getDeclaredType(recognizerTypeElement, context.getRoot().asType());
     TypeName recognizerTypeName = TypeName.get(recognizerType);
 
-    classSpec.superclass(TypeName.get(recognizerType));
-    classSpec.addField(buildRecognizerField(recognizerTypeName));
+    classSpec.superclass(superclassRecognizerTypeName);
+    classSpec.addField(FieldSpec.builder(recognizerTypeName, "recognizer", Modifier.PRIVATE).build());
     classSpec.addMethods(Arrays.asList(buildConstructors(schema, context)));
-    classSpec.addMethods(Arrays.asList(buildMethods(schema, context, className)));
+    classSpec.addMethods(Arrays.asList(buildMethods(context, className)));
 
     BuilderWriter.write(classSpec, schema, context);
 
     return classSpec;
   }
 
-  private static FieldSpec buildRecognizerField(TypeName recognizerTypeName) {
-    return FieldSpec.builder(recognizerTypeName, "recognizer", Modifier.PRIVATE).build();
-  }
-
-  private static MethodSpec[] buildMethods(ClassSchema schema, ScopedContext context, String className) {
+  private static MethodSpec[] buildMethods(ScopedContext context, String className) {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();

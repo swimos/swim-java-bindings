@@ -29,10 +29,10 @@ public class PartitionedFields {
           headerFields.addHeaderField(field);
           break;
         case HeaderBody:
-          if (!headerFields.hasTagBody()){
-          headerFields.setTagBody(field);
-        }
-        break;
+          if (!headerFields.hasTagBody()) {
+            headerFields.setTagBody(field);
+          }
+          break;
         case Attr:
           headerFields.addAttribute(field);
           break;
@@ -46,9 +46,7 @@ public class PartitionedFields {
       }
     }
 
-    PartitionedFields partitionedFields = new PartitionedFields(headerFields, body);
-    System.out.println(partitionedFields);
-    return partitionedFields;
+    return new PartitionedFields(headerFields, body);
   }
 
   public int count() {
@@ -74,7 +72,7 @@ public class PartitionedFields {
     }
 
     if (headerFields.hasTagBody() || !headerFields.headerFields.isEmpty()) {
-      discriminates.add(FieldDiscriminate.header(headerFields.tagBody,headerFields.headerFields));
+      discriminates.add(FieldDiscriminate.header(headerFields.tagBody, headerFields.headerFields));
     }
 
     discriminates.addAll(headerFields.attributes.stream().map(FieldDiscriminate::attribute).collect(Collectors.toList()));

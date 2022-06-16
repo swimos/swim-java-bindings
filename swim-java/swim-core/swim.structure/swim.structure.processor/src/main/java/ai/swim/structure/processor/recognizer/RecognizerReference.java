@@ -10,8 +10,12 @@ public class RecognizerReference extends RecognizerModel {
     this.initializer = initializer;
   }
 
-  public static RecognizerModel classLookup(TypeMirror mirror) {
+  public static RecognizerModel lookupAny(TypeMirror mirror) {
     return new RecognizerReference(String.format("ai.swim.structure.recognizer.RecognizerProxy.getInstance().lookup(%s.class)", mirror.toString()));
+  }
+
+  public static StructuralRecognizer.Reference lookupStructural(TypeMirror mirror) {
+    return new StructuralRecognizer.Reference(mirror);
   }
 
   @Override

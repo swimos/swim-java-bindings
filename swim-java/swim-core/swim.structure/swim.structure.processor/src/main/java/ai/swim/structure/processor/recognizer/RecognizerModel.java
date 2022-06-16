@@ -4,11 +4,9 @@ import ai.swim.structure.processor.context.ScopedContext;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import java.util.Collection;
 import java.util.Map;
-import java.util.function.Function;
 
 import static ai.swim.structure.processor.ElementUtils.isSubType;
 
@@ -36,7 +34,7 @@ public abstract class RecognizerModel {
     // We're out of options now. The recognizer isn't available to us now, so we'll have to hope that it's been
     // registered with the recognizer proxy for a runtime lookup, or it will be derived at runtime and incur the penalty
     // of reflection.
-    return RecognizerReference.classLookup(element.asType());
+    return RecognizerReference.lookupAny(element.asType());
   }
 
   private static RecognizerModel fromStdType(Element element, ScopedContext context) {
@@ -84,7 +82,4 @@ public abstract class RecognizerModel {
     return null;
   }
 
-  public RecognizerModel map(Function<RecognizerModel, RecognizerModel> with) {
-    return with.apply(this);
-  }
 }

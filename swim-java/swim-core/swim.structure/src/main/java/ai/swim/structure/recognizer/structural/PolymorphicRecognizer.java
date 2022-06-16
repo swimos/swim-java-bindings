@@ -6,15 +6,15 @@ import ai.swim.structure.recognizer.Recognizer;
 import java.util.List;
 import java.util.Objects;
 
-public class PolymorphicClassRecognizer<T> extends ClassRecognizerBase<T> {
+public class PolymorphicRecognizer<T> extends StructuralRecognizer<T> {
 
   private final List<Recognizer<? extends T>> recognizers;
   private Recognizer<? extends T> current;
 
-  public PolymorphicClassRecognizer(List<Recognizer<? extends T>> recognizers) {
+  public PolymorphicRecognizer(List<Recognizer<? extends T>> recognizers) {
     Objects.requireNonNull(recognizers);
     if (recognizers.isEmpty()) {
-      throw new IllegalArgumentException("Cannot initialise a polymorphic class recognizer with no recognizers");
+      throw new IllegalArgumentException("Cannot initialise a polymorphic recognizer with no recognizers");
     }
 
     this.recognizers = recognizers;
@@ -37,6 +37,8 @@ public class PolymorphicClassRecognizer<T> extends ClassRecognizerBase<T> {
         if (activeRecognizer.isCont()) {
           current = activeRecognizer;
           return this;
+        } else if (activeRecognizer.isDone()) {
+          return Recognizer.done(activeRecognizer.bind(), this);
         }
       }
     }

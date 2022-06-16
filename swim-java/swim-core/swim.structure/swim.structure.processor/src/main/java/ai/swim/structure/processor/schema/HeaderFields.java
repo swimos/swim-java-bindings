@@ -50,7 +50,7 @@ public class HeaderFields {
     return attributes;
   }
 
-  public  List<FieldModel> flatten() {
+  public List<FieldModel> flatten() {
     ArrayList<FieldModel> fieldModels = new ArrayList<>(this.headerFields);
     fieldModels.addAll(attributes);
     return fieldModels;

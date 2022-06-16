@@ -10,8 +10,8 @@ import java.util.List;
 
 class ListRecognizerTest {
   @Test
-  void testRecognizer() throws Exception {
-    Recognizer<List<Integer>> recognizer = new ListRecognizer<>(ScalarRecognizer.PRIMITIVE_INTEGER, false);
+  void testRecognizer() {
+    Recognizer<List<Integer>> recognizer = new ListRecognizer<>(ScalarRecognizer.INTEGER, false);
     List<ReadEvent> events = List.of(
         ReadEvent.startBody(),
         ReadEvent.number(1),

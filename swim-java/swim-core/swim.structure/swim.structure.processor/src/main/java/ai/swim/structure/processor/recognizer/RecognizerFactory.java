@@ -1,7 +1,6 @@
 package ai.swim.structure.processor.recognizer;
 
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.inspect.ClassMap;
 import ai.swim.structure.processor.inspect.ElementInspector;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -24,10 +23,10 @@ public class RecognizerFactory {
 
     // init core types
     RecognizerReference.Formatter formatter = new RecognizerReference.Formatter("ai.swim.structure.recognizer.ScalarRecognizer");
-    recognizers.put(_getOrThrow(elementUtils, Integer.class), formatter.recognizerFor("BOXED_INTEGER"));
-    recognizers.put(_getOrThrow(elementUtils, Long.class), formatter.recognizerFor("BOXED_LONG"));
-    recognizers.put(_getOrThrow(elementUtils, Float.class), formatter.recognizerFor("BOXED_FLOAT"));
-    recognizers.put(_getOrThrow(elementUtils, Boolean.class), formatter.recognizerFor("BOXED_BOOLEAN"));
+    recognizers.put(_getOrThrow(elementUtils, Integer.class), formatter.recognizerFor("INTEGER"));
+    recognizers.put(_getOrThrow(elementUtils, Long.class), formatter.recognizerFor("LONG"));
+    recognizers.put(_getOrThrow(elementUtils, Float.class), formatter.recognizerFor("FLOAT"));
+    recognizers.put(_getOrThrow(elementUtils, Boolean.class), formatter.recognizerFor("BOOLEAN"));
     recognizers.put(_getOrThrow(elementUtils, String.class), formatter.recognizerFor("STRING"));
 
     return new RecognizerFactory(recognizers);
@@ -53,11 +52,33 @@ public class RecognizerFactory {
       return map;
     }
 
-    return inspectAndInsertClass(element, new ScopedContext(context.getProcessingContext(), element));
+    if (element.getKind().isClass()) {
+      return inspectAndInsertClass(element, new ScopedContext(context.getProcessingContext(), element));
+    } else if (element.getKind().isInterface()) {
+      return inspectAndInsertInterface(element, new ScopedContext(context.getProcessingContext(), element));
+    } else {
+      context.getMessager().error("Cannot inspect a: " + element.getKind());
+      return null;
+    }
+  }
+
+  private RecognizerModel inspectAndInsertInterface(Element element, ScopedContext context) {
+    InterfaceMap interfaceMap = ElementInspector.inspectInterface(element, context);
+
+    if (interfaceMap == null) {
+      return null;
+    }
+
+    this.recognizers.put(element.asType().toString(), interfaceMap);
+    return interfaceMap;
   }
 
   private RecognizerModel inspectAndInsertClass(Element element, ScopedContext context) {
-    ClassMap classMap = ElementInspector.inspect(element, context);
+    if (!element.getKind().isClass()) {
+      throw new RuntimeException("Element is not an interface: " + element);
+    }
+
+    ClassMap classMap = ElementInspector.inspectClass(element, context);
 
     if (classMap == null) {
       return null;

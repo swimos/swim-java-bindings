@@ -8,14 +8,14 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.util.List;
 
-public class ListRecognizerModel extends ClassRecognizerModel {
+public class ListRecognizerModel extends StructuralRecognizer {
   private final RecognizerModel delegate;
 
   private ListRecognizerModel(RecognizerModel delegate) {
     this.delegate = delegate;
   }
 
-  public static ClassRecognizerModel from(Element element, ScopedContext context) {
+  public static StructuralRecognizer from(Element element, ScopedContext context) {
     DeclaredType variableType = (DeclaredType) element.asType();
     List<? extends TypeMirror> typeArguments = variableType.getTypeArguments();
 

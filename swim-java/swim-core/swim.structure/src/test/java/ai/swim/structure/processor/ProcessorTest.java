@@ -12,8 +12,10 @@ import ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.swim.structure.RecognizerTestUtil.runTest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -752,4 +754,6 @@ public class ProcessorTest {
 
     assertEquals(optionalFieldClass, expected);
   }
+
+
 }

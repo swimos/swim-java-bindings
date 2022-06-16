@@ -1,13 +1,16 @@
 package ai.swim.structure.processor.schema;
 
-import ai.swim.structure.processor.inspect.ClassMap;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.recognizer.ClassMap;
 import ai.swim.structure.processor.writer.FieldDiscriminate;
+import ai.swim.structure.processor.writer.Recognizer;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.PackageElement;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
 
-public class ClassSchema {
+public class ClassSchema implements Schema {
   private final ClassMap classMap;
   private final PartitionedFields partitionedFields;
 
@@ -40,19 +43,21 @@ public class ClassSchema {
         '}';
   }
 
-  public String getJavaClassName() {
-    return this.classMap.getJavaClassName();
-  }
-
   public String getTag() {
     return this.classMap.getTag();
   }
 
-  public String getRecognizerName() {
-    return this.classMap.recognizerName();
-  }
-
   public ClassMap getClassMap() {
     return classMap;
+  }
+
+  @Override
+  public Element root() {
+    return classMap.getRoot();
+  }
+
+  @Override
+  public void write(ScopedContext scopedContext) throws IOException {
+    Recognizer.writeRecognizer(this, scopedContext);
   }
 }

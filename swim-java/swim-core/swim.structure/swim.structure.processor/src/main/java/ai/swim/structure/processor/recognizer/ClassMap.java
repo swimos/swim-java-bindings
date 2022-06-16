@@ -1,8 +1,7 @@
-package ai.swim.structure.processor.inspect;
+package ai.swim.structure.processor.recognizer;
 
 import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.processor.recognizer.ClassRecognizerModel;
-import ai.swim.structure.processor.recognizer.RecognizerModel;
+import ai.swim.structure.processor.inspect.FieldView;
 import ai.swim.structure.processor.schema.FieldModel;
 
 import javax.lang.model.element.Element;
@@ -12,19 +11,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ClassMap extends ClassRecognizerModel {
+public class ClassMap extends StructuralRecognizer {
 
   private final Element root;
-  private final ConstructorElement constructor;
   private final List<FieldModel> memberVariables;
   private final List<ExecutableElement> methods;
   private final PackageElement declaredPackage;
-  private List<RecognizerModel> subTypes;
+  private List<StructuralRecognizer> subTypes;
   private boolean isAbstract;
 
-  public ClassMap(Element root, ConstructorElement constructor, PackageElement declaredPackage) {
+  public ClassMap(Element root, PackageElement declaredPackage) {
     this.root = root;
-    this.constructor = constructor;
     this.memberVariables = new ArrayList<>();
     this.methods = new ArrayList<>();
     this.declaredPackage = declaredPackage;
@@ -34,16 +31,6 @@ public class ClassMap extends ClassRecognizerModel {
   public FieldView getFieldViewByPropertyName(String propertyName) {
     for (FieldModel memberVariable : this.memberVariables) {
       if (memberVariable.propertyName().equals(propertyName)) {
-        return memberVariable.getFieldView();
-      }
-    }
-
-    return null;
-  }
-
-  public FieldView getFieldView(String name) {
-    for (FieldModel memberVariable : this.memberVariables) {
-      if (memberVariable.getName().contentEquals(name)) {
         return memberVariable.getFieldView();
       }
     }
@@ -86,10 +73,10 @@ public class ClassMap extends ClassRecognizerModel {
   public String toString() {
     return "ClassMap{" +
         "root=" + root +
-        ", constructor=" + constructor +
         ", memberVariables=" + memberVariables +
         ", methods=" + methods +
         ", declaredPackage=" + declaredPackage +
+        ", subTypes=" + subTypes +
         '}';
   }
 
@@ -128,7 +115,7 @@ public class ClassMap extends ClassRecognizerModel {
     return this.memberVariables;
   }
 
-  public void setSubTypes(List<RecognizerModel> subTypes) {
+  public void setSubTypes(List<StructuralRecognizer> subTypes) {
     this.subTypes = subTypes;
   }
 
@@ -140,7 +127,7 @@ public class ClassMap extends ClassRecognizerModel {
     return isAbstract;
   }
 
-  public List<RecognizerModel> getSubTypes() {
+  public List<StructuralRecognizer> getSubTypes() {
     return subTypes;
   }
 }
