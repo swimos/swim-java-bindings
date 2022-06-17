@@ -29,6 +29,8 @@ public class FormParser<T> extends Parser<T> {
     while (this.parser.hasEvents()) {
       ParseResult<ReadEvent> result = this.parser.next();
       if (result.isOk()) {
+        ReadEvent readEvent = result.bind();
+        System.out.println(readEvent);
         this.recognizer = this.recognizer.feedEvent(result.bind());
         if (recognizer.isDone()) {
           return Parser.done(recognizer.bind());

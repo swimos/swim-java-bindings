@@ -710,8 +710,8 @@ public class AutoDelegateTest {
       @AutoForm.Type(MapUpdate.class),
       @AutoForm.Type(MapRemove.class),
       @AutoForm.Type(MapClear.class),
-      @AutoForm.Type(MapTake.class),
-      @AutoForm.Type(MapDrop.class),
+//      @AutoForm.Type(MapTake.class),
+//      @AutoForm.Type(MapDrop.class),
   })
   public static abstract class MapEnvelope {
 
@@ -782,7 +782,7 @@ public class AutoDelegateTest {
     }
   }
 
-  @AutoForm("clear")
+//  @AutoForm("clear")
   public static class MapTake extends MapEnvelope {
     @AutoForm.Kind(FieldKind.HeaderBody)
     public int count;
@@ -801,7 +801,7 @@ public class AutoDelegateTest {
     }
   }
 
-  @AutoForm("drop")
+//  @AutoForm("drop")
   public static class MapDrop extends MapEnvelope {
     @AutoForm.Kind(FieldKind.HeaderBody)
     public int count;
@@ -824,7 +824,7 @@ public class AutoDelegateTest {
   void testComplexEnvelope() {
     runTestOk(new MapEnvelopeRecognizer(), new MapUpdate(1,2), "@update(key:1)2");
     runTestOk(new MapEnvelopeRecognizer(), new MapRemove(1), "@remove(key:1)");
-    runTestOk(new MapEnvelopeRecognizer(), new MapClear(), "@clear)");
+    runTestOk(new MapEnvelopeRecognizer(), new MapClear(), "@clear}}");
   }
 
 }
