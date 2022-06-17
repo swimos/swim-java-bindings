@@ -630,4 +630,19 @@ class ReconParserTest {
     assertEquals(error.getCause(), "Expected '{', found '@'");
   }
 
+  @Test
+  void recordBody() {
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("update"),
+        ReadEvent.text("key"),
+        ReadEvent.slot(),
+        ReadEvent.text("keyvalue"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.text("value"),
+        ReadEvent.endRecord()
+    );
+
+    runTestOk("@update(key:keyvalue)value", events);
+  }
 }
