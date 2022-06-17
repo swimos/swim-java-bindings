@@ -156,7 +156,7 @@ public abstract class ReconParserParts {
             identifier().map(ReconParserParts::mapIdentifier),
             numericLiteral().map(ReadEvent::number),
             blob().map(ReadEvent::blob)
-        ).map(event -> new ParserTransition(event, StateChange.popAfterItem())),
+        ).map(event -> new ParserTransition(List.of(ReadEvent.startBody(), event, ReadEvent.endRecord()), StateChange.popAfterItem())),
         eqChar('{').map(c ->
             new ParserTransition(ReadEvent.startBody(), new ChangeState(ParseState.RecordBodyStartOrNl))
         ),
