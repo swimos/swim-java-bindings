@@ -6,7 +6,7 @@ import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.*;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.schema.HeaderFields;
+import ai.swim.structure.processor.schema.HeaderSet;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import com.squareup.javapoet.*;
 
@@ -19,7 +19,6 @@ import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static ai.swim.structure.processor.writer.PolymorphicRecognizer.buildPolymorphicRecognizer;
 
@@ -183,7 +182,7 @@ public class Recognizer {
     Elements elementUtils = processingEnvironment.getElementUtils();
 
     PartitionedFields partitionedFields = schema.getPartitionedFields();
-    HeaderFields headerFieldSet = partitionedFields.headerFields;
+    HeaderSet headerFieldSet = partitionedFields.headerSet;
 
     int idx = 0;
     CodeBlock.Builder body = CodeBlock.builder();
@@ -245,28 +244,28 @@ public class Recognizer {
     body.beginControlFlow("(key) ->");
 
     PartitionedFields partitionedFields = schema.getPartitionedFields();
-    HeaderFields headerFields = partitionedFields.headerFields;
+    HeaderSet headerSet = partitionedFields.headerSet;
 
     int idx = 0;
 
-    if (headerFields.hasTagBody() || partitionedFields.hasHeaderFields()) {
+    if (headerSet.hasTagBody() || partitionedFields.hasHeaderFields()) {
       body.beginControlFlow("if (key.isHeader())");
       body.addStatement("return $L", idx);
       body.endControlFlow();
       idx += 1;
     }
 
-    if (!headerFields.attributes.isEmpty()) {
+    if (!headerSet.attributes.isEmpty()) {
       body.beginControlFlow("if (key.isAttribute())");
       TypeElement attrFieldKeyElement = elementUtils.getTypeElement(LABELLED_ATTR_FIELD_KEY);
 
       body.addStatement("$T attrFieldKey = ($T) key", attrFieldKeyElement, attrFieldKeyElement);
       body.beginControlFlow("switch (attrFieldKey.getKey())");
 
-      int attrCount = headerFields.attributes.size();
+      int attrCount = headerSet.attributes.size();
 
       for (int i = 0; i < attrCount; i++) {
-        FieldModel recognizer = headerFields.attributes.get(i);
+        FieldModel recognizer = headerSet.attributes.get(i);
 
         body.add("case \"$L\":", recognizer.propertyName());
         body.addStatement("\t return $L", i + idx);

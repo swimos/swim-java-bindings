@@ -47,7 +47,7 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-//      if (!element.asType().toString().equals("ai.swim.structure.recognizer.structural.delegate.AutoDelegateTest.LaneAddressed")) {
+//      if (!element.asType().toString().equals("ai.swim.structure.recognizer.structural.delegate.AutoDelegateTest.MapTake")) {
 //        continue;
 //      }
 

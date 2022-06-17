@@ -3,7 +3,7 @@ package ai.swim.structure.processor.writer;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.schema.HeaderFields;
+import ai.swim.structure.processor.schema.HeaderSet;
 import com.squareup.javapoet.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -29,7 +29,9 @@ public class BuilderWriter {
     ClassBuilder classBuilder = new ClassBuilder(schema, context);
     parentSpec.addType(classBuilder.build(TypeName.get(classRecognizingBuilderType)));
 
-    if (!schema.getPartitionedFields().headerFields.headerFields.isEmpty()) {
+    HeaderSet headerSet = schema.getPartitionedFields().headerSet;
+
+    if (!headerSet.headerFields.isEmpty() || headerSet.hasTagBody()) {
       ClassName classType = ClassName.bestGuess(context.getNameFactory().headerCanonicalName());
       TypeElement recognizingBuilderElement = elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS);
       ParameterizedTypeName headerBuilderType = ParameterizedTypeName.get(ClassName.get(recognizingBuilderElement), classType);
@@ -39,7 +41,7 @@ public class BuilderWriter {
 
       TypeSpec.Builder headerClass = TypeSpec.classBuilder(context.getNameFactory().headerClassName()).addModifiers(Modifier.PRIVATE, Modifier.FINAL);
 
-      HeaderFields headerFieldSet = schema.getPartitionedFields().headerFields;
+      HeaderSet headerFieldSet = schema.getPartitionedFields().headerSet;
       List<FieldModel> headerFields = headerFieldSet.headerFields;
 
       if (headerFieldSet.tagBody != null) {
