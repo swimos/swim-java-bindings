@@ -13,7 +13,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel booleanRecognizer() {
     if (BOOLEAN_RECOGNIZER == null) {
-      BOOLEAN_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.ScalarRecognizer.BOOLEAN", false);
+      BOOLEAN_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.std.BOOLEAN", false);
     }
 
     return BOOLEAN_RECOGNIZER;
@@ -37,7 +37,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel intRecognizer() {
     if (INT_RECOGNIZER == null) {
-      INT_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.ScalarRecognizer.INTEGER", 0);
+      INT_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.INTEGER", 0);
     }
 
     return INT_RECOGNIZER;
