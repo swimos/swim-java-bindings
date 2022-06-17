@@ -3,13 +3,13 @@ package ai.swim.structure.processor.schema;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HeaderFields {
+public class HeaderSet {
   public FieldModel tagName;
   public FieldModel tagBody;
   public final List<FieldModel> headerFields;
   public final List<FieldModel> attributes;
 
-  public HeaderFields() {
+  public HeaderSet() {
     this.headerFields = new ArrayList<>();
     this.attributes = new ArrayList<>();
   }

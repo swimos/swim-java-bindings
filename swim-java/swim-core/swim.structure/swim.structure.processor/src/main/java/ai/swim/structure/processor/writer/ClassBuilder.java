@@ -4,7 +4,7 @@ import ai.swim.structure.processor.context.NameFactory;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.schema.HeaderFields;
+import ai.swim.structure.processor.schema.HeaderSet;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import com.squareup.javapoet.*;
 
@@ -96,9 +96,9 @@ public class ClassBuilder extends Builder {
     );
 
     PartitionedFields partitionedFields = schema.getPartitionedFields();
-    int numSlots = partitionedFields.headerFields.headerFields.size();
+    int numSlots = partitionedFields.headerSet.headerFields.size();
 
-    boolean hasBody = partitionedFields.headerFields.hasTagBody();
+    boolean hasBody = partitionedFields.headerSet.hasTagBody();
     CodeBlock indexFn = buildHeaderIndexFn();
     String headerBuilder = nameFactory.headerBuilderCanonicalName();
 
@@ -120,7 +120,7 @@ public class ClassBuilder extends Builder {
     Elements elementUtils = processingEnvironment.getElementUtils();
 
     PartitionedFields partitionedFields = schema.getPartitionedFields();
-    HeaderFields headerFieldSet = partitionedFields.headerFields;
+    HeaderSet headerFieldSet = partitionedFields.headerSet;
 
     int idx = 0;
     CodeBlock.Builder body = CodeBlock.builder();

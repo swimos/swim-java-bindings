@@ -7,75 +7,75 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class PartitionedFields {
-  public HeaderFields headerFields;
+  public HeaderSet headerSet;
   public Body body;
 
-  public PartitionedFields(HeaderFields headerFields, Body body) {
-    this.headerFields = headerFields;
+  public PartitionedFields(HeaderSet headerSet, Body body) {
+    this.headerSet = headerSet;
     this.body = body;
   }
 
   public static PartitionedFields buildFrom(List<FieldModel> fields) {
-    HeaderFields headerFields = new HeaderFields();
+    HeaderSet headerSet = new HeaderSet();
     Body body = new Body();
 
     for (FieldModel field : fields) {
       switch (field.getFieldKind()) {
         case Body:
           List<FieldModel> newHeaderFields = body.replace(field);
-          headerFields.addHeaderFields(newHeaderFields);
+          headerSet.addHeaderFields(newHeaderFields);
           break;
         case Header:
-          headerFields.addHeaderField(field);
+          headerSet.addHeaderField(field);
           break;
         case HeaderBody:
-          if (!headerFields.hasTagBody()) {
-            headerFields.setTagBody(field);
+          if (!headerSet.hasTagBody()) {
+            headerSet.setTagBody(field);
           }
           break;
         case Attr:
-          headerFields.addAttribute(field);
+          headerSet.addAttribute(field);
           break;
         case Slot:
           if (!body.isReplaced()) {
             body.addField(field);
           } else {
-            headerFields.addHeaderField(field);
+            headerSet.addHeaderField(field);
           }
           break;
       }
     }
 
-    return new PartitionedFields(headerFields, body);
+    return new PartitionedFields(headerSet, body);
   }
 
   public int count() {
-    return headerFields.count() + body.count();
+    return headerSet.count() + body.count();
   }
 
   public List<FieldModel> flatten() {
-    List<FieldModel> fieldModels = this.headerFields.flatten();
+    List<FieldModel> fieldModels = this.headerSet.flatten();
     fieldModels.addAll(this.body.getFields());
     return fieldModels;
   }
 
   public boolean hasHeaderFields() {
-    return !this.headerFields.headerFields.isEmpty();
+    return !this.headerSet.headerFields.isEmpty() || this.headerSet.hasTagBody();
   }
 
   public List<FieldDiscriminate> discriminate() {
     List<FieldDiscriminate> discriminates = new ArrayList<>();
 
-    FieldModel tagName = this.headerFields.tagName;
+    FieldModel tagName = this.headerSet.tagName;
     if (tagName != null) {
       discriminates.add(FieldDiscriminate.tag(tagName));
     }
 
-    if (headerFields.hasTagBody() || !headerFields.headerFields.isEmpty()) {
-      discriminates.add(FieldDiscriminate.header(headerFields.tagBody, headerFields.headerFields));
+    if (headerSet.hasTagBody() || !headerSet.headerFields.isEmpty()) {
+      discriminates.add(FieldDiscriminate.header(headerSet.tagBody, headerSet.headerFields));
     }
 
-    discriminates.addAll(headerFields.attributes.stream().map(FieldDiscriminate::attribute).collect(Collectors.toList()));
+    discriminates.addAll(headerSet.attributes.stream().map(FieldDiscriminate::attribute).collect(Collectors.toList()));
 
     List<FieldModel> bodyFields = body.getFields();
 
@@ -91,7 +91,7 @@ public class PartitionedFields {
   @Override
   public String toString() {
     return "PartitionedFields{" +
-        "headerFields=" + headerFields +
+        "headerFields=" + headerSet +
         ", body=" + body +
         '}';
   }

@@ -29,8 +29,6 @@ public class FormParser<T> extends Parser<T> {
     while (this.parser.hasEvents()) {
       ParseResult<ReadEvent> result = this.parser.next();
       if (result.isOk()) {
-        ReadEvent readEvent = result.bind();
-        System.out.println(readEvent);
         this.recognizer = this.recognizer.feedEvent(result.bind());
         if (recognizer.isDone()) {
           return Parser.done(recognizer.bind());
@@ -38,16 +36,16 @@ public class FormParser<T> extends Parser<T> {
           return Parser.error(input, recognizer.trap().toString());
         }
       } else if (result.isError()) {
-        throw new AssertionError();
+        return Parser.error(input, recognizer.trap().toString());
       }
 
       if (this.parser.isError()) {
-        throw new AssertionError();
+        return Parser.error(input, parser.error().getCause());
       }
     }
 
     if (this.parser.isError()) {
-      throw new AssertionError();
+      return Parser.error(input, parser.error().getCause());
     }
 
     return this;
