@@ -2,7 +2,7 @@ package ai.swim.structure.recognizer;
 
 
 import ai.swim.structure.annotations.AutoloadedRecognizer;
-import ai.swim.structure.recognizer.structural.PolymorphicRecognizer;
+import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import ai.swim.structure.recognizer.structural.StructuralRecognizer;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;

@@ -22,7 +22,7 @@ public class RecognizerFactory {
     HashMap<String, RecognizerModel> recognizers = new HashMap<>();
 
     // init core types
-    RecognizerReference.Formatter formatter = new RecognizerReference.Formatter("ai.swim.structure.recognizer.ScalarRecognizer");
+    RecognizerReference.Formatter formatter = new RecognizerReference.Formatter("ai.swim.structure.recognizer.std.ScalarRecognizer");
     recognizers.put(_getOrThrow(elementUtils, Integer.class), formatter.recognizerFor("INTEGER"));
     recognizers.put(_getOrThrow(elementUtils, Long.class), formatter.recognizerFor("LONG"));
     recognizers.put(_getOrThrow(elementUtils, Float.class), formatter.recognizerFor("FLOAT"));

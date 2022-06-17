@@ -1,7 +1,6 @@
-ext.moduleName = 'swim.recon'
+ext.moduleName = 'swim.utilities'
 
 dependencies {
-    api project(':swim-codec')
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
 }
 

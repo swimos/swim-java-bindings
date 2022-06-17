@@ -6,16 +6,14 @@ import ai.swim.structure.RecognizingBuilder;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.ScalarRecognizer;
+import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import ai.swim.structure.recognizer.structural.labelled.LabelledClassRecognizer;
 import ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.swim.structure.RecognizerTestUtil.runTest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
