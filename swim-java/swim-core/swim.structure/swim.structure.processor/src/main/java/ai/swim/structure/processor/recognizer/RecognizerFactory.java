@@ -6,9 +6,16 @@ import ai.swim.structure.processor.inspect.ElementInspector;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RecognizerFactory {
   private final HashMap<String, RecognizerModel> recognizers;
@@ -17,28 +24,63 @@ public class RecognizerFactory {
     this.recognizers = recognizers;
   }
 
+  /**
+   * Initialises STD types.
+   */
   public static RecognizerFactory initFrom(ProcessingEnvironment processingEnvironment) {
     Elements elementUtils = processingEnvironment.getElementUtils();
+    Types typeUtils = processingEnvironment.getTypeUtils();
     HashMap<String, RecognizerModel> recognizers = new HashMap<>();
 
     // init core types
-    RecognizerReference.Formatter formatter = new RecognizerReference.Formatter("ai.swim.structure.recognizer.std.ScalarRecognizer");
-    recognizers.put(_getOrThrow(elementUtils, Integer.class), formatter.recognizerFor("INTEGER"));
-    recognizers.put(_getOrThrow(elementUtils, Long.class), formatter.recognizerFor("LONG"));
-    recognizers.put(_getOrThrow(elementUtils, Float.class), formatter.recognizerFor("FLOAT"));
-    recognizers.put(_getOrThrow(elementUtils, Boolean.class), formatter.recognizerFor("BOOLEAN"));
-    recognizers.put(_getOrThrow(elementUtils, String.class), formatter.recognizerFor("STRING"));
+    RecognizerReference.Formatter primitiveFormatter = new RecognizerReference.Formatter("ai.swim.structure.recognizer.std.ScalarRecognizer");
+    recognizers.put(_getOrThrowType(elementUtils, Byte.class), primitiveFormatter.recognizerFor("BYTE"));
+    recognizers.put(_getOrThrowType(elementUtils, Short.class), primitiveFormatter.recognizerFor("SHORT"));
+    recognizers.put(_getOrThrowType(elementUtils, Integer.class), primitiveFormatter.recognizerFor("INTEGER"));
+    recognizers.put(_getOrThrowType(elementUtils, Long.class), primitiveFormatter.recognizerFor("LONG"));
+    recognizers.put(_getOrThrowType(elementUtils, Float.class), primitiveFormatter.recognizerFor("FLOAT"));
+    recognizers.put(_getOrThrowType(elementUtils, Boolean.class), primitiveFormatter.recognizerFor("BOOLEAN"));
+    recognizers.put(_getOrThrowType(elementUtils, String.class), primitiveFormatter.recognizerFor("STRING"));
+    recognizers.put(_getOrThrowType(elementUtils, Character.class), primitiveFormatter.recognizerFor("CHARACTER"));
+    recognizers.put(_getOrThrowType(elementUtils, BigInteger.class), primitiveFormatter.recognizerFor("BIG_INTEGER"));
+    recognizers.put(_getOrThrowType(elementUtils, BigDecimal.class), primitiveFormatter.recognizerFor("BIG_DECIMAL"));
+    recognizers.put(_getOrThrowArrayType(elementUtils, typeUtils, Byte.class), primitiveFormatter.recognizerFor("BLOB"));
+
+    // init atomics
+    RecognizerReference.Formatter atomicFormatter = new RecognizerReference.Formatter("ai.swim.structure.recognizer.std.AtomicRecognizer");
+    recognizers.put(_getOrThrowType(elementUtils, AtomicBoolean.class), atomicFormatter.recognizerFor("ATOMIC_BOOLEAN"));
+    recognizers.put(_getOrThrowType(elementUtils, AtomicInteger.class), atomicFormatter.recognizerFor("ATOMIC_INTEGER"));
+    recognizers.put(_getOrThrowType(elementUtils, AtomicLong.class), atomicFormatter.recognizerFor("ATOMIC_LONG"));
 
     return new RecognizerFactory(recognizers);
   }
 
-  private static <T> String _getOrThrow(Elements elementUtils, Class<T> clazz) {
+  private static <T> String _getOrThrowType(Elements elementUtils, Class<T> clazz) {
     TypeElement typeElement = elementUtils.getTypeElement(clazz.getCanonicalName());
     if (typeElement == null) {
-      throw new RuntimeException("Failed to initialise recognizer factory with class: " + clazz);
+      throw classInitFailure(clazz);
     }
 
     return typeElement.asType().toString();
+  }
+
+  private static <T> String _getOrThrowArrayType(Elements elementUtils, Types typeUtils, Class<T> clazz) {
+    TypeElement typeElement = elementUtils.getTypeElement(clazz.getCanonicalName());
+    if (typeElement == null) {
+      throw classInitFailure(clazz);
+    }
+
+    ArrayType arrayType = typeUtils.getArrayType(typeElement.asType());
+
+    if (arrayType == null) {
+      throw classInitFailure(clazz);
+    }
+
+    return arrayType.getComponentType().toString();
+  }
+
+  private static RuntimeException classInitFailure(Class<?> clazz) {
+    return new RuntimeException("Failed to initialise recognizer factory with class: " + clazz);
   }
 
   public RecognizerModel lookup(Element element) {

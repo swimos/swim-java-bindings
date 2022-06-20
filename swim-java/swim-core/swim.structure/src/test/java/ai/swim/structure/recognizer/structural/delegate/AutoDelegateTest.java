@@ -9,7 +9,12 @@ import ai.swim.structure.annotations.FieldKind;
 import ai.swim.structure.recognizer.Recognizer;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -838,11 +843,30 @@ public class AutoDelegateTest {
 
   @Test
   void testComplexEnvelope() {
-    runTestOk(new MapEnvelopeRecognizer(), new MapUpdate(1,2), "@update(key:1)2");
+    runTestOk(new MapEnvelopeRecognizer(), new MapUpdate(1, 2), "@update(key:1)2");
     runTestOk(new MapEnvelopeRecognizer(), new MapRemove(1), "@remove(key:1)");
     runTestOk(new MapEnvelopeRecognizer(), new MapClear(), "@clear");
     runTestOk(new MapEnvelopeRecognizer(), new MapTake(13), "@take(13)");
     runTestOk(new MapEnvelopeRecognizer(), new MapDrop(13), "@drop(13)");
   }
+
+  // used to check that all the core types find recognizers correctly
+  @AutoForm
+  public static final class StdTypes {
+    public byte a;
+    public short b;
+    public int c;
+    public float d;
+    public boolean e;
+    public String f;
+    public AtomicBoolean g;
+    public AtomicInteger h;
+    public AtomicLong i;
+    public char j;
+    public BigInteger k;
+    public BigDecimal l;
+  }
+
+
 
 }

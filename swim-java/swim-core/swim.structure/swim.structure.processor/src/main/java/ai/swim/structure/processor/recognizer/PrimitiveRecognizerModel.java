@@ -13,7 +13,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel booleanRecognizer() {
     if (BOOLEAN_RECOGNIZER == null) {
-      BOOLEAN_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.std.BOOLEAN", false);
+      BOOLEAN_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.BOOLEAN", false);
     }
 
     return BOOLEAN_RECOGNIZER;
@@ -21,7 +21,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel byteRecognizer() {
     if (BYTE_RECOGNIZER == null) {
-      BYTE_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Byte.TYPE", (byte) 0);
+      BYTE_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.BYTE", (byte) 0);
     }
 
     return BYTE_RECOGNIZER;
@@ -29,7 +29,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel shortRecognizer() {
     if (SHORT_RECOGNIZER == null) {
-      SHORT_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Short.TYPE", (short) 0);
+      SHORT_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.SHORT", (short) 0);
     }
 
     return SHORT_RECOGNIZER;
@@ -45,7 +45,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel longRecognizer() {
     if (LONG_RECOGNIZER == null) {
-      LONG_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Long.TYPE", 0L);
+      LONG_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.LONG", 0L);
     }
 
     return LONG_RECOGNIZER;
@@ -53,7 +53,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel charRecognizer() {
     if (CHAR_RECOGNIZER == null) {
-      CHAR_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Character.TYPE", '\u0000');
+      CHAR_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.CHAR", '\u0000');
     }
 
     return CHAR_RECOGNIZER;
@@ -61,7 +61,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel floatRecognizer() {
     if (FLOAT_RECOGNIZER == null) {
-      FLOAT_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.ScalarRecognizer.FLOAT", 0f);
+      FLOAT_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.FLOAT", 0f);
     }
 
     return FLOAT_RECOGNIZER;
@@ -69,7 +69,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel doubleRecognizer() {
     if (DOUBLE_RECOGNIZER == null) {
-      DOUBLE_RECOGNIZER = new PrimitiveRecognizerModel<>("java.lang.Double.TYPE", 0d);
+      DOUBLE_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.DOUBLE", 0d);
     }
 
     return DOUBLE_RECOGNIZER;
