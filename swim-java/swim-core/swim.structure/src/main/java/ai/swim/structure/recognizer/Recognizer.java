@@ -33,6 +33,10 @@ public abstract class Recognizer<T> {
     return new RecognizerError<>(error);
   }
 
+  public static <T> Recognizer<T> error(ReadEvent expected, ReadEvent actual) {
+    return Recognizer.error(new RuntimeException(String.format("Expected: %s, found: %s", expected, actual)));
+  }
+
   public abstract Recognizer<T> feedEvent(ReadEvent event);
 
   public boolean isCont() {
