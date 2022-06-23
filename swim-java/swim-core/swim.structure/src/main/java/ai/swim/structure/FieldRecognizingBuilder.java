@@ -2,7 +2,7 @@ package ai.swim.structure;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.RecognizerProxy;
+import ai.swim.structure.recognizer.proxy.RecognizerProxy;
 
 public class FieldRecognizingBuilder<I> implements RecognizingBuilder<I> {
 

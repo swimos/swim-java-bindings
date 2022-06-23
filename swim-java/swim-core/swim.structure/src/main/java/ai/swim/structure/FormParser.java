@@ -6,7 +6,7 @@ import ai.swim.recon.ReconParser;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.result.ParseResult;
 import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.RecognizerProxy;
+import ai.swim.structure.recognizer.proxy.RecognizerProxy;
 
 public class FormParser<T> extends Parser<T> {
   private Recognizer<T> recognizer;

@@ -1,16 +1,20 @@
-package ai.swim.structure.recognizer;
+package ai.swim.structure.recognizer.proxy;
 
 
 import ai.swim.structure.annotations.AutoloadedRecognizer;
+import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.SimpleRecognizer;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import ai.swim.structure.recognizer.structural.StructuralRecognizer;
+import ai.swim.structure.recognizer.untyped.UntypedRecognizer;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -18,27 +22,31 @@ import java.util.function.Supplier;
 public class RecognizerProxy {
 
   private static final RecognizerProxy INSTANCE = new RecognizerProxy();
-  private final ConcurrentHashMap<Class<?>, Supplier<Recognizer<?>>> recognizers;
+  private final ConcurrentHashMap<Class<?>, RecognizerFactory<?>> recognizers;
 
   private RecognizerProxy() {
     recognizers = loadRecognizers();
   }
 
-  private static ConcurrentHashMap<Class<?>, Supplier<Recognizer<?>>> loadRecognizers() {
-    ConcurrentHashMap<Class<?>, Supplier<Recognizer<?>>> recognizers = new ConcurrentHashMap<>();
-    recognizers.put(Integer.class, () -> ScalarRecognizer.INTEGER);
-    recognizers.put(Long.class, () -> ScalarRecognizer.LONG);
-    recognizers.put(Byte[].class, () -> ScalarRecognizer.BLOB);
-    recognizers.put(Boolean.class, () -> ScalarRecognizer.BOOLEAN);
-    recognizers.put(String.class, () -> ScalarRecognizer.STRING);
-    recognizers.put(Object.class, ObjectRecognizer::new);
+  @SuppressWarnings("unchecked")
+  private static ConcurrentHashMap<Class<?>, RecognizerFactory<?>> loadRecognizers() {
+    ConcurrentHashMap<Class<?>, RecognizerFactory<?>> recognizers = new ConcurrentHashMap<>();
+    recognizers.put(Integer.class, RecognizerFactory.buildFrom(Integer.class, SimpleRecognizer.class, () -> ScalarRecognizer.INTEGER));
+    recognizers.put(Long.class, RecognizerFactory.buildFrom(Long.class, SimpleRecognizer.class, () -> ScalarRecognizer.LONG));
+    recognizers.put(byte[].class, RecognizerFactory.buildFrom(byte[].class, SimpleRecognizer.class, () -> ScalarRecognizer.BLOB));
+    recognizers.put(Boolean.class, RecognizerFactory.buildFrom(Boolean.class, SimpleRecognizer.class, () -> ScalarRecognizer.BOOLEAN));
+    recognizers.put(String.class, RecognizerFactory.buildFrom(String.class, SimpleRecognizer.class, () -> ScalarRecognizer.STRING));
+    recognizers.put(Object.class, RecognizerFactory.buildFrom(Object.class, UntypedRecognizer.class, UntypedRecognizer::new));
+    recognizers.put(BigDecimal.class, RecognizerFactory.buildFrom(BigDecimal.class, SimpleRecognizer.class, () -> ScalarRecognizer.BIG_DECIMAL));
+    recognizers.put(BigInteger.class, RecognizerFactory.buildFrom(BigInteger.class, SimpleRecognizer.class, () -> ScalarRecognizer.BIG_INTEGER));
 
     loadFromClassPath(recognizers);
 
     return recognizers;
   }
 
-  private static void loadFromClassPath(ConcurrentHashMap<Class<?>, Supplier<Recognizer<?>>> recognizers) {
+  @SuppressWarnings("unchecked")
+  private static void loadFromClassPath(ConcurrentHashMap<Class<?>, RecognizerFactory<?>> recognizers) {
     Reflections reflections = new Reflections(ClasspathHelper.forJavaClassPath(), "ai.swim");
     Set<Class<?>> classes = reflections.getTypesAnnotatedWith(AutoloadedRecognizer.class);
 
@@ -66,13 +74,17 @@ public class RecognizerProxy {
 
       try {
         Constructor<?> constructor = clazz.getConstructor();
-        recognizers.put(targetClass, () -> {
+        Supplier<Recognizer<?>> supplier = () -> {
           try {
             return (Recognizer<?>) constructor.newInstance();
           } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(String.format("Failed to created a new instance of recognizer '%s'", clazz.getCanonicalName()), e);
           }
-        });
+        };
+
+        // safety: checked that the class is assignable above
+        Class<Recognizer<?>> typedClass = (Class<Recognizer<?>>) clazz;
+        recognizers.put(targetClass, RecognizerFactory.buildFromAny(targetClass, typedClass, supplier));
       } catch (NoSuchMethodException e) {
         throw new RuntimeException(String.format("Recognizer '%s' does not contain a zero-arg constructor", clazz.getCanonicalName()), e);
       }
@@ -83,22 +95,29 @@ public class RecognizerProxy {
     return RecognizerProxy.INSTANCE;
   }
 
-  @SuppressWarnings("unchecked")
   public <T> Recognizer<T> lookup(Class<T> clazz) {
     if (clazz == null) {
       throw new NullPointerException();
     }
 
-    Supplier<Recognizer<?>> recognizer = this.recognizers.get(clazz);
+    return getRecognizer(clazz);
+  }
 
-    if (recognizer == null) {
-      throw new RuntimeException("Failed to find recognizer for: " + clazz.getCanonicalName());
-    } else {
-      return (Recognizer<T>) recognizer.get();
+  @SuppressWarnings("unchecked")
+  private <T> Recognizer<T> getRecognizer(Class<T> clazz) {
+    if (clazz == null) {
+      throw new NullPointerException();
     }
+
+    RecognizerFactory<T> recognizerSupplier = (RecognizerFactory<T>) this.recognizers.get(clazz);
+    return recognizerSupplier.newInstance();
   }
 
   public <C> StructuralRecognizer<C> lookupStructural(Class<C> clazz) {
+    if (clazz == null) {
+      throw new NullPointerException();
+    }
+
     Recognizer<C> recognizer = lookup(clazz);
     if (recognizer instanceof StructuralRecognizer<C>) {
       return (StructuralRecognizer<C>) recognizer;
@@ -107,16 +126,23 @@ public class RecognizerProxy {
     }
   }
 
-  public <C, R extends Recognizer<C>> void registerRecognizer(Class<C> clazz, Supplier<R> recognizer) {
-    this.registerRecognizerInternal(clazz, recognizer);
-  }
-
   @SuppressWarnings("unchecked")
-  private void registerRecognizerInternal(Class<?> clazz, Supplier<?> recognizer) {
-    this.recognizers.put(clazz, (Supplier<Recognizer<?>>) recognizer);
+  public <T> StructuralRecognizer<T> lookupStructural(Class<T> clazz, TypeParameter<?>... typeParameters) {
+    RecognizerFactory<T> factory = (RecognizerFactory<T>) this.recognizers.get(clazz);
+
+    if (factory == null) {
+      return null;
+    }
+
+    if (!factory.isStructural()) {
+      return null;
+    }
+
+    if (typeParameters.length == 0) {
+      return (StructuralRecognizer<T>) factory.newInstance();
+    } else {
+      return (StructuralRecognizer<T>) factory.newTypedInstance(this, typeParameters);
+    }
   }
 
-  public Set<Map.Entry<Class<?>, Supplier<Recognizer<?>>>> getAllRecognizers() {
-    return this.recognizers.entrySet();
-  }
 }

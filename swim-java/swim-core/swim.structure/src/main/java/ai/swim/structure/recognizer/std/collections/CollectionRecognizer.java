@@ -24,7 +24,7 @@ public abstract class CollectionRecognizer<T, E extends Collection<T>> extends R
     this.delegate = delegate;
     this.isAttrBody = isAttrBody;
     this.collection = collection;
-    state = State.Init;
+    this.state = State.Init;
   }
 
   @Override

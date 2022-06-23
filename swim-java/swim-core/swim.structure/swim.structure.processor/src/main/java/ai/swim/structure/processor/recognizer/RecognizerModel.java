@@ -4,8 +4,14 @@ import ai.swim.structure.processor.context.ScopedContext;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import static ai.swim.structure.processor.ElementUtils.isSubType;
@@ -30,6 +36,13 @@ public abstract class RecognizerModel {
     if (recognizer != null) {
       return recognizer;
     }
+
+//    if (element.getKind().isField()) {
+//      DeclaredType declaredType = (DeclaredType) element;
+//      List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
+//
+//      System.out.println("VE:" +declaredType);
+//    }
 
     // We're out of options now. The recognizer isn't available to us now, so we'll have to hope that it's been
     // registered with the recognizer proxy for a runtime lookup, or it will be derived at runtime and incur the penalty
