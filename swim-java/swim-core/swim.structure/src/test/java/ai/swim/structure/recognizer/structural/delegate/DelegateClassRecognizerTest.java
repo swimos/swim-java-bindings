@@ -5,7 +5,7 @@ import ai.swim.structure.FieldRecognizingBuilder;
 import ai.swim.structure.RecognizingBuilder;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.RecognizerProxy;
+import ai.swim.structure.recognizer.proxy.RecognizerProxy;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
 

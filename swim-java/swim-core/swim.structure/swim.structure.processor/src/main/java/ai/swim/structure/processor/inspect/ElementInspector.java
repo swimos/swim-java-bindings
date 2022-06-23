@@ -28,7 +28,19 @@ public class ElementInspector {
 
   }
 
-  public static ClassMap inspectClass(Element element, ScopedContext context) {
+//  private static StructuralRecognizer inspect(Element element, ScopedContext context, Generics generics) {
+//    ElementKind elementKind = element.getKind();
+//
+//    if (elementKind.isClass()) {
+//      return inspectClass(element, context, generics);
+//    } else if (elementKind.isInterface()) {
+//      return inspectInterface(element, context, generics);
+//    } else {
+//      throw new AssertionError("Attempted to inspect a: " + elementKind);
+//    }
+//  }
+
+  private static ClassMap inspectClass(Element element, ScopedContext context, Generics generics) {
     ProcessingEnvironment env = context.getProcessingEnvironment();
     ConstructorElement constructor = getConstructor(element, context.getMessager());
 
@@ -45,27 +57,15 @@ public class ElementInspector {
       return null;
     }
 
-    if (!inspectSuperclasses(element, classMap, context)) {
-      return null;
-    }
-
-    if (!inspectGenerics(element, context)) {
+    if (!inspectSuperclasses(element, classMap, context, generics)) {
       return null;
     }
 
     return classMap;
   }
 
-  private static boolean inspectGenerics(Element element, ScopedContext context) {
-    DeclaredType declaredType = (DeclaredType) element.asType();
-
-    if (declaredType.getTypeArguments().size() != 0) {
-      ScopedMessager messager = context.getMessager();
-      messager.error("Class: has generic type arguments which are not supported by the form annotation processor");
-      return false;
-    }
-
-    return true;
+  public static ClassMap inspectClass(Element element, ScopedContext context) {
+    return inspectClass(element, context, null);
   }
 
   private static boolean inspectClass(Element rootElement, ClassMap classMap, ScopedContext ctx) {
@@ -216,7 +216,7 @@ public class ElementInspector {
     }
   }
 
-  private static boolean inspectSuperclasses(Element element, ClassMap classMap, ScopedContext context) {
+  private static boolean inspectSuperclasses(Element element, ClassMap classMap, ScopedContext context, Generics generics) {
     ProcessingEnvironment environment = context.getProcessingEnvironment();
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
@@ -238,6 +238,12 @@ public class ElementInspector {
         messager.error("Class extends from '" + superType + "' that is not" + " annotated with @" + AutoForm.class.getSimpleName() + ". Either annotate it or manually implement a form");
         return false;
       }
+
+//      if (typeElement.hasGenerics()) {
+//        // inspect the superclass with the required generics but don't insert it into the factory
+//      } else {
+//        // run as normal
+//      }
 
       RecognizerFactory factory = context.getFactory();
       RecognizerModel superTypeModel = factory.getOrInspect(typeElement, context);

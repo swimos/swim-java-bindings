@@ -9,7 +9,7 @@ import java.math.BigInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ScalarRecognizerTest {
+class UntypedRecognizerTest {
 
   <T> void runTestOk(Recognizer<T> recognizer, T expected) {
     assertTrue(recognizer.isDone());

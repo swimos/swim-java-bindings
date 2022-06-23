@@ -63,4 +63,10 @@ public @interface AutoForm {
     Class<?> value();
   }
 
+  @Target({ElementType.CONSTRUCTOR})
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface TypedConstructor {
+
+  }
+
 }
