@@ -1,9 +1,12 @@
 package ai.swim.structure.processor.writer;
 
+import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.processor.context.NameFactory;
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.*;
+import ai.swim.structure.processor.recognizer.ClassMap;
+import ai.swim.structure.processor.recognizer.RecognizerInstance;
+import ai.swim.structure.processor.recognizer.StructuralRecognizer;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.HeaderSet;
@@ -17,10 +20,13 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static ai.swim.structure.processor.writer.PolymorphicRecognizer.buildPolymorphicRecognizer;
+import static ai.swim.structure.processor.writer.WriterUtils.typeParametersToTypeVariable;
 
 public class Recognizer {
 
@@ -69,13 +75,14 @@ public class Recognizer {
     String className = isPolymorphic ? nameFactory.concreteRecognizerClassName() : nameFactory.recognizerClassName();
 
     TypeSpec.Builder classSpec = TypeSpec.classBuilder(className)
-        .addModifiers(modifier, Modifier.FINAL);
+        .addModifiers(modifier, Modifier.FINAL)
+        .addTypeVariables(typeParametersToTypeVariable(schema.getTypeParameters()));
 
     if (isPolymorphic) {
       classSpec.addModifiers(Modifier.STATIC);
     } else {
       AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
-          .addMember("value", "$T.class", context.getRoot().asType())
+          .addMember("value", "$L.class", schema.qualifiedName())
           .build();
       classSpec.addAnnotation(recognizerAnnotationSpec);
     }
@@ -94,7 +101,7 @@ public class Recognizer {
 
     classSpec.superclass(superclassRecognizerTypeName);
     classSpec.addField(FieldSpec.builder(recognizerTypeName, "recognizer", Modifier.PRIVATE).build());
-    classSpec.addMethods(Arrays.asList(buildConstructors(schema, context)));
+    classSpec.addMethods(buildConstructors(schema, context));
     classSpec.addMethods(Arrays.asList(buildMethods(context, className)));
 
     BuilderWriter.write(classSpec, schema, context);
@@ -144,16 +151,56 @@ public class Recognizer {
     return builder.build();
   }
 
-  private static MethodSpec[] buildConstructors(ClassSchema schema, ScopedContext context) {
-    MethodSpec[] constructors = new MethodSpec[2];
-    constructors[0] = buildDefaultConstructor(schema, context);
-    constructors[1] = buildResetConstructor(context);
+  private static List<MethodSpec> buildConstructors(ClassSchema schema, ScopedContext context) {
+    List<MethodSpec> constructors = new ArrayList<>();
+    constructors.add(buildDefaultConstructor(context));
+    constructors.add(buildParameterisedConstructor(schema, context));
+    constructors.add(buildResetConstructor(context));
+
+    if (!schema.getTypeParameters().isEmpty()) {
+      constructors.add(buildTypedConstructor(schema, context));
+    }
 
     return constructors;
   }
 
-  private static MethodSpec buildDefaultConstructor(ClassSchema schema, ScopedContext context) {
-    MethodSpec.Builder methodBuilder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
+  private static MethodSpec buildDefaultConstructor(ScopedContext context) {
+    return MethodSpec.constructorBuilder()
+        .addModifiers(Modifier.PUBLIC)
+        .addCode("this(new $L());",context.getNameFactory().builderClassName())
+        .build();
+  }
+
+  private static MethodSpec buildTypedConstructor(ClassSchema schema, ScopedContext context) {
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+    Elements elementUtils = processingEnvironment.getElementUtils();
+
+    TypeElement recognizerTypeElement = elementUtils.getTypeElement(RECOGNIZER_CLASS);
+
+    MethodSpec.Builder methodBuilder = MethodSpec.constructorBuilder()
+        .addModifiers(Modifier.PUBLIC)
+        .addAnnotation(AutoForm.TypedConstructor.class);
+
+    List<ParameterSpec> parameters = new ArrayList<>();
+
+    for (FieldModel fieldModel : schema.getClassMap().getFieldModels()) {
+      if (fieldModel.getFieldView().isParameterised()) {
+        DeclaredType typedRecognizer = typeUtils.getDeclaredType(recognizerTypeElement, fieldModel.type());
+        parameters.add(ParameterSpec.builder(TypeName.get(typedRecognizer), fieldModel.fieldName()).build());
+      }
+    }
+
+    CodeBlock body = CodeBlock.of("this(new $L<>($L));", context.getNameFactory().builderClassName(), parameters.stream().map(p -> p.name).collect(Collectors.joining(", ")));
+    methodBuilder.addCode(body);
+
+    return methodBuilder.addParameters(parameters).build();
+  }
+
+  private static MethodSpec buildParameterisedConstructor(ClassSchema schema, ScopedContext context) {
+    MethodSpec.Builder methodBuilder = MethodSpec.constructorBuilder()
+        .addModifiers(Modifier.PRIVATE)
+        .addParameter(ParameterSpec.builder(ClassName.bestGuess(context.getNameFactory().builderClassName()), "builder").build());
 
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
@@ -170,9 +217,9 @@ public class Recognizer {
     TypeElement fieldTagSpecElement = elementUtils.getTypeElement(tag == null ? FIELD_TAG_SPEC : FIXED_TAG_SPEC);
 
     CodeBlock fieldSpec = tag == null ? CodeBlock.of("new $T()", fieldTagSpecElement) : CodeBlock.of("$T(\"$L\")", fieldTagSpecElement, tag);
-    String fmtArgs = String.format("this.recognizer = new $T(new %s, new $L(), $L, $L);", fieldSpec);
+    String fmtArgs = String.format("this.recognizer = new $T(new %s, builder, $L, $L);", fieldSpec);
 
-    CodeBlock body = CodeBlock.of(fmtArgs, classRecognizerDeclaredType, context.getNameFactory().builderClassName(), schema.getPartitionedFields().count(), indexFn);
+    CodeBlock body = CodeBlock.of(fmtArgs, classRecognizerDeclaredType, schema.getPartitionedFields().count(), indexFn);
 
     return methodBuilder.addCode(body).build();
   }

@@ -14,8 +14,17 @@ public class RecognizerReference extends RecognizerModel {
     return new RecognizerReference(String.format("ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookup(%s.class)", mirror.toString()));
   }
 
+  public static RecognizerModel untyped() {
+    return new RecognizerReference("new ai.swim.structure.recognizer.untyped.UntypedRecognizer()");
+  }
+
   public static StructuralRecognizer.Reference lookupStructural(TypeMirror mirror) {
     return new StructuralRecognizer.Reference(mirror);
+  }
+
+  public static RecognizerModel lookupGeneric(String qualifiedName, String className) {
+    String cast = String.format("(Class<%s>)(Class<?>)", className);
+    return new RecognizerReference(String.format("ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookup(%s %s.class)", cast, qualifiedName));
   }
 
   @Override

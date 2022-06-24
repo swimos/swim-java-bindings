@@ -1,15 +1,15 @@
 package ai.swim.structure.processor.recognizer;
 
 import ai.swim.structure.processor.context.ScopedContext;
+import com.sun.jdi.ClassType;
+import org.checkerframework.checker.units.qual.C;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -37,17 +37,30 @@ public abstract class RecognizerModel {
       return recognizer;
     }
 
-//    if (element.getKind().isField()) {
-//      DeclaredType declaredType = (DeclaredType) element;
-//      List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
-//
-//      System.out.println("VE:" +declaredType);
-//    }
+    if (element.asType().getKind() == TypeKind.TYPEVAR) {
+      return RecognizerReference.untyped();
+    }
 
-    // We're out of options now. The recognizer isn't available to us now, so we'll have to hope that it's been
-    // registered with the recognizer proxy for a runtime lookup, or it will be derived at runtime and incur the penalty
-    // of reflection.
-    return RecognizerReference.lookupAny(element.asType());
+    switch (element.asType().getKind()) {
+      case DECLARED:
+        DeclaredType declaredType = (DeclaredType) element.asType();
+
+        if (declaredType.getTypeArguments().isEmpty()) {
+          return RecognizerReference.lookupAny(element.asType());
+        } else {
+          ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
+          TypeMirror erasedType = processingEnvironment.getTypeUtils().erasure(element.asType());
+
+          return RecognizerReference.lookupGeneric(erasedType.toString(), element.asType().toString());
+        }
+      case TYPEVAR:
+        return RecognizerReference.untyped();
+      default:
+        // We're out of options now. The recognizer isn't available to us now, so we'll have to hope that it's been
+        // registered with the recognizer proxy for a runtime lookup, or it will be derived at runtime and incur the penalty
+        // of reflection.
+        return RecognizerReference.lookupAny(element.asType());
+    }
   }
 
   private static RecognizerModel fromStdType(Element element, ScopedContext context) {

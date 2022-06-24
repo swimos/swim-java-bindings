@@ -11,13 +11,18 @@ import com.squareup.javapoet.*;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.swim.structure.processor.writer.Recognizer.DELEGATE_HEADER_SLOT_KEY;
+import static ai.swim.structure.processor.writer.Recognizer.RECOGNIZER_CLASS;
+import static ai.swim.structure.processor.writer.WriterUtils.typeParametersToTypeVariable;
 
 public class ClassBuilder extends Builder {
 
@@ -27,8 +32,47 @@ public class ClassBuilder extends Builder {
 
   @Override
   TypeSpec.Builder init() {
-    return TypeSpec.classBuilder(context.getNameFactory().builderClassName())
-        .addModifiers(Modifier.PRIVATE, Modifier.FINAL);
+    TypeSpec.Builder builder = TypeSpec.classBuilder(context.getNameFactory().builderClassName())
+        .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+        .addMethod(buildDefaultConstructor())
+        .addTypeVariables(typeParametersToTypeVariable(schema.getTypeParameters()));
+
+    if (!schema.getTypeParameters().isEmpty()) {
+      builder.addMethod(buildParameterisedConstructor());
+    }
+
+    return builder;
+  }
+
+  private MethodSpec buildDefaultConstructor() {
+    return MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build();
+  }
+
+  private MethodSpec buildParameterisedConstructor() {
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+    Elements elementUtils = processingEnvironment.getElementUtils();
+    NameFactory nameFactory = context.getNameFactory();
+
+    TypeElement recognizerClass = elementUtils.getTypeElement(RECOGNIZER_CLASS);
+    TypeElement fieldRecognizingBuilder = elementUtils.getTypeElement(FIELD_RECOGNIZING_BUILDER_CLASS);
+
+    MethodSpec.Builder builder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
+    List<ParameterSpec> parameters = new ArrayList<>();
+    CodeBlock.Builder body = CodeBlock.builder();
+
+    for (FieldModel fieldModel : schema.getClassMap().getFieldModels()) {
+      if (fieldModel.getFieldView().isParameterised()) {
+        String fieldBuilderName = nameFactory.fieldBuilderName(fieldModel.fieldName());
+        DeclaredType typedRecognizer = typeUtils.getDeclaredType(recognizerClass, fieldModel.type());
+        DeclaredType typedBuilder = typeUtils.getDeclaredType(fieldRecognizingBuilder, fieldModel.type());
+
+        parameters.add(ParameterSpec.builder(TypeName.get(typedRecognizer), fieldModel.fieldName()).build());
+        body.addStatement("this.$L = new $T($L)", fieldBuilderName, typedBuilder, fieldModel.fieldName());
+      }
+    }
+
+    return builder.addParameters(parameters).addCode(body.build()).build();
   }
 
   @Override

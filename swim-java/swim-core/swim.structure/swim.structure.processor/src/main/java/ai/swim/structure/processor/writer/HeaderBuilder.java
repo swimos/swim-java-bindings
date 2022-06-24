@@ -22,7 +22,7 @@ public class HeaderBuilder extends Builder {
   @Override
   TypeSpec.Builder init() {
     return TypeSpec.classBuilder(context.getNameFactory().headerBuilderClassName())
-        .addModifiers(Modifier.PRIVATE, Modifier.FINAL);
+        .addModifiers(Modifier.PRIVATE, Modifier.STATIC,Modifier.FINAL);
   }
 
   @Override

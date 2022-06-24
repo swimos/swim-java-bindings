@@ -39,7 +39,7 @@ public class BuilderWriter {
       HeaderBuilder headerBuilder = new HeaderBuilder(schema, context);
       parentSpec.addType(headerBuilder.build(headerBuilderType));
 
-      TypeSpec.Builder headerClass = TypeSpec.classBuilder(context.getNameFactory().headerClassName()).addModifiers(Modifier.PRIVATE, Modifier.FINAL);
+      TypeSpec.Builder headerClass = TypeSpec.classBuilder(context.getNameFactory().headerClassName()).addModifiers(Modifier.PRIVATE, Modifier.STATIC,Modifier.FINAL);
 
       HeaderSet headerFieldSet = schema.getPartitionedFields().headerSet;
       List<FieldModel> headerFields = headerFieldSet.headerFields;

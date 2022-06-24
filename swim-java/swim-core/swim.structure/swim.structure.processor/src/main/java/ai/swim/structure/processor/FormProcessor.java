@@ -47,21 +47,25 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-
-//      if (!element.asType().toString().equals("ai.swim.structure.recognizer.reflecting.ReflectingRecognizerTest.GenericClass<A>")) {
+//      if (!element.asType().toString().startsWith("ai.swim.structure.recognizer.structural.AutoStructuralGenericTest.SimpleGeneric")) {
 //        continue;
 //      }
 
       ScopedContext scopedContext = this.processingContext.enter(element);
 
-      // Anything that we're processing will be structural
-      StructuralRecognizer recognizer = (StructuralRecognizer) scopedContext.getRecognizer(element);
+      try {
+        // Anything that we're processing will be structural
+        StructuralRecognizer recognizer = (StructuralRecognizer) scopedContext.getRecognizer(element);
 
-      if (recognizer == null) {
-        return true;
+        if (recognizer == null) {
+          return true;
+        }
+
+        this.schemas.add(Schema.from(recognizer));
+      } catch (Throwable e) {
+        processingContext.getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
+        throw e;
       }
-
-      this.schemas.add(Schema.from(recognizer));
     }
 
     if (roundEnv.processingOver()) {

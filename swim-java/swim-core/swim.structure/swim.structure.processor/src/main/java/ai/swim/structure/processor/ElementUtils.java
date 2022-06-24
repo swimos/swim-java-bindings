@@ -5,6 +5,7 @@ import ai.swim.structure.annotations.AutoForm;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -34,20 +35,24 @@ public class ElementUtils {
   }
 
   public static <T> boolean isSubType(ProcessingEnvironment processingEnvironment, Element element, Class<T> target) {
-    Elements elementUtils = processingEnvironment.getElementUtils();
-    Types typeUtils = processingEnvironment.getTypeUtils();
+    if (element.asType().getKind() == TypeKind.DECLARED) {
+      Elements elementUtils = processingEnvironment.getElementUtils();
+      Types typeUtils = processingEnvironment.getTypeUtils();
 
-    DeclaredType variableType = (DeclaredType) element.asType();
-    TypeMirror[] targetGenerics = variableType.getTypeArguments().toArray(TypeMirror[]::new);
+      DeclaredType variableType = (DeclaredType) element.asType();
+      TypeMirror[] targetGenerics = variableType.getTypeArguments().toArray(TypeMirror[]::new);
 
-    if (targetGenerics.length != target.getTypeParameters().length) {
+      if (targetGenerics.length != target.getTypeParameters().length) {
+        return false;
+      }
+
+      TypeElement targetElement = elementUtils.getTypeElement(target.getCanonicalName());
+      DeclaredType targetDeclaredType = typeUtils.getDeclaredType(targetElement, targetGenerics);
+
+      return typeUtils.isSubtype(variableType, targetDeclaredType);
+    } else {
       return false;
     }
-
-    TypeElement targetElement = elementUtils.getTypeElement(target.getCanonicalName());
-    DeclaredType targetDeclaredType = typeUtils.getDeclaredType(targetElement, targetGenerics);
-
-    return typeUtils.isSubtype(variableType, targetDeclaredType);
   }
 
   public static ExecutableElement getNoArgConstructor(Element rootElement) {
