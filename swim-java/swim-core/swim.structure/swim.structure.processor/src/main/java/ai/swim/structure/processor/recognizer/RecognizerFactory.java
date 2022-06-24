@@ -95,7 +95,7 @@ public class RecognizerFactory {
     }
 
     if (element.getKind().isClass()) {
-      return inspectAndInsertClass(element, new ScopedContext(context.getProcessingContext(), element));
+      return inspectAndInsertClass((TypeElement) element, new ScopedContext(context.getProcessingContext(), element));
     } else if (element.getKind().isInterface()) {
       return inspectAndInsertInterface(element, new ScopedContext(context.getProcessingContext(), element));
     } else {
@@ -115,7 +115,7 @@ public class RecognizerFactory {
     return interfaceMap;
   }
 
-  private RecognizerModel inspectAndInsertClass(Element element, ScopedContext context) {
+  private RecognizerModel inspectAndInsertClass(TypeElement element, ScopedContext context) {
     if (!element.getKind().isClass()) {
       throw new RuntimeException("Element is not an interface: " + element);
     }

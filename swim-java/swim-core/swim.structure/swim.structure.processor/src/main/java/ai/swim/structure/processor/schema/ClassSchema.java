@@ -5,8 +5,7 @@ import ai.swim.structure.processor.recognizer.ClassMap;
 import ai.swim.structure.processor.writer.FieldDiscriminate;
 import ai.swim.structure.processor.writer.Recognizer;
 
-import javax.lang.model.element.Element;
-import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.*;
 import java.io.IOException;
 import java.util.List;
 
@@ -60,4 +59,13 @@ public class ClassSchema implements Schema {
   public void write(ScopedContext scopedContext) throws IOException {
     Recognizer.writeRecognizer(this, scopedContext);
   }
+
+  public Name qualifiedName() {
+    return this.classMap.getRoot().getQualifiedName();
+  }
+
+  public List<? extends TypeParameterElement> getTypeParameters() {
+    return this.classMap.getRoot().getTypeParameters();
+  }
+
 }

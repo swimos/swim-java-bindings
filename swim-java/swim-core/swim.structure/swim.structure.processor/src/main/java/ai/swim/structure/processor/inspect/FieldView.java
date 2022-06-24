@@ -6,6 +6,7 @@ import ai.swim.structure.annotations.FieldKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 
 public class FieldView {
   private final VariableElement element;
@@ -68,5 +69,17 @@ public class FieldView {
 
   public FieldKind getFieldKind() {
     return fieldKind;
+  }
+
+  public boolean isParameterised() {
+    switch (this.element.asType().getKind()) {
+      case TYPEVAR:
+        return true;
+      case DECLARED:
+        DeclaredType declaredType = (DeclaredType) this.element.asType();
+        return !declaredType.getTypeArguments().isEmpty();
+      default:
+        return false;
+    }
   }
 }

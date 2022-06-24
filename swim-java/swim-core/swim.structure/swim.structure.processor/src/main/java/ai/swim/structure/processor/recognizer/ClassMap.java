@@ -4,23 +4,23 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.inspect.FieldView;
 import ai.swim.structure.processor.schema.FieldModel;
 
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.TypeElement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ClassMap extends StructuralRecognizer {
 
-  private final Element root;
+  private final TypeElement root;
   private final List<FieldModel> memberVariables;
   private final List<ExecutableElement> methods;
   private final PackageElement declaredPackage;
   private List<StructuralRecognizer> subTypes;
   private boolean isAbstract;
 
-  public ClassMap(Element root, PackageElement declaredPackage) {
+  public ClassMap(TypeElement root, PackageElement declaredPackage) {
     this.root = root;
     this.memberVariables = new ArrayList<>();
     this.methods = new ArrayList<>();
@@ -89,12 +89,12 @@ public class ClassMap extends StructuralRecognizer {
   }
 
   /**
-   * Returns the root element representing either a class or enumeration.
+   * Returns the root element representing either a class, interface or enumeration.
    * <p>
    * If this is a class, then the kind of the element is guaranteed to be ElementKind#Class and the TypeMirror is
    * guaranteed to be a DeclaredType.
    */
-  public Element getRoot() {
+  public TypeElement getRoot() {
     return root;
   }
 

@@ -1,4 +1,4 @@
-package ai.swim.structure.recognizer.structural.delegate;
+package ai.swim.structure.recognizer.structural;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
@@ -7,11 +7,11 @@ import ai.swim.structure.FormParser;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.structural.delegate.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class AutoDelegateTest {
+public class AutoStructuralTest {
 
   <T> void runTestOk(Recognizer<T> recognizer, T expected, String input) {
     Parser<T> parser = new FormParser<>(recognizer);

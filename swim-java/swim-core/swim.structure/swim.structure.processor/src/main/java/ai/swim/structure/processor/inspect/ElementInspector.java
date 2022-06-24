@@ -40,7 +40,7 @@ public class ElementInspector {
 //    }
 //  }
 
-  private static ClassMap inspectClass(Element element, ScopedContext context, Generics generics) {
+  private static ClassMap inspectClass(TypeElement element, ScopedContext context, Generics generics) {
     ProcessingEnvironment env = context.getProcessingEnvironment();
     ConstructorElement constructor = getConstructor(element, context.getMessager());
 
@@ -64,7 +64,7 @@ public class ElementInspector {
     return classMap;
   }
 
-  public static ClassMap inspectClass(Element element, ScopedContext context) {
+  public static ClassMap inspectClass(TypeElement element, ScopedContext context) {
     return inspectClass(element, context, null);
   }
 
