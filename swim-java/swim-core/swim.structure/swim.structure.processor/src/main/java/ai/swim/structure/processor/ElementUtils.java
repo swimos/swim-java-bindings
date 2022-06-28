@@ -1,6 +1,7 @@
 package ai.swim.structure.processor;
 
 import ai.swim.structure.annotations.AutoForm;
+import ai.swim.structure.processor.context.ScopedContext;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;

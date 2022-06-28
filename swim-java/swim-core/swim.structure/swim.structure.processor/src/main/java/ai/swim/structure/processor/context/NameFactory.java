@@ -54,4 +54,15 @@ public class NameFactory {
   public String concreteRecognizerClassName() {
     return String.format("%sConcreteRecognizer", this.name);
   }
+
+  public String typeParameterName(String gen) {
+    if (gen.startsWith("<")) {
+      gen = gen.replace("<","");
+    }
+    if (gen.startsWith(">")) {
+      gen = gen.replace(">","");
+    }
+
+    return String.format("%sType", gen.toLowerCase());
+  }
 }

@@ -6,7 +6,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import java.util.List;
 
 public class ListRecognizerModel extends StructuralRecognizer {
@@ -32,11 +31,7 @@ public class ListRecognizerModel extends StructuralRecognizer {
 
       return new ListRecognizerModel(delegate);
     } else {
-//      TypeVariable typeVariable = (TypeVariable) typeMirror;
-//      System.out.println(typeVariable.asElement());
-//
-//      String err = String.format("%s has an unhanded type mirror: %s", element, typeMirror.getKind());
-      throw new AssertionError();
+      throw new AssertionError("ListRecognizer: " + typeMirror.getKind());
     }
   }
 

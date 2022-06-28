@@ -11,7 +11,6 @@ import ai.swim.structure.processor.schema.FieldModel;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -40,7 +39,7 @@ public class ElementInspector {
 //    }
 //  }
 
-  private static ClassMap inspectClass(TypeElement element, ScopedContext context, Generics generics) {
+  public static ClassMap inspectClass(TypeElement element, ScopedContext context) {
     ProcessingEnvironment env = context.getProcessingEnvironment();
     ConstructorElement constructor = getConstructor(element, context.getMessager());
 
@@ -57,19 +56,16 @@ public class ElementInspector {
       return null;
     }
 
-    if (!inspectSuperclasses(element, classMap, context, generics)) {
+    if (!inspectSuperclasses(element, classMap, context)) {
       return null;
     }
 
     return classMap;
   }
 
-  public static ClassMap inspectClass(TypeElement element, ScopedContext context) {
-    return inspectClass(element, context, null);
-  }
-
   private static boolean inspectClass(Element rootElement, ClassMap classMap, ScopedContext ctx) {
     List<FieldView> fieldViews = new ArrayList<>();
+    Types typeUtils = ctx.getProcessingEnvironment().getTypeUtils();
 
     for (Element element : rootElement.getEnclosedElements()) {
       switch (element.getKind()) {
@@ -87,6 +83,11 @@ public class ElementInspector {
     for (FieldView field : fieldViews) {
       if (field.isIgnored()) {
         continue;
+      }
+
+      if (typeUtils.isSameType(rootElement.asType(), field.getElement().asType())) {
+        ctx.getMessager().error("recursive types are not supported by auto forms");
+        return false;
       }
 
       if (!manifest.validate(field, ctx.getMessager())) {
@@ -216,7 +217,7 @@ public class ElementInspector {
     }
   }
 
-  private static boolean inspectSuperclasses(Element element, ClassMap classMap, ScopedContext context, Generics generics) {
+  private static boolean inspectSuperclasses(Element element, ClassMap classMap, ScopedContext context) {
     ProcessingEnvironment environment = context.getProcessingEnvironment();
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
@@ -238,12 +239,6 @@ public class ElementInspector {
         messager.error("Class extends from '" + superType + "' that is not" + " annotated with @" + AutoForm.class.getSimpleName() + ". Either annotate it or manually implement a form");
         return false;
       }
-
-//      if (typeElement.hasGenerics()) {
-//        // inspect the superclass with the required generics but don't insert it into the factory
-//      } else {
-//        // run as normal
-//      }
 
       RecognizerFactory factory = context.getFactory();
       RecognizerModel superTypeModel = factory.getOrInspect(typeElement, context);

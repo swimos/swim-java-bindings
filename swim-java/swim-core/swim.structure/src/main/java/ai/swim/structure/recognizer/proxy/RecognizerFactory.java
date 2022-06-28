@@ -2,6 +2,7 @@ package ai.swim.structure.recognizer.proxy;
 
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.RecognizerException;
 import ai.swim.structure.recognizer.structural.StructuralRecognizer;
 
 import java.lang.reflect.Constructor;
@@ -24,7 +25,7 @@ class RecognizerFactory<T> {
     Constructor<Recognizer<?>> typedConstructor = null;
     boolean isStructural = false;
 
-    if (targetClass.isAssignableFrom(StructuralRecognizer.class)) {
+    if (StructuralRecognizer.class.isAssignableFrom(recognizerClass)) {
       isStructural = true;
 
       for (Constructor<?> constructor : recognizerClass.getConstructors()) {
@@ -52,20 +53,14 @@ class RecognizerFactory<T> {
   }
 
   @SuppressWarnings("unchecked")
-  public Recognizer<T> newTypedInstance(RecognizerProxy proxy, TypeParameter<?>... typeParameters) {
+  public Recognizer<T> newTypedInstance(TypeParameter<?>... typeParameters) {
     if (typedConstructor == null) {
       throw new IllegalStateException("Not a generic recognizer");
     } else {
-      Recognizer<?>[] typedRecognizers = new Recognizer[typeParameters.length];
-
-      for (int i = 0; i < typeParameters.length; i++) {
-        typedRecognizers[i] = typeParameters[i].visit(proxy);
-      }
-
       try {
-        return (Recognizer<T>) typedConstructor.newInstance((Object[]) typedRecognizers);
+        return (Recognizer<T>) typedConstructor.newInstance((Object[]) typeParameters);
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-        throw new RuntimeException(e);
+        throw new RecognizerException(e);
       }
     }
   }

@@ -1,10 +1,12 @@
 package ai.swim.structure;
 
 import ai.swim.codec.Parser;
+import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
 import ai.swim.recon.ReconParser;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.result.ParseResult;
+import ai.swim.recon.result.ResultError;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.proxy.RecognizerProxy;
 
@@ -36,7 +38,7 @@ public class FormParser<T> extends Parser<T> {
           return Parser.error(input, recognizer.trap().toString());
         }
       } else if (result.isError()) {
-        return Parser.error(input, recognizer.trap().toString());
+        return Parser.error(input, ((ResultError<ReadEvent>)result).getCause());
       }
 
       if (this.parser.isError()) {

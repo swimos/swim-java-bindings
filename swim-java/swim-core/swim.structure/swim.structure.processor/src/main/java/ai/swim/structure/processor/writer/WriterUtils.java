@@ -1,12 +1,23 @@
 package ai.swim.structure.processor.writer;
 
+import ai.swim.structure.processor.context.NameFactory;
+import ai.swim.structure.processor.context.ScopedContext;
 import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeVariableName;
 
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
+
+import static ai.swim.structure.processor.writer.Recognizer.TYPE_PARAMETER;
 
 public class WriterUtils {
 
@@ -35,6 +46,23 @@ public class WriterUtils {
       TypeName[] bounds = tp.getBounds().stream().map(TypeName::get).toList().toArray(new TypeName[]{});
       return TypeVariableName.get(tp.asType().toString(), bounds);
     }).toList();
+  }
+
+  public static List<ParameterSpec> writeGenericRecognizerConstructor(List<? extends TypeParameterElement> typeParameters, ScopedContext context) {
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+    Elements elementUtils = processingEnvironment.getElementUtils();
+    NameFactory nameFactory = context.getNameFactory();
+
+    List<ParameterSpec> parameters = new ArrayList<>(typeParameters.size());
+    TypeElement typeParameterElement = elementUtils.getTypeElement(TYPE_PARAMETER);
+
+    for (TypeParameterElement typeParameter : typeParameters) {
+      DeclaredType typed = typeUtils.getDeclaredType(typeParameterElement, typeParameter.asType());
+      parameters.add(ParameterSpec.builder(TypeName.get(typed), nameFactory.typeParameterName(typeParameter.toString())).build());
+    }
+
+    return parameters;
   }
 
 }

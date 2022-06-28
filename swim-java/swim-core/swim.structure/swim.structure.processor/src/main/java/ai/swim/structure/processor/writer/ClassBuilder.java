@@ -1,6 +1,7 @@
 package ai.swim.structure.processor.writer;
 
 import ai.swim.structure.processor.context.NameFactory;
+import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
@@ -11,20 +12,23 @@ import com.squareup.javapoet.*;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.swim.structure.processor.writer.Recognizer.DELEGATE_HEADER_SLOT_KEY;
-import static ai.swim.structure.processor.writer.Recognizer.RECOGNIZER_CLASS;
 import static ai.swim.structure.processor.writer.WriterUtils.typeParametersToTypeVariable;
+import static ai.swim.structure.processor.writer.WriterUtils.writeGenericRecognizerConstructor;
 
 public class ClassBuilder extends Builder {
+
+  private static final String TYPE_PARAMETER = "ai.swim.structure.recognizer.proxy.TypeParameter";
 
   public ClassBuilder(ClassSchema classSchema, ScopedContext context) {
     super(classSchema, context);
@@ -49,30 +53,64 @@ public class ClassBuilder extends Builder {
   }
 
   private MethodSpec buildParameterisedConstructor() {
+    MethodSpec.Builder builder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
+    List<ParameterSpec> parameters = writeGenericRecognizerConstructor(schema.getTypeParameters(), context);
+    CodeBlock.Builder body = CodeBlock.builder();
+
+    for (FieldModel fieldModel : schema.getClassMap().getFieldModels()) {
+      if (fieldModel.getFieldView().isParameterised()) {
+        VariableElement element = fieldModel.getFieldView().getElement();
+        TypeKind typeKind = element.asType().getKind();
+
+        switch (typeKind) {
+          case TYPEVAR:
+            body.add(initialiseTypeVarField(context, fieldModel));
+            break;
+          case DECLARED:
+            DeclaredType declaredType = (DeclaredType) element.asType();
+            body.add(initialiseParameterisedField(context, fieldModel, declaredType));
+            break;
+          default:
+            throw new AssertionError("Unexpected type kind when processing generic parameters: " + typeKind + " in " + context.getRoot());
+        }
+      }
+    }
+
+    return builder.addParameters(parameters)
+        .addCode(body.build())
+        .build();
+  }
+
+  private CodeBlock initialiseTypeVarField(ScopedContext context, FieldModel fieldModel) {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Types typeUtils = processingEnvironment.getTypeUtils();
     Elements elementUtils = processingEnvironment.getElementUtils();
     NameFactory nameFactory = context.getNameFactory();
 
-    TypeElement recognizerClass = elementUtils.getTypeElement(RECOGNIZER_CLASS);
     TypeElement fieldRecognizingBuilder = elementUtils.getTypeElement(FIELD_RECOGNIZING_BUILDER_CLASS);
+    String fieldBuilderName = nameFactory.fieldBuilderName(fieldModel.fieldName());
+    DeclaredType typedBuilder = typeUtils.getDeclaredType(fieldRecognizingBuilder, fieldModel.type());
 
-    MethodSpec.Builder builder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
-    List<ParameterSpec> parameters = new ArrayList<>();
-    CodeBlock.Builder body = CodeBlock.builder();
+    return CodeBlock.builder().addStatement("this.$L = new $T(requireNonNullElse($L, ai.swim.structure.recognizer.proxy.TypeParameter.<$T>untyped()).build())", fieldBuilderName, typedBuilder, nameFactory.typeParameterName(fieldModel.type().toString()), fieldModel.type()).build();
+  }
 
-    for (FieldModel fieldModel : schema.getClassMap().getFieldModels()) {
-      if (fieldModel.getFieldView().isParameterised()) {
-        String fieldBuilderName = nameFactory.fieldBuilderName(fieldModel.fieldName());
-        DeclaredType typedRecognizer = typeUtils.getDeclaredType(recognizerClass, fieldModel.type());
-        DeclaredType typedBuilder = typeUtils.getDeclaredType(fieldRecognizingBuilder, fieldModel.type());
 
-        parameters.add(ParameterSpec.builder(TypeName.get(typedRecognizer), fieldModel.fieldName()).build());
-        body.addStatement("this.$L = new $T($L)", fieldBuilderName, typedBuilder, fieldModel.fieldName());
-      }
-    }
+  private CodeBlock initialiseParameterisedField(ScopedContext context, FieldModel fieldModel, DeclaredType declaredType) {
+    ProcessingContext processingContext = context.getProcessingContext();
+    ProcessingEnvironment processingEnvironment = processingContext.getProcessingEnvironment();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+    Elements elementUtils = processingEnvironment.getElementUtils();
 
-    return builder.addParameters(parameters).addCode(body.build()).build();
+    TypeMirror erasedMirror = typeUtils.erasure(fieldModel.type());
+    TypeElement fieldRecognizingBuilder = elementUtils.getTypeElement(FIELD_RECOGNIZING_BUILDER_CLASS);
+    TypeMirror targetType = fieldModel.getFieldView().getElement().asType();
+    DeclaredType typedBuilder = typeUtils.getDeclaredType(fieldRecognizingBuilder, targetType);
+
+    NameFactory nameFactory = context.getNameFactory();
+    String builderName = nameFactory.fieldBuilderName(fieldModel.fieldName());
+    String typeParameters = declaredType.getTypeArguments().stream().map(ty -> nameFactory.typeParameterName(ty.toString())).collect(Collectors.joining(", "));
+
+    return CodeBlock.of("this.$L = new $T(ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookupStructural((Class<$T>) (Class<?>) $T.class, $L));\n", builderName, typedBuilder, targetType, erasedMirror, typeParameters);
   }
 
   @Override
