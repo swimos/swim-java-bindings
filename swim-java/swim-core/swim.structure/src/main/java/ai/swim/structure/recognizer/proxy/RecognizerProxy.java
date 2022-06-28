@@ -3,6 +3,7 @@ package ai.swim.structure.recognizer.proxy;
 
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.RecognizerException;
 import ai.swim.structure.recognizer.SimpleRecognizer;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import ai.swim.structure.recognizer.structural.StructuralRecognizer;
@@ -35,6 +36,7 @@ public class RecognizerProxy {
     recognizers.put(Long.class, RecognizerFactory.buildFrom(Long.class, SimpleRecognizer.class, () -> ScalarRecognizer.LONG));
     recognizers.put(byte[].class, RecognizerFactory.buildFrom(byte[].class, SimpleRecognizer.class, () -> ScalarRecognizer.BLOB));
     recognizers.put(Boolean.class, RecognizerFactory.buildFrom(Boolean.class, SimpleRecognizer.class, () -> ScalarRecognizer.BOOLEAN));
+    recognizers.put(Float.class, RecognizerFactory.buildFrom(Float.class, SimpleRecognizer.class, () -> ScalarRecognizer.FLOAT));
     recognizers.put(String.class, RecognizerFactory.buildFrom(String.class, SimpleRecognizer.class, () -> ScalarRecognizer.STRING));
     recognizers.put(Object.class, RecognizerFactory.buildFrom(Object.class, UntypedRecognizer.class, UntypedRecognizer::new));
     recognizers.put(BigDecimal.class, RecognizerFactory.buildFrom(BigDecimal.class, SimpleRecognizer.class, () -> ScalarRecognizer.BIG_DECIMAL));
@@ -110,6 +112,11 @@ public class RecognizerProxy {
     }
 
     RecognizerFactory<T> recognizerSupplier = (RecognizerFactory<T>) this.recognizers.get(clazz);
+
+    if (recognizerSupplier == null) {
+      throw new RecognizerException("No recognizer found for class: " + clazz);
+    }
+
     return recognizerSupplier.newInstance();
   }
 
@@ -141,7 +148,7 @@ public class RecognizerProxy {
     if (typeParameters.length == 0) {
       return (StructuralRecognizer<T>) factory.newInstance();
     } else {
-      return (StructuralRecognizer<T>) factory.newTypedInstance(this, typeParameters);
+      return (StructuralRecognizer<T>) factory.newTypedInstance( typeParameters);
     }
   }
 

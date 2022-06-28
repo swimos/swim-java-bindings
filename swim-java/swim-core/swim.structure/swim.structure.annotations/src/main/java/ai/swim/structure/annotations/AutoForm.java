@@ -25,6 +25,8 @@ public @interface AutoForm {
 
   String value() default "";
 
+  String recognizerName() default "";
+
   @Target({ElementType.FIELD})
   @Retention(RetentionPolicy.RUNTIME)
   @interface Kind {

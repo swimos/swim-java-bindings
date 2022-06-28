@@ -6,7 +6,7 @@ import ai.swim.structure.recognizer.proxy.RecognizerProxy;
 
 public class FieldRecognizingBuilder<I> implements RecognizingBuilder<I> {
 
-  public final Recognizer<I> recognizer;
+  public Recognizer<I> recognizer;
   public I value;
 
   public FieldRecognizingBuilder(Class<I> clazz) {
@@ -30,6 +30,7 @@ public class FieldRecognizingBuilder<I> implements RecognizingBuilder<I> {
     } else if (feedResult.isError()) {
       throw feedResult.trap();
     } else {
+      this.recognizer = feedResult;
       return false;
     }
   }

@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UntypedRecognizerTest {
 
   void singleEventOk(ReadEvent event, Object expected) {
-    Recognizer<?> recognizer = new UntypedRecognizer();
+    Recognizer<?> recognizer = new UntypedRecognizer<>();
     recognizer = recognizer.feedEvent(event);
 
     assertTrue(recognizer.isDone());
@@ -24,7 +24,7 @@ class UntypedRecognizerTest {
 
   @Test
   void readsScalars() {
-    Recognizer<?> recognizer = new UntypedRecognizer();
+    Recognizer<?> recognizer = new UntypedRecognizer<>();
     recognizer = recognizer.feedEvent(ReadEvent.blob(new byte[]{1, 2, 3}));
 
     assertTrue(recognizer.isDone());
@@ -41,7 +41,7 @@ class UntypedRecognizerTest {
   }
 
   void multipleEventsOk(List<ReadEvent> events, Object expected) {
-    Recognizer<?> recognizer = new UntypedRecognizer();
+    Recognizer<?> recognizer = new UntypedRecognizer<>();
 
     for (int i = 0; i < events.size(); i++) {
       ReadEvent event = events.get(i);
@@ -192,7 +192,7 @@ class UntypedRecognizerTest {
   }
 
   void testFail(List<ReadEvent> events) {
-    Recognizer<?> recognizer = new UntypedRecognizer();
+    Recognizer<?> recognizer = new UntypedRecognizer<>();
 
     for (ReadEvent event : events) {
       recognizer = recognizer.feedEvent(event);

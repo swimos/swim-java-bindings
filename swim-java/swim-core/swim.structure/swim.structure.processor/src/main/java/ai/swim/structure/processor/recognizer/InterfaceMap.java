@@ -8,7 +8,7 @@ public class InterfaceMap extends StructuralRecognizer {
 
   private final Element root;
   private final PackageElement declaredPackage;
-  private List<StructuralRecognizer> subTypes;
+  private final List<StructuralRecognizer> subTypes;
 
   public InterfaceMap(Element root, PackageElement declaredPackage, List<StructuralRecognizer> subTypes) {
     this.root = root;

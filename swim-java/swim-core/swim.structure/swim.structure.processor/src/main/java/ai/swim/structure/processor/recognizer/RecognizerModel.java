@@ -37,10 +37,6 @@ public abstract class RecognizerModel {
       return recognizer;
     }
 
-    if (element.asType().getKind() == TypeKind.TYPEVAR) {
-      return RecognizerReference.untyped();
-    }
-
     switch (element.asType().getKind()) {
       case DECLARED:
         DeclaredType declaredType = (DeclaredType) element.asType();
@@ -63,6 +59,8 @@ public abstract class RecognizerModel {
     }
   }
 
+  private static RecognizerModel fromTypeVar
+
   private static RecognizerModel fromStdType(Element element, ScopedContext context) {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
 
@@ -71,7 +69,7 @@ public abstract class RecognizerModel {
     }
 
     if (isSubType(processingEnvironment, element, Map.class)) {
-//      return ClassRecognizerModel.map(element, context);
+//      return MapRecognizerModel.from(element, context);
       throw new AssertionError("Map implementation");
     }
 
