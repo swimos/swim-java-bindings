@@ -41,6 +41,7 @@ public class RecognizerProxy {
     recognizers.put(Object.class, RecognizerFactory.buildFrom(Object.class, UntypedRecognizer.class, UntypedRecognizer::new));
     recognizers.put(BigDecimal.class, RecognizerFactory.buildFrom(BigDecimal.class, SimpleRecognizer.class, () -> ScalarRecognizer.BIG_DECIMAL));
     recognizers.put(BigInteger.class, RecognizerFactory.buildFrom(BigInteger.class, SimpleRecognizer.class, () -> ScalarRecognizer.BIG_INTEGER));
+    recognizers.put(Number.class, RecognizerFactory.buildFrom(Number.class, SimpleRecognizer.class, () -> ScalarRecognizer.NUMBER));
 
     loadFromClassPath(recognizers);
 

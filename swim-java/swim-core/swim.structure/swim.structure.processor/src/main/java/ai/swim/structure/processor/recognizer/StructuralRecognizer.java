@@ -5,14 +5,21 @@ import javax.lang.model.type.TypeMirror;
 public abstract class StructuralRecognizer extends RecognizerModel {
   public static class Reference extends StructuralRecognizer {
     private final String initializer;
+    private final TypeMirror type;
 
-    Reference(TypeMirror initializer) {
-      this.initializer = String.format("ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookupStructural(%s.class)", initializer.toString());
+    Reference(TypeMirror type) {
+      this.type = type;
+      this.initializer = String.format("ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookupStructural(%s.class)", type.toString());
     }
 
     @Override
     public String recognizerInitializer() {
       return this.initializer;
+    }
+
+    @Override
+    public TypeMirror type() {
+      return type;
     }
 
     @Override

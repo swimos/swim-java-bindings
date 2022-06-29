@@ -10,9 +10,11 @@ import ai.swim.structure.recognizer.proxy.TypeParameter;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,6 +59,7 @@ public class AutoStructuralGenericTest {
       return Objects.hash(generic, a, c);
     }
   }
+
 
   @AutoForm
   public static class Typed<A extends Number, T extends CharSequence> {
@@ -263,43 +266,48 @@ public class AutoStructuralGenericTest {
   }
 
   @AutoForm
-  public static class Col<C extends Collection<T>, T extends Number> {
-    public C collection;
-    public List<C> list;
-    public T id;
+  static class MixedGenerics<A extends CharSequence> {
+    public A outer;
+    public List<? super Number> wildcard;
 
-    public Col() {
+    public MixedGenerics() {
 
     }
 
-    public Col(C collection, List<C> list, T id) {
-      this.collection = collection;
-      this.list = list;
-      this.id = id;
-    }
-
-    @Override
-    public String toString() {
-      return "Col{" +
-          "collection=" + collection +
-          ", list=" + list +
-          ", id=" + id +
-          '}';
+    public MixedGenerics(A outer, List<? super Number> wildcard) {
+      this.outer = outer;
+      this.wildcard = wildcard;
     }
 
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof Col)) return false;
-      Col<?, ?> col = (Col<?, ?>) o;
-      return Objects.equals(collection, col.collection) && Objects.equals(list, col.list) && Objects.equals(id, col.id);
+      if (!(o instanceof MixedGenerics)) return false;
+      MixedGenerics<?> that = (MixedGenerics<?>) o;
+      return Objects.equals(outer, that.outer) && Objects.equals(wildcard, that.wildcard);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(collection, list, id);
+      return Objects.hash(outer, wildcard);
+    }
+
+    @Override
+    public String toString() {
+      return "MixedGenerics{" +
+          "outer=" + outer +
+          ", wildcard=" + wildcard +
+          '}';
     }
   }
 
+  @Test
+  void testMixedGenerics() {
+    Parser<MixedGenerics<String>> parser = new FormParser<>(new MixedGenericsRecognizer<>());
+    parser = parser.feed(Input.string("@MixedGenerics{outer:text,wildcard:{2,3.1,4,5}}"));
+
+    assertTrue(parser.isDone());
+    assertEquals(new MixedGenerics<>("text", List.of(2, 3.1, 4, 5)), parser.bind());
+  }
 
 }

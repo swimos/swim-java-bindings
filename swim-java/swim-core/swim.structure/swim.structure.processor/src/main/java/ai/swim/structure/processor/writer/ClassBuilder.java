@@ -103,14 +103,21 @@ public class ClassBuilder extends Builder {
 
     TypeMirror erasedMirror = typeUtils.erasure(fieldModel.type());
     TypeElement fieldRecognizingBuilder = elementUtils.getTypeElement(FIELD_RECOGNIZING_BUILDER_CLASS);
-    TypeMirror targetType = fieldModel.getFieldView().getElement().asType();
-    DeclaredType typedBuilder = typeUtils.getDeclaredType(fieldRecognizingBuilder, targetType);
+    DeclaredType typedBuilder = typeUtils.getDeclaredType(fieldRecognizingBuilder, fieldModel.type());
 
     NameFactory nameFactory = context.getNameFactory();
     String builderName = nameFactory.fieldBuilderName(fieldModel.fieldName());
-    String typeParameters = declaredType.getTypeArguments().stream().map(ty -> nameFactory.typeParameterName(ty.toString())).collect(Collectors.joining(", "));
+    String typeParameters = declaredType.getTypeArguments().stream().map(ty -> {
+      if (ty.getKind() == TypeKind.WILDCARD) {
+        return String.format("%s.untyped()", TYPE_PARAMETER);
+      } else {
+        return nameFactory.typeParameterName(ty.toString());
+      }
+    }).collect(Collectors.joining(", "));
 
-    return CodeBlock.of("this.$L = new $T(ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookupStructural((Class<$T>) (Class<?>) $T.class, $L));\n", builderName, typedBuilder, targetType, erasedMirror, typeParameters);
+    System.out.println(fieldModel.getFieldView().getElement().asType());
+
+    return CodeBlock.of("this.$L = new $T(ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookupStructural((Class<$T>) (Class<?>) $T.class, $L));\n", builderName, typedBuilder, fieldModel.type(), erasedMirror, typeParameters);
   }
 
   @Override

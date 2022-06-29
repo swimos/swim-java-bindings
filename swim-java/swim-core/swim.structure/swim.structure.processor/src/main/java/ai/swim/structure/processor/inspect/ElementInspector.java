@@ -94,7 +94,7 @@ public class ElementInspector {
         return false;
       }
 
-      RecognizerModel recognizerModel = RecognizerModel.from(field.getElement(), ctx);
+      RecognizerModel recognizerModel = RecognizerModel.from(field.getElement().asType(), ctx);
 
       if (!field.isPublic()) {
         ExecutableElement setter = setterFor(classMap.getMethods(), field.getName());

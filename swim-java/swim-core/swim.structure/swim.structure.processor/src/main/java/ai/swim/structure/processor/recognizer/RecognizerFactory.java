@@ -7,6 +7,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.math.BigDecimal;
@@ -25,7 +26,7 @@ public class RecognizerFactory {
   }
 
   /**
-   * Initialises STD types.
+   * Initialises standard library types.
    */
   public static RecognizerFactory initFrom(ProcessingEnvironment processingEnvironment) {
     Elements elementUtils = processingEnvironment.getElementUtils();
@@ -44,6 +45,7 @@ public class RecognizerFactory {
     recognizers.put(_getOrThrowType(elementUtils, Character.class), primitiveFormatter.recognizerFor("CHARACTER"));
     recognizers.put(_getOrThrowType(elementUtils, BigInteger.class), primitiveFormatter.recognizerFor("BIG_INTEGER"));
     recognizers.put(_getOrThrowType(elementUtils, BigDecimal.class), primitiveFormatter.recognizerFor("BIG_DECIMAL"));
+    recognizers.put(_getOrThrowType(elementUtils, Number.class), primitiveFormatter.recognizerFor("NUMBER"));
     recognizers.put(_getOrThrowArrayType(elementUtils, typeUtils, Byte.class), primitiveFormatter.recognizerFor("BLOB"));
 
     // init atomics
@@ -83,8 +85,8 @@ public class RecognizerFactory {
     return new RuntimeException("Failed to initialise recognizer factory with class: " + clazz);
   }
 
-  public RecognizerModel lookup(Element element) {
-    return this.recognizers.get(element.asType().toString());
+  public RecognizerModel lookup(TypeMirror typeMirror) {
+    return this.recognizers.get(typeMirror.toString());
   }
 
   public RecognizerModel getOrInspect(Element element, ScopedContext context) {
