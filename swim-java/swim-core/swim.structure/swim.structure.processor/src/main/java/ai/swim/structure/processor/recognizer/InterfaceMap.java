@@ -2,6 +2,7 @@ package ai.swim.structure.processor.recognizer;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.type.TypeMirror;
 import java.util.List;
 
 public class InterfaceMap extends StructuralRecognizer {
@@ -35,6 +36,11 @@ public class InterfaceMap extends StructuralRecognizer {
   @Override
   public String recognizerInitializer() {
     return String.format("new %s()", this.canonicalRecognizerName());
+  }
+
+  @Override
+  public TypeMirror type() {
+    return root.asType();
   }
 
   public Element root() {

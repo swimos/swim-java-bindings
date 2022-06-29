@@ -1,5 +1,7 @@
 package ai.swim.structure.processor.recognizer;
 
+import javax.lang.model.type.TypeMirror;
+
 public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   private static RecognizerModel BYTE_RECOGNIZER;
@@ -96,5 +98,10 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
   @Override
   public Object defaultValue() {
     return this.defaultValue;
+  }
+
+  @Override
+  public TypeMirror type() {
+    return null;
   }
 }

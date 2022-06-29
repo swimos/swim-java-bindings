@@ -35,12 +35,12 @@ public class ElementUtils {
     return null;
   }
 
-  public static <T> boolean isSubType(ProcessingEnvironment processingEnvironment, Element element, Class<T> target) {
-    if (element.asType().getKind() == TypeKind.DECLARED) {
+  public static <T> boolean isSubType(ProcessingEnvironment processingEnvironment, TypeMirror mirror, Class<T> target) {
+    if (mirror.getKind() == TypeKind.DECLARED) {
       Elements elementUtils = processingEnvironment.getElementUtils();
       Types typeUtils = processingEnvironment.getTypeUtils();
 
-      DeclaredType variableType = (DeclaredType) element.asType();
+      DeclaredType variableType = (DeclaredType) mirror;
       TypeMirror[] targetGenerics = variableType.getTypeArguments().toArray(TypeMirror[]::new);
 
       if (targetGenerics.length != target.getTypeParameters().length) {

@@ -7,6 +7,7 @@ import ai.swim.structure.processor.schema.FieldModel;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -109,6 +110,11 @@ public class ClassMap extends StructuralRecognizer {
   @Override
   public String recognizerInitializer() {
     return String.format("new %s()", this.canonicalRecognizerName());
+  }
+
+  @Override
+  public TypeMirror type() {
+    return root.asType();
   }
 
   public List<FieldModel> getFieldModels() {

@@ -1,74 +1,69 @@
 package ai.swim.structure.processor.recognizer;
 
 import ai.swim.structure.processor.context.ScopedContext;
-import com.sun.jdi.ClassType;
-import org.checkerframework.checker.units.qual.C;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.Name;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.*;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import static ai.swim.structure.processor.ElementUtils.isSubType;
 
 public abstract class RecognizerModel {
 
-  public static RecognizerModel from(Element element, ScopedContext context) {
-    RecognizerModel recognizer = RecognizerModel.fromPrimitiveType(element);
+  public static RecognizerModel from(TypeMirror typeMirror, ScopedContext context) {
+    RecognizerModel recognizer = RecognizerModel.fromPrimitiveType(typeMirror);
 
     if (recognizer != null) {
       return recognizer;
     }
 
-    recognizer = RecognizerModel.fromStdType(element, context);
+    recognizer = RecognizerModel.fromStdType(typeMirror, context);
 
     if (recognizer != null) {
       return recognizer;
     }
 
-    recognizer = context.getRecognizerFactory().lookup(element);
+    recognizer = context.getRecognizerFactory().lookup(typeMirror);
 
     if (recognizer != null) {
       return recognizer;
     }
 
-    switch (element.asType().getKind()) {
+    switch (typeMirror.getKind()) {
       case DECLARED:
-        DeclaredType declaredType = (DeclaredType) element.asType();
+        DeclaredType declaredType = (DeclaredType) typeMirror;
 
         if (declaredType.getTypeArguments().isEmpty()) {
-          return RecognizerReference.lookupAny(element.asType());
+          return RecognizerReference.lookupAny(typeMirror);
         } else {
           ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
-          TypeMirror erasedType = processingEnvironment.getTypeUtils().erasure(element.asType());
+          TypeMirror erasedType = processingEnvironment.getTypeUtils().erasure(typeMirror);
 
-          return RecognizerReference.lookupGeneric(erasedType.toString(), element.asType().toString());
+          return RecognizerReference.lookupGeneric(typeMirror, erasedType.toString(), typeMirror.toString());
         }
       case TYPEVAR:
-        return RecognizerReference.untyped();
+        return RecognizerReference.untyped(typeMirror);
+      case WILDCARD:
+        throw new AssertionError("Recognizer model wildcard type");
       default:
         // We're out of options now. The recognizer isn't available to us now, so we'll have to hope that it's been
-        // registered with the recognizer proxy for a runtime lookup, or it will be derived at runtime and incur the penalty
-        // of reflection.
-        return RecognizerReference.lookupAny(element.asType());
+        // registered with the recognizer proxy for a runtime lookup.
+        return RecognizerReference.lookupAny(typeMirror);
     }
   }
 
-  private static RecognizerModel fromTypeVar
-
-  private static RecognizerModel fromStdType(Element element, ScopedContext context) {
+  private static RecognizerModel fromStdType(TypeMirror mirror, ScopedContext context) {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
 
-    if (isSubType(processingEnvironment, element, Collection.class)) {
-      return ListRecognizerModel.from(element, context);
+    if (isSubType(processingEnvironment, mirror, Collection.class)) {
+      return ListRecognizerModel.from(mirror, context);
     }
 
-    if (isSubType(processingEnvironment, element, Map.class)) {
+    if (isSubType(processingEnvironment, mirror, Map.class)) {
 //      return MapRecognizerModel.from(element, context);
       throw new AssertionError("Map implementation");
     }
@@ -76,8 +71,8 @@ public abstract class RecognizerModel {
     return null;
   }
 
-  public static RecognizerModel fromPrimitiveType(Element element) {
-    TypeKind kind = element.asType().getKind();
+  public static RecognizerModel fromPrimitiveType(TypeMirror mirror) {
+    TypeKind kind = mirror.getKind();
     switch (kind) {
       case BOOLEAN:
         return PrimitiveRecognizerModel.booleanRecognizer();
@@ -105,5 +100,7 @@ public abstract class RecognizerModel {
   public Object defaultValue() {
     return null;
   }
+
+  public abstract TypeMirror type();
 
 }

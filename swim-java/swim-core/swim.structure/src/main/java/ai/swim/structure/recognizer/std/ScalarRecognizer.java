@@ -5,6 +5,7 @@ import ai.swim.recon.event.ReadBooleanValue;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadTextValue;
 import ai.swim.recon.event.number.*;
+import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.SimpleRecognizer;
 
@@ -308,6 +309,27 @@ public final class ScalarRecognizer<T> {
       } else if (event.isReadDouble()) {
         ReadDoubleValue readDoubleValue = (ReadDoubleValue) event;
         return BigDecimal.valueOf(readDoubleValue.value());
+      } else {
+        return null;
+      }
+    }
+  };
+
+  public static final Recognizer<Number> NUMBER = new SimpleRecognizer<>(true, "Number") {
+    @Override
+    protected Number feed(ReadEvent event) {
+      if (event.isReadInt()) {
+        return ((ReadIntValue) event).value();
+      } else if (event.isReadLong()) {
+        return ((ReadLongValue) event).value();
+      } else if (event.isReadFloat()) {
+        return ((ReadFloatValue) event).value();
+      } else if (event.isReadDouble()) {
+        return ((ReadDoubleValue) event).value();
+      } else if (event.isReadBigInt()) {
+        return ((ReadBigIntValue) event).value();
+      } else if (event.isReadBigDecimal()) {
+        return ((ReadBigDecimalValue) event).value();
       } else {
         return null;
       }

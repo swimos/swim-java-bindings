@@ -5,31 +5,38 @@ import javax.lang.model.type.TypeMirror;
 public class RecognizerReference extends RecognizerModel {
 
   private final String initializer;
+  private final TypeMirror mirror;
 
-  private RecognizerReference(String initializer) {
+  private RecognizerReference(TypeMirror mirror, String initializer) {
+    this.mirror = mirror;
     this.initializer = initializer;
   }
 
   public static RecognizerModel lookupAny(TypeMirror mirror) {
-    return new RecognizerReference(String.format("ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookup(%s.class)", mirror.toString()));
+    return new RecognizerReference(mirror,String.format("ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookup(%s.class)", mirror.toString()));
   }
 
-  public static RecognizerModel untyped() {
-    return new RecognizerReference("new ai.swim.structure.recognizer.untyped.UntypedRecognizer()");
+  public static RecognizerModel untyped(TypeMirror objectMirror) {
+    return new RecognizerReference(objectMirror, "new ai.swim.structure.recognizer.untyped.UntypedRecognizer()");
   }
 
   public static StructuralRecognizer.Reference lookupStructural(TypeMirror mirror) {
     return new StructuralRecognizer.Reference(mirror);
   }
 
-  public static RecognizerModel lookupGeneric(String qualifiedName, String className) {
+  public static RecognizerModel lookupGeneric(TypeMirror mirror,String qualifiedName, String className) {
     String cast = String.format("(Class<%s>)(Class<?>)", className);
-    return new RecognizerReference(String.format("ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookup(%s %s.class)", cast, qualifiedName));
+    return new RecognizerReference(mirror, String.format("ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookup(%s %s.class)", cast, qualifiedName));
   }
 
   @Override
   public String recognizerInitializer() {
     return this.initializer;
+  }
+
+  @Override
+  public TypeMirror type() {
+    return this.mirror;
   }
 
   @Override
@@ -47,7 +54,7 @@ public class RecognizerReference extends RecognizerModel {
     }
 
     public RecognizerReference recognizerFor(String name) {
-      return new RecognizerReference(String.format("%s.%s", this.packageName, name));
+      return new RecognizerReference(null, String.format("%s.%s", this.packageName, name));
     }
   }
 }

@@ -37,7 +37,17 @@ public class FieldModel {
   }
 
   public TypeMirror type() {
-    return this.fieldView.getElement().asType();
+    TypeMirror type = this.recognizer.type();
+
+    System.out.println("Type: " + type+ ", view: " + fieldView.getElement().asType()+ ", clazz: " + this.recognizer.getClass().getSimpleName());
+
+
+
+    if (type == null) {
+      return this.fieldView.getElement().asType();
+    } else {
+      return type;
+    }
   }
 
   public String initializer() {
@@ -78,6 +88,5 @@ public class FieldModel {
         return "";
     }
   }
-
 
 }
