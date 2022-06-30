@@ -10,10 +10,7 @@ import ai.swim.structure.recognizer.proxy.TypeParameter;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -308,6 +305,11 @@ public class AutoStructuralGenericTest {
 
     assertTrue(parser.isDone());
     assertEquals(new MixedGenerics<>("text", List.of(2, 3.1, 4, 5)), parser.bind());
+  }
+
+  @AutoForm
+  public static class NestedWildcards<A extends Number> {
+    public Map<String,? extends List<A>> map;
   }
 
 }

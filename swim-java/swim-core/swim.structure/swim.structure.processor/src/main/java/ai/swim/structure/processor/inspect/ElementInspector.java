@@ -18,8 +18,8 @@ import javax.lang.model.util.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-import static ai.swim.structure.processor.ElementUtils.getNoArgConstructor;
-import static ai.swim.structure.processor.ElementUtils.setterFor;
+import static ai.swim.structure.processor.Utils.getNoArgConstructor;
+import static ai.swim.structure.processor.Utils.setterFor;
 
 public class ElementInspector {
 

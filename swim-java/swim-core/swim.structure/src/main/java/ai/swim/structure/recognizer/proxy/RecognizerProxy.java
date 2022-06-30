@@ -5,7 +5,9 @@ import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerException;
 import ai.swim.structure.recognizer.SimpleRecognizer;
+import ai.swim.structure.recognizer.std.HashMapRecognizer;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
+import ai.swim.structure.recognizer.std.collections.ListRecognizer;
 import ai.swim.structure.recognizer.structural.StructuralRecognizer;
 import ai.swim.structure.recognizer.untyped.UntypedRecognizer;
 import org.reflections.Reflections;
@@ -16,6 +18,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -42,6 +46,8 @@ public class RecognizerProxy {
     recognizers.put(BigDecimal.class, RecognizerFactory.buildFrom(BigDecimal.class, SimpleRecognizer.class, () -> ScalarRecognizer.BIG_DECIMAL));
     recognizers.put(BigInteger.class, RecognizerFactory.buildFrom(BigInteger.class, SimpleRecognizer.class, () -> ScalarRecognizer.BIG_INTEGER));
     recognizers.put(Number.class, RecognizerFactory.buildFrom(Number.class, SimpleRecognizer.class, () -> ScalarRecognizer.NUMBER));
+    recognizers.put(Map.class, RecognizerFactory.buildFrom(Map.class, HashMapRecognizer.class, null));
+    recognizers.put(Collection.class, RecognizerFactory.buildFrom(Collection.class, ListRecognizer.class, null));
 
     loadFromClassPath(recognizers);
 
@@ -87,7 +93,7 @@ public class RecognizerProxy {
 
         // safety: checked that the class is assignable above
         Class<Recognizer<?>> typedClass = (Class<Recognizer<?>>) clazz;
-        recognizers.put(targetClass, RecognizerFactory.buildFromAny(targetClass, typedClass, supplier));
+        recognizers.put(targetClass, RecognizerFactory.buildFromAny(clazz,typedClass, supplier));
       } catch (NoSuchMethodException e) {
         throw new RuntimeException(String.format("Recognizer '%s' does not contain a zero-arg constructor", clazz.getCanonicalName()), e);
       }
@@ -139,7 +145,7 @@ public class RecognizerProxy {
     RecognizerFactory<T> factory = (RecognizerFactory<T>) this.recognizers.get(clazz);
 
     if (factory == null) {
-      return null;
+      return fromStdClass(clazz, typeParameters);
     }
 
     if (!factory.isStructural()) {
@@ -149,8 +155,21 @@ public class RecognizerProxy {
     if (typeParameters.length == 0) {
       return (StructuralRecognizer<T>) factory.newInstance();
     } else {
-      return (StructuralRecognizer<T>) factory.newTypedInstance( typeParameters);
+      return (StructuralRecognizer<T>) factory.newTypedInstance(typeParameters);
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T> StructuralRecognizer<T> fromStdClass(Class<T> clazz, TypeParameter<?>... typeParameters) {
+    if (Map.class.isAssignableFrom(clazz)) {
+      return (StructuralRecognizer<T>) lookupStructural(Map.class, typeParameters);
+    }
+
+    if (Collection.class.isAssignableFrom(clazz)) {
+      return (StructuralRecognizer<T>) lookupStructural(Collection.class, typeParameters);
+    }
+
+    throw new RecognizerException("No recognizer found for class: " + clazz);
   }
 
 }

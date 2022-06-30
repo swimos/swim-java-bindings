@@ -1,6 +1,4 @@
-package ai.swim.structure.processor.writer;
-
-import ai.swim.structure.processor.schema.FieldModel;
+package ai.swim.structure.processor.schema;
 
 import java.util.List;
 

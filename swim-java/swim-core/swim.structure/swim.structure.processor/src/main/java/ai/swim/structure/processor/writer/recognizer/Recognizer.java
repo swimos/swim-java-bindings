@@ -1,4 +1,4 @@
-package ai.swim.structure.processor.writer;
+package ai.swim.structure.processor.writer.recognizer;
 
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
@@ -11,44 +11,29 @@ import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.HeaderSet;
 import ai.swim.structure.processor.schema.PartitionedFields;
+import ai.swim.structure.processor.writer.WriterUtils;
+import ai.swim.structure.processor.writer.builder.BuilderWriter;
 import com.squareup.javapoet.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static ai.swim.structure.processor.writer.PolymorphicRecognizer.buildPolymorphicRecognizer;
+import static ai.swim.structure.processor.writer.Lookups.*;
+import static ai.swim.structure.processor.writer.recognizer.PolymorphicRecognizer.buildPolymorphicRecognizer;
 import static ai.swim.structure.processor.writer.WriterUtils.typeParametersToTypeVariable;
 import static ai.swim.structure.processor.writer.WriterUtils.writeGenericRecognizerConstructor;
 
 public class Recognizer {
 
-  public static final String TYPE_READ_EVENT = "ai.swim.recon.event.ReadEvent";
-  public static final String RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.RecognizingBuilder";
-
-  public static final String RECOGNIZER_CLASS = "ai.swim.structure.recognizer.Recognizer";
-  public static final String STRUCTURAL_RECOGNIZER_CLASS = "ai.swim.structure.recognizer.structural.StructuralRecognizer";
-  public static final String LABELLED_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.labelled.LabelledClassRecognizer";
-  public static final String DELEGATE_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.delegate.DelegateClassRecognizer";
-
-  public static final String FIXED_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FixedTagSpec";
-  public static final String FIELD_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FieldTagSpec";
-  public static final String LABELLED_ITEM_FIELD_KEY = "ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey.ItemFieldKey";
-  public static final String LABELLED_ATTR_FIELD_KEY = "ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey.AttrFieldKey";
-  public static final String DELEGATE_HEADER_SLOT_KEY = "ai.swim.structure.recognizer.structural.delegate.HeaderFieldKey.HeaderSlotKey";
-  public static final String DELEGATE_ORDINAL_ATTR_KEY = "ai.swim.structure.recognizer.structural.delegate.OrdinalFieldKey.OrdinalFieldKeyAttr";
-
-  public static final String TYPE_PARAMETER = "ai.swim.structure.recognizer.proxy.TypeParameter";
 
   public static void writeRecognizer(ClassSchema schema, ScopedContext context) throws IOException {
     ClassMap classMap = schema.getClassMap();
@@ -110,14 +95,14 @@ public class Recognizer {
     classSpec.superclass(superclassRecognizerTypeName);
     classSpec.addField(FieldSpec.builder(recognizerTypeName, "recognizer", Modifier.PRIVATE).build());
     classSpec.addMethods(buildConstructors(schema, context));
-    classSpec.addMethods(Arrays.asList(buildMethods(context, className)));
+    classSpec.addMethods(buildMethods(context, className));
 
     BuilderWriter.write(classSpec, schema, context);
 
     return classSpec;
   }
 
-  private static MethodSpec[] buildMethods(ScopedContext context, String className) {
+  private static List<MethodSpec> buildMethods(ScopedContext context, String className) {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
@@ -126,21 +111,21 @@ public class Recognizer {
     DeclaredType typedRecognizer = typeUtils.getDeclaredType(recognizerTypeElement, context.getRoot().asType());
     TypeElement typeElement = elementUtils.getTypeElement(TYPE_READ_EVENT);
 
-    MethodSpec[] methods = new MethodSpec[8];
+    List<MethodSpec> methods = new ArrayList<>();
 
-    methods[0] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "feedEvent", ParameterSpec.builder(TypeName.get(typeElement.asType()), "event").build(), CodeBlock.of(
+    methods.add(buildPolymorphicMethod(TypeName.get(typedRecognizer), "feedEvent", ParameterSpec.builder(TypeName.get(typeElement.asType()), "event").build(), CodeBlock.of(
         "this.recognizer = this.recognizer.feedEvent(event);" +
             "\n\tif (this.recognizer.isError()) {\nreturn Recognizer.error(this.recognizer.trap());"
             + "\n}" +
             "\nreturn this;"
-    ));
-    methods[1] = buildPolymorphicMethod(TypeName.get(boolean.class), "isCont", null, CodeBlock.of("return this.recognizer.isCont();"));
-    methods[2] = buildPolymorphicMethod(TypeName.get(boolean.class), "isDone", null, CodeBlock.of("return this.recognizer.isDone();"));
-    methods[3] = buildPolymorphicMethod(TypeName.get(boolean.class), "isError", null, CodeBlock.of("return this.recognizer.isError();"));
-    methods[4] = buildPolymorphicMethod(TypeName.get(context.getRoot().asType()), "bind", null, CodeBlock.of("return this.recognizer.bind();"));
-    methods[5] = buildPolymorphicMethod(TypeName.get(RuntimeException.class), "trap", null, CodeBlock.of("return this.recognizer.trap();"));
-    methods[6] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "reset", null, CodeBlock.of("return new $L();", className));
-    methods[7] = buildPolymorphicMethod(TypeName.get(typedRecognizer), "asBodyRecognizer", null, CodeBlock.of("return this;"));
+    )));
+    methods.add(buildPolymorphicMethod(TypeName.get(boolean.class), "isCont", null, CodeBlock.of("return this.recognizer.isCont();")));
+    methods.add(buildPolymorphicMethod(TypeName.get(boolean.class), "isDone", null, CodeBlock.of("return this.recognizer.isDone();")));
+    methods.add(buildPolymorphicMethod(TypeName.get(boolean.class), "isError", null, CodeBlock.of("return this.recognizer.isError();")));
+    methods.add(buildPolymorphicMethod(TypeName.get(context.getRoot().asType()), "bind", null, CodeBlock.of("return this.recognizer.bind();")));
+    methods.add(buildPolymorphicMethod(TypeName.get(RuntimeException.class), "trap", null, CodeBlock.of("return this.recognizer.trap();")));
+    methods.add(buildPolymorphicMethod(TypeName.get(typedRecognizer), "reset", null, CodeBlock.of("return new $L();", className)));
+    methods.add(buildPolymorphicMethod(TypeName.get(typedRecognizer), "asBodyRecognizer", null, CodeBlock.of("return this;")));
 
     return methods;
   }
@@ -174,7 +159,7 @@ public class Recognizer {
   private static MethodSpec buildDefaultConstructor(ScopedContext context) {
     return MethodSpec.constructorBuilder()
         .addModifiers(Modifier.PUBLIC)
-        .addCode("this(new $L());",context.getNameFactory().builderClassName())
+        .addCode("this(new $L());", context.getNameFactory().builderClassName())
         .build();
   }
 
@@ -183,7 +168,7 @@ public class Recognizer {
         .addModifiers(Modifier.PUBLIC)
         .addAnnotation(AutoForm.TypedConstructor.class);
 
-    List<ParameterSpec> parameters = writeGenericRecognizerConstructor(schema.getTypeParameters(),context);
+    List<ParameterSpec> parameters = writeGenericRecognizerConstructor(schema.getTypeParameters(), context);
 
     CodeBlock body = CodeBlock.of("this(new $L<>($L));", context.getNameFactory().builderClassName(), parameters.stream().map(p -> p.name).collect(Collectors.joining(", ")));
     methodBuilder.addCode(body);

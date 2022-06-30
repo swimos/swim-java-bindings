@@ -2,7 +2,7 @@ package ai.swim.structure.processor.schema;
 
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.InterfaceMap;
-import ai.swim.structure.processor.writer.PolymorphicRecognizer;
+import ai.swim.structure.processor.writer.recognizer.PolymorphicRecognizer;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 

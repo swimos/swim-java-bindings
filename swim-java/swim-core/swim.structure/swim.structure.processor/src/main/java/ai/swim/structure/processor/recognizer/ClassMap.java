@@ -1,9 +1,11 @@
 package ai.swim.structure.processor.recognizer;
 
 import ai.swim.structure.annotations.AutoForm;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.inspect.FieldView;
 import ai.swim.structure.processor.schema.FieldModel;
 
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
@@ -113,8 +115,13 @@ public class ClassMap extends StructuralRecognizer {
   }
 
   @Override
-  public TypeMirror type() {
+  public TypeMirror type(ProcessingEnvironment environment) {
     return root.asType();
+  }
+
+  @Override
+  public RecognizerModel retyped(ScopedContext context) {
+    return this;
   }
 
   public List<FieldModel> getFieldModels() {

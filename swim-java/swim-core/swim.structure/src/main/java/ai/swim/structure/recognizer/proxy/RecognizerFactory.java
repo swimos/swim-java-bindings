@@ -13,8 +13,10 @@ class RecognizerFactory<T> {
   private final Supplier<Recognizer<?>> supplier;
   private final Constructor<Recognizer<?>> typedConstructor;
   private final boolean isStructural;
+  private final Class<T> targetClass;
 
-  private RecognizerFactory(Supplier<Recognizer<?>> supplier, Constructor<Recognizer<?>> typedConstructor, boolean isStructural) {
+  private RecognizerFactory(Class<T> targetClass, Supplier<Recognizer<?>> supplier, Constructor<Recognizer<?>> typedConstructor, boolean isStructural) {
+    this.targetClass = targetClass;
     this.supplier = supplier;
     this.typedConstructor = typedConstructor;
     this.isStructural = isStructural;
@@ -35,7 +37,7 @@ class RecognizerFactory<T> {
       }
     }
 
-    return new RecognizerFactory<>(supplier, typedConstructor, isStructural);
+    return new RecognizerFactory<>(targetClass, supplier, typedConstructor, isStructural);
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -49,6 +51,10 @@ class RecognizerFactory<T> {
 
   @SuppressWarnings("unchecked")
   public Recognizer<T> newInstance() {
+    if (supplier == null) {
+      throw new RecognizerException(targetClass.getSimpleName() + " requires type parameters to instantiate");
+    }
+
     return (Recognizer<T>) supplier.get();
   }
 

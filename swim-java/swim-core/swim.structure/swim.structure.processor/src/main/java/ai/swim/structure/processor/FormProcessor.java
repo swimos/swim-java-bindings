@@ -18,9 +18,7 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.StructuralRecognizer;
-import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.Schema;
-import ai.swim.structure.processor.writer.Recognizer;
 import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -47,9 +45,9 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-//      if (!element.asType().toString().startsWith("ai.swim.structure.recognizer.structural.AutoStructuralGenericTest.SimpleGeneric")) {
+      if (!element.asType().toString().startsWith("ai.swim.structure.recognizer.structural.AutoStructuralGenericTest.NestedWildcards")) {
 //        continue;
-//      }
+      }
 
       ScopedContext scopedContext = this.processingContext.enter(element);
 

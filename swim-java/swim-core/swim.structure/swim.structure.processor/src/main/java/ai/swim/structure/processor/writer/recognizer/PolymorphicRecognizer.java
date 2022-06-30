@@ -1,8 +1,9 @@
-package ai.swim.structure.processor.writer;
+package ai.swim.structure.processor.writer.recognizer;
 
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.RecognizerModel;
+import ai.swim.structure.processor.recognizer.StructuralRecognizer;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
@@ -14,14 +15,13 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import java.io.IOException;
 import java.util.List;
 
-public class PolymorphicClassRecognizer {
+public class PolymorphicRecognizer {
 
-  public static final String POLYMORPHIC_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.PolymorphicClassRecognizer";
+  public static final String POLYMORPHIC_RECOGNIZER = "ai.swim.structure.recognizer.structural.PolymorphicRecognizer";
 
-  public static TypeSpec.Builder buildPolymorphicClassRecognizer(List<RecognizerModel> subTypes, ScopedContext context) throws IOException {
+  public static TypeSpec.Builder buildPolymorphicRecognizer(List<StructuralRecognizer> subTypes, ScopedContext context) {
     AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
         .addMember("value", "$T.class", context.getRoot().asType())
         .build();
@@ -34,7 +34,7 @@ public class PolymorphicClassRecognizer {
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
 
-    TypeElement recognizerTypeElement = elementUtils.getTypeElement(POLYMORPHIC_CLASS_RECOGNIZER);
+    TypeElement recognizerTypeElement = elementUtils.getTypeElement(POLYMORPHIC_RECOGNIZER);
     DeclaredType recognizerType = typeUtils.getDeclaredType(recognizerTypeElement, context.getRoot().asType());
     classSpec.superclass(TypeName.get(recognizerType));
 
@@ -47,7 +47,7 @@ public class PolymorphicClassRecognizer {
     return classSpec;
   }
 
-  private static String buildInitializer(List<RecognizerModel> subTypes) {
+  private static String buildInitializer(List<StructuralRecognizer> subTypes) {
     StringBuilder initializer = new StringBuilder("java.util.List.of(");
 
     for (int i = 0; i < subTypes.size(); i++) {

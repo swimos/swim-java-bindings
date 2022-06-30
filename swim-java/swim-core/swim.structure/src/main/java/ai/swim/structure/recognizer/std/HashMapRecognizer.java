@@ -15,11 +15,14 @@
 package ai.swim.structure.recognizer.std;
 
 import ai.swim.recon.event.ReadEvent;
+import ai.swim.structure.annotations.AutoForm;
+import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.structural.StructuralRecognizer;
 
 import java.util.HashMap;
 
-public class HashMapRecognizer<K, V> extends Recognizer<HashMap<K, V>> {
+public class HashMapRecognizer<K, V> extends StructuralRecognizer<HashMap<K, V>> {
 
   private Recognizer<K> keyRecognizer;
   private Recognizer<V> valueRecognizer;
@@ -36,6 +39,7 @@ public class HashMapRecognizer<K, V> extends Recognizer<HashMap<K, V>> {
     Value,
   }
 
+  @AutoForm.TypedConstructor
   public HashMapRecognizer(Recognizer<K> keyRecognizer, Recognizer<V> valueRecognizer) {
     this(keyRecognizer, valueRecognizer, false);
   }

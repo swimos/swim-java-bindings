@@ -14,6 +14,7 @@
 
 package ai.swim.structure.recognizer.std.collections;
 
+import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.recognizer.FirstOf;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.SimpleAttrBodyRecognizer;
@@ -21,6 +22,7 @@ import ai.swim.structure.recognizer.SimpleAttrBodyRecognizer;
 import java.util.HashSet;
 
 public class HashSetRecognizer<E> extends CollectionRecognizer<E, HashSet<E>> {
+  @AutoForm.TypedConstructor
   public HashSetRecognizer(Recognizer<E> delegate) {
     super(delegate, new HashSet<>());
   }

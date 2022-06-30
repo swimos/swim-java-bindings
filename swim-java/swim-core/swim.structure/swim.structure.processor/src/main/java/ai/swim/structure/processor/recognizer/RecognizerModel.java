@@ -6,11 +6,10 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import java.util.Collection;
 import java.util.Map;
 
-import static ai.swim.structure.processor.ElementUtils.isSubType;
+import static ai.swim.structure.processor.Utils.isSubType;
 
 public abstract class RecognizerModel {
 
@@ -64,8 +63,7 @@ public abstract class RecognizerModel {
     }
 
     if (isSubType(processingEnvironment, mirror, Map.class)) {
-//      return MapRecognizerModel.from(element, context);
-      throw new AssertionError("Map implementation");
+      return MapRecognizerModel.from(mirror, context);
     }
 
     return null;
@@ -101,6 +99,7 @@ public abstract class RecognizerModel {
     return null;
   }
 
-  public abstract TypeMirror type();
+  public abstract TypeMirror type(ProcessingEnvironment environment);
 
+  public abstract RecognizerModel retyped(ScopedContext context);
 }

@@ -17,7 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import static ai.swim.structure.processor.writer.Recognizer.TYPE_PARAMETER;
+import static ai.swim.structure.processor.writer.Lookups.TYPE_PARAMETER;
+
 
 public class WriterUtils {
 
