@@ -1,31 +1,27 @@
-package ai.swim.structure.processor.writer;
+package ai.swim.structure.processor.writer.builder;
 
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
-import com.squareup.javapoet.*;
+import ai.swim.structure.processor.writer.Emitter;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import static ai.swim.structure.processor.writer.Recognizer.TYPE_READ_EVENT;
+import static ai.swim.structure.processor.writer.Lookups.*;
 
 public abstract class Builder {
-
-  protected static final String RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.RecognizingBuilder";
-  protected static final String FIELD_RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.FieldRecognizingBuilder";
-  protected static final String RECOGNIZING_BUILDER_FEED_INDEX = "feedIndexed";
-  protected static final String RECOGNIZING_BUILDER_BIND = "bind";
-  protected static final String RECOGNIZING_BUILDER_RESET = "reset";
 
   protected final ClassSchema schema;
   protected final ScopedContext context;
@@ -45,7 +41,7 @@ public abstract class Builder {
 
     builder.addSuperinterface(ty);
     builder.addFields(buildFields());
-    builder.addMethods(Arrays.asList(buildMethods()));
+    builder.addMethods(buildMethods());
 
     return builder.build();
   }
@@ -59,27 +55,20 @@ public abstract class Builder {
 
     for (FieldModel recognizer : this.fields) {
       TypeElement fieldFieldRecognizingBuilder = elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS);
-
-      TypeMirror recognizerType = recognizer.type();
-
-      if (recognizerType.getKind().isPrimitive()) {
-        TypeElement boxedClass = typeUtils.boxedClass((PrimitiveType) recognizer.type());
-        recognizerType = boxedClass.asType();
-      }
+      TypeMirror recognizerType = recognizer.boxedType(processingEnvironment);
 
       DeclaredType memberRecognizingBuilder = typeUtils.getDeclaredType(fieldFieldRecognizingBuilder, recognizerType);
       FieldSpec.Builder fieldSpec = FieldSpec.builder(TypeName.get(memberRecognizingBuilder), context.getNameFactory().fieldBuilderName(recognizer.fieldName()), Modifier.PRIVATE);
 
-      fieldSpec.initializer(CodeBlock.of("new $L<>($L$L)", FIELD_RECOGNIZING_BUILDER_CLASS, recognizer.initializer(), recognizer.transformation()));
-
+      fieldSpec.initializer(new FieldInitializer(recognizer).emit(context));
       fieldSpecs.add(fieldSpec.build());
     }
 
     return fieldSpecs;
   }
 
-  private MethodSpec[] buildMethods() {
-    return new MethodSpec[]{buildFeedIndexed(), buildBind(), buildReset()};
+  private List<MethodSpec> buildMethods() {
+    return List.of(buildFeedIndexed(), buildBind(), buildReset());
   }
 
   private MethodSpec buildReset() {
@@ -87,7 +76,7 @@ public abstract class Builder {
         .addModifiers(Modifier.PUBLIC)
         .addAnnotation(Override.class)
         .returns(this.target);
-    builder.addCode(buildResetBlock());
+    builder.addCode(buildResetBlock().emit(context));
 
     return builder.build();
   }
@@ -97,7 +86,7 @@ public abstract class Builder {
         .addModifiers(Modifier.PUBLIC)
         .addAnnotation(Override.class)
         .returns(TypeName.get(this.context.getRoot().asType()));
-    builder.addCode(buildBindBlock());
+    builder.addCode(buildBindBlock().emit(context));
 
     return builder.build();
   }
@@ -113,18 +102,18 @@ public abstract class Builder {
         .addParameter(TypeName.get(readEventType.asType()), "event")
         .returns(boolean.class);
 
-    builder.addCode(buildFeedIndexedBlock());
+    builder.addCode(buildFeedIndexedBlock().emit(context));
 
     return builder.build();
   }
 
-  abstract TypeSpec.Builder init();
+  protected abstract TypeSpec.Builder init();
 
-  abstract CodeBlock buildBindBlock();
+  protected abstract Emitter buildBindBlock();
 
-  abstract CodeBlock buildFeedIndexedBlock();
+  protected abstract Emitter buildFeedIndexedBlock();
 
-  abstract CodeBlock buildResetBlock();
+  protected abstract Emitter buildResetBlock();
 
-  abstract List<FieldModel> getFields();
+  protected abstract List<FieldModel> getFields();
 }

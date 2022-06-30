@@ -1,7 +1,5 @@
 package ai.swim.structure.processor.schema;
 
-import ai.swim.structure.processor.writer.FieldDiscriminate;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

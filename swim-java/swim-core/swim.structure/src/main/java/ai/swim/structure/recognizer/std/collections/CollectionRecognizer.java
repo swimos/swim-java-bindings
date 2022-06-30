@@ -2,10 +2,11 @@ package ai.swim.structure.recognizer.std.collections;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.structural.StructuralRecognizer;
 
 import java.util.Collection;
 
-public abstract class CollectionRecognizer<T, E extends Collection<T>> extends Recognizer<E> {
+public abstract class CollectionRecognizer<T, E extends Collection<T>> extends StructuralRecognizer<E> {
 
   protected Recognizer<T> delegate;
   protected final E collection;

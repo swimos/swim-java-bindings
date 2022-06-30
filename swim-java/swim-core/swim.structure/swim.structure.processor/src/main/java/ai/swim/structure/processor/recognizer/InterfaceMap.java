@@ -1,5 +1,8 @@
 package ai.swim.structure.processor.recognizer;
 
+import ai.swim.structure.processor.context.ScopedContext;
+
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.type.TypeMirror;
@@ -39,8 +42,13 @@ public class InterfaceMap extends StructuralRecognizer {
   }
 
   @Override
-  public TypeMirror type() {
+  public TypeMirror type(ProcessingEnvironment environment) {
     return root.asType();
+  }
+
+  @Override
+  public RecognizerModel retyped(ScopedContext context) {
+    return this;
   }
 
   public Element root() {

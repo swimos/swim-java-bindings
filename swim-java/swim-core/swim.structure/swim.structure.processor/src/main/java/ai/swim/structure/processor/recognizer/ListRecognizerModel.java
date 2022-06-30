@@ -1,15 +1,17 @@
 package ai.swim.structure.processor.recognizer;
 
+import ai.swim.structure.processor.Utils;
 import ai.swim.structure.processor.context.ScopedContext;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.List;
+
+import static ai.swim.structure.processor.Utils.unrollType;
 
 public class ListRecognizerModel extends StructuralRecognizer {
   private final RecognizerModel delegate;
@@ -25,43 +27,20 @@ public class ListRecognizerModel extends StructuralRecognizer {
     List<? extends TypeMirror> typeArguments = variableType.getTypeArguments();
 
     if (typeArguments.size() != 1) {
-      throw new IllegalArgumentException("Attempted to build a list type that has more than one type parameter");
+      throw new IllegalArgumentException("Attempted to build a list from " + typeArguments.size() + " type parameters");
     }
 
     TypeMirror listType = typeArguments.get(0);
+    Utils.UnrolledType unrolledType = unrollType(context, listType);
 
-    switch (listType.getKind()) {
-      case DECLARED:
-        RecognizerModel delegate = RecognizerModel.from(listType, context);
-        return new ListRecognizerModel(typeMirror, delegate);
-      case TYPEVAR:
-        return new ListRecognizerModel(typeMirror, RecognizerReference.untyped(listType));
-      case WILDCARD:
-        WildcardType wildcardType = (WildcardType) listType;
-        TypeMirror bound = wildcardType.getExtendsBound();
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+    Elements elementUtils = processingEnvironment.getElementUtils();
 
-        if (bound == null) {
-          bound = wildcardType.getSuperBound();
-        }
+    TypeElement listTypeElement = elementUtils.getTypeElement(List.class.getCanonicalName());
+    DeclaredType typedList = typeUtils.getDeclaredType(listTypeElement, unrolledType.typeMirror);
 
-        ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
-        Types typeUtils = processingEnvironment.getTypeUtils();
-        Elements elementUtils = processingEnvironment.getElementUtils();
-
-        TypeElement listTypeElement = elementUtils.getTypeElement(List.class.getCanonicalName());
-
-        if (bound == null) {
-          TypeElement objectTypeElement = elementUtils.getTypeElement(Object.class.getCanonicalName());
-          DeclaredType declaredType = typeUtils.getDeclaredType(listTypeElement, objectTypeElement.asType());
-
-          return new ListRecognizerModel(declaredType, RecognizerReference.untyped(objectTypeElement.asType()));
-        } else {
-          DeclaredType declaredType = typeUtils.getDeclaredType(listTypeElement, bound);
-          return new ListRecognizerModel(declaredType, RecognizerModel.from(bound, context));
-        }
-      default:
-        throw new AssertionError("ListRecognizer: " + listType.getKind());
-    }
+    return new ListRecognizerModel(typedList, unrolledType.recognizerModel);
   }
 
   @Override
@@ -70,8 +49,13 @@ public class ListRecognizerModel extends StructuralRecognizer {
   }
 
   @Override
-  public TypeMirror type() {
+  public TypeMirror type(ProcessingEnvironment environment) {
     return this.type;
+  }
+
+  @Override
+  public RecognizerModel retyped(ScopedContext context) {
+    return new ListRecognizerModel(this.type,this.delegate.retyped(context));
   }
 
 }

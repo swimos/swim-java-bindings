@@ -1,10 +1,12 @@
-package ai.swim.structure.processor.writer;
+package ai.swim.structure.processor.writer.builder.header;
 
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
+import ai.swim.structure.processor.writer.builder.Builder;
+import ai.swim.structure.processor.writer.Emitter;
+import ai.swim.structure.processor.schema.FieldDiscriminate;
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 
@@ -14,13 +16,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static ai.swim.structure.processor.writer.Lookups.RECOGNIZING_BUILDER_BIND;
+
 public class HeaderBuilder extends Builder {
   public HeaderBuilder(ClassSchema classSchema, ScopedContext context) {
     super(classSchema, context);
   }
 
   @Override
-  TypeSpec.Builder init() {
+  protected TypeSpec.Builder init() {
     return TypeSpec.classBuilder(context.getNameFactory().headerBuilderClassName())
         .addModifiers(Modifier.PRIVATE, Modifier.STATIC,Modifier.FINAL);
   }
@@ -32,68 +36,28 @@ public class HeaderBuilder extends Builder {
         .addModifiers(Modifier.PUBLIC)
         .addAnnotation(Override.class)
         .returns(classType);
-    builder.addCode(buildBindBlock());
+    builder.addCode(buildBindBlock().emit(context));
 
     return builder.build();
   }
 
   @Override
-  CodeBlock buildBindBlock() {
-    ClassName classType = ClassName.bestGuess(context.getNameFactory().headerCanonicalName());
-
-    CodeBlock.Builder body = CodeBlock.builder();
-    body.add("$T obj = new $T();\n\n", classType, classType);
-
-    for (FieldModel field : this.fields) {
-      String builderName = context.getNameFactory().fieldBuilderName(field.fieldName());
-
-      if (field.isOptional()) {
-        body.addStatement("obj.$L = this.$L.bindOr($L)", field.fieldName(), builderName, field.defaultValue());
-      } else {
-        body.addStatement("obj.$L = this.$L.bind()", field.fieldName(), builderName);
-      }
-    }
-
-    body.add("\nreturn obj;");
-
-    return body.build();
+ protected Emitter buildBindBlock() {
+    return new BindEmitter(fields);
   }
 
   @Override
-  CodeBlock buildFeedIndexedBlock() {
-    CodeBlock.Builder body = CodeBlock.builder();
-
-    body.beginControlFlow("switch (index)");
-
-    for (int i = 0; i < this.fields.size(); i++) {
-      FieldModel field = fields.get(i);
-      String fieldName = context.getNameFactory().fieldBuilderName(field.fieldName());
-
-      body.add("case $L:", i);
-      body.addStatement("\nreturn this.$L.feed(event)", fieldName);
-    }
-
-    body.add("default:").addStatement("\nthrow new RuntimeException(\"Unknown idx: \" + index)").endControlFlow();
-
-    return body.build();
+  protected Emitter buildFeedIndexedBlock() {
+    return new FeedIndexedEmitther(fields);
   }
 
   @Override
-  CodeBlock buildResetBlock() {
-    CodeBlock.Builder body = CodeBlock.builder();
-
-    for (FieldModel field : this.fields) {
-      String fieldName = context.getNameFactory().fieldBuilderName(field.fieldName());
-      body.addStatement("this.$L = this.$L.reset()", fieldName, fieldName);
-    }
-
-    body.addStatement("return this");
-
-    return body.build();
+ protected Emitter buildResetBlock() {
+    return new ResetEmitter(fields);
   }
 
   @Override
-  List<FieldModel> getFields() {
+  protected List<FieldModel> getFields() {
     return schema.discriminate()
         .stream()
         .filter(FieldDiscriminate::isHeader)

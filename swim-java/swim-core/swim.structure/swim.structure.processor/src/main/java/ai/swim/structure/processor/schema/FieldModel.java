@@ -1,12 +1,17 @@
 package ai.swim.structure.processor.schema;
 
 import ai.swim.structure.annotations.FieldKind;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.inspect.FieldView;
 import ai.swim.structure.processor.inspect.accessor.Accessor;
 import ai.swim.structure.processor.recognizer.RecognizerModel;
 
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 
 public class FieldModel {
   private final Accessor accessor;
@@ -36,13 +41,8 @@ public class FieldModel {
     return this.fieldView.propertyName();
   }
 
-  public TypeMirror type() {
-    TypeMirror type = this.recognizer.type();
-
-    System.out.println("Type: " + type+ ", view: " + fieldView.getElement().asType()+ ", clazz: " + this.recognizer.getClass().getSimpleName());
-
-
-
+  public TypeMirror type(ProcessingEnvironment environment) {
+    TypeMirror type = this.recognizer.type(environment);
     if (type == null) {
       return this.fieldView.getElement().asType();
     } else {
@@ -87,6 +87,22 @@ public class FieldModel {
       default:
         return "";
     }
+  }
+
+  public TypeMirror boxedType(ProcessingEnvironment environment) {
+    Types typeUtils = environment.getTypeUtils();
+    TypeMirror recognizerType = type(environment);
+
+    if (recognizerType.getKind().isPrimitive()) {
+      TypeElement boxedClass = typeUtils.boxedClass((PrimitiveType) recognizer.type(environment));
+      recognizerType = boxedClass.asType();
+    }
+
+    return recognizerType;
+  }
+
+  public RecognizerModel retyped(ScopedContext context) {
+    return this.recognizer.retyped(context);
   }
 
 }

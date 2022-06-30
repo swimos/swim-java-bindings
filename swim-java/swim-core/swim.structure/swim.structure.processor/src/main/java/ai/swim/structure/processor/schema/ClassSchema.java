@@ -2,8 +2,7 @@ package ai.swim.structure.processor.schema;
 
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.ClassMap;
-import ai.swim.structure.processor.writer.FieldDiscriminate;
-import ai.swim.structure.processor.writer.Recognizer;
+import ai.swim.structure.processor.writer.recognizer.Recognizer;
 
 import javax.lang.model.element.*;
 import java.io.IOException;
