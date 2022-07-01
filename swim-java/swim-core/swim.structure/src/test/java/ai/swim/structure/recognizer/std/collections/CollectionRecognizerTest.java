@@ -1,7 +1,6 @@
 package ai.swim.structure.recognizer.std.collections;
 
 import ai.swim.recon.event.ReadEvent;
-import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +24,7 @@ class CollectionRecognizerTest {
     );
   }
 
-  private static <T, E extends Collection<T>> void runCollectionTest(CollectionRecognizer<T,E> recognizer, E expected) {
+  private static <T, E extends Collection<T>> void runCollectionTest(CollectionRecognizer<T, E> recognizer, E expected) {
     E collection = runTest(recognizer, events());
     assertEquals(collection, expected);
   }

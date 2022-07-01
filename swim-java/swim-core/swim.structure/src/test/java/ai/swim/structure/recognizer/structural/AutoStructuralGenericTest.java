@@ -10,8 +10,9 @@ import ai.swim.structure.recognizer.proxy.TypeParameter;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -301,18 +302,18 @@ public class AutoStructuralGenericTest {
 
   @AutoForm
   public static class NestedWildcards<A extends Number> {
-    public Map<String,? extends List<A>> map;
+    public Map<String, ? extends List<A>> map;
   }
 
   @AutoForm
-  public static class ClassA<A,B> {
+  public static class ClassA<A, B> {
     public A a;
     public B b;
   }
 
   @AutoForm
   public static class ClassB<B> {
-    public ClassA<Integer,B> classA;
+    public ClassA<Integer, B> classA;
   }
 
 }

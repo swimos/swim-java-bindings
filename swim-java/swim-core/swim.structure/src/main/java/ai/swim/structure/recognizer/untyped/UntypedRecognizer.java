@@ -27,7 +27,7 @@ public class UntypedRecognizer<T> extends Recognizer<T> {
     KeyOrValue,
   }
 
-  static <P>  Recognizer<P> done(Recognizer<P> recognizer, Object value) {
+  static <P> Recognizer<P> done(Recognizer<P> recognizer, Object value) {
     @SuppressWarnings("unchecked") P typed = (P) value;
     return Recognizer.done(typed, recognizer);
   }
@@ -39,23 +39,23 @@ public class UntypedRecognizer<T> extends Recognizer<T> {
         if (event.isExtant()) {
           return Recognizer.done(null, this);
         } else if (event.isBlob()) {
-          return done(this,((ReadBlobValue) event).value());
+          return done(this, ((ReadBlobValue) event).value());
         } else if (event.isBoolean()) {
-          return done(this,((ReadBooleanValue) event).value());
+          return done(this, ((ReadBooleanValue) event).value());
         } else if (event.isReadInt()) {
-          return done(this,((ReadIntValue) event).value());
+          return done(this, ((ReadIntValue) event).value());
         } else if (event.isReadLong()) {
-          return done(this,((ReadLongValue) event).value());
+          return done(this, ((ReadLongValue) event).value());
         } else if (event.isReadFloat()) {
-          return done(this,((ReadFloatValue) event).value());
+          return done(this, ((ReadFloatValue) event).value());
         } else if (event.isReadDouble()) {
-          return done(this,((ReadDoubleValue) event).value());
+          return done(this, ((ReadDoubleValue) event).value());
         } else if (event.isReadBigInt()) {
-          return done(this,((ReadBigIntValue) event).value());
+          return done(this, ((ReadBigIntValue) event).value());
         } else if (event.isReadBigDecimal()) {
-          return done(this,((ReadBigDecimalValue) event).value());
+          return done(this, ((ReadBigDecimalValue) event).value());
         } else if (event.isText()) {
-          return done(this,((ReadTextValue) event).value());
+          return done(this, ((ReadTextValue) event).value());
         } else if (event.isStartBody()) {
           this.state = State.Between;
           return this;
@@ -65,7 +65,7 @@ public class UntypedRecognizer<T> extends Recognizer<T> {
       case Between:
         if (nested == null) {
           if (event.isEndRecord()) {
-            return done(this,Collections.emptyList());
+            return done(this, Collections.emptyList());
           }
 
           this.nested = new UntypedRecognizer<>();
@@ -89,7 +89,7 @@ public class UntypedRecognizer<T> extends Recognizer<T> {
         if (event.isSlot()) {
           return new UntypedMapRecognizer<>(this.keyOrValue);
         } else if (event.isEndRecord()) {
-          return done(this,List.of(this.keyOrValue));
+          return done(this, List.of(this.keyOrValue));
         } else {
           return new UntypedListRecognizer<T>(this.keyOrValue).feedEvent(event);
         }

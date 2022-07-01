@@ -41,10 +41,6 @@ public abstract class RecognizerModel {
 
   public abstract CodeBlock initializer(ScopedContext context, boolean inConstructor);
 
-  public  RecognizerModel fromTypeParameters(ScopedContext context) {
-    return this;
-  }
-
   public static RecognizerModel runtimeLookup(TypeMirror type) {
     return new RuntimeLookup(type, null);
   }
@@ -85,7 +81,7 @@ public abstract class RecognizerModel {
         } else {
           RecognizerModel[] typeParameters = declaredType.getTypeArguments().stream().map(ty -> RecognizerModel.from(ty, context)).toList().toArray(RecognizerModel[]::new);
 
-          return runtimeLookup(typeMirror,typeParameters);
+          return runtimeLookup(typeMirror, typeParameters);
         }
       case TYPEVAR:
         return untyped(typeMirror);

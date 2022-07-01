@@ -45,7 +45,7 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-      if (!element.asType().toString().contains("NestedWildcards")) {
+      if (!element.asType().toString().contains("ClassB")) {
 //        continue;
       }
 

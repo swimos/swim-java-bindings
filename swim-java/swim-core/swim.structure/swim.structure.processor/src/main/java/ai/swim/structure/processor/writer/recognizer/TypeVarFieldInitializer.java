@@ -31,6 +31,6 @@ public class TypeVarFieldInitializer implements Emitter {
     TypeElement fieldRecognizingBuilder = elementUtils.getTypeElement(FIELD_RECOGNIZING_BUILDER_CLASS);
     DeclaredType typedBuilder = typeUtils.getDeclaredType(fieldRecognizingBuilder, fieldModel.type(processingEnvironment));
 
-    return CodeBlock.builder().add("new $T(requireNonNullElse($L, ai.swim.structure.recognizer.proxy.TypeParameter.<$T>untyped()).build())", typedBuilder, nameFactory.typeParameterName(fieldModel.type(processingEnvironment).toString()), fieldModel.type(processingEnvironment)).build();
+    return CodeBlock.builder().add("new $T($L.build())", typedBuilder, nameFactory.typeParameterName(fieldModel.type(processingEnvironment).toString())).build();
   }
 }

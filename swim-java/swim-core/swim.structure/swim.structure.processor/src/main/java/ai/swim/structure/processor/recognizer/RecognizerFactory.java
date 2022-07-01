@@ -13,7 +13,6 @@ import javax.lang.model.util.Types;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -130,12 +129,6 @@ public class RecognizerFactory {
 
     this.recognizers.put(element.asType().toString(), classMap);
     return classMap;
-  }
-
-  public void addAll(List<ClassMap> derived) {
-    for (ClassMap classMap : derived) {
-      recognizers.put(classMap.getRoot().asType().toString(), classMap);
-    }
   }
 
 }

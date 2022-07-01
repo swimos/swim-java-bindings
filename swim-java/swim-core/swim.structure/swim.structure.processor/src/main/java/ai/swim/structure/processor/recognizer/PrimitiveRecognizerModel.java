@@ -107,11 +107,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   @Override
   public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
-    if (inConstructor) {
-      return CodeBlock.of("TypeParameter.from(() -> $L)", type);
-    } else {
-      return CodeBlock.of("$L", type);
-    }
+    return CodeBlock.of("$L", type);
   }
 
 }

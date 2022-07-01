@@ -17,7 +17,7 @@ class UntypedListRecognizer<T> extends Recognizer<T> {
   @Override
   public Recognizer<T> feedEvent(ReadEvent event) {
     if (event.isEndRecord() && this.nested == null) {
-        return UntypedRecognizer.done( this,list);
+      return UntypedRecognizer.done(this, list);
     }
 
     if (this.nested == null) {
