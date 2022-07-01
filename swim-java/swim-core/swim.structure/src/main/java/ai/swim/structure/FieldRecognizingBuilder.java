@@ -10,7 +10,7 @@ public class FieldRecognizingBuilder<I> implements RecognizingBuilder<I> {
   public I value;
 
   public FieldRecognizingBuilder(Class<I> clazz) {
-    this.recognizer = RecognizerProxy.getInstance().lookup(clazz);
+    this.recognizer = RecognizerProxy.getProxy().lookup(clazz);
   }
 
   public FieldRecognizingBuilder(Recognizer<I> recognizer) {

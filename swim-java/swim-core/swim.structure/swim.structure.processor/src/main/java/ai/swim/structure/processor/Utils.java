@@ -3,7 +3,6 @@ package ai.swim.structure.processor;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.RecognizerModel;
-import ai.swim.structure.processor.recognizer.RecognizerReference;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
@@ -14,6 +13,8 @@ import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.List;
+
+import static ai.swim.structure.processor.recognizer.RecognizerModel.untyped;
 
 public class Utils {
 
@@ -103,7 +104,7 @@ public class Utils {
         RecognizerModel delegate = RecognizerModel.from(typeMirror, context);
         return new UnrolledType(typeMirror, delegate);
       case TYPEVAR:
-        return new UnrolledType(typeMirror, RecognizerReference.untyped(typeMirror));
+        return new UnrolledType(typeMirror, untyped(typeMirror));
       case WILDCARD:
         WildcardType wildcardType = (WildcardType) typeMirror;
         TypeMirror bound = wildcardType.getExtendsBound();
@@ -124,7 +125,7 @@ public class Utils {
 
         if (bound == null) {
           TypeElement objectTypeElement = elementUtils.getTypeElement(Object.class.getCanonicalName());
-          return new UnrolledType(objectTypeElement.asType(), RecognizerReference.untyped(objectTypeElement.asType()));
+          return new UnrolledType(objectTypeElement.asType(), untyped(objectTypeElement.asType()));
         } else {
           return new UnrolledType(bound, RecognizerModel.from(bound, context));
         }

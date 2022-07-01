@@ -57,10 +57,10 @@ public class NameFactory {
 
   public String typeParameterName(String gen) {
     if (gen.startsWith("<")) {
-      gen = gen.replace("<","");
+      gen = gen.replace("<", "");
     }
     if (gen.startsWith(">")) {
-      gen = gen.replace(">","");
+      gen = gen.replace(">", "");
     }
 
     return String.format("%sType", gen.toLowerCase());

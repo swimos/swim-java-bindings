@@ -10,6 +10,8 @@ public class Lookups {
   public static final String TYPE_READ_EVENT = "ai.swim.recon.event.ReadEvent";
 
   public static final String RECOGNIZER_CLASS = "ai.swim.structure.recognizer.Recognizer";
+  public static final String LIST_RECOGNIZER_CLASS = "ai.swim.structure.recognizer.std.collections.ListRecognizer";
+  public static final String MAP_RECOGNIZER_CLASS = "ai.swim.structure.recognizer.std.MapRecognizer";
   public static final String STRUCTURAL_RECOGNIZER_CLASS = "ai.swim.structure.recognizer.structural.StructuralRecognizer";
   public static final String LABELLED_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.labelled.LabelledClassRecognizer";
   public static final String DELEGATE_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.delegate.DelegateClassRecognizer";
@@ -22,5 +24,7 @@ public class Lookups {
   public static final String DELEGATE_ORDINAL_ATTR_KEY = "ai.swim.structure.recognizer.structural.delegate.OrdinalFieldKey.OrdinalFieldKeyAttr";
 
   public static final String TYPE_PARAMETER = "ai.swim.structure.recognizer.proxy.TypeParameter";
+  public static final String RECOGNIZER_PROXY = "ai.swim.structure.recognizer.proxy.RecognizerProxy";
+  public static final String UNTYPED_RECOGNIZER = "ai.swim.structure.recognizer.untyped.UntypedRecognizer";
 
 }

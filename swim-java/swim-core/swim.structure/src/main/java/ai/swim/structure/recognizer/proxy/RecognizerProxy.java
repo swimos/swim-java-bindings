@@ -5,7 +5,7 @@ import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerException;
 import ai.swim.structure.recognizer.SimpleRecognizer;
-import ai.swim.structure.recognizer.std.HashMapRecognizer;
+import ai.swim.structure.recognizer.std.MapRecognizer;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import ai.swim.structure.recognizer.std.collections.ListRecognizer;
 import ai.swim.structure.recognizer.structural.StructuralRecognizer;
@@ -46,7 +46,7 @@ public class RecognizerProxy {
     recognizers.put(BigDecimal.class, RecognizerFactory.buildFrom(BigDecimal.class, SimpleRecognizer.class, () -> ScalarRecognizer.BIG_DECIMAL));
     recognizers.put(BigInteger.class, RecognizerFactory.buildFrom(BigInteger.class, SimpleRecognizer.class, () -> ScalarRecognizer.BIG_INTEGER));
     recognizers.put(Number.class, RecognizerFactory.buildFrom(Number.class, SimpleRecognizer.class, () -> ScalarRecognizer.NUMBER));
-    recognizers.put(Map.class, RecognizerFactory.buildFrom(Map.class, HashMapRecognizer.class, null));
+    recognizers.put(Map.class, RecognizerFactory.buildFrom(Map.class, MapRecognizer.class, null));
     recognizers.put(Collection.class, RecognizerFactory.buildFrom(Collection.class, ListRecognizer.class, null));
 
     loadFromClassPath(recognizers);
@@ -93,31 +93,31 @@ public class RecognizerProxy {
 
         // safety: checked that the class is assignable above
         Class<Recognizer<?>> typedClass = (Class<Recognizer<?>>) clazz;
-        recognizers.put(targetClass, RecognizerFactory.buildFromAny(clazz,typedClass, supplier));
+        recognizers.put(targetClass, RecognizerFactory.buildFromAny(clazz, typedClass, supplier));
       } catch (NoSuchMethodException e) {
         throw new RuntimeException(String.format("Recognizer '%s' does not contain a zero-arg constructor", clazz.getCanonicalName()), e);
       }
     }
   }
 
-  public static RecognizerProxy getInstance() {
+  public static RecognizerProxy getProxy() {
     return RecognizerProxy.INSTANCE;
   }
 
-  public <T> Recognizer<T> lookup(Class<T> clazz) {
+  public <T> Recognizer<T> lookup(Class<T> clazz, TypeParameter<?>... typeParameters) {
     if (clazz == null) {
       throw new NullPointerException();
     }
 
-    return getRecognizer(clazz);
+    if (typeParameters != null && typeParameters.length != 0) {
+      return lookupTyped(clazz, typeParameters);
+    } else {
+      return lookupUntyped(clazz);
+    }
   }
 
   @SuppressWarnings("unchecked")
-  private <T> Recognizer<T> getRecognizer(Class<T> clazz) {
-    if (clazz == null) {
-      throw new NullPointerException();
-    }
-
+  private <T> Recognizer<T> lookupUntyped(Class<T> clazz) {
     RecognizerFactory<T> recognizerSupplier = (RecognizerFactory<T>) this.recognizers.get(clazz);
 
     if (recognizerSupplier == null) {
@@ -127,21 +127,8 @@ public class RecognizerProxy {
     return recognizerSupplier.newInstance();
   }
 
-  public <C> StructuralRecognizer<C> lookupStructural(Class<C> clazz) {
-    if (clazz == null) {
-      throw new NullPointerException();
-    }
-
-    Recognizer<C> recognizer = lookup(clazz);
-    if (recognizer instanceof StructuralRecognizer<C>) {
-      return (StructuralRecognizer<C>) recognizer;
-    } else {
-      throw new ClassCastException(String.format("Recognizer for %s is not a structural recognizer", clazz));
-    }
-  }
-
   @SuppressWarnings("unchecked")
-  public <T> StructuralRecognizer<T> lookupStructural(Class<T> clazz, TypeParameter<?>... typeParameters) {
+  public <T> StructuralRecognizer<T> lookupTyped(Class<T> clazz, TypeParameter<?>... typeParameters) {
     RecognizerFactory<T> factory = (RecognizerFactory<T>) this.recognizers.get(clazz);
 
     if (factory == null) {
@@ -152,21 +139,17 @@ public class RecognizerProxy {
       return null;
     }
 
-    if (typeParameters.length == 0) {
-      return (StructuralRecognizer<T>) factory.newInstance();
-    } else {
-      return (StructuralRecognizer<T>) factory.newTypedInstance(typeParameters);
-    }
+    return (StructuralRecognizer<T>) factory.newTypedInstance(typeParameters);
   }
 
   @SuppressWarnings("unchecked")
   private <T> StructuralRecognizer<T> fromStdClass(Class<T> clazz, TypeParameter<?>... typeParameters) {
     if (Map.class.isAssignableFrom(clazz)) {
-      return (StructuralRecognizer<T>) lookupStructural(Map.class, typeParameters);
+      return (StructuralRecognizer<T>) lookupTyped(Map.class, typeParameters);
     }
 
     if (Collection.class.isAssignableFrom(clazz)) {
-      return (StructuralRecognizer<T>) lookupStructural(Collection.class, typeParameters);
+      return (StructuralRecognizer<T>) lookupTyped(Collection.class, typeParameters);
     }
 
     throw new RecognizerException("No recognizer found for class: " + clazz);

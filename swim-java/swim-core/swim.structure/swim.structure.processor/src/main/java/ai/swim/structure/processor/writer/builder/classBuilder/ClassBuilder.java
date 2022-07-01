@@ -3,7 +3,6 @@ package ai.swim.structure.processor.writer.builder.classBuilder;
 import ai.swim.structure.processor.context.NameFactory;
 import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.RecognizerModel;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.FieldModel;
@@ -20,7 +19,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.List;
@@ -64,7 +62,7 @@ public class ClassBuilder extends Builder {
     CodeBlock.Builder body = CodeBlock.builder();
 
     for (FieldModel fieldModel : schema.getClassMap().getFieldModels()) {
-      if (fieldModel.getFieldView().isParameterised()) {
+      if (fieldModel.isParameterised(context)) {
         VariableElement element = fieldModel.getFieldView().getElement();
         TypeKind typeKind = element.asType().getKind();
 
@@ -100,16 +98,13 @@ public class ClassBuilder extends Builder {
     Types typeUtils = processingEnvironment.getTypeUtils();
     Elements elementUtils = processingEnvironment.getElementUtils();
 
-    TypeMirror erasedMirror = typeUtils.erasure(fieldModel.type(processingEnvironment));
     TypeElement fieldRecognizingBuilder = elementUtils.getTypeElement(FIELD_RECOGNIZING_BUILDER_CLASS);
     DeclaredType typedBuilder = typeUtils.getDeclaredType(fieldRecognizingBuilder, fieldModel.type(processingEnvironment));
 
     NameFactory nameFactory = context.getNameFactory();
     String builderName = nameFactory.fieldBuilderName(fieldModel.fieldName());
 
-    RecognizerModel retyped = fieldModel.retyped(context);
-
-    return CodeBlock.of("this.$L = new $T(ai.swim.structure.recognizer.proxy.RecognizerProxy.getInstance().lookupStructural((Class<$T>) (Class<?>) $T.class, $L));\n", builderName, typedBuilder, fieldModel.type(processingEnvironment), erasedMirror, retyped.recognizerInitializer());
+    return CodeBlock.of("this.$L = new $T($L);\n", builderName, typedBuilder, fieldModel.initializer(context, true));
   }
 
   @Override

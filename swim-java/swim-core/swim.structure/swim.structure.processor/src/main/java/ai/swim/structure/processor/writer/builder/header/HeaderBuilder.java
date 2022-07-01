@@ -2,10 +2,10 @@ package ai.swim.structure.processor.writer.builder.header;
 
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
-import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.writer.builder.Builder;
-import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
+import ai.swim.structure.processor.schema.FieldModel;
+import ai.swim.structure.processor.writer.Emitter;
+import ai.swim.structure.processor.writer.builder.Builder;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
@@ -26,7 +26,7 @@ public class HeaderBuilder extends Builder {
   @Override
   protected TypeSpec.Builder init() {
     return TypeSpec.classBuilder(context.getNameFactory().headerBuilderClassName())
-        .addModifiers(Modifier.PRIVATE, Modifier.STATIC,Modifier.FINAL);
+        .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL);
   }
 
   @Override
@@ -42,7 +42,7 @@ public class HeaderBuilder extends Builder {
   }
 
   @Override
- protected Emitter buildBindBlock() {
+  protected Emitter buildBindBlock() {
     return new BindEmitter(fields);
   }
 
@@ -52,7 +52,7 @@ public class HeaderBuilder extends Builder {
   }
 
   @Override
- protected Emitter buildResetBlock() {
+  protected Emitter buildResetBlock() {
     return new ResetEmitter(fields);
   }
 

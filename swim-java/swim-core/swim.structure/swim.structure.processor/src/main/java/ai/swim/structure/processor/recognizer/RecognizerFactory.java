@@ -34,25 +34,25 @@ public class RecognizerFactory {
     HashMap<String, RecognizerModel> recognizers = new HashMap<>();
 
     // init core types
-    RecognizerReference.Formatter primitiveFormatter = new RecognizerReference.Formatter("ai.swim.structure.recognizer.std.ScalarRecognizer");
-    recognizers.put(_getOrThrowType(elementUtils, Byte.class), primitiveFormatter.recognizerFor("BYTE"));
-    recognizers.put(_getOrThrowType(elementUtils, Short.class), primitiveFormatter.recognizerFor("SHORT"));
-    recognizers.put(_getOrThrowType(elementUtils, Integer.class), primitiveFormatter.recognizerFor("INTEGER"));
-    recognizers.put(_getOrThrowType(elementUtils, Long.class), primitiveFormatter.recognizerFor("LONG"));
-    recognizers.put(_getOrThrowType(elementUtils, Float.class), primitiveFormatter.recognizerFor("FLOAT"));
-    recognizers.put(_getOrThrowType(elementUtils, Boolean.class), primitiveFormatter.recognizerFor("BOOLEAN"));
-    recognizers.put(_getOrThrowType(elementUtils, String.class), primitiveFormatter.recognizerFor("STRING"));
-    recognizers.put(_getOrThrowType(elementUtils, Character.class), primitiveFormatter.recognizerFor("CHARACTER"));
-    recognizers.put(_getOrThrowType(elementUtils, BigInteger.class), primitiveFormatter.recognizerFor("BIG_INTEGER"));
-    recognizers.put(_getOrThrowType(elementUtils, BigDecimal.class), primitiveFormatter.recognizerFor("BIG_DECIMAL"));
-    recognizers.put(_getOrThrowType(elementUtils, Number.class), primitiveFormatter.recognizerFor("NUMBER"));
-    recognizers.put(_getOrThrowArrayType(elementUtils, typeUtils, Byte.class), primitiveFormatter.recognizerFor("BLOB"));
+    RecognizerInstance.Resolver primitiveResolver = RecognizerInstance.resolver("ai.swim.structure.recognizer.std.ScalarRecognizer");
+    recognizers.put(_getOrThrowType(elementUtils, Byte.class), primitiveResolver.resolve(processingEnvironment, "BYTE"));
+    recognizers.put(_getOrThrowType(elementUtils, Short.class), primitiveResolver.resolve(processingEnvironment, "SHORT"));
+    recognizers.put(_getOrThrowType(elementUtils, Integer.class), primitiveResolver.resolve(processingEnvironment, "INTEGER"));
+    recognizers.put(_getOrThrowType(elementUtils, Long.class), primitiveResolver.resolve(processingEnvironment, "LONG"));
+    recognizers.put(_getOrThrowType(elementUtils, Float.class), primitiveResolver.resolve(processingEnvironment, "FLOAT"));
+    recognizers.put(_getOrThrowType(elementUtils, Boolean.class), primitiveResolver.resolve(processingEnvironment, "BOOLEAN"));
+    recognizers.put(_getOrThrowType(elementUtils, String.class), primitiveResolver.resolve(processingEnvironment, "STRING"));
+    recognizers.put(_getOrThrowType(elementUtils, Character.class), primitiveResolver.resolve(processingEnvironment, "CHARACTER"));
+    recognizers.put(_getOrThrowType(elementUtils, BigInteger.class), primitiveResolver.resolve(processingEnvironment, "BIG_INTEGER"));
+    recognizers.put(_getOrThrowType(elementUtils, BigDecimal.class), primitiveResolver.resolve(processingEnvironment, "BIG_DECIMAL"));
+    recognizers.put(_getOrThrowType(elementUtils, Number.class), primitiveResolver.resolve(processingEnvironment, "NUMBER"));
+    recognizers.put(_getOrThrowArrayType(elementUtils, typeUtils, Byte.class), primitiveResolver.resolve(processingEnvironment, "BLOB"));
 
     // init atomics
-    RecognizerReference.Formatter atomicFormatter = new RecognizerReference.Formatter("ai.swim.structure.recognizer.std.AtomicRecognizer");
-    recognizers.put(_getOrThrowType(elementUtils, AtomicBoolean.class), atomicFormatter.recognizerFor("ATOMIC_BOOLEAN"));
-    recognizers.put(_getOrThrowType(elementUtils, AtomicInteger.class), atomicFormatter.recognizerFor("ATOMIC_INTEGER"));
-    recognizers.put(_getOrThrowType(elementUtils, AtomicLong.class), atomicFormatter.recognizerFor("ATOMIC_LONG"));
+    RecognizerInstance.Resolver atomicResolver = RecognizerInstance.resolver("ai.swim.structure.recognizer.std.AtomicRecognizer");
+    recognizers.put(_getOrThrowType(elementUtils, AtomicBoolean.class), atomicResolver.resolve(processingEnvironment, "ATOMIC_BOOLEAN"));
+    recognizers.put(_getOrThrowType(elementUtils, AtomicInteger.class), atomicResolver.resolve(processingEnvironment, "ATOMIC_INTEGER"));
+    recognizers.put(_getOrThrowType(elementUtils, AtomicLong.class), atomicResolver.resolve(processingEnvironment, "ATOMIC_LONG"));
 
     return new RecognizerFactory(recognizers);
   }

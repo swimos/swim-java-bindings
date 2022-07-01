@@ -45,7 +45,7 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-      if (!element.asType().toString().startsWith("ai.swim.structure.recognizer.structural.AutoStructuralGenericTest.NestedWildcards")) {
+      if (!element.asType().toString().contains("NestedWildcards")) {
 //        continue;
       }
 
@@ -79,7 +79,7 @@ public class FormProcessor extends AbstractProcessor {
   }
 
   private void write() {
-    for (Schema schema: this.schemas) {
+    for (Schema schema : this.schemas) {
       try {
         schema.write(this.processingContext.enter(schema.root()));
       } catch (Throwable e) {

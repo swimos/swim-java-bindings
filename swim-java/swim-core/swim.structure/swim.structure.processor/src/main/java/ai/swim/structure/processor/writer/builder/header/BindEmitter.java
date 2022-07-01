@@ -1,7 +1,6 @@
 package ai.swim.structure.processor.writer.builder.header;
 
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.ClassName;
@@ -13,7 +12,7 @@ public class BindEmitter implements Emitter {
   private final List<FieldModel> fields;
 
   public BindEmitter(List<FieldModel> fields) {
-    this.fields =fields;
+    this.fields = fields;
   }
 
   @Override

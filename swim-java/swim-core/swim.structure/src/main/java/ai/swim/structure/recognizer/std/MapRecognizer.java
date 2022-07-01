@@ -16,20 +16,20 @@ package ai.swim.structure.recognizer.std;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.structural.StructuralRecognizer;
 
 import java.util.HashMap;
+import java.util.Map;
 
-public class HashMapRecognizer<K, V> extends StructuralRecognizer<HashMap<K, V>> {
+public class MapRecognizer<K, V> extends StructuralRecognizer<Map<K, V>> {
 
   private Recognizer<K> keyRecognizer;
   private Recognizer<V> valueRecognizer;
   private State state;
   private final boolean isAttrBody;
   private K key;
-  private final HashMap<K, V> map;
+  private final Map<K, V> map;
 
   private enum State {
     Init,
@@ -40,11 +40,11 @@ public class HashMapRecognizer<K, V> extends StructuralRecognizer<HashMap<K, V>>
   }
 
   @AutoForm.TypedConstructor
-  public HashMapRecognizer(Recognizer<K> keyRecognizer, Recognizer<V> valueRecognizer) {
+  public MapRecognizer(Recognizer<K> keyRecognizer, Recognizer<V> valueRecognizer) {
     this(keyRecognizer, valueRecognizer, false);
   }
 
-  public HashMapRecognizer(Recognizer<K> keyRecognizer, Recognizer<V> valueRecognizer, boolean isAttrBody) {
+  public MapRecognizer(Recognizer<K> keyRecognizer, Recognizer<V> valueRecognizer, boolean isAttrBody) {
     this.keyRecognizer = keyRecognizer;
     this.valueRecognizer = valueRecognizer;
     this.state = isAttrBody ? State.Between : State.Init;
@@ -53,7 +53,7 @@ public class HashMapRecognizer<K, V> extends StructuralRecognizer<HashMap<K, V>>
   }
 
   @Override
-  public Recognizer<HashMap<K, V>> feedEvent(ReadEvent event) {
+  public Recognizer<Map<K, V>> feedEvent(ReadEvent event) {
     switch (this.state) {
       case Init:
         if (event.isStartBody()) {
@@ -101,7 +101,7 @@ public class HashMapRecognizer<K, V> extends StructuralRecognizer<HashMap<K, V>>
     }
   }
 
-  private Recognizer<HashMap<K, V>> onKey(ReadEvent event) {
+  private Recognizer<Map<K, V>> onKey(ReadEvent event) {
     this.keyRecognizer = this.keyRecognizer.feedEvent(event);
 
     if (this.keyRecognizer.isDone()) {
@@ -120,8 +120,8 @@ public class HashMapRecognizer<K, V> extends StructuralRecognizer<HashMap<K, V>>
   }
 
   @Override
-  public Recognizer<HashMap<K, V>> reset() {
-    return new HashMapRecognizer<>(this.keyRecognizer.reset(), this.valueRecognizer.reset(), this.isAttrBody);
+  public Recognizer<Map<K, V>> reset() {
+    return new MapRecognizer<>(this.keyRecognizer.reset(), this.valueRecognizer.reset(), this.isAttrBody);
   }
 
 }

@@ -5,8 +5,7 @@ import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.processor.context.NameFactory;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.ClassMap;
-import ai.swim.structure.processor.recognizer.RecognizerInstance;
-import ai.swim.structure.processor.recognizer.StructuralRecognizer;
+import ai.swim.structure.processor.recognizer.RecognizerModel;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.HeaderSet;
@@ -28,16 +27,16 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static ai.swim.structure.processor.writer.Lookups.*;
-import static ai.swim.structure.processor.writer.recognizer.PolymorphicRecognizer.buildPolymorphicRecognizer;
 import static ai.swim.structure.processor.writer.WriterUtils.typeParametersToTypeVariable;
 import static ai.swim.structure.processor.writer.WriterUtils.writeGenericRecognizerConstructor;
+import static ai.swim.structure.processor.writer.recognizer.PolymorphicRecognizer.buildPolymorphicRecognizer;
 
 public class Recognizer {
 
 
   public static void writeRecognizer(ClassSchema schema, ScopedContext context) throws IOException {
     ClassMap classMap = schema.getClassMap();
-    List<StructuralRecognizer> subTypes = classMap.getSubTypes();
+    List<RecognizerModel> subTypes = classMap.getSubTypes();
     NameFactory nameFactory = context.getNameFactory();
 
     TypeSpec typeSpec;
@@ -46,7 +45,12 @@ public class Recognizer {
       typeSpec = buildPolymorphicRecognizer(subTypes, context).build();
     } else if (!subTypes.isEmpty()) {
       TypeSpec.Builder concreteRecognizer = writeClassRecognizer(true, schema, context);
-      subTypes.add(new RecognizerInstance(nameFactory.concreteRecognizerClassName()));
+      subTypes.add(new RecognizerModel(null, null) {
+        @Override
+        public CodeBlock initializer(ScopedContext context,boolean inConstructor) {
+          return CodeBlock.of("new $L()", nameFactory.concreteRecognizerClassName());
+        }
+      });
 
       TypeSpec.Builder classRecognizer = buildPolymorphicRecognizer(subTypes, context);
       classRecognizer.addType(concreteRecognizer.build());
@@ -58,6 +62,7 @@ public class Recognizer {
 
     JavaFile javaFile = JavaFile.builder(schema.getDeclaredPackage().getQualifiedName().toString(), typeSpec)
         .addStaticImport(Objects.class, "requireNonNullElse")
+        .addStaticImport(ClassName.bestGuess(RECOGNIZER_PROXY), "getProxy")
         .build();
     javaFile.writeTo(context.getProcessingEnvironment().getFiler());
   }

@@ -4,16 +4,16 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static ai.swim.structure.RecognizerTestUtil.runTest;
 
-class HashMapRecognizerTest {
+class MapRecognizerTest {
 
   @Test
   void testHashMap() {
-    Recognizer<HashMap<String, Integer>> recognizer = new HashMapRecognizer<>(ScalarRecognizer.STRING, ScalarRecognizer.INTEGER);
+    Recognizer<Map<String, Integer>> recognizer = new MapRecognizer<>(ScalarRecognizer.STRING, ScalarRecognizer.INTEGER);
     List<ReadEvent> events = List.of(
         ReadEvent.startBody(),
         ReadEvent.text("a"),

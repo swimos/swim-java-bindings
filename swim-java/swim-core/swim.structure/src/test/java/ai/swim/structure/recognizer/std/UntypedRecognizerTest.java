@@ -94,7 +94,7 @@ class UntypedRecognizerTest {
 
   @Test
   void testCharacter() {
-    runTestOk(ScalarRecognizer.CHAR.feedEvent(ReadEvent.text("b")), 'b');
+    runTestOk(ScalarRecognizer.CHARACTER.feedEvent(ReadEvent.text("b")), 'b');
     runTestErr(ScalarRecognizer.FLOAT.feedEvent(ReadEvent.endAttribute()));
   }
 

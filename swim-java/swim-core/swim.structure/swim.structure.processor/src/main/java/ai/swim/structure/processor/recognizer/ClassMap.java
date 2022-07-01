@@ -4,6 +4,7 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.inspect.FieldView;
 import ai.swim.structure.processor.schema.FieldModel;
+import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
@@ -20,15 +21,29 @@ public class ClassMap extends StructuralRecognizer {
   private final List<FieldModel> memberVariables;
   private final List<ExecutableElement> methods;
   private final PackageElement declaredPackage;
-  private List<StructuralRecognizer> subTypes;
+  private List<RecognizerModel> subTypes;
   private boolean isAbstract;
 
   public ClassMap(TypeElement root, PackageElement declaredPackage) {
+    super(root.asType());
     this.root = root;
     this.memberVariables = new ArrayList<>();
     this.methods = new ArrayList<>();
     this.declaredPackage = declaredPackage;
     this.subTypes = new ArrayList<>();
+  }
+
+  public String recognizerName() {
+    return this.getJavaClassName() + "Recognizer";
+  }
+
+  public String canonicalRecognizerName() {
+    return String.format("%s.%s", this.declaredPackage.getQualifiedName().toString(), this.recognizerName());
+  }
+
+  @Override
+  public CodeBlock initializer(ScopedContext context,boolean inConstructor) {
+    return CodeBlock.of("new $L()", this.canonicalRecognizerName());
   }
 
   public FieldView getFieldViewByPropertyName(String propertyName) {
@@ -101,34 +116,16 @@ public class ClassMap extends StructuralRecognizer {
     return root;
   }
 
-  public String recognizerName() {
-    return this.getJavaClassName() + "Recognizer";
-  }
-
-  public String canonicalRecognizerName() {
-    return String.format("%s.%s", this.declaredPackage.getQualifiedName().toString(), this.recognizerName());
-  }
-
-  @Override
-  public String recognizerInitializer() {
-    return String.format("new %s()", this.canonicalRecognizerName());
-  }
-
   @Override
   public TypeMirror type(ProcessingEnvironment environment) {
     return root.asType();
-  }
-
-  @Override
-  public RecognizerModel retyped(ScopedContext context) {
-    return this;
   }
 
   public List<FieldModel> getFieldModels() {
     return this.memberVariables;
   }
 
-  public void setSubTypes(List<StructuralRecognizer> subTypes) {
+  public void setSubTypes(List<RecognizerModel> subTypes) {
     this.subTypes = subTypes;
   }
 
@@ -140,7 +137,7 @@ public class ClassMap extends StructuralRecognizer {
     return isAbstract;
   }
 
-  public List<StructuralRecognizer> getSubTypes() {
+  public List<RecognizerModel> getSubTypes() {
     return subTypes;
   }
 }

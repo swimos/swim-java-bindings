@@ -2,6 +2,7 @@ package ai.swim.structure.processor.recognizer;
 
 import ai.swim.structure.processor.Utils;
 import ai.swim.structure.processor.context.ScopedContext;
+import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
@@ -12,14 +13,16 @@ import javax.lang.model.util.Types;
 import java.util.List;
 
 import static ai.swim.structure.processor.Utils.unrollType;
+import static ai.swim.structure.processor.writer.Lookups.LIST_RECOGNIZER_CLASS;
 
 public class ListRecognizerModel extends StructuralRecognizer {
-  private final RecognizerModel delegate;
-  private final TypeMirror type;
+  private final ai.swim.structure.processor.recognizer.RecognizerModel delegate;
+  private final TypeMirror listType;
 
-  private ListRecognizerModel(TypeMirror type, RecognizerModel delegate) {
-    this.type = type;
+  private ListRecognizerModel(TypeMirror type, RecognizerModel delegate, TypeMirror listType) {
+    super(type);
     this.delegate = delegate;
+    this.listType = listType;
   }
 
   public static StructuralRecognizer from(TypeMirror typeMirror, ScopedContext context) {
@@ -40,12 +43,19 @@ public class ListRecognizerModel extends StructuralRecognizer {
     TypeElement listTypeElement = elementUtils.getTypeElement(List.class.getCanonicalName());
     DeclaredType typedList = typeUtils.getDeclaredType(listTypeElement, unrolledType.typeMirror);
 
-    return new ListRecognizerModel(typedList, unrolledType.recognizerModel);
+    return new ListRecognizerModel(typedList, unrolledType.recognizerModel, unrolledType.typeMirror);
   }
 
   @Override
-  public String recognizerInitializer() {
-    return String.format("new ai.swim.structure.recognizer.std.collections.ListRecognizer<>(%s)", this.delegate.recognizerInitializer());
+  public CodeBlock initializer(ScopedContext context,boolean inConstructor) {
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Elements elementUtils = processingEnvironment.getElementUtils();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+
+    TypeElement typeElement = elementUtils.getTypeElement(LIST_RECOGNIZER_CLASS);
+    DeclaredType declaredType = typeUtils.getDeclaredType(typeElement, listType);
+
+    return CodeBlock.of("new $T($L)", declaredType, this.delegate.initializer(context,inConstructor));
   }
 
   @Override
@@ -54,8 +64,7 @@ public class ListRecognizerModel extends StructuralRecognizer {
   }
 
   @Override
-  public RecognizerModel retyped(ScopedContext context) {
-    return new ListRecognizerModel(this.type,this.delegate.retyped(context));
+  public RecognizerModel fromTypeParameters(ScopedContext context) {
+    return new ListRecognizerModel(type,delegate.fromTypeParameters(context), listType);
   }
-
 }
