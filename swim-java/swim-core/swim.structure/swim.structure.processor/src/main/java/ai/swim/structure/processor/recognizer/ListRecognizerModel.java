@@ -47,7 +47,7 @@ public class ListRecognizerModel extends StructuralRecognizer {
   }
 
   @Override
-  public CodeBlock initializer(ScopedContext context,boolean inConstructor) {
+  public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
@@ -55,7 +55,7 @@ public class ListRecognizerModel extends StructuralRecognizer {
     TypeElement typeElement = elementUtils.getTypeElement(LIST_RECOGNIZER_CLASS);
     DeclaredType declaredType = typeUtils.getDeclaredType(typeElement, listType);
 
-    return CodeBlock.of("new $T($L)", declaredType, this.delegate.initializer(context,inConstructor));
+    return CodeBlock.of("new $T($L)", declaredType, this.delegate.initializer(context, inConstructor));
   }
 
   @Override
@@ -65,6 +65,6 @@ public class ListRecognizerModel extends StructuralRecognizer {
 
   @Override
   public RecognizerModel fromTypeParameters(ScopedContext context) {
-    return new ListRecognizerModel(type,delegate.fromTypeParameters(context), listType);
+    return new ListRecognizerModel(type, delegate.fromTypeParameters(context), listType);
   }
 }

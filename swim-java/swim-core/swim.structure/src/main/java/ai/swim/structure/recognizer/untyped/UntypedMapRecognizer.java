@@ -29,7 +29,7 @@ class UntypedMapRecognizer<T> extends Recognizer<T> {
     switch (this.state) {
       case Key:
         if (event.isEndRecord() && this.nested == null) {
-          return UntypedRecognizer.done(this,this.map);
+          return UntypedRecognizer.done(this, this.map);
         } else {
           if (this.nested == null) {
             this.nested = new UntypedRecognizer<>();

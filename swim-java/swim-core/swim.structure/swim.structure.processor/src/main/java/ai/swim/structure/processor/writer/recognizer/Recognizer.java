@@ -17,6 +17,7 @@ import com.squareup.javapoet.*;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -24,11 +25,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.StringJoiner;
 
 import static ai.swim.structure.processor.writer.Lookups.*;
 import static ai.swim.structure.processor.writer.WriterUtils.typeParametersToTypeVariable;
-import static ai.swim.structure.processor.writer.WriterUtils.writeGenericRecognizerConstructor;
 import static ai.swim.structure.processor.writer.recognizer.PolymorphicRecognizer.buildPolymorphicRecognizer;
 
 public class Recognizer {
@@ -47,7 +47,7 @@ public class Recognizer {
       TypeSpec.Builder concreteRecognizer = writeClassRecognizer(true, schema, context);
       subTypes.add(new RecognizerModel(null, null) {
         @Override
-        public CodeBlock initializer(ScopedContext context,boolean inConstructor) {
+        public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
           return CodeBlock.of("new $L()", nameFactory.concreteRecognizerClassName());
         }
       });
@@ -173,9 +173,26 @@ public class Recognizer {
         .addModifiers(Modifier.PUBLIC)
         .addAnnotation(AutoForm.TypedConstructor.class);
 
-    List<ParameterSpec> parameters = writeGenericRecognizerConstructor(schema.getTypeParameters(), context);
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+    Elements elementUtils = processingEnvironment.getElementUtils();
+    NameFactory nameFactory = context.getNameFactory();
 
-    CodeBlock body = CodeBlock.of("this(new $L<>($L));", context.getNameFactory().builderClassName(), parameters.stream().map(p -> p.name).collect(Collectors.joining(", ")));
+    List<? extends TypeParameterElement> typeParameters = schema.getTypeParameters();
+    List<ParameterSpec> parameters = new ArrayList<>(typeParameters.size());
+    TypeElement typeParameterElement = elementUtils.getTypeElement(TYPE_PARAMETER);
+
+    StringJoiner nullChecks = new StringJoiner(",\n");
+
+    for (TypeParameterElement typeParameter : typeParameters) {
+      DeclaredType typed = typeUtils.getDeclaredType(typeParameterElement, typeParameter.asType());
+      String typeParameterName = nameFactory.typeParameterName(typeParameter.toString());
+      parameters.add(ParameterSpec.builder(TypeName.get(typed), typeParameterName).build());
+
+      nullChecks.add(CodeBlock.of("requireNonNullElse($L, ai.swim.structure.recognizer.proxy.TypeParameter.<$T>untyped())", typeParameterName, typeParameter).toString());
+    }
+
+    CodeBlock body = CodeBlock.of("this(new $L<>($L));", context.getNameFactory().builderClassName(), nullChecks.toString());
     methodBuilder.addCode(body);
 
     return methodBuilder.addParameters(parameters).build();

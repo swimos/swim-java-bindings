@@ -1,6 +1,6 @@
 package ai.swim.structure.recognizer;
 
-public class RecognizerException extends RuntimeException{
+public class RecognizerException extends RuntimeException {
 
   public RecognizerException() {
     super();

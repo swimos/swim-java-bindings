@@ -29,6 +29,6 @@ public class TypeParameterEmitter implements Emitter {
     TypeElement typeElement = elementUtils.getTypeElement(TYPE_PARAMETER);
     TypeMirror erased = typeUtils.erasure(typeElement.asType());
 
-    return CodeBlock.of("$T.from(() -> $L)", erased, model.initializer(context,false));
+    return CodeBlock.of("$T.from(() -> $L)", erased, model.initializer(context, false));
   }
 }

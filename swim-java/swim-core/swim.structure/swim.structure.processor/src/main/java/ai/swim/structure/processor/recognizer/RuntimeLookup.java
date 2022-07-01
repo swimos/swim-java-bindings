@@ -27,15 +27,7 @@ public class RuntimeLookup extends RecognizerModel {
 
     if (parameters != null) {
       typeParameters = Arrays.stream(parameters).map(ty -> {
-        if (inConstructor) {
-          if (ty.kind == ModelKind.Untyped) {
-            return String.format("TypeParameter.from(() -> %s)", ty.initializer(context, false));
-          } else {
-            return ty.initializer(context, true).toString();
-          }
-        } else {
-          return String.format("TypeParameter.from(() -> %s)", ty.initializer(context, false));
-        }
+        return String.format("TypeParameter.from(() -> %s)", ty.initializer(context, inConstructor));
       }).collect(Collectors.joining(", "));
     }
 

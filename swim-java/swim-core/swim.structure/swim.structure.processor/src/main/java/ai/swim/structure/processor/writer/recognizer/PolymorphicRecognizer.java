@@ -53,7 +53,7 @@ public class PolymorphicRecognizer {
       boolean fin = i + 1 >= subTypes.size();
       RecognizerModel recognizerModel = subTypes.get(i);
 
-      initializer.append(recognizerModel.initializer(context,false)).append(fin ? "" : ", ");
+      initializer.append(recognizerModel.initializer(context, false)).append(fin ? "" : ", ");
     }
 
     return initializer.append(")").toString();

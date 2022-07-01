@@ -32,8 +32,6 @@ import static ai.swim.structure.processor.writer.WriterUtils.writeGenericRecogni
 
 public class ClassBuilder extends Builder {
 
-  private static final String TYPE_PARAMETER = "ai.swim.structure.recognizer.proxy.TypeParameter";
-
   public ClassBuilder(ClassSchema classSchema, ScopedContext context) {
     super(classSchema, context);
   }
@@ -72,7 +70,7 @@ public class ClassBuilder extends Builder {
             break;
           case DECLARED:
             DeclaredType declaredType = (DeclaredType) element.asType();
-            body.add(initialiseParameterisedField(context, fieldModel, declaredType));
+            body.add(initialiseParameterisedField(context, fieldModel));
             break;
           default:
             throw new AssertionError("Unexpected type kind when processing generic parameters: " + typeKind + " in " + context.getRoot());
@@ -92,7 +90,7 @@ public class ClassBuilder extends Builder {
     return CodeBlock.builder().addStatement("this.$L = $L", fieldBuilderName, new TypeVarFieldInitializer(fieldModel).emit(context).toString()).build();
   }
 
-  private CodeBlock initialiseParameterisedField(ScopedContext context, FieldModel fieldModel, DeclaredType declaredType) {
+  private CodeBlock initialiseParameterisedField(ScopedContext context, FieldModel fieldModel) {
     ProcessingContext processingContext = context.getProcessingContext();
     ProcessingEnvironment processingEnvironment = processingContext.getProcessingEnvironment();
     Types typeUtils = processingEnvironment.getTypeUtils();

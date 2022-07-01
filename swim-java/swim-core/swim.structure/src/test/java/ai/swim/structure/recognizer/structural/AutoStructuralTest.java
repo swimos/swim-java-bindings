@@ -7,7 +7,6 @@ import ai.swim.structure.FormParser;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
 import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.structural.delegate.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

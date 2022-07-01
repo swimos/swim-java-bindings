@@ -6,7 +6,6 @@ import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.SimpleAttrBodyRecognizer;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class ListRecognizer<E> extends CollectionRecognizer<E, List<E>> {

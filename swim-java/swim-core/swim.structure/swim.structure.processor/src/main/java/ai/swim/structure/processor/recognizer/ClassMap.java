@@ -42,7 +42,7 @@ public class ClassMap extends StructuralRecognizer {
   }
 
   @Override
-  public CodeBlock initializer(ScopedContext context,boolean inConstructor) {
+  public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
     return CodeBlock.of("new $L()", this.canonicalRecognizerName());
   }
 

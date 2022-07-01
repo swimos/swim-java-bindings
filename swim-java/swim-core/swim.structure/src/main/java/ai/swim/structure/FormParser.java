@@ -37,7 +37,7 @@ public class FormParser<T> extends Parser<T> {
           return Parser.error(input, recognizer.trap().toString());
         }
       } else if (result.isError()) {
-        return Parser.error(input, ((ResultError<ReadEvent>)result).getCause());
+        return Parser.error(input, ((ResultError<ReadEvent>) result).getCause());
       }
 
       if (this.parser.isError()) {

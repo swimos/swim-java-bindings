@@ -18,6 +18,6 @@ public class FieldInitializer implements Emitter {
 
   @Override
   public CodeBlock emit(ScopedContext context) {
-    return CodeBlock.of("new $L<>($L$L)", FIELD_RECOGNIZING_BUILDER_CLASS, fieldModel.initializer(context,false), new RecognizerTransformation(fieldModel).emit(context));
+    return CodeBlock.of("new $L<>($L$L)", FIELD_RECOGNIZING_BUILDER_CLASS, fieldModel.initializer(context, false), new RecognizerTransformation(fieldModel).emit(context));
   }
 }

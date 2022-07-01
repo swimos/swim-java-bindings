@@ -78,17 +78,6 @@ public class FieldModel {
     return this.fieldView;
   }
 
-  public String transformation() {
-    switch (this.fieldView.getFieldKind()) {
-      case Body:
-        return ".asBodyRecognizer()";
-      case Attr:
-        return ".asAttrRecognizer()";
-      default:
-        return "";
-    }
-  }
-
   public TypeMirror boxedType(ProcessingEnvironment environment) {
     Types typeUtils = environment.getTypeUtils();
     TypeMirror recognizerType = type(environment);
@@ -99,10 +88,6 @@ public class FieldModel {
     }
 
     return recognizerType;
-  }
-
-  public RecognizerModel fromTypeParameters(ScopedContext context) {
-    return recognizer.fromTypeParameters(context);
   }
 
   public boolean isParameterised(ScopedContext context) {
