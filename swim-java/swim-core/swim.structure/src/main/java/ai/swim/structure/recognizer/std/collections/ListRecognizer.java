@@ -31,4 +31,8 @@ public class ListRecognizer<E> extends CollectionRecognizer<E, List<E>> {
         new SimpleAttrBodyRecognizer<>(new ListRecognizer<>(this.delegate.reset(), false))
     );
   }
+
+  public static <E> Recognizer<? extends List<E>> bounded(Recognizer<E> delegate) {
+    return new ListRecognizer<>(delegate);
+  }
 }

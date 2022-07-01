@@ -3,7 +3,6 @@ package ai.swim.structure.processor.writer.recognizer;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.RecognizerModel;
-import ai.swim.structure.processor.recognizer.StructuralRecognizer;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
@@ -21,7 +20,7 @@ public class PolymorphicRecognizer {
 
   public static final String POLYMORPHIC_RECOGNIZER = "ai.swim.structure.recognizer.structural.PolymorphicRecognizer";
 
-  public static TypeSpec.Builder buildPolymorphicRecognizer(List<StructuralRecognizer> subTypes, ScopedContext context) {
+  public static TypeSpec.Builder buildPolymorphicRecognizer(List<RecognizerModel> subTypes, ScopedContext context) {
     AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
         .addMember("value", "$T.class", context.getRoot().asType())
         .build();
@@ -40,21 +39,21 @@ public class PolymorphicRecognizer {
 
     MethodSpec constructor = MethodSpec.constructorBuilder()
         .addModifiers(Modifier.PUBLIC)
-        .addStatement("super($L)", buildInitializer(subTypes))
+        .addStatement("super($L)", buildInitializer(subTypes, context))
         .build();
     classSpec.addMethod(constructor);
 
     return classSpec;
   }
 
-  private static String buildInitializer(List<StructuralRecognizer> subTypes) {
+  private static String buildInitializer(List<RecognizerModel> subTypes, ScopedContext context) {
     StringBuilder initializer = new StringBuilder("java.util.List.of(");
 
     for (int i = 0; i < subTypes.size(); i++) {
       boolean fin = i + 1 >= subTypes.size();
       RecognizerModel recognizerModel = subTypes.get(i);
 
-      initializer.append(recognizerModel.recognizerInitializer()).append(fin ? "" : ", ");
+      initializer.append(recognizerModel.initializer(context,false)).append(fin ? "" : ", ");
     }
 
     return initializer.append(")").toString();

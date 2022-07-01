@@ -1,6 +1,7 @@
 package ai.swim.structure.processor.recognizer;
 
 import ai.swim.structure.processor.context.ScopedContext;
+import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.TypeMirror;
@@ -58,7 +59,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
 
   public static RecognizerModel charRecognizer() {
     if (CHAR_RECOGNIZER == null) {
-      CHAR_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.CHAR", '\u0000');
+      CHAR_RECOGNIZER = new PrimitiveRecognizerModel<>("ai.swim.structure.recognizer.std.ScalarRecognizer.CHARACTER", '\u0000');
     }
 
     return CHAR_RECOGNIZER;
@@ -84,6 +85,7 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
   private final String type;
 
   public PrimitiveRecognizerModel(String type, T defaultValue) {
+    super(null, ModelKind.Primitive);
     this.type = type;
     this.defaultValue = defaultValue;
   }
@@ -91,11 +93,6 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
   @Override
   public String toString() {
     return "PrimitiveRecognizerModel{" + "defaultValue=" + defaultValue + ", type=" + type + '}';
-  }
-
-  @Override
-  public String recognizerInitializer() {
-    return this.type;
   }
 
   @Override
@@ -109,7 +106,12 @@ public class PrimitiveRecognizerModel<T> extends RecognizerModel {
   }
 
   @Override
-  public RecognizerModel retyped(ScopedContext context) {
-    return this;
+  public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
+    if (inConstructor) {
+      return CodeBlock.of("TypeParameter.from(() -> $L)", type);
+    } else {
+      return CodeBlock.of("$L", type);
+    }
   }
+
 }

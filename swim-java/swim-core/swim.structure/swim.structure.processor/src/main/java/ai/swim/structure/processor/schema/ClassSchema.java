@@ -4,7 +4,10 @@ import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.ClassMap;
 import ai.swim.structure.processor.writer.recognizer.Recognizer;
 
-import javax.lang.model.element.*;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.TypeParameterElement;
 import java.io.IOException;
 import java.util.List;
 

@@ -10,7 +10,8 @@ import java.util.List;
 public class ResetEmitter implements Emitter {
   private final List<FieldModel> fields;
 
-  public ResetEmitter(List<FieldModel> fields) {this.fields = fields;
+  public ResetEmitter(List<FieldModel> fields) {
+    this.fields = fields;
   }
 
   @Override

@@ -124,14 +124,6 @@ public class AutoStructuralGenericTest {
     );
 
     runNestedTestOk(
-        TypeParameter.from(Integer.class),
-        TypeParameter.from(Long.class),
-        null,
-        "@gen{generic:1,a:@Typed{a:2,t:text},c:false}",
-        new NestedGenerics<>(1, new Typed<>(2L, "text"), false)
-    );
-
-    runNestedTestOk(
         null,
         null,
         null,
@@ -310,6 +302,17 @@ public class AutoStructuralGenericTest {
   @AutoForm
   public static class NestedWildcards<A extends Number> {
     public Map<String,? extends List<A>> map;
+  }
+
+  @AutoForm
+  public static class ClassA<A,B> {
+    public A a;
+    public B b;
+  }
+
+  @AutoForm
+  public static class ClassB<B> {
+    public ClassA<Integer,B> classA;
   }
 
 }

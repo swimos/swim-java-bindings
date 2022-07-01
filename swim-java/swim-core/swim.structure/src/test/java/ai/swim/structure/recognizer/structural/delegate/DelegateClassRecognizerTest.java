@@ -121,7 +121,7 @@ class DelegateClassRecognizerTest {
           return null;
         }
     );
-    private RecognizingBuilder<String> bBuilder = new FieldRecognizingBuilder<>(RecognizerProxy.getInstance().lookup(String.class).asBodyRecognizer());
+    private RecognizingBuilder<String> bBuilder = new FieldRecognizingBuilder<>(RecognizerProxy.getProxy().lookup(String.class).asBodyRecognizer());
 
     @Override
     public boolean feedIndexed(int index, ReadEvent event) {

@@ -1,7 +1,5 @@
 package ai.swim.structure.processor.recognizer;
 
-import ai.swim.structure.processor.context.ScopedContext;
-
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.PackageElement;
@@ -12,9 +10,10 @@ public class InterfaceMap extends StructuralRecognizer {
 
   private final Element root;
   private final PackageElement declaredPackage;
-  private final List<StructuralRecognizer> subTypes;
+  private final List<RecognizerModel> subTypes;
 
-  public InterfaceMap(Element root, PackageElement declaredPackage, List<StructuralRecognizer> subTypes) {
+  public InterfaceMap(Element root, PackageElement declaredPackage, List<RecognizerModel> subTypes) {
+    super(root.asType());
     this.root = root;
     this.declaredPackage = declaredPackage;
     this.subTypes = subTypes;
@@ -28,7 +27,7 @@ public class InterfaceMap extends StructuralRecognizer {
     return String.format("%s.%s", this.declaredPackage.getQualifiedName().toString(), this.recognizerName());
   }
 
-  public List<StructuralRecognizer> getSubTypes() {
+  public List<RecognizerModel> getSubTypes() {
     return subTypes;
   }
 
@@ -37,18 +36,8 @@ public class InterfaceMap extends StructuralRecognizer {
   }
 
   @Override
-  public String recognizerInitializer() {
-    return String.format("new %s()", this.canonicalRecognizerName());
-  }
-
-  @Override
   public TypeMirror type(ProcessingEnvironment environment) {
     return root.asType();
-  }
-
-  @Override
-  public RecognizerModel retyped(ScopedContext context) {
-    return this;
   }
 
   public Element root() {

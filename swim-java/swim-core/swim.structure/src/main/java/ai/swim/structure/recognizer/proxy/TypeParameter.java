@@ -47,7 +47,7 @@ final class GenericTypeParameter<T> extends TypeParameter<T> {
 
   @Override
   public Recognizer<T> build() {
-    return RecognizerProxy.getInstance().lookup(target);
+    return RecognizerProxy.getProxy().lookup(target);
   }
 }
 

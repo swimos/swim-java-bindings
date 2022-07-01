@@ -1,7 +1,6 @@
 package ai.swim.structure;
 
 import ai.swim.codec.Parser;
-import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
 import ai.swim.recon.ReconParser;
 import ai.swim.recon.event.ReadEvent;
@@ -15,7 +14,7 @@ public class FormParser<T> extends Parser<T> {
   private ReconParser parser;
 
   public FormParser(Class<T> clazz) {
-    this.recognizer = RecognizerProxy.getInstance().lookup(clazz);
+    this.recognizer = RecognizerProxy.getProxy().lookup(clazz);
   }
 
   public FormParser(Recognizer<T> recognizer) {

@@ -5,7 +5,6 @@ import ai.swim.recon.event.ReadBooleanValue;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadTextValue;
 import ai.swim.recon.event.number.*;
-import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.SimpleRecognizer;
 
@@ -246,7 +245,7 @@ public final class ScalarRecognizer<T> {
     }
   };
 
-  public static final Recognizer<Character> CHAR = new SimpleRecognizer<>(true, "Character") {
+  public static final Recognizer<Character> CHARACTER = new SimpleRecognizer<>(true, "Character") {
     @Override
     public Character feed(ReadEvent event) {
       if (event.isText()) {

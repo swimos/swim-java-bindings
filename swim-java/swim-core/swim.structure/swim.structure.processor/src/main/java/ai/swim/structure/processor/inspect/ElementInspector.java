@@ -6,7 +6,10 @@ import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.context.ScopedMessager;
 import ai.swim.structure.processor.inspect.accessor.FieldAccessor;
 import ai.swim.structure.processor.inspect.accessor.MethodAccessor;
-import ai.swim.structure.processor.recognizer.*;
+import ai.swim.structure.processor.recognizer.ClassMap;
+import ai.swim.structure.processor.recognizer.InterfaceMap;
+import ai.swim.structure.processor.recognizer.RecognizerFactory;
+import ai.swim.structure.processor.recognizer.RecognizerModel;
 import ai.swim.structure.processor.schema.FieldModel;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -20,24 +23,13 @@ import java.util.List;
 
 import static ai.swim.structure.processor.Utils.getNoArgConstructor;
 import static ai.swim.structure.processor.Utils.setterFor;
+import static ai.swim.structure.processor.recognizer.RecognizerModel.runtimeLookup;
 
 public class ElementInspector {
 
   private ElementInspector() {
 
   }
-
-//  private static StructuralRecognizer inspect(Element element, ScopedContext context, Generics generics) {
-//    ElementKind elementKind = element.getKind();
-//
-//    if (elementKind.isClass()) {
-//      return inspectClass(element, context, generics);
-//    } else if (elementKind.isInterface()) {
-//      return inspectInterface(element, context, generics);
-//    } else {
-//      throw new AssertionError("Attempted to inspect a: " + elementKind);
-//    }
-//  }
 
   public static ClassMap inspectClass(TypeElement element, ScopedContext context) {
     ProcessingEnvironment env = context.getProcessingEnvironment();
@@ -135,7 +127,7 @@ public class ElementInspector {
       return false;
     }
 
-    List<StructuralRecognizer> subTypeRecognizers = inspectSubTypes(rootElement, ctx, subTypes);
+    List<RecognizerModel> subTypeRecognizers = inspectSubTypes(rootElement, ctx, subTypes);
     if (subTypeRecognizers == null) {
       return false;
     }
@@ -146,12 +138,12 @@ public class ElementInspector {
     return true;
   }
 
-  private static List<StructuralRecognizer> inspectSubTypes(Element rootElement, ScopedContext ctx, AutoForm.Type[] subTypes) {
+  private static List<RecognizerModel> inspectSubTypes(Element rootElement, ScopedContext ctx, AutoForm.Type[] subTypes) {
     ProcessingEnvironment processingEnvironment = ctx.getProcessingEnvironment();
     Types typeUtils = processingEnvironment.getTypeUtils();
     ScopedMessager messager = ctx.getMessager();
 
-    List<StructuralRecognizer> subTypeRecognizers = new ArrayList<>(subTypes.length);
+    List<RecognizerModel> subTypeRecognizers = new ArrayList<>(subTypes.length);
     TypeMirror rootType = rootElement.asType();
 
     for (AutoForm.Type subType : subTypes) {
@@ -176,7 +168,7 @@ public class ElementInspector {
         return null;
       }
 
-      subTypeRecognizers.add(RecognizerReference.lookupStructural(subTypeElement.asType()));
+      subTypeRecognizers.add(runtimeLookup(subTypeElement.asType()));
     }
 
     return subTypeRecognizers;
@@ -303,7 +295,7 @@ public class ElementInspector {
       return null;
     }
 
-    List<StructuralRecognizer> recognizers = inspectSubTypes(rootElement, context, subTypes);
+    List<RecognizerModel> recognizers = inspectSubTypes(rootElement, context, subTypes);
     if (recognizers == null) {
       return null;
     }

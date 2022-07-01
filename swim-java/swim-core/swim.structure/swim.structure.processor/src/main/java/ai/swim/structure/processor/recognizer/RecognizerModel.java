@@ -1,6 +1,7 @@
 package ai.swim.structure.processor.recognizer;
 
 import ai.swim.structure.processor.context.ScopedContext;
+import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.DeclaredType;
@@ -12,6 +13,49 @@ import java.util.Map;
 import static ai.swim.structure.processor.Utils.isSubType;
 
 public abstract class RecognizerModel {
+
+  public enum ModelKind {
+    Primitive,
+    RuntimeLookup,
+    Untyped,
+    Unknown,
+    Reference,
+    Structural
+  }
+
+  protected final TypeMirror type;
+  protected final ModelKind kind;
+
+  protected RecognizerModel(TypeMirror type, ModelKind kind) {
+    this.type = type;
+    this.kind = kind;
+  }
+
+  public Object defaultValue() {
+    return null;
+  }
+
+  public TypeMirror type(ProcessingEnvironment environment) {
+    return type;
+  }
+
+  public abstract CodeBlock initializer(ScopedContext context, boolean inConstructor);
+
+  public  RecognizerModel fromTypeParameters(ScopedContext context) {
+    return this;
+  }
+
+  public static RecognizerModel runtimeLookup(TypeMirror type) {
+    return new RuntimeLookup(type, null);
+  }
+
+  public static RecognizerModel runtimeLookup(TypeMirror type, RecognizerModel[] parameters) {
+    return new RuntimeLookup(type, parameters);
+  }
+
+  public static RecognizerModel untyped(TypeMirror type) {
+    return new UntypedRecognizer(type);
+  }
 
   public static RecognizerModel from(TypeMirror typeMirror, ScopedContext context) {
     RecognizerModel recognizer = RecognizerModel.fromPrimitiveType(typeMirror);
@@ -37,21 +81,20 @@ public abstract class RecognizerModel {
         DeclaredType declaredType = (DeclaredType) typeMirror;
 
         if (declaredType.getTypeArguments().isEmpty()) {
-          return RecognizerReference.lookupAny(typeMirror);
+          return runtimeLookup(typeMirror);
         } else {
-          ProcessingEnvironment processingEnvironment = context.getProcessingContext().getProcessingEnvironment();
-          TypeMirror erasedType = processingEnvironment.getTypeUtils().erasure(typeMirror);
+          RecognizerModel[] typeParameters = declaredType.getTypeArguments().stream().map(ty -> RecognizerModel.from(ty, context)).toList().toArray(RecognizerModel[]::new);
 
-          return RecognizerReference.lookupGeneric(typeMirror, erasedType.toString(), typeMirror.toString());
+          return runtimeLookup(typeMirror,typeParameters);
         }
       case TYPEVAR:
-        return RecognizerReference.untyped(typeMirror);
+        return untyped(typeMirror);
       case WILDCARD:
         throw new AssertionError("Recognizer model wildcard type");
       default:
         // We're out of options now. The recognizer isn't available to us now, so we'll have to hope that it's been
         // registered with the recognizer proxy for a runtime lookup.
-        return RecognizerReference.lookupAny(typeMirror);
+        return runtimeLookup(typeMirror);
     }
   }
 
@@ -93,13 +136,4 @@ public abstract class RecognizerModel {
     }
   }
 
-  public abstract String recognizerInitializer();
-
-  public Object defaultValue() {
-    return null;
-  }
-
-  public abstract TypeMirror type(ProcessingEnvironment environment);
-
-  public abstract RecognizerModel retyped(ScopedContext context);
 }

@@ -5,12 +5,12 @@ import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.inspect.FieldView;
 import ai.swim.structure.processor.inspect.accessor.Accessor;
 import ai.swim.structure.processor.recognizer.RecognizerModel;
+import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.PrimitiveType;
-import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.*;
 import javax.lang.model.util.Types;
 
 public class FieldModel {
@@ -50,8 +50,8 @@ public class FieldModel {
     }
   }
 
-  public String initializer() {
-    return this.recognizer.recognizerInitializer();
+  public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
+    return this.recognizer.initializer(context, inConstructor);
   }
 
   public Accessor getAccessor() {
@@ -101,8 +101,36 @@ public class FieldModel {
     return recognizerType;
   }
 
-  public RecognizerModel retyped(ScopedContext context) {
-    return this.recognizer.retyped(context);
+  public RecognizerModel fromTypeParameters(ScopedContext context) {
+    return recognizer.fromTypeParameters(context);
   }
 
+  public boolean isParameterised(ScopedContext context) {
+    TypeMirror type = type(context.getProcessingEnvironment());
+    TypeKind typeKind = type.getKind();
+
+    switch (typeKind) {
+      case TYPEVAR:
+        return true;
+      case DECLARED:
+        DeclaredType declaredType = (DeclaredType) type;
+
+        return declaredType.getTypeArguments().stream().anyMatch(ty -> {
+          switch (ty.getKind()) {
+            case DECLARED:
+              DeclaredType typeVar = (DeclaredType) ty;
+              return !typeVar.getTypeArguments().isEmpty();
+            case TYPEVAR:
+              return true;
+            case WILDCARD:
+              WildcardType wildcardType = (WildcardType) ty;
+              return wildcardType.getExtendsBound() != null || wildcardType.getSuperBound() != null;
+            default:
+              throw new AssertionError("Unhandled type kind: " + ty.getKind());
+          }
+        });
+      default:
+        throw new AssertionError("Unexpected type kind when processing generic parameters: " + typeKind + " in " + context.getRoot());
+    }
+  }
 }
