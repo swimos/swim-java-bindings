@@ -67,8 +67,4 @@ public class MapRecognizerModel extends StructuralRecognizer {
     return this.type;
   }
 
-  @Override
-  public RecognizerModel fromTypeParameters(ScopedContext context) {
-    return new MapRecognizerModel(type, keyRecognizer.fromTypeParameters(context), valueRecognizer.fromTypeParameters(context));
-  }
 }

@@ -17,7 +17,7 @@ package ai.swim.structure.processor;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.context.ProcessingContext;
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.StructuralRecognizer;
+import ai.swim.structure.processor.recognizer.RecognizerModel;
 import ai.swim.structure.processor.schema.Schema;
 import com.google.auto.service.AutoService;
 
@@ -29,12 +29,13 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @AutoService(Processor.class)
 public class FormProcessor extends AbstractProcessor {
 
-  private final List<Schema> schemas = new ArrayList<>();
   private ProcessingContext processingContext;
 
   @Override
@@ -52,42 +53,20 @@ public class FormProcessor extends AbstractProcessor {
       ScopedContext scopedContext = this.processingContext.enter(element);
 
       try {
-        // Anything that we're processing will be structural
-        StructuralRecognizer recognizer = (StructuralRecognizer) scopedContext.getRecognizer(element);
+        RecognizerModel recognizer = scopedContext.getRecognizer(element);
 
         if (recognizer == null) {
           return true;
         }
 
-        this.schemas.add(Schema.from(recognizer));
+        Schema.from(recognizer).write(scopedContext);
       } catch (Throwable e) {
+        e.printStackTrace();
         processingContext.getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
-        throw e;
       }
-    }
-
-    if (roundEnv.processingOver()) {
-      // The files written out by this method call must **not** generate any classes that use the @AutoForm annotation
-      // as they will **not** be subject to any further annotation processing as this is now the final round.
-      //
-      // As we are generating files on the final round, this causes the compiler to emit a warning message, but it is
-      // safe to ignore.
-      write();
     }
 
     return true;
-  }
-
-  private void write() {
-    for (Schema schema : this.schemas) {
-      try {
-        schema.write(this.processingContext.enter(schema.root()));
-      } catch (Throwable e) {
-        e.printStackTrace();
-        this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
-        return;
-      }
-    }
   }
 
   @Override
