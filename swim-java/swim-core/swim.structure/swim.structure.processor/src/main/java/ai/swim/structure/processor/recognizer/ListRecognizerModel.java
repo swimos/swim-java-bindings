@@ -63,8 +63,4 @@ public class ListRecognizerModel extends StructuralRecognizer {
     return this.type;
   }
 
-  @Override
-  public RecognizerModel fromTypeParameters(ScopedContext context) {
-    return new ListRecognizerModel(type, delegate.fromTypeParameters(context), listType);
-  }
 }
