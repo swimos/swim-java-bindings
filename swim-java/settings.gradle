@@ -1,2 +1,5 @@
 rootProject.name = 'swim-java'
 
+include 'swim.bridge'
+project(':swim.bridge').projectDir = file('swim-ffi/swim.bridge')
+project(':swim.bridge').name = 'swim-bridge'

@@ -1,0 +1,92 @@
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+
+
+ext {
+    ext.moduleName = 'swim.bridge'
+
+    bridge_dir = "../../../rust-java-bridge"
+    target_dir = bridge_dir.concat('/target')
+
+    if (DefaultNativePlatform.currentOperatingSystem.isMacOsX()) {
+        target_dir = target_dir.concat('/x86_64-apple-darwin')
+    }
+
+    debug_dir = target_dir.concat('/debug')
+    release_dir = target_dir.concat('/release')
+}
+
+graalvmNative {
+    binaries {
+        main {
+            compileRust(true)
+            def library_path = '-Djava.library.path='.concat(release_dir)
+            runtimeArgs.add(library_path)
+        }
+        test {
+            compileRust(false)
+            buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
+
+            def library_path = '-Djava.library.path='.concat(debug_dir)
+            runtimeArgs.add(library_path)
+        }
+    }
+}
+
+test {
+    def library_path = '-Djava.library.path='.concat(debug_dir)
+    jvmArgs library_path
+    useJUnitPlatform()
+}
+
+def compileRust(release) {
+    exec {
+        println "Compiling rust libraries ".concat(release ? "release" : "debug")
+
+        workingDir(bridge_dir)
+        environment('RUSTFLAGS', '-Awarnings')
+
+        def args = ['cargo', 'build']
+
+        if (DefaultNativePlatform.currentOperatingSystem.isMacOsX()) {
+            args.add('--target')
+            args.add('x86_64-apple-darwin')
+        }
+
+        if (release) {
+            args.add('--release')
+        }
+
+        commandLine args
+    }
+}
+
+compileTestJava {
+    doLast {
+        compileRust(false)
+    }
+}
+
+assemble {
+    doLast {
+        compileRust(true)
+    }
+}
+
+task cleanRust {
+    doLast {
+        exec {
+            println "cleaning"
+            workingDir("../../../rust-java-bridge/")
+            commandLine 'cargo', 'clean'
+        }
+    }
+}
+
+clean {
+    dependsOn(cleanRust)
+}
+
+application {
+    def library_path = '-Djava.library.path='.concat(release_dir)
+    applicationDefaultJvmArgs = [library_path]
+}
