@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.graalvm.buildtools.native' version '0.9.4'
+    id 'org.graalvm.buildtools.native' version '0.9.13'
 }
 
 group 'ai.swim'
@@ -12,9 +12,34 @@ repositories {
     gradlePluginPortal()
 }
 
-//application {
-//    applicationDefaultJvmArgs = ['-Djava.library.path=../rustffi/target/release']
-//}
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'java'
+    apply plugin: 'org.graalvm.buildtools.native'
+
+    group = "ai.swim"
+    version = '0.0.1-SNAPSHOT'
+
+    ext {
+        swimVersion = project.property('swim.version')
+    }
+
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+    dependencies {
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
+        implementation group: 'org.graalvm.nativeimage', name: 'svm', version: '22.0.0.2'
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+}
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
@@ -27,19 +52,3 @@ dependencies {
 
     implementation 'org.reflections:reflections:0.10.2'
 }
-
-//nativeBuild {
-//    mainClass = "ai.swim.Runner"
-//    runtimeArgs.add('-Djava.library.path=../rustffi/target/release')
-//}
-//
-//nativeTest {
-//    buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
-//    runtimeArgs.add('-Djava.library.path=../rustffi/target/release')
-//}
-//
-//test {
-//    jvmArgs '-Djava.library.path=../rustffi/target/release'
-//
-//    useJUnitPlatform()
-//}
