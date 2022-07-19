@@ -16,7 +16,7 @@ package ai.swim.bridge.runtime;
 
 public final class RuntimeProxy {
 
-  static  {
+  static {
     System.loadLibrary("swim_sys");
   }
 

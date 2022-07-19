@@ -157,6 +157,36 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_writerClosedTa
 }
 
 #[no_mangle]
+pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropWriterTask(
+    env: JNIEnv,
+    _class: JClass,
+    bb: JByteBuffer,
+    monitor: jobject,
+    barrier: jobject,
+) -> *mut Runtime {
+    npch!(env, bb, monitor);
+
+    let writer = ByteWriter::new(env.clone(), bb, monitor);
+    run_test(env, barrier, async move {
+        drop(writer);
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropReaderTask(
+    env: JNIEnv,
+    _class: JClass,
+    bb: JByteBuffer,
+    monitor: jobject,
+    barrier: jobject,
+) -> *mut Runtime {
+    npch!(env, bb, monitor);
+
+    let reader = ByteReader::new(env.clone(), bb, monitor);
+    run_test(env, barrier, async move { drop(reader) })
+}
+
+#[no_mangle]
 pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropRuntime(
     _env: JNIEnv,
     _class: JClass,

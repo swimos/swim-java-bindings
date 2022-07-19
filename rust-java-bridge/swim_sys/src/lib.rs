@@ -26,11 +26,7 @@ pub extern "system" fn Java_ai_swim_bridge_runtime_Runtime_startRuntime(
     env: JNIEnv,
     _class: JClass,
 ) -> *mut Runtime {
-    println!("Creating Tokio runtime");
-
     let runtime = jvm_tryf!(env, Builder::new_multi_thread().enable_all().build());
-    println!("Started Tokio runtime");
-
     Box::leak(Box::new(runtime))
 }
 
@@ -41,12 +37,9 @@ pub extern "system" fn Java_ai_swim_bridge_runtime_Runtime_shutdownRuntime(
     runtime: *mut Runtime,
 ) {
     npch!(env, runtime);
-    println!("Shutting down Tokio runtime");
 
     let runtime = unsafe { Box::from_raw(runtime) };
     runtime.shutdown_timeout(Duration::from_secs(10));
-
-    println!("Shutdown down Tokio runtime");
 }
 
 #[no_mangle]
