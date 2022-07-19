@@ -15,7 +15,8 @@
 use std::fmt::{Debug, Formatter};
 use std::io::ErrorKind;
 use std::pin::Pin;
-use std::sync::atomic::{AtomicPtr, Ordering};
+use std::ptr::NonNull;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::task::{Context, Poll};
 
 use jni::objects::{GlobalRef, JByteBuffer};
@@ -32,7 +33,7 @@ use crate::vm::method::JavaMethod;
 use crate::vm::utils::get_env;
 
 pub struct ByteReader {
-    is_closed: AtomicPtr<bool>,
+    is_closed: NonNull<AtomicBool>,
     lock: GlobalRef,
     bytes: Bytes,
     vm: JavaVM,
@@ -41,7 +42,9 @@ pub struct ByteReader {
 impl Debug for ByteReader {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ByteReader")
-            .field("is_closed", &self.is_closed.load(Ordering::Relaxed))
+            .field("is_closed", unsafe {
+                &self.is_closed.as_ref().load(Ordering::Relaxed)
+            })
             .field("bytes", &"...")
             .field("vm", &"..")
             .finish()
@@ -59,7 +62,7 @@ impl ByteReader {
             .new_global_ref(lock)
             .expect("Failed to get a global reference to byte channel lock");
         let reader = ByteReader {
-            is_closed: AtomicPtr::new(unsafe { bytes.get_mut_u8(offset::CLOSED) } as *mut bool),
+            is_closed: unsafe { NonNull::new_unchecked(bytes.get_mut_u8(offset::CLOSED) as _) },
             lock: global_ref,
             bytes,
             vm: jvm_tryf!(env, env.get_java_vm()),
@@ -70,7 +73,7 @@ impl ByteReader {
 
     /// Returns whether this reader is closed
     pub fn is_closed(&self) -> bool {
-        unsafe { *self.is_closed.load(Ordering::Relaxed) }
+        unsafe { self.is_closed.as_ref().load(Ordering::Relaxed) }
     }
 
     fn data_capacity(&self) -> usize {
@@ -78,9 +81,20 @@ impl ByteReader {
     }
 }
 
+impl Drop for ByteReader {
+    fn drop(&mut self) {
+        unsafe { self.is_closed.as_ref().store(true, Ordering::Relaxed) };
+
+        let env = get_env(&self.vm).expect("Failed to get JVM environment");
+        let _guard = env.lock_obj(&self.lock).expect("Failed to enter monitor");
+
+        jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, &self.lock, &[]));
+    }
+}
+
 fn read<R>(
     capacity: usize,
-    is_closed: &AtomicPtr<bool>,
+    is_closed: &AtomicBool,
     bytes: &mut Bytes,
     read_target: &mut R,
 ) -> Result<(), ReadFailure>
@@ -96,13 +110,11 @@ where
     let available = write_offset.wrapping_sub(read_from) % capacity;
 
     if available == 0 {
-        unsafe {
-            return if *is_closed.load(Ordering::Relaxed) {
-                Err(ReadFailure::Closed)
-            } else {
-                Err(ReadFailure::Empty)
-            };
-        }
+        return if is_closed.load(Ordering::Relaxed) {
+            Err(ReadFailure::Closed)
+        } else {
+            Err(ReadFailure::Empty)
+        };
     }
 
     let to_read = available.min(read_target.remaining());
@@ -150,11 +162,10 @@ impl AsyncRead for ByteReader {
 
         let lock_obj = lock.as_obj();
         let env = get_env(&vm).expect("Failed to get JVM environment");
+        let _guard = env.lock_obj(lock_obj).expect("Failed to enter monitor");
 
         loop {
-            let _guard = env.lock_obj(lock_obj).expect("Failed to enter monitor");
-
-            match read(capacity, is_closed, bytes, buf) {
+            match read(capacity, unsafe { is_closed.as_ref() }, bytes, buf) {
                 Ok(()) => {
                     jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock_obj, &[]));
                     break Poll::Ready(Ok(()));

@@ -15,7 +15,8 @@
 use std::fmt::{Debug, Formatter};
 use std::io::{Error, ErrorKind};
 use std::pin::Pin;
-use std::sync::atomic::{AtomicPtr, Ordering};
+use std::ptr::NonNull;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::task::{Context, Poll};
 
 use jni::objects::{GlobalRef, JByteBuffer};
@@ -33,7 +34,7 @@ use crate::vm::method::JavaMethod;
 use crate::vm::utils::get_env;
 
 pub struct ByteWriter {
-    is_closed: AtomicPtr<bool>,
+    is_closed: NonNull<AtomicBool>,
     lock: GlobalRef,
     bytes: Bytes,
     vm: JavaVM,
@@ -41,11 +42,16 @@ pub struct ByteWriter {
 
 impl Debug for ByteWriter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ByteWriter")
-            .field("is_closed", &self.is_closed.load(Ordering::Relaxed))
-            .field("bytes", &"...")
-            .field("vm", &"..")
-            .finish()
+        unsafe {
+            f.debug_struct("ByteWriter")
+                .field(
+                    "is_closed",
+                    &self.is_closed.as_ref().load(Ordering::Relaxed),
+                )
+                .field("bytes", &"...")
+                .field("vm", &"..")
+                .finish()
+        }
     }
 }
 
@@ -58,8 +64,9 @@ impl ByteWriter {
         let global_ref = env
             .new_global_ref(lock)
             .expect("Failed to get a global reference to byte channel lock");
+
         let reader = ByteWriter {
-            is_closed: AtomicPtr::new(unsafe { bytes.get_mut_u8(offset::CLOSED) } as *mut bool),
+            is_closed: unsafe { NonNull::new_unchecked(bytes.get_mut_u8(offset::CLOSED) as _) },
             lock: global_ref,
             bytes,
             vm: jvm_tryf!(env, env.get_java_vm()),
@@ -70,7 +77,7 @@ impl ByteWriter {
 
     /// Returns whether this writer is closed
     pub fn is_closed(&self) -> bool {
-        unsafe { *self.is_closed.load(Ordering::Relaxed) }
+        unsafe { self.is_closed.as_ref().load(Ordering::Relaxed) }
     }
 
     fn data_capacity(&self) -> usize {
@@ -78,9 +85,20 @@ impl ByteWriter {
     }
 }
 
+impl Drop for ByteWriter {
+    fn drop(&mut self) {
+        unsafe { self.is_closed.as_ref().store(true, Ordering::Relaxed) };
+
+        let env = get_env(&self.vm).expect("Failed to get JVM environment");
+        let _guard = env.lock_obj(&self.lock).expect("Failed to enter monitor");
+
+        jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, &self.lock, &[]));
+    }
+}
+
 fn write(
     capacity: usize,
-    is_closed: &AtomicPtr<bool>,
+    is_closed: &AtomicBool,
     bytes: &mut Bytes,
     from: &[u8],
 ) -> Result<usize, WriteFailure> {
@@ -88,7 +106,7 @@ fn write(
         return Ok(0);
     }
 
-    if unsafe { *is_closed.load(Ordering::Relaxed) } {
+    if is_closed.load(Ordering::Relaxed) {
         return Err(WriteFailure::Closed);
     }
 
@@ -148,7 +166,7 @@ impl AsyncWrite for ByteWriter {
         let _guard = env.lock_obj(lock_obj).expect("Failed to enter monitor");
 
         loop {
-            match write(capacity, is_closed, bytes, buf) {
+            match write(capacity, unsafe { is_closed.as_ref() }, bytes, buf) {
                 Ok(n) => {
                     jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock_obj, &[]));
                     return Poll::Ready(Ok(n));
@@ -172,4 +190,15 @@ impl AsyncWrite for ByteWriter {
         jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, &self.lock, &[]));
         Poll::Ready(Ok(()))
     }
+}
+
+#[test]
+fn t() {
+    let s: &mut [u8; 4] = &mut [0; 4];
+    let b: *const AtomicBool = &mut s[0] as *mut u8 as _;
+    let a = unsafe { &*b };
+
+    println!("{}", a.load(Ordering::Relaxed));
+    a.store(true, Ordering::Relaxed);
+    println!("{}", a.load(Ordering::Relaxed));
 }

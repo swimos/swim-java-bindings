@@ -15,6 +15,7 @@
 package ai.swim.bridge.channel;
 
 import ai.swim.bridge.buffer.HeapByteBuffer;
+import ai.swim.bridge.channel.exceptions.ChannelClosedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -35,6 +36,10 @@ public class FfiChannelTest {
   private static native long writerTask(ByteBuffer buffer, Object lock, byte[] data, int chunkSize, Object barrier);
 
   private static native long writerClosedTask(ByteBuffer buffer, Object lock, Object barrier);
+
+  private static native long dropReaderTask(ByteBuffer buffer, Object lock, Object barrier);
+
+  private static native long dropWriterTask(ByteBuffer buffer, Object lock, Object barrier);
 
   private static native void dropRuntime(long ptr);
 
@@ -173,7 +178,8 @@ public class FfiChannelTest {
       }
 
       assertArrayEquals(input, readBuf);
-      assertEquals(0, readChannel.tryRead(new byte[8]));
+
+      assertThrows(ChannelClosedException.class, () -> assertEquals(0, readChannel.tryRead(new byte[8])));
 
       readChannel.close();
       assertTrue(readChannel.isClosed());
@@ -214,7 +220,7 @@ public class FfiChannelTest {
       }
 
       assertArrayEquals(input, actual);
-      assertEquals(0, readChannel.tryRead(new byte[8]));
+      assertThrows(ChannelClosedException.class, () -> assertEquals(0, readChannel.tryRead(new byte[8])));
 
       readChannel.close();
       assertTrue(readChannel.isClosed());
@@ -236,6 +242,46 @@ public class FfiChannelTest {
 
       return writerClosedTask(buffer.rawBuffer(), lock, barrier);
     });
+  }
+
+  @Test
+  @Timeout(10)
+  @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+  void dropReader() throws InterruptedException {
+    Object lock = new Object();
+    Object barrier = new Object();
+
+    HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
+    WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
+
+    long ptr = dropReaderTask(buffer.rawBuffer(), lock, barrier);
+
+    synchronized (barrier) {
+      barrier.wait();
+    }
+
+    assertTrue(writeChannel.isClosed());
+    dropRuntime(ptr);
+  }
+
+  @Test
+  @Timeout(10)
+  @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+  void dropWriterTask() throws InterruptedException {
+    Object lock = new Object();
+    Object barrier = new Object();
+
+    HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
+    ReadChannel readChannel = new ReadChannel(0, buffer, lock);
+
+    long ptr = dropWriterTask(buffer.rawBuffer(), lock, barrier);
+
+    synchronized (barrier) {
+      barrier.wait();
+    }
+
+    assertTrue(readChannel.isClosed());
+    dropRuntime(ptr);
   }
 
 }

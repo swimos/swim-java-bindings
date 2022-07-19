@@ -14,8 +14,6 @@
 
 package ai.swim.bridge.runtime;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class RuntimeProxyTest {
 
 }
