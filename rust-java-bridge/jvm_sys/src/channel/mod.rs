@@ -41,7 +41,20 @@
 //! // monitor is released when it is dropped
 //! ```
 
+use std::io::ErrorKind;
+use std::ptr::NonNull;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::task::Poll;
+
+use jni::objects::{GlobalRef, JObject};
+use jni::JavaVM;
 use tokio::io::ReadBuf;
+
+use sys_util::jvm_tryf;
+
+use crate::vm::method::InvokeObjectMethod;
+use crate::vm::method::JavaMethod;
+use crate::vm::utils::get_env;
 
 pub mod reader;
 pub mod writer;
@@ -76,6 +89,33 @@ pub enum ReadFailure {
     Empty,
 }
 
+trait ErrorStatus {
+    fn status(&self) -> Status;
+}
+
+enum Status {
+    FullOrEmpty,
+    Closed,
+}
+
+impl ErrorStatus for WriteFailure {
+    fn status(&self) -> Status {
+        match self {
+            WriteFailure::Closed => Status::Closed,
+            WriteFailure::Full => Status::FullOrEmpty,
+        }
+    }
+}
+
+impl ErrorStatus for ReadFailure {
+    fn status(&self) -> Status {
+        match self {
+            ReadFailure::Closed => Status::Closed,
+            ReadFailure::Empty => Status::FullOrEmpty,
+        }
+    }
+}
+
 impl<'a> ReadTarget for ReadBuf<'a> {
     fn remaining(&self) -> usize {
         ReadBuf::remaining(self)
@@ -83,5 +123,39 @@ impl<'a> ReadTarget for ReadBuf<'a> {
 
     fn put_slice(&mut self, slice: &[u8]) {
         ReadBuf::put_slice(self, slice)
+    }
+}
+
+fn drop_end(is_closed: &NonNull<AtomicBool>, vm: &JavaVM, lock: &GlobalRef) {
+    unsafe { is_closed.as_ref().store(true, Ordering::Relaxed) };
+
+    let env = get_env(vm).expect("Failed to get JVM environment");
+    let _guard = env.lock_obj(lock).expect("Failed to enter monitor");
+
+    jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock, &[]));
+}
+
+fn channel_io<F, O, E, E2>(lock: JObject, vm: &JavaVM, mut f: F) -> Poll<Result<O, E2>>
+where
+    F: FnMut() -> Result<O, E>,
+    E: ErrorStatus,
+    E2: From<ErrorKind>,
+{
+    let env = get_env(&vm).expect("Failed to get JVM environment");
+    let _guard = env.lock_obj(lock).expect("Failed to enter monitor");
+
+    loop {
+        match f() {
+            Ok(o) => {
+                jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock, &[]));
+                break Poll::Ready(Ok(o));
+            }
+            Err(e) => match e.status() {
+                Status::FullOrEmpty => {
+                    jvm_tryf!(env, JavaMethod::WAIT.invoke(&env, lock, &[]));
+                }
+                Status::Closed => break Poll::Ready(Err(ErrorKind::BrokenPipe.into())),
+            },
+        }
     }
 }
