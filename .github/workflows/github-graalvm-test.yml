@@ -19,6 +19,6 @@ jobs:
       - name: Native test
         run: |
           cd swim-java
-         ./gradlew :swim-bridge:nativeTest
+          ./gradlew :swim-bridge:nativeTest
         env:
           NO_DOCKER: ${{ runner.os != 'Linux' }}
