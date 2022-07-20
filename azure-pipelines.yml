@@ -61,7 +61,7 @@ stages:
         steps:
           - template: .azure/test-java.yml
       
-      - job: 'java_test'
+      - job: 'java_lint'
         displayName: 'Lint Java'
         steps:
           - template: .azure/lint-java.yml
