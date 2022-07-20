@@ -17,31 +17,31 @@ stages:
             parameters:
               version: $(RUST_VERSION_STABLE)
 
-      # - job: 'rust_lint'
-      #   dependsOn: install_rust
-      #   displayName: 'Lint Rust'
-      #   pool:
-      #     vmImage: ubuntu-18.04
-      #   steps:
-      #     - template: ci/azure-lint-rust.yml
+      - job: 'rust_lint'
+        dependsOn: install_rust
+        displayName: 'Lint Rust'
+        pool:
+          vmImage: ubuntu-18.04
+        steps:
+          - template: ci/azure-lint-rust.yml
 
-      # - job: 'rust_test'
-      #   displayName: 'Test Rust'
-      #   dependsOn: install_rust
-      #   strategy:
-      #     matrix:
-      #       Linux:
-      #         vmImage: ubuntu-18.04
+      - job: 'rust_test'
+        displayName: 'Test Rust'
+        dependsOn: install_rust
+        strategy:
+          matrix:
+            Linux:
+              vmImage: ubuntu-18.04
     
-      #       ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-      #         MacOS:
-      #           vmImage: macOS-10.15
-      #         Windows:
-      #           vmImage: windows-2019
-      #   pool:
-      #     vmImage: $(vmImage)    
-      #   steps:
-      #     - template: ci/azure-test-rust.yml
+            ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+              MacOS:
+                vmImage: macOS-10.15
+              Windows:
+                vmImage: windows-2019
+        pool:
+          vmImage: $(vmImage)    
+        steps:
+          - template: ci/azure-test-rust.yml
 
       - job: 'rust_miri'
         displayName: 'Rust Miri'
