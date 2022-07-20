@@ -1,19 +1,23 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+trigger: ["main"]
+pr: ["main"]
 
-trigger:
-- main
+variables:
+  RUSTFLAGS: -Dwarnings
+  RUST_VERSION_STABLE: 1.56.1
+  RUST_VERSION_NIGHTLY: nightly-2022-07-14
 
-pool:
-  vmImage: ubuntu-latest
-
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+stages:
+  - stage: Rust
+    jobs:
+      - template: ci/azure-install-rust.yml
+        parameters:
+          rust: $(RUST_VERSION_STABLE)
+      - template: ci/azure-lint-rust.yml
+        parameters:
+          rust: $(RUST_VERSION_STABLE)
+      - template: ci/azure-test-rust.yml
+        parameters:
+          rust: $(RUST_VERSION_STABLE)
+      - template: ci/azure-test-miri.yml
+        parameters:
+          rust: $(RUST_VERSION_NIGHTLY)
