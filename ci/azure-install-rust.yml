@@ -1,5 +1,6 @@
 jobs:
-  - job: 'Install Rust'
+  - job: install_rust
+    displayName: 'Install Rust'
     steps:
       # Linux and macOS.
       - script: |
