@@ -13,7 +13,7 @@ stages:
       - job: install_rust
         displayName: 'Install Rust'
         steps:
-          - template: ci/azure-install-rust.yml
+          - template: .azure/install-rust.yml
             parameters:
               version: $(RUST_VERSION_STABLE)
 
@@ -23,7 +23,7 @@ stages:
         pool:
           vmImage: ubuntu-18.04
         steps:
-          - template: ci/azure-lint-rust.yml
+          - template: .azure/lint-rust.yml
 
       - job: 'rust_test'
         displayName: 'Test Rust'
@@ -41,7 +41,7 @@ stages:
         pool:
           vmImage: $(vmImage)    
         steps:
-          - template: ci/azure-test-rust.yml
+          - template: .azure/test-rust.yml
 
       - job: 'rust_miri'
         displayName: 'Rust Miri'
@@ -49,7 +49,7 @@ stages:
         pool:
           vmImage: ubuntu-18.04
         steps:
-          - template: ci/azure-miri-rust.yml
+          - template: .azure/miri-rust.yml
             parameters:
               version: $(RUST_VERSION_NIGHTLY)
 
@@ -59,4 +59,4 @@ stages:
       - job: 'javaa_test'
         displayName: 'Test Java'
         steps:
-          - template: ci/azure-test-java.yml
+          - template: .azure/test-java.yml
