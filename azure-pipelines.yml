@@ -23,7 +23,7 @@ stages:
         steps:
           - template: ci/azure-lint-rust.yml
 
-      - job: 'rust_lint'
+      - job: 'rust_test'
         displayName: 'Test Rust'
         strategy:
           matrix:
