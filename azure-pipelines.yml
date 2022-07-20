@@ -9,7 +9,8 @@ variables:
 stages:
   - stage: Rust
     jobs:
-      - template: ci/azure-install-rust.yml
+      - job: 'Install Rust'
+        template: ci/azure-install-rust.yml
         parameters:
           rust: $(RUST_VERSION_STABLE)
       - template: ci/azure-lint-rust.yml
