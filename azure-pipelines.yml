@@ -13,8 +13,8 @@ stages:
         displayName: 'Install Rust'
         steps:
           - template: ci/azure-install-rust.yml
-        parameters:
-          rust: $(RUST_VERSION_STABLE)
+            parameters:
+              rust: $(RUST_VERSION_STABLE)
 
       # - template: ci/azure-lint-rust.yml
       #   parameters:
