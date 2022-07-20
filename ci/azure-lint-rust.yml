@@ -9,7 +9,7 @@ steps:
   - script: |
       cargo fmt -- --check
     displayName: Run rustfmt
-    workingDirectory: $(Build.SourcesDirectory/rust-java-bridge)
+    workingDirectory: $(Build.SourcesDirectory)/rust-java-bridge)
 
   # Run doc
   - script: |
