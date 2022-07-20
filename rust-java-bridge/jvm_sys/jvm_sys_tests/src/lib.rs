@@ -77,7 +77,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_readerTask(
     npch!(env, bb, monitor, buf);
 
     let expected = env.convert_byte_array(buf).unwrap();
-    let mut reader = ByteReader::new(env.clone(), bb, monitor);
+    let mut reader = ByteReader::new(env, bb, monitor);
 
     run_test(env, barrier, async move {
         let mut buf = BytesMut::new();
@@ -122,7 +122,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_writerTask(
     npch!(env, bb, monitor, buf);
 
     let mut to_write = env.convert_byte_array(buf).unwrap();
-    let mut writer = ByteWriter::new(env.clone(), bb, monitor);
+    let mut writer = ByteWriter::new(env, bb, monitor);
 
     run_test(env, barrier, async move {
         for chunk in to_write.chunks_mut(chunk_size as usize) {
@@ -143,7 +143,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_writerClosedTa
 ) -> *mut Runtime {
     npch!(env, bb, monitor);
 
-    let mut writer = ByteWriter::new(env.clone(), bb, monitor);
+    let mut writer = ByteWriter::new(env, bb, monitor);
 
     run_test(env, barrier, async move {
         match writer.write_all(&[1, 2, 3, 4, 5]).await {
@@ -166,7 +166,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropWriterTask
 ) -> *mut Runtime {
     npch!(env, bb, monitor);
 
-    let writer = ByteWriter::new(env.clone(), bb, monitor);
+    let writer = ByteWriter::new(env, bb, monitor);
     run_test(env, barrier, async move {
         drop(writer);
     })
@@ -182,7 +182,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropReaderTask
 ) -> *mut Runtime {
     npch!(env, bb, monitor);
 
-    let reader = ByteReader::new(env.clone(), bb, monitor);
+    let reader = ByteReader::new(env, bb, monitor);
     run_test(env, barrier, async move { drop(reader) })
 }
 

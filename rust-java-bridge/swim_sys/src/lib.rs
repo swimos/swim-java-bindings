@@ -31,25 +31,27 @@ pub extern "system" fn Java_ai_swim_bridge_runtime_Runtime_startRuntime(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ai_swim_bridge_runtime_Runtime_shutdownRuntime(
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "system" fn Java_ai_swim_bridge_runtime_Runtime_shutdownRuntime(
     env: JNIEnv,
     _class: JClass,
     runtime: *mut Runtime,
 ) {
     npch!(env, runtime);
 
-    let runtime = unsafe { Box::from_raw(runtime) };
+    let runtime = Box::from_raw(runtime);
     runtime.shutdown_timeout(Duration::from_secs(10));
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ai_swim_bridge_runtime_Runtime_newHandle(
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "system" fn Java_ai_swim_bridge_runtime_Runtime_newHandle(
     env: JNIEnv,
     _class: JClass,
     runtime: *mut Runtime,
 ) -> *mut Handle {
     npch!(env, runtime);
 
-    let runtime = unsafe { &*runtime };
+    let runtime = &*runtime;
     Box::leak(Box::new(runtime.handle().clone()))
 }

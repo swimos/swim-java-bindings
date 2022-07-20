@@ -67,6 +67,7 @@ macro_rules! fwd_impl {
 
 impl Bytes {
     #[cfg(test)]
+    #[allow(clippy::missing_safety_doc)]
     pub unsafe fn from_parts(buf: &mut [u8], capacity: usize) -> Bytes {
         Bytes {
             ptr: NonNull::new_unchecked(buf.as_mut_ptr()),
@@ -107,6 +108,10 @@ impl Bytes {
         self.capacity
     }
 
+    /// Returns a mutable raw pointer to 'count'.
+    ///
+    /// # Safety
+    /// Panics if 'from + count' is out of bounds.
     #[inline]
     pub unsafe fn get_mut_u8(&self, count: usize) -> *mut u8 {
         check_bound(self.capacity, count, 1);
@@ -126,22 +131,28 @@ impl Bytes {
     fwd_impl!(get_usize, set_usize, usize);
     fwd_impl!(get_isize, set_isize, isize);
 
+    /// Returns a mutable slice starting at 'from' to 'from + count'.
+    ///
+    /// # Safety
+    /// Panics if 'from + count' is out of bounds.
     #[inline]
-    pub unsafe fn slice(&self, from: usize, count: usize) -> *mut [u8] {
+    pub unsafe fn slice_mut(&self, from: usize, count: usize) -> *mut [u8] {
         check_bound(self.capacity, from, count);
         slice_from_raw_parts_mut::<u8>(self.ptr.as_ptr().add(from), count)
     }
 
     #[inline]
-    pub unsafe fn copy_from_slice(&mut self, start: usize, src: &[u8]) {
+    pub fn copy_from_slice(&mut self, start: usize, src: &[u8]) {
         check_bound(self.capacity, start, src.len());
-        copy_nonoverlapping(src.as_ptr(), self.ptr.as_ptr().add(start), src.len());
+        unsafe {
+            copy_nonoverlapping(src.as_ptr(), self.ptr.as_ptr().add(start), src.len());
+        }
     }
 
     #[inline]
     pub fn array<const N: usize>(&self, from: usize) -> [u8; N] {
         check_bound(self.capacity, from, N);
-        let slice = unsafe { &*self.slice(from, N) };
+        let slice = unsafe { &*self.slice_mut(from, N) };
         let mut dest = [0; N];
 
         for (idx, b) in slice.iter().enumerate() {

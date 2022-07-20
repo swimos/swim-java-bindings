@@ -66,7 +66,7 @@ mod offset {
     pub const CLOSED: usize = 0;
     #[cfg(target_endian = "big")]
     pub const CLOSED: usize = 3;
-    pub const READ: usize = 1 * size_of::<i32>();
+    pub const READ: usize = size_of::<i32>();
     pub const WRITE: usize = 2 * size_of::<i32>();
     pub const DATA_START: usize = 3 * size_of::<i32>();
 }
@@ -141,7 +141,7 @@ where
     E: ErrorStatus,
     E2: From<ErrorKind>,
 {
-    let env = get_env(&vm).expect("Failed to get JVM environment");
+    let env = get_env(vm).expect("Failed to get JVM environment");
     let _guard = env.lock_obj(lock).expect("Failed to enter monitor");
 
     loop {

@@ -60,14 +60,13 @@ impl ByteReader {
         let global_ref = env
             .new_global_ref(lock)
             .expect("Failed to get a global reference to byte channel lock");
-        let reader = ByteReader {
+
+        ByteReader {
             is_closed: unsafe { NonNull::new_unchecked(bytes.get_mut_u8(offset::CLOSED) as _) },
             lock: global_ref,
             bytes,
             vm: jvm_tryf!(env, env.get_java_vm()),
-        };
-
-        reader
+        }
     }
 
     /// Returns whether this reader is closed
@@ -90,7 +89,7 @@ impl ByteReader {
         } = self;
 
         let lock_obj = lock.as_obj();
-        let env = get_env(&vm).expect("Failed to get JVM environment");
+        let env = get_env(vm).expect("Failed to get JVM environment");
         let _guard = env.lock_obj(lock_obj).expect("Failed to enter monitor");
 
         match read(capacity, unsafe { is_closed.as_ref() }, bytes, read_target) {
@@ -143,14 +142,14 @@ where
     let capped = to_read.min(capacity - read_from);
 
     unsafe {
-        let data_slice = bytes.slice(offset::DATA_START + read_from, capped);
+        let data_slice = bytes.slice_mut(offset::DATA_START + read_from, capped);
         read_target.put_slice(&*data_slice);
     }
 
     let mut new_read_offset = if capped != to_read {
         let lim = to_read - capped;
         unsafe {
-            let data_slice = bytes.slice(offset::DATA_START, lim);
+            let data_slice = bytes.slice_mut(offset::DATA_START, lim);
             read_target.put_slice(&*data_slice);
         }
 
@@ -182,7 +181,7 @@ impl AsyncRead for ByteReader {
             vm,
         } = self.as_mut().get_mut();
 
-        channel_io(lock.as_obj(), &vm, || {
+        channel_io(lock.as_obj(), vm, || {
             read(capacity, unsafe { is_closed.as_ref() }, bytes, buf)
         })
     }
