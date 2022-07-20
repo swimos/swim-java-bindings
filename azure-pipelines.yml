@@ -23,19 +23,19 @@ stages:
         steps:
           - template: ci/azure-lint-rust.yml
 
-      - job: 'rust_test'
-        displayName: 'Test Rust'
-        strategy:
-          matrix:
-            Linux:
-              vmImage: ubuntu-18.04
+      # - job: 'rust_test'
+      #   displayName: 'Test Rust'
+      #   strategy:
+      #     matrix:
+      #       Linux:
+      #         vmImage: ubuntu-18.04
     
-            ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-              MacOS:
-                vmImage: macOS-10.15
-              Windows:
-                vmImage: windows-2019
-        pool:
-          vmImage: $(vmImage)    
-        steps:
-          - template: ci/azure-test-rust.yml
+      #       ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+      #         MacOS:
+      #           vmImage: macOS-10.15
+      #         Windows:
+      #           vmImage: windows-2019
+      #   pool:
+      #     vmImage: $(vmImage)    
+      #   steps:
+      #     - template: ci/azure-test-rust.yml

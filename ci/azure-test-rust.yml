@@ -7,9 +7,6 @@ steps:
         choco install llvm
         refreshenv
     condition: eq( variables['Agent.OS'], 'Windows_NT' )
-  - template: azure-install-rust.yml
-    parameters:
-      rust_version: ${{ parameters.rust }}
   - script: cargo test --verbose --all-features --workspace --lib --tests
     env:
       RUST_BACKTRACE: 1

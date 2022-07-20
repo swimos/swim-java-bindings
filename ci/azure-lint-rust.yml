@@ -5,17 +5,17 @@ steps:
 
       cargo clippy --all-features --workspace --all-targets -- -D warnings
     displayName: Run Clippy
-    workingDirectory: $(Build.SourcesDirectory/rust-java-bridge)
+  #   workingDirectory: $(Build.SourcesDirectory/rust-java-bridge)
 
-  # Run rustfmt
-  - script: |
-      cargo fmt -- --check
-    displayName: Run rustfmt
-    workingDirectory: $(Build.SourcesDirectory/rust-java-bridge)
+  # # Run rustfmt
+  # - script: |
+  #     cargo fmt -- --check
+  #   displayName: Run rustfmt
+  #   workingDirectory: $(Build.SourcesDirectory/rust-java-bridge)
 
-  # Run doc
-  - script: |
-      RUSTDOCFLAGS="--cfg docsrs -Dwarnings" 
-      cargo doc --lib --no-deps --all-features --workspace
-    displayName: Run doc
-    workingDirectory: $(Build.SourcesDirectory/rust-java-bridge)
+  # # Run doc
+  # - script: |
+  #     RUSTDOCFLAGS="--cfg docsrs -Dwarnings" 
+  #     cargo doc --lib --no-deps --all-features --workspace
+  #   displayName: Run doc
+  #   workingDirectory: $(Build.SourcesDirectory/rust-java-bridge)
