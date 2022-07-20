@@ -1,6 +1,6 @@
 steps:
   - script: |
-    rustup toolchain install nightly --component miri
-    rustup override set nightly
+      rustup toolchain install nightly --component miri
+      rustup override set nightly
 
-    cargo miri test
+      cargo miri test
