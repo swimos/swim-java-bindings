@@ -161,6 +161,7 @@ public class FfiChannelTest {
   @Timeout(10)
   void smallRead() throws InterruptedException {
     runTest((barrier) -> {
+      System.out.println("Starting small read");
       Object lock = new Object();
       HeapByteBuffer buffer = new HeapByteBuffer(16 + ByteChannel.HEADER_SIZE);
       ReadChannel readChannel = new ReadChannel(0, buffer, lock);
@@ -181,7 +182,7 @@ public class FfiChannelTest {
 
       assertThrows(ChannelClosedException.class, () -> {
         int i = readChannel.tryRead(new byte[8]);
-        System.out.println(i);
+        System.out.println("smallRead out: " + i);
         assertEquals(0, i);
       });
 
@@ -196,6 +197,7 @@ public class FfiChannelTest {
   @Timeout(10)
   void largeJavaReader() throws InterruptedException {
     runTest((barrier) -> {
+      System.out.println("Starting large read");
       Object lock = new Object();
 
       int channelLen = 4096;
@@ -226,7 +228,7 @@ public class FfiChannelTest {
       assertArrayEquals(input, actual);
       assertThrows(ChannelClosedException.class, () -> {
         int i = readChannel.tryRead(new byte[8]);
-        System.out.println(i);
+        System.out.println("Large read: " + i);
         assertEquals(0, i);
       });
 
