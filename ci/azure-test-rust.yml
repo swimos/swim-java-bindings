@@ -11,4 +11,4 @@ steps:
     env:
       RUST_BACKTRACE: 1
     displayName: cargo test --lib --tests
-    workingDirectory: $(Build.SourcesDirectory/rust-java-bridge)
+    workingDirectory: $(Build.SourcesDirectory)/rust-java-bridge
