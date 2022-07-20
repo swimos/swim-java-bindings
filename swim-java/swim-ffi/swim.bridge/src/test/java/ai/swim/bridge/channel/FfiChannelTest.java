@@ -182,7 +182,7 @@ public class FfiChannelTest {
       assertThrows(ChannelClosedException.class, () -> {
         int i = readChannel.tryRead(new byte[8]);
         System.out.println(i);
-        assertEquals(0, i)
+        assertEquals(0, i);
       });
 
       readChannel.close();
@@ -227,7 +227,7 @@ public class FfiChannelTest {
       assertThrows(ChannelClosedException.class, () -> {
         int i = readChannel.tryRead(new byte[8]);
         System.out.println(i);
-        assertEquals(0, i)
+        assertEquals(0, i);
       });
 
       readChannel.close();
