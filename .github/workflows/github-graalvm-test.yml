@@ -2,23 +2,17 @@ name: GraalVM build
 on: [ pull_request ]
 jobs:
   build:
-    name: ${{ matrix.version }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        version: [ '22.0.0.2' ]
-        os: [ macos-latest, windows-latest, ubuntu-latest ]
+    name: GraalVM native test
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: '11'
-          version: ${{ matrix.version }}
+          version: '22.0.0.2'
           components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Native test
         run: |
           cd swim-java
           ./gradlew :swim-bridge:nativeTest --stacktrace
-        env:
-          NO_DOCKER: ${{ runner.os != 'Linux' }}
