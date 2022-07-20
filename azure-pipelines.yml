@@ -11,7 +11,7 @@ stages:
     displayName: 'Rust'
     jobs:
       - job: install_rust
-        displayName: 'Install Rust'
+        displayName: 'Install'
         steps:
           - template: .azure/install-rust.yml
             parameters:
@@ -19,14 +19,14 @@ stages:
 
       - job: 'rust_lint'
         dependsOn: install_rust
-        displayName: 'Lint Rust'
+        displayName: 'Lint'
         pool:
           vmImage: ubuntu-18.04
         steps:
           - template: .azure/lint-rust.yml
 
       - job: 'rust_test'
-        displayName: 'Test Rust'
+        displayName: 'Test'
         dependsOn: install_rust
         strategy:
           matrix:
@@ -44,7 +44,7 @@ stages:
           - template: .azure/test-rust.yml
 
       - job: 'rust_miri'
-        displayName: 'Rust Miri'
+        displayName: 'Miri'
         dependsOn: install_rust
         pool:
           vmImage: ubuntu-18.04
@@ -57,7 +57,7 @@ stages:
     displayName: 'Java'
     jobs:
       - job: 'java_test'
-        displayName: 'Test Java'
+        displayName: 'Test'
         strategy:
           matrix:
             Linux:
@@ -72,6 +72,6 @@ stages:
           - template: .azure/test-java.yml
       
       - job: 'java_lint'
-        displayName: 'Lint Java'
+        displayName: 'Lint'
         steps:
           - template: .azure/lint-java.yml
