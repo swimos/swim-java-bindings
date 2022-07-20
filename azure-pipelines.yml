@@ -54,7 +54,7 @@ stages:
               version: $(RUST_VERSION_NIGHTLY)
 
   - stage: java
-    displayName: 'Test Java'
+    displayName: 'Java'
     jobs:
       - job: 'java_test'
         displayName: 'Test Java'
