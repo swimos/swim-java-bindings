@@ -18,14 +18,17 @@ import ai.swim.bridge.buffer.HeapByteBuffer;
 import ai.swim.bridge.channel.exceptions.ChannelClosedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-
 import java.nio.ByteBuffer;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FfiChannelTest {
+
 
   static {
     System.loadLibrary("jvm_sys_tests");
@@ -63,7 +66,7 @@ public class FfiChannelTest {
   }
 
   @Test
-  @Timeout(10)
+  @Timeout(60)
   void smallJavaWriter() throws InterruptedException {
     runTest((barrier) -> {
       Object lock = new Object();
@@ -71,7 +74,7 @@ public class FfiChannelTest {
       HeapByteBuffer buffer = new HeapByteBuffer(16 + ByteChannel.HEADER_SIZE);
       WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
 
-      byte[] input = new byte[]{1, 2, 3, 4, 5};
+      byte[] input = new byte[] {1, 2, 3, 4, 5};
       int wrote = writeChannel.write(input);
       assertEquals(wrote, input.length);
 
@@ -83,7 +86,7 @@ public class FfiChannelTest {
   }
 
   @Test
-  @Timeout(10)
+  @Timeout(60)
   void smallJavaWriterSpills() throws InterruptedException {
     runTest((barrier) -> {
       Object lock = new Object();
@@ -91,7 +94,7 @@ public class FfiChannelTest {
       HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
       WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
 
-      byte[] input = new byte[]{1, 2, 3, 4, 5, 6, 7, 8};
+      byte[] input = new byte[] {1, 2, 3, 4, 5, 6, 7, 8};
       long runtimePtr = readerTask(buffer.rawBuffer(), lock, input, barrier);
 
       try {
@@ -108,7 +111,7 @@ public class FfiChannelTest {
   }
 
   @Test
-  @Timeout(10)
+  @Timeout(value = 5, unit = TimeUnit.MINUTES)
   void largeJavaWriter() throws InterruptedException {
     runTest((barrier) -> {
       Object lock = new Object();
@@ -143,7 +146,7 @@ public class FfiChannelTest {
   }
 
   @Test
-  @Timeout(10)
+  @Timeout(60)
   void instantlyCloseWriter() throws InterruptedException {
     runTest((barrier) -> {
       Object lock = new Object();
@@ -158,7 +161,7 @@ public class FfiChannelTest {
   }
 
   @Test
-  @Timeout(10)
+  @Timeout(60)
   void smallRead() throws InterruptedException {
     runTest((barrier) -> {
       Object lock = new Object();
@@ -189,7 +192,7 @@ public class FfiChannelTest {
   }
 
   @Test
-  @Timeout(10)
+  @Timeout(value = 5, unit = TimeUnit.MINUTES)
   void largeJavaReader() throws InterruptedException {
     runTest((barrier) -> {
       Object lock = new Object();
@@ -230,7 +233,7 @@ public class FfiChannelTest {
   }
 
   @Test
-  @Timeout(10)
+  @Timeout(60)
   void instantlyCloseReader() throws InterruptedException {
     runTest((barrier) -> {
       Object lock = new Object();
@@ -245,7 +248,7 @@ public class FfiChannelTest {
   }
 
   @Test
-  @Timeout(10)
+  @Timeout(60)
   @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
   void dropReader() throws InterruptedException {
     Object lock = new Object();
@@ -265,7 +268,7 @@ public class FfiChannelTest {
   }
 
   @Test
-  @Timeout(10)
+  @Timeout(60)
   @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
   void dropWriterTask() throws InterruptedException {
     Object lock = new Object();

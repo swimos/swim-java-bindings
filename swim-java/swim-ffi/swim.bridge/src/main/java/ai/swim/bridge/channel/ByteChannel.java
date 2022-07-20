@@ -18,21 +18,28 @@ import ai.swim.bridge.buffer.Buffer;
 
 public abstract class ByteChannel {
 
+  public static final int HEADER_SIZE = 12;
   private static final int CLOSED = 0;
   private static final int READ = Integer.SIZE / Byte.SIZE;
   private static final int WRITE = 2 * (Integer.SIZE / Byte.SIZE);
   private static final int DATA = 3 * (Integer.SIZE / Byte.SIZE);
-
-  public static final int HEADER_SIZE = 12;
-
-  private final long ptr;
   protected final Buffer buffer;
   protected final Object lock;
+  private final long ptr;
 
   protected ByteChannel(long ptr, Buffer buffer, Object lock) {
     this.ptr = ptr;
     this.buffer = buffer;
     this.lock = lock;
+  }
+
+  protected static int wrappingSub(int x, int y) {
+    int r = x - y;
+    if (r < 0) {
+      r = Integer.MAX_VALUE - Math.abs(r + 1);
+    }
+
+    return r;
   }
 
   public boolean isClosed() {
@@ -69,15 +76,6 @@ public abstract class ByteChannel {
 
   protected int len() {
     return buffer.capacity() - HEADER_SIZE;
-  }
-
-  protected static int wrappingSub(int x, int y) {
-    int r = x - y;
-    if (r < 0) {
-      r = Integer.MAX_VALUE - Math.abs(r + 1);
-    }
-
-    return r;
   }
 }
 

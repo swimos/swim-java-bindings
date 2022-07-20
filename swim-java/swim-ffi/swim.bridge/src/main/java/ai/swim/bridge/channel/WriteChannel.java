@@ -17,9 +17,7 @@ package ai.swim.bridge.channel;
 import ai.swim.bridge.buffer.Buffer;
 import ai.swim.bridge.channel.exceptions.ChannelClosedException;
 import ai.swim.bridge.channel.exceptions.InsufficientCapacityException;
-
 import java.util.Arrays;
-
 import static java.lang.Math.min;
 
 public class WriteChannel extends ByteChannel {

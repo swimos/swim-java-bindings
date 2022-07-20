@@ -16,16 +16,20 @@ package ai.swim.bridge.runtime;
 
 public final class RuntimeProxy {
 
+  private static Runtime runtime;
+
   static {
     System.loadLibrary("swim_sys");
   }
 
-  private static Runtime runtime;
+  private RuntimeProxy() {
+    throw new AssertionError();
+  }
 
   /**
    * Returns an initialized runtime object.
    */
-  public synchronized static Runtime runtime() {
+  public static synchronized Runtime runtime() {
     if (runtime == null) {
       runtime = Runtime.start();
     }

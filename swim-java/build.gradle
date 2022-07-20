@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'application'
     id 'org.graalvm.buildtools.native' version '0.9.13'
+    id 'checkstyle'
 }
 
 group 'ai.swim'
@@ -16,6 +17,7 @@ subprojects {
     apply plugin: 'java-library'
     apply plugin: 'java'
     apply plugin: 'org.graalvm.buildtools.native'
+    apply plugin: 'checkstyle'
 
     group = "ai.swim"
     version = '0.0.1-SNAPSHOT'

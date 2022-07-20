@@ -21,6 +21,16 @@ public final class Runtime {
     this.ptr = ptr;
   }
 
+  private static native long newHandle(long runtimePtr);
+
+  static Runtime start() {
+    return new Runtime(startRuntime());
+  }
+
+  private static native long startRuntime();
+
+  private static native long shutdownRuntime(long ptr);
+
   public synchronized Handle handle() {
     if (ptr == null) {
       throw new IllegalStateException("Runtime already shutdown");
@@ -30,14 +40,6 @@ public final class Runtime {
     return new Handle(ptrHandle, this);
   }
 
-  private static native long newHandle(long runtimePtr);
-
-  static Runtime start() {
-    return new Runtime(startRuntime());
-  }
-
-  private static native long startRuntime();
-
   public synchronized void shutdown() {
     if (ptr == null) {
       throw new IllegalStateException("Runtime already shutdown");
@@ -46,6 +48,4 @@ public final class Runtime {
       ptr = null;
     }
   }
-
-  private static native long shutdownRuntime(long ptr);
 }

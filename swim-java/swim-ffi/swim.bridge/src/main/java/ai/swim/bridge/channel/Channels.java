@@ -16,13 +16,16 @@ package ai.swim.bridge.channel;
 
 import ai.swim.bridge.buffer.HeapByteBuffer;
 import ai.swim.bridge.runtime.RuntimeProxy;
-
 import java.nio.ByteBuffer;
 
 public final class Channels {
 
   static {
     System.loadLibrary("swim_sys");
+  }
+
+  private Channels() {
+    throw new AssertionError();
   }
 
   private static void checkCapacity(int capacity) {

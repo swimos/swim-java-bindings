@@ -22,7 +22,7 @@ import java.nio.ByteOrder;
 public class HeapByteBuffer implements Buffer {
   // todo: It's a bit overkill using a VarHandle here but it's the simplest way to perform atomic operations on a byte
   //  buffer outside of using Unsafe directly and lowers the amount of overhead in writing a JNI buffer.
-  private static final VarHandle bufferVh = MethodHandles.byteBufferViewVarHandle(int[].class, ByteOrder.nativeOrder());
+  private static final VarHandle BUFFER_VH = MethodHandles.byteBufferViewVarHandle(int[].class, ByteOrder.nativeOrder());
   private final ByteBuffer buffer;
 
   /**
@@ -40,22 +40,22 @@ public class HeapByteBuffer implements Buffer {
 
   @Override
   public int getIntVolatile(int idx) {
-    return ((int) bufferVh.getVolatile(buffer, idx));
+    return ((int) BUFFER_VH.getVolatile(buffer, idx));
   }
 
   @Override
   public int getInt(int idx) {
-    return (int) bufferVh.get(buffer, idx);
+    return (int) BUFFER_VH.get(buffer, idx);
   }
 
   @Override
   public void setIntVolatile(int idx, int to) {
-    bufferVh.setVolatile(buffer, idx, to);
+    BUFFER_VH.setVolatile(buffer, idx, to);
   }
 
   @Override
   public void setInt(int idx, int to) {
-    bufferVh.set(buffer, idx, to);
+    BUFFER_VH.set(buffer, idx, to);
   }
 
   @Override
