@@ -14,7 +14,7 @@ stages:
         steps:
           - template: ci/azure-install-rust.yml
             parameters:
-              rust: $(RUST_VERSION_STABLE)
+              version: $(RUST_VERSION_STABLE)
 
       # - job: ''
 
