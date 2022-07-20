@@ -1,0 +1,22 @@
+name: GraalVM build
+on: [ push, pull_request ]
+jobs:
+  build:
+    name: ${{ matrix.version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        version: [ latest ]
+        os: [ macos-latest, windows-latest, ubuntu-latest ]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: ${{ matrix.version }}
+          java-version: '11'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Native test
+        run: ./gradlew :swim-bridge:nativeTest
+        env:
+          NO_DOCKER: ${{ runner.os != 'Linux' }}
