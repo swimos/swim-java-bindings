@@ -1,0 +1,6 @@
+steps:
+  - script: |
+      rustup toolchain install ${{parameters.version}}
+      rustup override set ${{parameters.version}}
+      rustup target add x86_64-unknown-linux-gnu
+      cargo +nightly miri test
