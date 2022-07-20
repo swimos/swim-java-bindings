@@ -16,7 +16,14 @@ stages:
             parameters:
               version: $(RUST_VERSION_STABLE)
 
-      # - job: ''
+      - job: 'rust_lint'
+        displayName: 'Rust: lint'
+        pool:
+          vmImage: ubuntu-18.04
+        steps:
+          - template: ci/azure-lint-rust.yml
+            parameters:
+              version: $(RUST_VERSION_STABLE)
 
       # - template: ci/azure-lint-rust.yml
       #   parameters:
