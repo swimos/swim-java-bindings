@@ -1,6 +1,8 @@
 steps:
   # Run clippy
   - script: |
+      ls
+
       cargo clippy --all-features --workspace --all-targets -- -D warnings
     displayName: Run Clippy
     workingDirectory: $(Build.SourcesDirectory/rust-java-bridge)
