@@ -17,6 +17,6 @@ jobs:
           components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Native test
-        run: ./gradlew :swim-bridge:nativeTest
+        run: ./swim-java/gradlew :swim-bridge:nativeTest
         env:
           NO_DOCKER: ${{ runner.os != 'Linux' }}
