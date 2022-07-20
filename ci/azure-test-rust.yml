@@ -1,0 +1,33 @@
+jobs:
+  - job: 'Rust test stable'
+    displayName: rust_test
+    strategy:
+      matrix:
+        Linux:
+          vmImage: ubuntu-18.04
+
+        ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+          MacOS:
+            vmImage: macOS-10.15
+          Windows:
+            vmImage: windows-2019
+    pool:
+      vmImage: $(vmImage)
+
+    steps:
+      - task: PowerShell@2
+        inputs:
+          targetType: 'inline'
+          script: |
+            Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
+            choco install llvm
+            refreshenv
+        condition: eq( variables['Agent.OS'], 'Windows_NT' )
+      - template: azure-install-rust.yml
+        parameters:
+          rust_version: ${{ parameters.rust }}
+      - script: cargo test --verbose --all-features --workspace --lib --tests
+        env:
+          RUST_BACKTRACE: 1
+        displayName: cargo test --lib --tests
+        workingDirectory: $(Build.SourcesDirectory/rust-java-bridge)
