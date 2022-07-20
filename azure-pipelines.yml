@@ -7,8 +7,8 @@ variables:
   RUST_VERSION_NIGHTLY: nightly-2022-07-14
 
 stages:
-  - stage: rust_setup
-    displayName: 'Rust setup'
+  - stage: rust
+    displayName: 'Rust'
     jobs:
       - job: install_rust
         displayName: 'Install Rust'
@@ -16,10 +16,9 @@ stages:
           - template: ci/azure-install-rust.yml
             parameters:
               version: $(RUST_VERSION_STABLE)
-  - stage: rust_test
-    displayName: 'Rust test'
-    jobs:
+
       - job: 'rust_lint'
+        dependsOn: install_rust
         displayName: 'Lint Rust'
         pool:
           vmImage: ubuntu-18.04
