@@ -42,3 +42,13 @@ stages:
           vmImage: $(vmImage)    
         steps:
           - template: ci/azure-test-rust.yml
+
+      - job: 'rust_miri'
+        displayName: 'Rust Miri'
+        dependsOn: install_rust
+        pool:
+          vmImage: ubuntu-18.04
+        steps:
+          - template: ci/azure-miri-rust.yml
+            parameters:
+              version: $(RUST_VERSION_NIGHTLY)
