@@ -4,3 +4,5 @@ steps:
       rustup override set nightly
 
       cargo miri test
+    displayName: Miri
+    workingDirectory: $(Build.SourcesDirectory)/rust-java-bridge
