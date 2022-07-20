@@ -1,4 +1,4 @@
-job: 'Install Rust'
+- job: 'Install Rust'
   steps:
     # Linux and macOS.
     - script: |
