@@ -3,7 +3,7 @@ steps:
   - script: |
       cargo clippy --all-features --workspace --all-targets -- -D warnings
     displayName: Run Clippy
-    workingDirectory: $(Build.SourcesDirectory/rust-java-bridge/)
+    workingDirectory: $(Build.SourcesDirectory)/rust-java-bridge
 
   # # Run rustfmt
   # - script: |
