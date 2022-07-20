@@ -1,8 +1,7 @@
 steps:
   # Run clippy
   - script: |
-      echo $(Build.SourcesDirectory)
-      ls
+      ls -a -l $(Build.SourcesDirectory)
 
       cargo clippy --all-features --workspace --all-targets -- -D warnings
     displayName: Run Clippy
