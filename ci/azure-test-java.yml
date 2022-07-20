@@ -1,8 +1,7 @@
 steps:
   - task: Gradle@2
-    workingDirectory: $(Build.SourcesDirectory)/rust-java-bridge)
     inputs:
-      gradleWrapperFile: 'gradlew'
+      gradleWrapperFile: '$(Build.SourcesDirectory)/rust-java-bridge/gradlew'
       gradleOptions: '-Xmx3072m'
       javaHomeOption: 'JDKVersion'
       jdkVersionOption: 11
