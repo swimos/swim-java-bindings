@@ -14,6 +14,7 @@ jobs:
         with:
           version: ${{ matrix.version }}
           java-version: '11'
+          version: '22.0.0.2'
           components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Native test

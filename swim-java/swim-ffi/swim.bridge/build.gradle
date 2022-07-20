@@ -40,7 +40,7 @@ test {
 
 def compileRust(release) {
     exec {
-        println "Compiling rust libraries ".concat(release ? "release" : "debug")
+        println "Compiling rust libraries (".concat(release ? "release)" : "debug)")
 
         workingDir(bridge_dir)
         environment('RUSTFLAGS', '-Awarnings')
