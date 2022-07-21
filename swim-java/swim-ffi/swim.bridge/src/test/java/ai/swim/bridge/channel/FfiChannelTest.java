@@ -52,12 +52,10 @@ public class FfiChannelTest {
     HeapByteBuffer buffer = new HeapByteBuffer(16 + ByteChannel.HEADER_SIZE);
     WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
 
-    System.out.println("Writing");
     byte[] input = new byte[] {1, 2, 3, 4, 5};
     int wrote = writeChannel.write(input);
     assertEquals(wrote, input.length);
 
-    System.out.println("Closing");
     writeChannel.close();
     assertTrue(writeChannel.isClosed());
 
