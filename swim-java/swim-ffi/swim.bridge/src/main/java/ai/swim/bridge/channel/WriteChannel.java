@@ -90,7 +90,9 @@ public class WriteChannel extends ByteChannel {
       }
 
       setWriteIdx(newWriteOffset);
+      System.out.println("Writer: notifying");
       lock.notify();
+      System.out.println("Writer: notified");
 
       return toWrite;
     }

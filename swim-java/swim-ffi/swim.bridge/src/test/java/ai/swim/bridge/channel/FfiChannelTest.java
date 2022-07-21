@@ -51,7 +51,9 @@ public class FfiChannelTest {
     Thread notified = new Thread(() -> {
       synchronized (barrier) {
         try {
+          System.out.println("Barrier waiting");
           barrier.wait();
+          System.out.println("Barrier waited");
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
@@ -60,8 +62,11 @@ public class FfiChannelTest {
 
     notified.start();
 
+    System.out.println("Started");
     long ptr = test.apply(barrier);
+    System.out.println("joining");
     notified.join();
+    System.out.println("dropping runtime");
     dropRuntime(ptr);
   }
 
@@ -69,222 +74,225 @@ public class FfiChannelTest {
   @Timeout(60)
   void smallJavaWriter() throws InterruptedException {
     runTest((barrier) -> {
+      System.out.println("Starting test");
       Object lock = new Object();
 
       HeapByteBuffer buffer = new HeapByteBuffer(16 + ByteChannel.HEADER_SIZE);
       WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
 
+      System.out.println("Writing");
       byte[] input = new byte[] {1, 2, 3, 4, 5};
       int wrote = writeChannel.write(input);
       assertEquals(wrote, input.length);
 
+      System.out.println("Closing");
       writeChannel.close();
       assertTrue(writeChannel.isClosed());
 
       return readerTask(buffer.rawBuffer(), lock, input, barrier);
     });
   }
-
-  @Test
-  @Timeout(60)
-  void smallJavaWriterSpills() throws InterruptedException {
-    runTest((barrier) -> {
-      Object lock = new Object();
-
-      HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
-      WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
-
-      byte[] input = new byte[] {1, 2, 3, 4, 5, 6, 7, 8};
-      long runtimePtr = readerTask(buffer.rawBuffer(), lock, input, barrier);
-
-      try {
-        writeChannel.writeAll(input);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-
-      writeChannel.close();
-      assertTrue(writeChannel.isClosed());
-
-      return runtimePtr;
-    });
-  }
-
-  @Test
-  @Timeout(value = 5, unit = TimeUnit.MINUTES)
-  void largeJavaWriter() throws InterruptedException {
-    runTest((barrier) -> {
-      Object lock = new Object();
-
-      int channelLen = 4096;
-      int dataLen = 1024 * 1024;
-      int chunkLen = 1024;
-
-      HeapByteBuffer buffer = new HeapByteBuffer(channelLen + ByteChannel.HEADER_SIZE);
-      WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
-
-      byte[] data = new byte[dataLen];
-      new Random().nextBytes(data);
-
-      long runtimePtr = readerTask(buffer.rawBuffer(), lock, data, barrier);
-
-      for (int i = 0; i < chunkLen; i++) {
-        byte[] chunk = new byte[chunkLen];
-        System.arraycopy(data, i * chunkLen, chunk, 0, chunkLen);
-        try {
-          writeChannel.writeAll(chunk);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-      }
-
-      writeChannel.close();
-      assertTrue(writeChannel.isClosed());
-
-      return runtimePtr;
-    });
-  }
-
-  @Test
-  @Timeout(60)
-  void instantlyCloseWriter() throws InterruptedException {
-    runTest((barrier) -> {
-      Object lock = new Object();
-
-      HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
-      WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
-
-      writeChannel.close();
-
-      return readerTask(buffer.rawBuffer(), lock, new byte[0], barrier);
-    });
-  }
-
-  @Test
-  @Timeout(60)
-  void smallRead() throws InterruptedException {
-    runTest((barrier) -> {
-      Object lock = new Object();
-      HeapByteBuffer buffer = new HeapByteBuffer(16 + ByteChannel.HEADER_SIZE);
-      ReadChannel readChannel = new ReadChannel(0, buffer, lock);
-
-      byte[] input = new byte[16];
-      new Random().nextBytes(input);
-
-      long ptr = writerTask(buffer.rawBuffer(), lock, input, 16, barrier);
-
-      byte[] readBuf = new byte[16];
-      try {
-        readChannel.readAll(readBuf);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-
-      assertArrayEquals(input, readBuf);
-
+//
+//  @Test
+//  @Timeout(60)
+//  void smallJavaWriterSpills() throws InterruptedException {
+//    runTest((barrier) -> {
+//      Object lock = new Object();
+//
+//      HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
+//      WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
+//
+//      byte[] input = new byte[] {1, 2, 3, 4, 5, 6, 7, 8};
+//      long runtimePtr = readerTask(buffer.rawBuffer(), lock, input, barrier);
+//
+//      try {
+//        writeChannel.writeAll(input);
+//      } catch (InterruptedException e) {
+//        throw new RuntimeException(e);
+//      }
+//
+//      writeChannel.close();
+//      assertTrue(writeChannel.isClosed());
+//
+//      return runtimePtr;
+//    });
+//  }
+//
+//  @Test
+//  @Timeout(value = 5, unit = TimeUnit.MINUTES)
+//  void largeJavaWriter() throws InterruptedException {
+//    runTest((barrier) -> {
+//      Object lock = new Object();
+//
+//      int channelLen = 4096;
+//      int dataLen = 1024 * 1024;
+//      int chunkLen = 1024;
+//
+//      HeapByteBuffer buffer = new HeapByteBuffer(channelLen + ByteChannel.HEADER_SIZE);
+//      WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
+//
+//      byte[] data = new byte[dataLen];
+//      new Random().nextBytes(data);
+//
+//      long runtimePtr = readerTask(buffer.rawBuffer(), lock, data, barrier);
+//
+//      for (int i = 0; i < chunkLen; i++) {
+//        byte[] chunk = new byte[chunkLen];
+//        System.arraycopy(data, i * chunkLen, chunk, 0, chunkLen);
+//        try {
+//          writeChannel.writeAll(chunk);
+//        } catch (InterruptedException e) {
+//          throw new RuntimeException(e);
+//        }
+//      }
+//
+//      writeChannel.close();
+//      assertTrue(writeChannel.isClosed());
+//
+//      return runtimePtr;
+//    });
+//  }
+//
+//  @Test
+//  @Timeout(60)
+//  void instantlyCloseWriter() throws InterruptedException {
+//    runTest((barrier) -> {
+//      Object lock = new Object();
+//
+//      HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
+//      WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
+//
+//      writeChannel.close();
+//
+//      return readerTask(buffer.rawBuffer(), lock, new byte[0], barrier);
+//    });
+//  }
+//
+//  @Test
+//  @Timeout(60)
+//  void smallRead() throws InterruptedException {
+//    runTest((barrier) -> {
+//      Object lock = new Object();
+//      HeapByteBuffer buffer = new HeapByteBuffer(16 + ByteChannel.HEADER_SIZE);
+//      ReadChannel readChannel = new ReadChannel(0, buffer, lock);
+//
+//      byte[] input = new byte[16];
+//      new Random().nextBytes(input);
+//
+//      long ptr = writerTask(buffer.rawBuffer(), lock, input, 16, barrier);
+//
+//      byte[] readBuf = new byte[16];
+//      try {
+//        readChannel.readAll(readBuf);
+//      } catch (InterruptedException e) {
+//        throw new RuntimeException(e);
+//      }
+//
+//      assertArrayEquals(input, readBuf);
+//
 //      assertThrows(ChannelClosedException.class, () -> assertEquals(0, readChannel.tryRead(new byte[8])));
-
-      readChannel.close();
-      assertTrue(readChannel.isClosed());
-
-      return ptr;
-    });
-  }
-
-  @Test
-  @Timeout(value = 5, unit = TimeUnit.MINUTES)
-  void largeJavaReader() throws InterruptedException {
-    runTest((barrier) -> {
-      Object lock = new Object();
-
-      int channelLen = 4096;
-      int dataLen = 1024 * 1024;
-      int chunkLen = 1024;
-
-      HeapByteBuffer buffer = new HeapByteBuffer(channelLen + ByteChannel.HEADER_SIZE);
-      ReadChannel readChannel = new ReadChannel(0, buffer, lock);
-
-      byte[] input = new byte[dataLen];
-      new Random().nextBytes(input);
-
-      long ptr = writerTask(buffer.rawBuffer(), lock, input, chunkLen, barrier);
-
-      byte[] actual = new byte[dataLen];
-
-      for (int i = 0; i < chunkLen; i++) {
-        byte[] chunk = new byte[chunkLen];
-        try {
-          readChannel.readAll(chunk);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-
-        System.arraycopy(chunk, 0, actual, i * chunkLen, chunk.length);
-      }
-
-      assertArrayEquals(input, actual);
+//
+//      readChannel.close();
+//      assertTrue(readChannel.isClosed());
+//
+//      return ptr;
+//    });
+//  }
+//
+//  @Test
+//  @Timeout(value = 5, unit = TimeUnit.MINUTES)
+//  void largeJavaReader() throws InterruptedException {
+//    runTest((barrier) -> {
+//      Object lock = new Object();
+//
+//      int channelLen = 4096;
+//      int dataLen = 1024 * 1024;
+//      int chunkLen = 1024;
+//
+//      HeapByteBuffer buffer = new HeapByteBuffer(channelLen + ByteChannel.HEADER_SIZE);
+//      ReadChannel readChannel = new ReadChannel(0, buffer, lock);
+//
+//      byte[] input = new byte[dataLen];
+//      new Random().nextBytes(input);
+//
+//      long ptr = writerTask(buffer.rawBuffer(), lock, input, chunkLen, barrier);
+//
+//      byte[] actual = new byte[dataLen];
+//
+//      for (int i = 0; i < chunkLen; i++) {
+//        byte[] chunk = new byte[chunkLen];
+//        try {
+//          readChannel.readAll(chunk);
+//        } catch (InterruptedException e) {
+//          throw new RuntimeException(e);
+//        }
+//
+//        System.arraycopy(chunk, 0, actual, i * chunkLen, chunk.length);
+//      }
+//
+//      assertArrayEquals(input, actual);
 //      assertThrows(ChannelClosedException.class, () -> assertEquals(0, readChannel.tryRead(new byte[8])));
-
-      readChannel.close();
-      assertTrue(readChannel.isClosed());
-
-      return ptr;
-    });
-  }
-
-  @Test
-  @Timeout(60)
-  void instantlyCloseReader() throws InterruptedException {
-    runTest((barrier) -> {
-      Object lock = new Object();
-
-      HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
-      ReadChannel readChannel = new ReadChannel(0, buffer, lock);
-
-      readChannel.close();
-
-      return writerClosedTask(buffer.rawBuffer(), lock, barrier);
-    });
-  }
-
-  @Test
-  @Timeout(60)
-  @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-  void dropReader() throws InterruptedException {
-    Object lock = new Object();
-    Object barrier = new Object();
-
-    HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
-    WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
-
-    long ptr = dropReaderTask(buffer.rawBuffer(), lock, barrier);
-
-    synchronized (barrier) {
-      barrier.wait();
-    }
-
-    assertTrue(writeChannel.isClosed());
-    dropRuntime(ptr);
-  }
-
-  @Test
-  @Timeout(60)
-  @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-  void dropWriterTask() throws InterruptedException {
-    Object lock = new Object();
-    Object barrier = new Object();
-
-    HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
-    ReadChannel readChannel = new ReadChannel(0, buffer, lock);
-
-    long ptr = dropWriterTask(buffer.rawBuffer(), lock, barrier);
-
-    synchronized (barrier) {
-      barrier.wait();
-    }
-
-    assertTrue(readChannel.isClosed());
-    dropRuntime(ptr);
-  }
+//
+//      readChannel.close();
+//      assertTrue(readChannel.isClosed());
+//
+//      return ptr;
+//    });
+//  }
+//
+//  @Test
+//  @Timeout(60)
+//  void instantlyCloseReader() throws InterruptedException {
+//    runTest((barrier) -> {
+//      Object lock = new Object();
+//
+//      HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
+//      ReadChannel readChannel = new ReadChannel(0, buffer, lock);
+//
+//      readChannel.close();
+//
+//      return writerClosedTask(buffer.rawBuffer(), lock, barrier);
+//    });
+//  }
+//
+//  @Test
+//  @Timeout(60)
+//  @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+//  void dropReader() throws InterruptedException {
+//    Object lock = new Object();
+//    Object barrier = new Object();
+//
+//    HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
+//    WriteChannel writeChannel = new WriteChannel(0, buffer, lock);
+//
+//    long ptr = dropReaderTask(buffer.rawBuffer(), lock, barrier);
+//
+//    synchronized (barrier) {
+//      barrier.wait();
+//    }
+//
+//    assertTrue(writeChannel.isClosed());
+//    dropRuntime(ptr);
+//  }
+//
+//  @Test
+//  @Timeout(60)
+//  @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+//  void dropWriterTask() throws InterruptedException {
+//    Object lock = new Object();
+//    Object barrier = new Object();
+//
+//    HeapByteBuffer buffer = new HeapByteBuffer(4 + ByteChannel.HEADER_SIZE);
+//    ReadChannel readChannel = new ReadChannel(0, buffer, lock);
+//
+//    long ptr = dropWriterTask(buffer.rawBuffer(), lock, barrier);
+//
+//    synchronized (barrier) {
+//      barrier.wait();
+//    }
+//
+//    assertTrue(readChannel.isClosed());
+//    dropRuntime(ptr);
+//  }
 
 }
