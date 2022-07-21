@@ -16,3 +16,4 @@ jobs:
         run: |
           cd swim-java
           ./gradlew :swim-bridge:nativeTest --stacktrace
+          
