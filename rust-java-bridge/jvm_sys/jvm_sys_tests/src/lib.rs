@@ -19,7 +19,7 @@ use std::io::ErrorKind::BrokenPipe;
 
 use bytes::BytesMut;
 use jni::errors::Error;
-use jni::objects::{JByteBuffer, JClass, JValue};
+use jni::objects::{JByteBuffer, JClass};
 use jni::sys::{jbyteArray, jint, jobject};
 use jni::JNIEnv;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -52,22 +52,24 @@ where
 
     let join_handle = runtime.spawn(fut);
     runtime.spawn(async move {
-        println!("Rust: started watch");
+        //println!("Rust: started watch");
         let r = join_handle.await;
-        println!("Rust: test complete");
+        //println!("Rust: test complete");
         let env = get_env(&vm).unwrap();
         let _guard = env.lock_obj(&global_ref).expect("Failed to enter monitor");
-        println!("Rust: notifying");
+        //println!("Rust: notifying");
 
         let countdown = JavaMethod::new("countDown", "()V");
 
         match countdown.invoke(&env, &global_ref, &[]) {
             Ok(_) => {}
-            Err(_) => {
-                env.exception_describe().unwrap();
+            Err(Error::JavaException) => {
+                let throwable = env.exception_occurred().unwrap();
+                jvm_tryf!(env, env.throw(throwable));
             }
+            Err(e) => env.fatal_error(&e.to_string()),
         }
-        println!("Rust: notified");
+        //println!("Rust: notified");
         if r.is_err() {
             env.fatal_error("Test panicked");
         }
@@ -94,15 +96,15 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_readerTask(
         let mut buf = BytesMut::new();
         buf.reserve(buf.len() * 2);
 
-        println!("Rust: starting read loop");
+        //println!("Rust: starting read loop");
 
         loop {
             match reader.read_buf(&mut buf).await {
                 Ok(_) => {
-                    println!("Rust: read");
+                    //println!("Rust: read");
                 }
                 Err(e) if e.kind() == ErrorKind::BrokenPipe => {
-                    println!("Rust: broken pipe");
+                    //println!("Rust: broken pipe");
                     let slice = buf.as_ref();
                     let expected_len = expected.len();
                     let actual_len = slice.len();
@@ -110,7 +112,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_readerTask(
                     if expected.len() == slice.len() {
                         assert_eq!(&slice[..expected.len()], expected.as_slice());
                         assert!(!slice[expected.len()..].iter().any(|e| *e == 0));
-                        println!("Rust: eq");
+                        //println!("Rust: eq");
                         break;
                     } else {
                         panic!(
@@ -208,7 +210,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropRuntime(
     _class: JClass,
     runtime: *mut Runtime,
 ) {
-    println!("Dropping runtime");
+    //println!("Dropping runtime");
     unsafe { drop(Box::from_raw(runtime)) };
-    println!("Dropped runtime");
+    //println!("Dropped runtime");
 }

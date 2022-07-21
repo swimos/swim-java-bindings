@@ -147,16 +147,16 @@ where
     loop {
         match f() {
             Ok(o) => {
-                println!("Rust: read notifying");
+                //println!("Rust: read notifying");
                 jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock, &[]));
-                println!("Rust: read notified");
+                //println!("Rust: read notified");
                 break Poll::Ready(Ok(o));
             }
             Err(e) => match e.status() {
                 Status::FullOrEmpty => {
-                    println!("Rust: read waiting");
+                    //println!("Rust: read waiting");
                     jvm_tryf!(env, JavaMethod::WAIT.invoke(&env, lock, &[]));
-                    println!("Rust: read waited");
+                    //println!("Rust: read waited");
                 }
                 Status::Closed => break Poll::Ready(Err(ErrorKind::BrokenPipe.into())),
             },
