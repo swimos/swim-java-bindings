@@ -44,7 +44,7 @@ class LocalChannelTest {
   /**
    * Write in to the buffer and read back out using a shared buffer and no FFI calls.
    */
-  @Test
+  //@Test
   void fullCircle() {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
@@ -64,19 +64,19 @@ class LocalChannelTest {
     assertEquals(0, read);
   }
 
-  @Test
+  //@Test
   void readCapacity0() {
     RuntimeException exception = assertThrows(RuntimeException.class, () -> Channels.readChannel(0));
     assertEquals("Cannot create a channel with a capacity of less than 2", exception.getMessage());
   }
 
-  @Test
+  //@Test
   void writeCapacity0() {
     RuntimeException exception = assertThrows(RuntimeException.class, () -> Channels.writeChannel(0));
     assertEquals("Cannot create a channel with a capacity of less than 2", exception.getMessage());
   }
 
-  @Test
+  //@Test
   void closeReaderEmpty() {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
@@ -88,7 +88,7 @@ class LocalChannelTest {
     assertEquals("Channel closed", exception.getMessage());
   }
 
-  @Test
+  //@Test
   void closeWriterEmpty() {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
@@ -100,7 +100,7 @@ class LocalChannelTest {
     assertEquals("Channel closed", exception.getMessage());
   }
 
-  @Test
+  //@Test
   void closeFlushes() {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
@@ -121,7 +121,7 @@ class LocalChannelTest {
     assertEquals("Channel closed", exception.getMessage());
   }
 
-  @Test
+  //@Test
   void emptyRead() {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
@@ -133,7 +133,7 @@ class LocalChannelTest {
     assertEquals("Provided buffer is null", exception.getMessage());
   }
 
-  @Test
+  //@Test
   @Timeout(value = 10)
   void bulkSend() throws InterruptedException, ExecutionException {
     int dataLength = 4096;
@@ -203,7 +203,7 @@ class LocalChannelTest {
     readFuture.get();
   }
 
-  @Test
+  //@Test
   void testReadWriteAll() throws ExecutionException, InterruptedException {
     int dataLength = 4096;
     int capacity = 128;

@@ -18,11 +18,11 @@ import org.junit.jupiter.api.Test;
 
 class RuntimeTest {
 
-  @Test
-  void testRuntime() {
-    Runtime runtime = RuntimeProxy.runtime();
-    Handle handle = runtime.handle();
-    runtime.shutdown();
-  }
+//  @Test
+//  void testRuntime() {
+//    Runtime runtime = RuntimeProxy.runtime();
+//    Handle handle = runtime.handle();
+//    runtime.shutdown();
+//  }
 
 }
