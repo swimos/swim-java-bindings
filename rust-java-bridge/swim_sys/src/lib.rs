@@ -39,8 +39,10 @@ pub unsafe extern "system" fn Java_ai_swim_bridge_runtime_Runtime_shutdownRuntim
 ) {
     npch!(env, runtime);
 
+    println!("Shutting down runtime");
     let runtime = Box::from_raw(runtime);
     runtime.shutdown_timeout(Duration::from_secs(10));
+    println!("Shut down runtime");
 }
 
 #[no_mangle]

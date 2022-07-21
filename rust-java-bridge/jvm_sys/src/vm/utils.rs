@@ -21,6 +21,7 @@ pub fn get_env(vm: &JavaVM) -> JniResult<JNIEnv> {
     match vm.get_env() {
         Ok(env) => Ok(env),
         Err(jni::errors::Error::JniCall(JniError::ThreadDetached)) => {
+            println!("Daemon");
             vm.attach_current_thread_as_daemon()
         }
         Err(e) => Err(e),

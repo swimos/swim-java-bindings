@@ -108,6 +108,7 @@ impl ByteReader {
 
 impl Drop for ByteReader {
     fn drop(&mut self) {
+        println!("Threads attached: {}", self.vm.threads_attached());
         drop_end(&self.is_closed, &self.vm, &self.lock);
     }
 }

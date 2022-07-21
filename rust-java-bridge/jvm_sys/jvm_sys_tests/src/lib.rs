@@ -18,7 +18,8 @@ use std::io::ErrorKind;
 use std::io::ErrorKind::BrokenPipe;
 
 use bytes::BytesMut;
-use jni::objects::{JByteBuffer, JClass};
+use jni::errors::Error;
+use jni::objects::{JByteBuffer, JClass, JValue};
 use jni::sys::{jbyteArray, jint, jobject};
 use jni::JNIEnv;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -57,14 +58,22 @@ where
         let env = get_env(&vm).unwrap();
         let _guard = env.lock_obj(&global_ref).expect("Failed to enter monitor");
         println!("Rust: notifying");
-        jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, &global_ref, &[]));
+
+        let countdown = JavaMethod::new("countDown", "()V");
+
+        match countdown.invoke(&env, &global_ref, &[]) {
+            Ok(_) => {}
+            Err(_) => {
+                env.exception_describe().unwrap();
+            }
+        }
         println!("Rust: notified");
         if r.is_err() {
             env.fatal_error("Test panicked");
         }
     });
 
-    Box::leak(Box::new(runtime))
+    Box::into_raw(Box::new(runtime))
 }
 
 #[no_mangle]
@@ -199,5 +208,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropRuntime(
     _class: JClass,
     runtime: *mut Runtime,
 ) {
-    drop(Box::new(runtime));
+    println!("Dropping runtime");
+    unsafe { drop(Box::from_raw(runtime)) };
+    println!("Dropped runtime");
 }
