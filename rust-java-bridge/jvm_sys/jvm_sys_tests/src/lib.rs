@@ -18,6 +18,7 @@ use std::io::ErrorKind;
 use std::io::ErrorKind::BrokenPipe;
 
 use bytes::BytesMut;
+use jni::errors::Error;
 use jni::objects::{JByteBuffer, JClass};
 use jni::sys::{jbyteArray, jint, jobject};
 use jni::JNIEnv;
@@ -53,16 +54,24 @@ where
     runtime.spawn(async move {
         let r = join_handle.await;
         let env = get_env(&vm).unwrap();
+
         let _guard = env.lock_obj(&global_ref).expect("Failed to enter monitor");
+        let countdown = JavaMethod::new("countDown", "()V");
 
-        jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, &global_ref, &[]));
-
+        match countdown.invoke(&env, &global_ref, &[]) {
+            Ok(_) => {}
+            Err(Error::JavaException) => {
+                let throwable = env.exception_occurred().unwrap();
+                jvm_tryf!(env, env.throw(throwable));
+            }
+            Err(e) => env.fatal_error(&e.to_string()),
+        }
         if r.is_err() {
             env.fatal_error("Test panicked");
         }
     });
 
-    Box::leak(Box::new(runtime))
+    Box::into_raw(Box::new(runtime))
 }
 
 #[no_mangle]
@@ -77,7 +86,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_readerTask(
     npch!(env, bb, monitor, buf);
 
     let expected = env.convert_byte_array(buf).unwrap();
-    let mut reader = ByteReader::new(env.clone(), bb, monitor);
+    let mut reader = ByteReader::new(env, bb, monitor);
 
     run_test(env, barrier, async move {
         let mut buf = BytesMut::new();
@@ -94,7 +103,6 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_readerTask(
                     if expected.len() == slice.len() {
                         assert_eq!(&slice[..expected.len()], expected.as_slice());
                         assert!(!slice[expected.len()..].iter().any(|e| *e == 0));
-
                         break;
                     } else {
                         panic!(
@@ -122,7 +130,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_writerTask(
     npch!(env, bb, monitor, buf);
 
     let mut to_write = env.convert_byte_array(buf).unwrap();
-    let mut writer = ByteWriter::new(env.clone(), bb, monitor);
+    let mut writer = ByteWriter::new(env, bb, monitor);
 
     run_test(env, barrier, async move {
         for chunk in to_write.chunks_mut(chunk_size as usize) {
@@ -143,7 +151,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_writerClosedTa
 ) -> *mut Runtime {
     npch!(env, bb, monitor);
 
-    let mut writer = ByteWriter::new(env.clone(), bb, monitor);
+    let mut writer = ByteWriter::new(env, bb, monitor);
 
     run_test(env, barrier, async move {
         match writer.write_all(&[1, 2, 3, 4, 5]).await {
@@ -166,7 +174,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropWriterTask
 ) -> *mut Runtime {
     npch!(env, bb, monitor);
 
-    let writer = ByteWriter::new(env.clone(), bb, monitor);
+    let writer = ByteWriter::new(env, bb, monitor);
     run_test(env, barrier, async move {
         drop(writer);
     })
@@ -182,15 +190,16 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropReaderTask
 ) -> *mut Runtime {
     npch!(env, bb, monitor);
 
-    let reader = ByteReader::new(env.clone(), bb, monitor);
+    let reader = ByteReader::new(env, bb, monitor);
     run_test(env, barrier, async move { drop(reader) })
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropRuntime(
+#[allow(clippy::not_unsafe_ptr_arg_deref, clippy::missing_safety_doc)]
+pub unsafe extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropRuntime(
     _env: JNIEnv,
     _class: JClass,
     runtime: *mut Runtime,
 ) {
-    drop(Box::new(runtime));
+    drop(Box::from_raw(runtime));
 }

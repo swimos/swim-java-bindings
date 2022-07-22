@@ -66,14 +66,12 @@ impl ByteWriter {
             .new_global_ref(lock)
             .expect("Failed to get a global reference to byte channel lock");
 
-        let reader = ByteWriter {
+        ByteWriter {
             is_closed: unsafe { NonNull::new_unchecked(bytes.get_mut_u8(offset::CLOSED) as _) },
             lock: global_ref,
             bytes,
             vm: jvm_tryf!(env, env.get_java_vm()),
-        };
-
-        reader
+        }
     }
 
     /// Returns whether this writer is closed
@@ -92,7 +90,7 @@ impl ByteWriter {
         } = self;
 
         let lock_obj = lock.as_obj();
-        let env = get_env(&vm).expect("Failed to get JVM environment");
+        let env = get_env(vm).expect("Failed to get JVM environment");
         let _guard = env.lock_obj(lock_obj).expect("Failed to enter monitor");
 
         match write(capacity, unsafe { is_closed.as_ref() }, bytes, buf) {
@@ -143,15 +141,11 @@ fn write(
     let to_write = from.len().min(remaining - 1);
     let capped = to_write.min(capacity - write_offset);
 
-    unsafe {
-        bytes.copy_from_slice(offset::DATA_START + write_offset, &from[..capped]);
-    }
+    bytes.copy_from_slice(offset::DATA_START + write_offset, &from[..capped]);
 
     let mut new_write_offset = if capped != to_write {
         let lim = to_write - capped;
-        unsafe {
-            bytes.copy_from_slice(offset::DATA_START, &from[capped..(capped + lim)]);
-        }
+        bytes.copy_from_slice(offset::DATA_START, &from[capped..(capped + lim)]);
 
         lim
     } else {
@@ -181,7 +175,7 @@ impl AsyncWrite for ByteWriter {
             vm,
         } = self.as_mut().get_mut();
 
-        channel_io(lock.as_obj(), &vm, || {
+        channel_io(lock.as_obj(), vm, || {
             write(capacity, unsafe { is_closed.as_ref() }, bytes, buf)
         })
     }

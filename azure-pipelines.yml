@@ -1,0 +1,77 @@
+trigger: ["main"]
+pr: ["main"]
+
+variables:
+  RUSTFLAGS: -Dwarnings
+  RUST_VERSION_STABLE: 1.56.1
+  RUST_VERSION_NIGHTLY: nightly-2022-07-14
+
+stages:
+  - stage: rust
+    displayName: 'Rust'
+    jobs:
+      - job: install_rust
+        displayName: 'Install'
+        steps:
+          - template: .azure/install-rust.yml
+            parameters:
+              version: $(RUST_VERSION_STABLE)
+
+      - job: 'rust_lint'
+        dependsOn: install_rust
+        displayName: 'Lint'
+        pool:
+          vmImage: ubuntu-18.04
+        steps:
+          - template: .azure/lint-rust.yml
+
+      - job: 'rust_test'
+        displayName: 'Test'
+        dependsOn: install_rust
+        strategy:
+          matrix:
+            Linux:
+              vmImage: ubuntu-18.04
+    
+            ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+              MacOS:
+                vmImage: macOS-10.15
+              Windows:
+                vmImage: windows-2019
+        pool:
+          vmImage: $(vmImage)    
+        steps:
+          - template: .azure/test-rust.yml
+
+      - job: 'rust_miri'
+        displayName: 'Miri'
+        dependsOn: install_rust
+        pool:
+          vmImage: ubuntu-18.04
+        steps:
+          - template: .azure/miri-rust.yml
+            parameters:
+              version: $(RUST_VERSION_NIGHTLY)
+
+  - stage: java
+    displayName: 'Java'
+    jobs:
+      - job: 'java_test'
+        displayName: 'Test'
+        strategy:
+          matrix:
+            Linux:
+              vmImage: ubuntu-18.04
+    
+            ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+              MacOS:
+                vmImage: macOS-10.15
+              Windows:
+                vmImage: windows-2019
+        steps:
+          - template: .azure/test-java.yml
+      
+      - job: 'java_lint'
+        displayName: 'Lint'
+        steps:
+          - template: .azure/lint-java.yml

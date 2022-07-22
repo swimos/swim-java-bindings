@@ -36,11 +36,14 @@ test {
     def library_path = '-Djava.library.path='.concat(debug_dir)
     jvmArgs library_path
     useJUnitPlatform()
+
+    testLogging.showStandardStreams = true
+
 }
 
 def compileRust(release) {
     exec {
-        println "Compiling rust libraries ".concat(release ? "release" : "debug")
+        println "Compiling rust libraries (".concat(release ? "release)" : "debug)")
 
         workingDir(bridge_dir)
         environment('RUSTFLAGS', '-Awarnings')

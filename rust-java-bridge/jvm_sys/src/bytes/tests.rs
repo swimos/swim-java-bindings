@@ -38,8 +38,8 @@ fn inc_u8(i: u8) -> [u8; 4] {
 
 #[test]
 fn gets() {
-    let mut buf: &mut [u8] = &mut build_buf();
-    let bytes = unsafe { Bytes::from_parts(&mut buf, 16) };
+    let buf: &mut [u8] = &mut build_buf();
+    let bytes = unsafe { Bytes::from_parts(buf, 16) };
 
     for i in 1..=4 {
         let val = bytes.get_u32((i - 1) * I32_LEN);
@@ -63,15 +63,13 @@ fn sets() {
     let d: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
     let arrays = vec![a, b, c, d];
 
-    let mut buf: &mut [u8] = &mut [0; 16];
-    let mut bytes = unsafe { Bytes::from_parts(&mut buf, 16) };
+    let buf: &mut [u8] = &mut [0; 16];
+    let mut bytes = unsafe { Bytes::from_parts(buf, 16) };
 
     for (i, array) in arrays.into_iter().enumerate() {
         let mut subset = [0; 4];
-        for j in 0..4 {
-            let idx = i * I32_LEN;
-            subset[j] = *&array[idx + j];
-        }
+        let idx = i * I32_LEN;
+        subset.copy_from_slice(&array[idx..(4 + idx)]);
 
         let val = i32::from_ne_bytes(subset);
         bytes.set_i32(i * I32_LEN, val);
@@ -87,16 +85,16 @@ macro_rules! oob_test {
         #[test]
         #[should_panic]
         fn $test_get() {
-            let mut buf: &mut [u8] = &mut [0; 16];
-            let bytes = unsafe { Bytes::from_parts(&mut buf, 16) };
+            let buf: &mut [u8] = &mut [0; 16];
+            let bytes = unsafe { Bytes::from_parts(buf, 16) };
             bytes.$get_func(64);
         }
 
         #[test]
         #[should_panic]
         fn $test_set() {
-            let mut buf: &mut [u8] = &mut [0; 16];
-            let mut bytes = unsafe { Bytes::from_parts(&mut buf, 16) };
+            let buf: &mut [u8] = &mut [0; 16];
+            let mut bytes = unsafe { Bytes::from_parts(buf, 16) };
             bytes.$set_func(64, 0);
         }
     };
@@ -112,29 +110,27 @@ oob_test!(oob_get_isize, oob_set_isize, get_isize, set_isize);
 #[test]
 #[should_panic]
 fn oob_slice() {
-    let mut buf: &mut [u8] = &mut [0; 16];
-    let bytes = unsafe { Bytes::from_parts(&mut buf, 16) };
+    let buf: &mut [u8] = &mut [0; 16];
+    let bytes = unsafe { Bytes::from_parts(buf, 16) };
     unsafe {
-        bytes.slice(64, 1);
+        bytes.slice_mut(64, 1);
     }
 }
 
 #[test]
 #[should_panic]
 fn oob_array() {
-    let mut buf: &mut [u8] = &mut [0; 16];
-    let bytes = unsafe { Bytes::from_parts(&mut buf, 16) };
+    let buf: &mut [u8] = &mut [0; 16];
+    let bytes = unsafe { Bytes::from_parts(buf, 16) };
     bytes.array::<4>(64);
 }
 
 #[test]
 #[should_panic]
 fn oob_copy_from_slice() {
-    let mut buf: &mut [u8] = &mut [0; 16];
-    let mut bytes = unsafe { Bytes::from_parts(&mut buf, 16) };
-    unsafe {
-        bytes.copy_from_slice(64, &mut []);
-    }
+    let buf: &mut [u8] = &mut [0; 16];
+    let mut bytes = unsafe { Bytes::from_parts(buf, 16) };
+    bytes.copy_from_slice(64, &[]);
 }
 
 #[test]
@@ -143,9 +139,7 @@ fn set_slice() {
     let mut bytes = unsafe { Bytes::from_parts(buf, 8) };
 
     let input: &mut [u8] = &mut [1, 2, 3, 4, 5];
-    unsafe {
-        bytes.copy_from_slice(2, input);
-    }
+    bytes.copy_from_slice(2, input);
 
     let expected = [0, 0, 1, 2, 3, 4, 5, 0];
     assert_eq!(expected, buf);

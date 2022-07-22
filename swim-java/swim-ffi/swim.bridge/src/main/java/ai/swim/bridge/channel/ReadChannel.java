@@ -16,7 +16,6 @@ package ai.swim.bridge.channel;
 
 import ai.swim.bridge.buffer.Buffer;
 import ai.swim.bridge.channel.exceptions.ChannelClosedException;
-
 import static java.lang.Math.min;
 
 public class ReadChannel extends ByteChannel {

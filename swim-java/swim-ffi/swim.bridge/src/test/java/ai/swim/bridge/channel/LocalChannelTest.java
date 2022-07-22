@@ -20,66 +20,24 @@ import ai.swim.bridge.channel.exceptions.ChannelClosedException;
 import ai.swim.bridge.channel.exceptions.InsufficientCapacityException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LocalChannelTest {
 
-  private static class TestReadChannel extends ReadChannel {
-    TestReadChannel(long ptr, Buffer buffer, Object lock) {
-      super(ptr, buffer, lock);
-    }
-
-//    @Override
-//    protected void wake() {
-//      // no-op to prevent segfault
-//    }
-//
-//    @Override
-//    protected void free() {
-//      // no-op to prevent segfault
-//    }
-  }
-
-  private static class TestWriteChannel extends WriteChannel {
-    TestWriteChannel(long ptr, Buffer buffer, Object lock) {
-      super(ptr, buffer, lock);
-    }
-
-//    @Override
-//    protected void wake() {
-//      // no-op to prevent segfault
-//    }
-//
-//    @Override
-//    protected void free() {
-//      // no-op to prevent segfault
-//    }
-  }
-
-  private static class TestChannel {
-    ReadChannel readChannel;
-    WriteChannel writeChannel;
-
-    private TestChannel(ReadChannel readChannel, WriteChannel writeChannel) {
-      this.readChannel = readChannel;
-      this.writeChannel = writeChannel;
-    }
-
-    public static TestChannel newChannel(int capacity) {
-      Buffer buffer = new HeapByteBuffer(capacity + ByteChannel.HEADER_SIZE);
-      Object lock = new Object();
-      ReadChannel readChannel = new TestReadChannel(0, buffer, lock);
-      WriteChannel writeChannel = new TestWriteChannel(0, buffer, lock);
-
-      return new TestChannel(readChannel, writeChannel);
+  private static void sleep() {
+    try {
+      Thread.sleep(50);
+    } catch (InterruptedException ex) {
+      throw new RuntimeException(ex);
     }
   }
 
@@ -92,7 +50,7 @@ class LocalChannelTest {
     ReadChannel readChannel = testChannel.readChannel;
     WriteChannel writeChannel = testChannel.writeChannel;
 
-    byte[] input = new byte[]{1, 2, 3, 4, 5};
+    byte[] input = new byte[] {1, 2, 3, 4, 5};
     int wrote = writeChannel.write(input);
     assertEquals(input.length, wrote);
 
@@ -148,7 +106,7 @@ class LocalChannelTest {
     ReadChannel readChannel = testChannel.readChannel;
     WriteChannel writeChannel = testChannel.writeChannel;
 
-    byte[] in = new byte[]{1, 2, 3, 4, 5};
+    byte[] in = new byte[] {1, 2, 3, 4, 5};
     int wrote = writeChannel.write(in);
     assertEquals(wrote, in.length);
 
@@ -245,14 +203,6 @@ class LocalChannelTest {
     readFuture.get();
   }
 
-  private static void sleep() {
-    try {
-      Thread.sleep(50);
-    } catch (InterruptedException ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
   @Test
   void testReadWriteAll() throws ExecutionException, InterruptedException {
     int dataLength = 4096;
@@ -295,5 +245,56 @@ class LocalChannelTest {
 
     writeFuture.get();
     readFuture.get();
+  }
+
+  private static class TestReadChannel extends ReadChannel {
+    TestReadChannel(long ptr, Buffer buffer, Object lock) {
+      super(ptr, buffer, lock);
+    }
+
+//    @Override
+//    protected void wake() {
+//      // no-op to prevent segfault
+//    }
+//
+//    @Override
+//    protected void free() {
+//      // no-op to prevent segfault
+//    }
+  }
+
+  private static class TestWriteChannel extends WriteChannel {
+    TestWriteChannel(long ptr, Buffer buffer, Object lock) {
+      super(ptr, buffer, lock);
+    }
+
+//    @Override
+//    protected void wake() {
+//      // no-op to prevent segfault
+//    }
+//
+//    @Override
+//    protected void free() {
+//      // no-op to prevent segfault
+//    }
+  }
+
+  private static class TestChannel {
+    ReadChannel readChannel;
+    WriteChannel writeChannel;
+
+    private TestChannel(ReadChannel readChannel, WriteChannel writeChannel) {
+      this.readChannel = readChannel;
+      this.writeChannel = writeChannel;
+    }
+
+    public static TestChannel newChannel(int capacity) {
+      Buffer buffer = new HeapByteBuffer(capacity + ByteChannel.HEADER_SIZE);
+      Object lock = new Object();
+      ReadChannel readChannel = new TestReadChannel(0, buffer, lock);
+      WriteChannel writeChannel = new TestWriteChannel(0, buffer, lock);
+
+      return new TestChannel(readChannel, writeChannel);
+    }
   }
 }
