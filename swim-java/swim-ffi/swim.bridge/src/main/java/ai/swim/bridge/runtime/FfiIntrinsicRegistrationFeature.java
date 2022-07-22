@@ -17,6 +17,7 @@ package ai.swim.bridge.runtime;
 import com.oracle.svm.core.annotate.AutomaticFeature;
 import com.oracle.svm.core.jni.JNIRuntimeAccess;
 import org.graalvm.nativeimage.hosted.Feature;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Registers all classes and methods that are required via JNI.
@@ -27,10 +28,13 @@ public class FfiIntrinsicRegistrationFeature implements Feature {
   @Override
   public void beforeAnalysis(BeforeAnalysisAccess access) {
     JNIRuntimeAccess.register(Object.class);
+    JNIRuntimeAccess.register(CountDownLatch.class);
 
     try {
       JNIRuntimeAccess.register(Object.class.getDeclaredMethod("notify"));
       JNIRuntimeAccess.register(Object.class.getDeclaredMethod("wait"));
+
+      JNIRuntimeAccess.register(CountDownLatch.class.getDeclaredMethod("countDown"));
     } catch (NoSuchMethodException e) {
       throw new RuntimeException(e);
     }
