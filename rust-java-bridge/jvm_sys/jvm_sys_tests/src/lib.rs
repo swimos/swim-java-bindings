@@ -57,7 +57,7 @@ where
 
         let _guard = env.lock_obj(&global_ref).expect("Failed to enter monitor");
         let countdown = JavaMethod::new("countDown", "()V");
-
+        //
         match countdown.invoke(&env, &global_ref, &[]) {
             Ok(_) => {}
             Err(Error::JavaException) => {
