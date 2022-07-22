@@ -1,8 +1,7 @@
-[package]
-name = "rust-java-bridge"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
+[workspace]
+members = [
+    "jvm_sys",
+    "jvm_sys/jvm_sys_tests",
+    "swim_sys",
+    "sys_util"
+]
