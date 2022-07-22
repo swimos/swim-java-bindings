@@ -195,10 +195,11 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropReaderTask
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropRuntime(
+#[allow(clippy::not_unsafe_ptr_arg_deref, clippy::missing_safety_doc)]
+pub unsafe extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_dropRuntime(
     _env: JNIEnv,
     _class: JClass,
     runtime: *mut Runtime,
 ) {
-    unsafe { drop(Box::from_raw(runtime)) };
+    drop(Box::from_raw(runtime));
 }
