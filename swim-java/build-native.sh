@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2015-2021 Swim Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,8 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-distributionUrl=https\://services.gradle.org/distributions/gradle-7.5.1-bin.zip
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
+
+./gradlew jar
+"$GRAALVM_HOME"/bin/native-image -jar build/libs/swim-java-rust-1.0-SNAPSHOT.jar
+./swim-java-rust-1.0-SNAPSHOT -Djava.library.path=../rustffi/target/release/

@@ -1,2 +1,5 @@
 rootProject.name = 'swim-java'
 
+include 'swim.codec'
+project(':swim.codec').projectDir = file('swim-core/swim.codec')
+project(':swim.codec').name = 'swim-codec'
