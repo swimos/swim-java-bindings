@@ -25,7 +25,7 @@ import ai.swim.recon.models.identifier.BooleanIdentifier;
 import ai.swim.recon.models.identifier.Identifier;
 import ai.swim.recon.models.identifier.StringIdentifier;
 import ai.swim.recon.models.items.ItemsKind;
-import ai.swim.recon.models.state.ChangeState;
+import ai.swim.recon.models.state.ModifyState;
 import ai.swim.recon.models.state.PushAttrNewRec;
 import ai.swim.recon.models.state.StateChange;
 
@@ -61,7 +61,7 @@ public abstract class ReconParserParts {
         numericLiteral().map(n -> ReadEvent.number(n).transition()),
         blob().map(b -> ReadEvent.blob(b).transition()),
         secondaryAttr(),
-        eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(), new ChangeState(ParseState.RecordBodyStartOrNl)))
+        eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(), new ModifyState(ParseState.RecordBodyStartOrNl)))
     );
   }
 
@@ -92,7 +92,7 @@ public abstract class ReconParserParts {
       public Parser<ParserTransition> feed(Input input) {
         if (input.isDone()) {
           return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
-              ReadEvent.endAttribute(), new ChangeState(ParseState.AfterAttr)));
+              ReadEvent.endAttribute(), new ModifyState(ParseState.AfterAttr)));
         } else if (input.isContinuation()) {
           Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
           if (parseResult.isDone()) {
@@ -101,7 +101,7 @@ public abstract class ReconParserParts {
                   StateChange.pushAttr()));
             } else {
               return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
-                  ReadEvent.endAttribute(), new ChangeState(ParseState.AfterAttr)));
+                  ReadEvent.endAttribute(), new ModifyState(ParseState.AfterAttr)));
             }
           } else if (parseResult.isError()) {
             return ParserError.error(input, ((ParserError<?>) parseResult).cause());
@@ -158,7 +158,7 @@ public abstract class ReconParserParts {
             blob().map(ReadEvent::blob)
         ).map(event -> new ParserTransition(List.of(ReadEvent.startBody(), event, ReadEvent.endRecord()), StateChange.popAfterItem())),
         eqChar('{').map(c ->
-            new ParserTransition(ReadEvent.startBody(), new ChangeState(ParseState.RecordBodyStartOrNl))
+            new ParserTransition(ReadEvent.startBody(), new ModifyState(ParseState.RecordBodyStartOrNl))
         ),
         peek(alt(
             oneOf(',', ';', ')', '}').map(Object::toString),
@@ -168,7 +168,7 @@ public abstract class ReconParserParts {
   }
 
   private static ParserTransition valueItem(ItemsKind itemsKind, ReadEvent readEvent) {
-    return new ParserTransition(readEvent, new ChangeState(itemsKind.afterValue()));
+    return new ParserTransition(readEvent, new ModifyState(itemsKind.afterValue()));
   }
 
   public static Parser<Character> separator() {
@@ -181,8 +181,8 @@ public abstract class ReconParserParts {
         identifier().map(i -> valueItem(itemsKind, mapIdentifier(i))),
         numericLiteral().map(n -> valueItem(itemsKind, ReadEvent.number(n))),
         blob().map(b -> valueItem(itemsKind, ReadEvent.blob(b))),
-        separator().map(c -> new ParserTransition(ReadEvent.extant(), new ChangeState(itemsKind.afterSep()))),
-        eqChar(':').map(c -> new ParserTransition(ReadEvent.extant(), ReadEvent.slot(), new ChangeState(itemsKind.startSlot()))),
+        separator().map(c -> new ParserTransition(ReadEvent.extant(), new ModifyState(itemsKind.afterSep()))),
+        eqChar(':').map(c -> new ParserTransition(ReadEvent.extant(), ReadEvent.slot(), new ModifyState(itemsKind.startSlot()))),
         eqChar(itemsKind.endDelim()).map(c -> {
           ReadEvent event = itemsKind.endEvent();
           List<ReadEvent> events;
@@ -216,7 +216,7 @@ public abstract class ReconParserParts {
   }
 
   private static ParserTransition slotItem(ItemsKind itemsKind, ReadEvent readEvent) {
-    return new ParserTransition(readEvent, new ChangeState(itemsKind.afterSlot()));
+    return new ParserTransition(readEvent, new ModifyState(itemsKind.afterSlot()));
   }
 
   public static Parser<ParserTransition> parseSlotValue(ItemsKind itemsKind) {
@@ -225,8 +225,8 @@ public abstract class ReconParserParts {
         identifier().map(i -> slotItem(itemsKind, mapIdentifier(i))),
         numericLiteral().map(n -> slotItem(itemsKind, ReadEvent.number(n))),
         blob().map(b -> slotItem(itemsKind, ReadEvent.blob(b))),
-        lineEnding().map(c -> new ParserTransition(ReadEvent.extant(), new ChangeState(itemsKind.startOrNl()))),
-        separator().map(s -> new ParserTransition(ReadEvent.extant(), new ChangeState(itemsKind.afterSep()))),
+        lineEnding().map(c -> new ParserTransition(ReadEvent.extant(), new ModifyState(itemsKind.startOrNl()))),
+        separator().map(s -> new ParserTransition(ReadEvent.extant(), new ModifyState(itemsKind.afterSep()))),
         eqChar(itemsKind.endDelim()).map(c -> new ParserTransition(ReadEvent.extant(), itemsKind.endEvent(), itemsKind.endStateChange())),
         primaryAttr(),
         eqChar('{').map(c -> new ParserTransition(ReadEvent.startBody(), StateChange.pushBody()))
