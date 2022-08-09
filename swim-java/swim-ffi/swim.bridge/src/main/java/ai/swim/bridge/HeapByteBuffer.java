@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.bridge.buffer;
+package ai.swim.bridge;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class HeapByteBuffer implements Buffer {
+public class HeapByteBuffer {
   // todo: It's a bit overkill using a VarHandle here but it's the simplest way to perform atomic operations on a byte
-  //  buffer outside of using Unsafe directly and lowers the amount of overhead in writing a JNI buffer.
+  //  buffer outside using Unsafe directly and lowers the amount of overhead in writing a JNI buffer.
   private static final VarHandle BUFFER_VH = MethodHandles.byteBufferViewVarHandle(int[].class, ByteOrder.nativeOrder());
   private final ByteBuffer buffer;
 
@@ -38,37 +38,26 @@ public class HeapByteBuffer implements Buffer {
     return this.buffer;
   }
 
-  @Override
-  public int getIntVolatile(int idx) {
-    return ((int) BUFFER_VH.getVolatile(buffer, idx));
+  public void setIntRelease(int idx, int to) {
+    BUFFER_VH.setRelease(buffer, idx, to);
   }
 
-  @Override
-  public int getInt(int idx) {
-    return (int) BUFFER_VH.get(buffer, idx);
+  public int getIntAcquire(int idx) {
+    return (int) BUFFER_VH.getAcquire(buffer, idx);
   }
 
-  @Override
-  public void setIntVolatile(int idx, int to) {
-    BUFFER_VH.setVolatile(buffer, idx, to);
+  public int getIntOpaque(int idx) {
+    return (int) BUFFER_VH.getOpaque(buffer, idx);
   }
 
-  @Override
-  public void setInt(int idx, int to) {
-    BUFFER_VH.set(buffer, idx, to);
-  }
-
-  @Override
   public byte getByte(int idx) {
     return buffer.get(idx);
   }
 
-  @Override
   public void setByte(int idx, byte to) {
     buffer.put(idx, to);
   }
 
-  @Override
   public int capacity() {
     return buffer.capacity();
   }

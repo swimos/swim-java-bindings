@@ -49,7 +49,7 @@ pub fn abort_npe(env: &JNIEnv) -> ! {
 }
 
 /// Executes an expression that returns Result<O,E> and if in the error variant then the JVM is
-/// aborted with either the string representation of the error variant or a user-provided messsage.
+/// aborted with either the string representation of the error variant or a user-provided message.
 #[macro_export]
 macro_rules! jvm_tryf {
     ($env:ident, $body:expr) => {{

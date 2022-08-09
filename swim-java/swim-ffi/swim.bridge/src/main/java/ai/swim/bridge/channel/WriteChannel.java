@@ -14,28 +14,39 @@
 
 package ai.swim.bridge.channel;
 
-import ai.swim.bridge.buffer.Buffer;
+import ai.swim.bridge.HeapByteBuffer;
 import ai.swim.bridge.channel.exceptions.ChannelClosedException;
 import ai.swim.bridge.channel.exceptions.InsufficientCapacityException;
+
 import java.util.Arrays;
+
 import static java.lang.Math.min;
 
 public class WriteChannel extends ByteChannel {
 
-  WriteChannel(long ptr, Buffer buffer, Object lock) {
+  WriteChannel(long ptr, HeapByteBuffer buffer, Object lock) {
     super(ptr, buffer, lock);
   }
 
   public void writeAll(byte[] bytes) throws InterruptedException {
     while (true) {
-      synchronized (lock) {
-        try {
-          int wrote = write(bytes);
-          if (wrote == 0) {
-            break;
+      try {
+        int count = write(bytes);
+        if (count == 0 || count == bytes.length) {
+          break;
+        }
+
+        bytes = Arrays.copyOfRange(bytes, count, bytes.length);
+      } catch (InsufficientCapacityException e) {
+        synchronized (lock) {
+          int writeIdx = buffer.getIntAcquire(WRITE);
+          int readIdx = buffer.getIntOpaque(READ);
+          int remaining = wrappingSub(readIdx, writeIdx + 1) % len() + 1;
+
+          if (remaining > 1) {
+            continue;
           }
-          bytes = Arrays.copyOfRange(bytes, wrote, bytes.length);
-        } catch (InsufficientCapacityException e) {
+
           lock.wait();
         }
       }
@@ -43,10 +54,6 @@ public class WriteChannel extends ByteChannel {
   }
 
   public int write(byte[] bytes) {
-    if (isClosed()) {
-      throw new ChannelClosedException("Channel closed");
-    }
-
     if (bytes == null) {
       throw new NullPointerException("Provided buffer is null");
     }
@@ -55,45 +62,50 @@ public class WriteChannel extends ByteChannel {
       return 0;
     }
 
-    synchronized (lock) {
-      int readIdx = readIdx();
-      int writeIdx = writeIdx();
-      int remaining = wrappingSub(readIdx, writeIdx + 1) % len() + 1;
+    if (isClosed()) {
+      throw new ChannelClosedException("Channel closed");
+    }
 
-      if (remaining <= 1) {
-        throw new InsufficientCapacityException("Channel full");
-      }
+    int writeIdx = buffer.getIntAcquire(WRITE);
+    int readIdx = buffer.getIntOpaque(READ);
+    int remaining = wrappingSub(readIdx, writeIdx + 1) % len() + 1;
 
-      int toWrite = min(bytes.length, remaining - 1);
-      int capped = min(toWrite, len() - writeIdx);
-      int cursor = 0;
+    if (remaining <= 1) {
+      throw new InsufficientCapacityException("Channel full");
+    }
 
-      for (int i = writeIdx; i < writeIdx + capped; i++) {
+    int toWrite = min(bytes.length, remaining - 1);
+    int capped = min(toWrite, len() - writeIdx);
+    int cursor = 0;
+
+    for (int i = writeIdx; i < writeIdx + capped; i++) {
+      buffer.setByte(idx(i), bytes[cursor++]);
+    }
+
+    int newWriteOffset;
+
+    if (capped != toWrite) {
+      int lim = toWrite - capped;
+
+      for (int i = 0; i < lim; i++) {
         buffer.setByte(idx(i), bytes[cursor++]);
       }
-
-      int newWriteOffset;
-
-      if (capped != toWrite) {
-        int lim = toWrite - capped;
-
-        for (int i = 0; i < lim; i++) {
-          buffer.setByte(idx(i), bytes[cursor++]);
-        }
-        newWriteOffset = lim;
-      } else {
-        newWriteOffset = writeIdx + toWrite;
-      }
-
-      if (newWriteOffset == len()) {
-        newWriteOffset = 0;
-      }
-
-      setWriteIdx(newWriteOffset);
-      lock.notify();
-
-      return toWrite;
+      newWriteOffset = lim;
+    } else {
+      newWriteOffset = writeIdx + toWrite;
     }
+
+    if (newWriteOffset == len()) {
+      newWriteOffset = 0;
+    }
+
+    buffer.setIntRelease(WRITE, newWriteOffset);
+
+    synchronized (lock) {
+      lock.notify();
+    }
+
+    return toWrite;
   }
 
 }

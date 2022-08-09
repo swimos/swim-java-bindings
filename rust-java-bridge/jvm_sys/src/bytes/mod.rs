@@ -119,6 +119,12 @@ impl Bytes {
     }
 
     #[inline]
+    pub unsafe fn get_mut_i32(&self, count: usize) -> *mut u8 {
+        check_bound(self.capacity, count, 1);
+        self.ptr.as_ptr().add(count)
+    }
+
+    #[inline]
     pub fn get_u8(&self, count: usize) -> u8 {
         check_bound(self.capacity, count, 1);
         unsafe { *self.get_mut_u8(count) }

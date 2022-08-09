@@ -14,29 +14,38 @@
 
 package ai.swim.bridge.channel;
 
-import ai.swim.bridge.buffer.Buffer;
+import ai.swim.bridge.HeapByteBuffer;
 import ai.swim.bridge.channel.exceptions.ChannelClosedException;
+
 import static java.lang.Math.min;
 
 public class ReadChannel extends ByteChannel {
 
-  ReadChannel(long ptr, Buffer buffer, Object lock) {
+  ReadChannel(long ptr, HeapByteBuffer buffer, Object lock) {
     super(ptr, buffer, lock);
   }
 
   public void readAll(byte[] into) throws InterruptedException {
     int cursor = 0;
     while (cursor != into.length) {
-      synchronized (lock) {
-        byte[] buf = new byte[Math.min(len(), into.length - cursor)];
-        int read = tryRead(buf);
+      byte[] buf = new byte[Math.min(len(), into.length - cursor)];
+      int read = tryRead(buf);
 
-        if (read == 0) {
+      if (read == 0) {
+        synchronized (lock) {
+          int readIdx = buffer.getIntAcquire(READ);
+          int writeIdx = buffer.getIntAcquire(WRITE);
+          int available = wrappingSub(writeIdx, readIdx) % len();
+
+          if (available != 0) {
+            continue;
+          }
+
           lock.wait();
-        } else {
-          System.arraycopy(buf, 0, into, cursor, buf.length);
-          cursor += read;
         }
+      } else {
+        System.arraycopy(buf, 0, into, cursor, buf.length);
+        cursor += read;
       }
     }
   }
@@ -50,48 +59,49 @@ public class ReadChannel extends ByteChannel {
       return 0;
     }
 
-    synchronized (lock) {
-      int readIdx = readIdx();
-      int writeIdx = writeIdx();
-      int available = wrappingSub(writeIdx, readIdx) % len();
+    int readIdx = buffer.getIntAcquire(READ);
+    int writeIdx = buffer.getIntOpaque(WRITE);
+    int available = wrappingSub(writeIdx, readIdx) % len();
 
-      if (available == 0) {
-        if (isClosed()) {
-          throw new ChannelClosedException("Channel closed");
-        } else {
-          return 0;
-        }
+    if (available == 0) {
+      if (isClosed()) {
+        throw new ChannelClosedException("Channel closed");
+      } else {
+        return 0;
       }
+    }
 
-      int toRead = min(available, into.length);
-      int capped = min(toRead, len() - readIdx);
-      int cursor = 0;
+    int toRead = min(available, into.length);
+    int capped = min(toRead, len() - readIdx);
+    int cursor = 0;
 
-      for (int i = readIdx; i < readIdx + capped; i++) {
+    for (int i = readIdx; i < readIdx + capped; i++) {
+      into[cursor++] = buffer.getByte(idx(i));
+    }
+
+    int newReadOffset;
+
+    if (capped != toRead) {
+      int lim = toRead - capped;
+      for (int i = 0; i < lim; i++) {
         into[cursor++] = buffer.getByte(idx(i));
       }
-
-      int newReadOffset;
-
-      if (capped != toRead) {
-        int lim = toRead - capped;
-        for (int i = 0; i < lim; i++) {
-          into[cursor++] = buffer.getByte(idx(i));
-        }
-        newReadOffset = lim;
-      } else {
-        newReadOffset = readIdx + toRead;
-      }
-
-      if (newReadOffset == len()) {
-        newReadOffset = 0;
-      }
-
-      setReadIdx(newReadOffset);
-      lock.notify();
-
-      return toRead;
+      newReadOffset = lim;
+    } else {
+      newReadOffset = readIdx + toRead;
     }
+
+    if (newReadOffset == len()) {
+      newReadOffset = 0;
+    }
+
+    buffer.setIntRelease(READ, newReadOffset);
+
+    synchronized (lock) {
+      lock.notify();
+    }
+
+    return toRead;
   }
 
 }

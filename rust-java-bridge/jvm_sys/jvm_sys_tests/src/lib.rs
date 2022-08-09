@@ -15,7 +15,6 @@
 ///! Unit tests invoked by swim-bridge unit tests.
 use std::future::Future;
 use std::io::ErrorKind;
-use std::io::ErrorKind::BrokenPipe;
 
 use bytes::BytesMut;
 use jni::errors::Error;
@@ -52,7 +51,9 @@ where
 
     let join_handle = runtime.spawn(fut);
     runtime.spawn(async move {
+        println!("Rust: Monitor started");
         let r = join_handle.await;
+        println!("Rust: Monitor task completed");
         let env = get_env(&vm).unwrap();
 
         let _guard = env.lock_obj(&global_ref).expect("Failed to enter monitor");
@@ -94,7 +95,9 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_readerTask(
 
         loop {
             match reader.read_buf(&mut buf).await {
-                Ok(_) => {}
+                Ok(_) => {
+                    println!("Rust: Read");
+                }
                 Err(e) if e.kind() == ErrorKind::BrokenPipe => {
                     let slice = buf.as_ref();
                     let expected_len = expected.len();
@@ -103,6 +106,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_readerTask(
                     if expected.len() == slice.len() {
                         assert_eq!(&slice[..expected.len()], expected.as_slice());
                         assert!(!slice[expected.len()..].iter().any(|e| *e == 0));
+                        println!("Rust: Test completed");
                         break;
                     } else {
                         panic!(
@@ -158,7 +162,7 @@ pub extern "system" fn Java_ai_swim_bridge_channel_FfiChannelTest_writerClosedTa
             Ok(_) => {
                 panic!("Unexpected write")
             }
-            Err(e) if e.kind() == BrokenPipe => {}
+            Err(e) if e.kind() == ErrorKind::BrokenPipe => {}
             Err(e) => panic!("Unexpected error: {:?}", e),
         }
     })

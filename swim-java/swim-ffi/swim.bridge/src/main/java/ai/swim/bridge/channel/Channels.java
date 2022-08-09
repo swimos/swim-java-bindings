@@ -14,9 +14,11 @@
 
 package ai.swim.bridge.channel;
 
-import ai.swim.bridge.buffer.HeapByteBuffer;
+import ai.swim.bridge.HeapByteBuffer;
 import ai.swim.bridge.runtime.RuntimeProxy;
+
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class Channels {
 

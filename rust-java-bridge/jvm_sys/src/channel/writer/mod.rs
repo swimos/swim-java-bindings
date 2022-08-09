@@ -12,104 +12,73 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::io::Error;
 use std::pin::Pin;
-use std::ptr::NonNull;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::task::{Context, Poll};
 
-use jni::objects::{GlobalRef, JByteBuffer};
+use jni::objects::JByteBuffer;
 use jni::sys::jobject;
 use jni::JNIEnv;
-use jni::JavaVM;
 use tokio::io::AsyncWrite;
 
 use sys_util::jvm_tryf;
 
 use crate::bytes::Bytes;
-use crate::channel::channel_io;
-use crate::channel::{drop_end, offset, WriteFailure};
+use crate::channel::{channel_io, Inner};
+use crate::channel::{offset, WriteFailure};
 use crate::vm::method::InvokeObjectMethod;
 use crate::vm::method::JavaMethod;
 use crate::vm::utils::get_env;
 
+#[derive(Debug)]
 pub struct ByteWriter {
-    is_closed: NonNull<AtomicBool>,
-    lock: GlobalRef,
-    bytes: Bytes,
-    vm: JavaVM,
+    inner: Inner,
 }
-
-impl Debug for ByteWriter {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        unsafe {
-            f.debug_struct("ByteWriter")
-                .field(
-                    "is_closed",
-                    &self.is_closed.as_ref().load(Ordering::Relaxed),
-                )
-                .field("bytes", &"...")
-                .field("vm", &"..")
-                .finish()
-        }
-    }
-}
-
-unsafe impl Send for ByteWriter {}
-unsafe impl Sync for ByteWriter {}
 
 impl ByteWriter {
     pub fn new(env: JNIEnv, buffer: JByteBuffer, lock: jobject) -> ByteWriter {
-        let bytes = Bytes::new(env, buffer);
-        let global_ref = env
-            .new_global_ref(lock)
-            .expect("Failed to get a global reference to byte channel lock");
-
         ByteWriter {
-            is_closed: unsafe { NonNull::new_unchecked(bytes.get_mut_u8(offset::CLOSED) as _) },
-            lock: global_ref,
-            bytes,
-            vm: jvm_tryf!(env, env.get_java_vm()),
+            inner: Inner::new(env, buffer, lock),
         }
     }
 
     /// Returns whether this writer is closed
     pub fn is_closed(&self) -> bool {
-        unsafe { self.is_closed.as_ref().load(Ordering::Relaxed) }
+        self.inner.is_closed()
     }
 
     #[inline]
     pub fn try_write(&mut self, buf: &[u8]) -> Result<usize, WriteFailure> {
-        let capacity = self.data_capacity();
-        let ByteWriter {
+        let capacity = self.inner.data_capacity();
+        let Inner {
             is_closed,
+            read_index,
+            write_index,
             lock,
             bytes,
             vm,
-        } = self;
+        } = &mut self.inner;
 
-        let lock_obj = lock.as_obj();
-        let env = get_env(vm).expect("Failed to get JVM environment");
-        let _guard = env.lock_obj(lock_obj).expect("Failed to enter monitor");
-
-        match write(capacity, unsafe { is_closed.as_ref() }, bytes, buf) {
+        match write(
+            capacity,
+            unsafe { is_closed.as_ref() },
+            unsafe { read_index.as_ref() },
+            unsafe { write_index.as_ref() },
+            bytes,
+            buf,
+        ) {
             Ok(n) => {
+                let lock_obj = lock.as_obj();
+                let env = get_env(vm).expect("Failed to get JVM environment");
+                let _guard = env.lock_obj(lock_obj).expect("Failed to enter monitor");
+
                 jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock_obj, &[]));
                 Ok(n)
             }
             Err(e) => Err(e),
         }
-    }
-
-    fn data_capacity(&self) -> usize {
-        self.bytes.capacity() - offset::DATA_START
-    }
-}
-
-impl Drop for ByteWriter {
-    fn drop(&mut self) {
-        drop_end(&self.is_closed, &self.vm, &self.lock);
     }
 }
 
@@ -117,6 +86,8 @@ impl Drop for ByteWriter {
 fn write(
     capacity: usize,
     is_closed: &AtomicBool,
+    read_index: &AtomicI32,
+    write_index: &AtomicI32,
     bytes: &mut Bytes,
     from: &[u8],
 ) -> Result<usize, WriteFailure> {
@@ -128,8 +99,8 @@ fn write(
         return Err(WriteFailure::Closed);
     }
 
-    let read_from = bytes.get_i32(offset::READ) as usize;
-    let write_offset = bytes.get_i32(offset::WRITE) as usize;
+    let read_from = read_index.load(Ordering::Acquire) as usize;
+    let write_offset = write_index.load(Ordering::Acquire) as usize;
 
     let mut remaining = read_from.wrapping_sub(write_offset + 1);
     remaining = remaining % capacity + 1;
@@ -155,7 +126,7 @@ fn write(
         new_write_offset = 0;
     }
 
-    bytes.set_i32(offset::WRITE, new_write_offset as i32);
+    write_index.store(new_write_offset as i32, Ordering::Release);
 
     Ok(to_write)
 }
@@ -166,17 +137,25 @@ impl AsyncWrite for ByteWriter {
         _cx: &mut Context<'_>,
         buf: &[u8],
     ) -> Poll<Result<usize, Error>> {
-        let capacity = self.data_capacity();
-
-        let ByteWriter {
+        let capacity = self.inner.data_capacity();
+        let Inner {
             is_closed,
+            read_index,
+            write_index,
             lock,
             bytes,
             vm,
-        } = self.as_mut().get_mut();
+        } = &mut self.as_mut().get_mut().inner;
 
         channel_io(lock.as_obj(), vm, || {
-            write(capacity, unsafe { is_closed.as_ref() }, bytes, buf)
+            write(
+                capacity,
+                unsafe { is_closed.as_ref() },
+                unsafe { read_index.as_ref() },
+                unsafe { write_index.as_ref() },
+                bytes,
+                buf,
+            )
         })
     }
 
@@ -185,10 +164,37 @@ impl AsyncWrite for ByteWriter {
     }
 
     fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Error>> {
-        let env = get_env(&self.vm).expect("Failed to get JVM environment");
-        let _guard = env.lock_obj(&self.lock).expect("Failed to enter monitor");
+        let env = get_env(&self.inner.vm).expect("Failed to get JVM environment");
+        let _guard = env
+            .lock_obj(&self.inner.lock)
+            .expect("Failed to enter monitor");
 
-        jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, &self.lock, &[]));
+        jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, &self.inner.lock, &[]));
         Poll::Ready(Ok(()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::mem::{size_of, transmute};
+    use std::ptr::NonNull;
+    use std::sync::atomic::{AtomicI32, Ordering};
+
+    use bytes::BytesMut;
+    use jni::descriptors::Desc;
+
+    #[test]
+    fn t() {
+        let mut s: &[u8; 5] = &mut [255, 255, 255, 127, 0];
+        let mut c = s as *const [u8; 5] as *mut AtomicI32;
+
+        unsafe {
+            println!("{:?}", s);
+
+            println!("{}", (*c).load(Ordering::Acquire));
+            (*c).store(i32::from_ne_bytes([1, 1, 1, 1]), Ordering::Relaxed);
+            println!("{}", (*c).load(Ordering::Acquire));
+            println!("{:?}", s);
+        }
     }
 }

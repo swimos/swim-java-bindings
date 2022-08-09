@@ -14,20 +14,23 @@
 
 package ai.swim.bridge.channel;
 
-import ai.swim.bridge.buffer.Buffer;
+import ai.swim.bridge.HeapByteBuffer;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class ByteChannel {
 
   public static final int HEADER_SIZE = 12;
   private static final int CLOSED = 0;
-  private static final int READ = Integer.SIZE / Byte.SIZE;
-  private static final int WRITE = 2 * (Integer.SIZE / Byte.SIZE);
-  private static final int DATA = 3 * (Integer.SIZE / Byte.SIZE);
-  protected final Buffer buffer;
+  protected static final int READ = Integer.SIZE / Byte.SIZE;
+  protected static final int WRITE = 2 * (Integer.SIZE / Byte.SIZE);
+  protected static final int DATA = 3 * (Integer.SIZE / Byte.SIZE);
+  protected final HeapByteBuffer buffer;
   protected final Object lock;
   private final long ptr;
 
-  protected ByteChannel(long ptr, Buffer buffer, Object lock) {
+
+  protected ByteChannel(long ptr, HeapByteBuffer buffer, Object lock) {
     this.ptr = ptr;
     this.buffer = buffer;
     this.lock = lock;
@@ -43,31 +46,23 @@ public abstract class ByteChannel {
   }
 
   public boolean isClosed() {
-    return buffer.getIntVolatile(CLOSED) == 1;
+    return buffer.getIntAcquire(CLOSED) == 1;
   }
 
   public void close() {
-    buffer.setIntVolatile(CLOSED, 1);
+    buffer.setIntRelease(CLOSED, 1);
 
     synchronized (lock) {
       lock.notify();
     }
   }
 
-  protected int readIdx() {
-    return buffer.getInt(READ);
-  }
-
   protected void setReadIdx(int to) {
-    buffer.setInt(READ, to);
-  }
-
-  protected int writeIdx() {
-    return buffer.getInt(WRITE);
+    buffer.setIntRelease(READ, to);
   }
 
   protected void setWriteIdx(int to) {
-    buffer.setInt(WRITE, to);
+    buffer.setIntRelease(WRITE, to);
   }
 
   protected int idx(int from) {

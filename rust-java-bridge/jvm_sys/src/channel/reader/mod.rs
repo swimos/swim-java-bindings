@@ -12,67 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::pin::Pin;
-use std::ptr::NonNull;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::task::{Context, Poll};
 
-use jni::objects::{GlobalRef, JByteBuffer};
+use jni::objects::JByteBuffer;
 use jni::sys::jobject;
-use jni::{JNIEnv, JavaVM};
+use jni::JNIEnv;
 use tokio::io::{AsyncRead, ReadBuf};
 
 use sys_util::jvm_tryf;
 
 use crate::bytes::Bytes;
-use crate::channel::{channel_io, drop_end, offset, ReadFailure, ReadTarget};
+use crate::channel::{channel_io, offset, Inner, ReadFailure, ReadTarget};
 use crate::vm::method::InvokeObjectMethod;
 use crate::vm::method::JavaMethod;
 use crate::vm::utils::get_env;
 
+#[derive(Debug)]
 pub struct ByteReader {
-    is_closed: NonNull<AtomicBool>,
-    lock: GlobalRef,
-    bytes: Bytes,
-    vm: JavaVM,
+    inner: Inner,
 }
-
-impl Debug for ByteReader {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ByteReader")
-            .field("is_closed", unsafe {
-                &self.is_closed.as_ref().load(Ordering::Relaxed)
-            })
-            .field("bytes", &"...")
-            .field("vm", &"..")
-            .finish()
-    }
-}
-
-unsafe impl Send for ByteReader {}
-
-unsafe impl Sync for ByteReader {}
 
 impl ByteReader {
     pub fn new(env: JNIEnv, buffer: JByteBuffer, lock: jobject) -> ByteReader {
-        let bytes = Bytes::new(env, buffer);
-        let global_ref = env
-            .new_global_ref(lock)
-            .expect("Failed to get a global reference to byte channel lock");
-
         ByteReader {
-            is_closed: unsafe { NonNull::new_unchecked(bytes.get_mut_u8(offset::CLOSED) as _) },
-            lock: global_ref,
-            bytes,
-            vm: jvm_tryf!(env, env.get_java_vm()),
+            inner: Inner::new(env, buffer, lock),
         }
     }
 
     /// Returns whether this reader is closed
     #[inline]
     pub fn is_closed(&self) -> bool {
-        unsafe { self.is_closed.as_ref().load(Ordering::Relaxed) }
+        self.inner.is_closed()
     }
 
     #[inline]
@@ -80,35 +53,32 @@ impl ByteReader {
     where
         R: ReadTarget,
     {
-        let capacity = self.data_capacity();
-        let ByteReader {
+        let capacity = self.inner.data_capacity();
+        let Inner {
             is_closed,
+            write_index,
+            read_index,
             lock,
             bytes,
             vm,
-        } = self;
+        } = &mut self.inner;
+
+        let read_result = read(
+            capacity,
+            unsafe { is_closed.as_ref() },
+            unsafe { write_index.as_ref() },
+            unsafe { read_index.as_ref() },
+            bytes,
+            read_target,
+        );
 
         let lock_obj = lock.as_obj();
         let env = get_env(vm).expect("Failed to get JVM environment");
         let _guard = env.lock_obj(lock_obj).expect("Failed to enter monitor");
 
-        match read(capacity, unsafe { is_closed.as_ref() }, bytes, read_target) {
-            Ok(()) => {
-                jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock_obj, &[]));
-                Ok(())
-            }
-            Err(e) => Err(e),
-        }
-    }
+        jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock_obj, &[]));
 
-    fn data_capacity(&self) -> usize {
-        self.bytes.capacity() - offset::DATA_START
-    }
-}
-
-impl Drop for ByteReader {
-    fn drop(&mut self) {
-        drop_end(&self.is_closed, &self.vm, &self.lock);
+        read_result
     }
 }
 
@@ -116,6 +86,8 @@ impl Drop for ByteReader {
 fn read<R>(
     capacity: usize,
     is_closed: &AtomicBool,
+    write_index: &AtomicI32,
+    read_index: &AtomicI32,
     bytes: &mut Bytes,
     read_target: &mut R,
 ) -> Result<(), ReadFailure>
@@ -126,12 +98,16 @@ where
         return Ok(());
     }
 
-    let read_from = bytes.get_i32(offset::READ) as usize;
-    let write_offset = bytes.get_i32(offset::WRITE) as usize;
+    let read_from = read_index.load(Ordering::Relaxed) as usize;
+    let write_offset = write_index.load(Ordering::Acquire) as usize;
     let available = write_offset.wrapping_sub(read_from) % capacity;
 
+    println!("Rust: read_from {}", read_from);
+    println!("Rust: write_offset {}", write_offset);
+    println!("Rust: available {}", available);
+
     if available == 0 {
-        return if is_closed.load(Ordering::Relaxed) {
+        return if is_closed.load(Ordering::Acquire) {
             Err(ReadFailure::Closed)
         } else {
             Err(ReadFailure::Empty)
@@ -162,7 +138,8 @@ where
         new_read_offset = 0;
     }
 
-    bytes.set_i32(offset::READ, new_read_offset as i32);
+    read_index.store(new_read_offset as i32, Ordering::Release);
+    println!("Rust: set read index to {}", new_read_offset as i32);
 
     Ok(())
 }
@@ -173,16 +150,25 @@ impl AsyncRead for ByteReader {
         _cx: &mut Context<'_>,
         buf: &mut ReadBuf<'_>,
     ) -> Poll<std::io::Result<()>> {
-        let capacity = self.data_capacity();
-        let ByteReader {
+        let capacity = self.inner.data_capacity();
+        let Inner {
             is_closed,
+            write_index,
+            read_index,
             lock,
             bytes,
             vm,
-        } = self.as_mut().get_mut();
+        } = &mut self.as_mut().get_mut().inner;
 
         channel_io(lock.as_obj(), vm, || {
-            read(capacity, unsafe { is_closed.as_ref() }, bytes, buf)
+            read(
+                capacity,
+                unsafe { is_closed.as_ref() },
+                unsafe { write_index.as_ref() },
+                unsafe { read_index.as_ref() },
+                bytes,
+                buf,
+            )
         })
     }
 }
