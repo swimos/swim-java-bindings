@@ -16,6 +16,7 @@ import javax.lang.model.util.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static ai.swim.structure.processor.writer.Lookups.TYPE_PARAMETER;
 
@@ -44,9 +45,9 @@ public class WriterUtils {
 
   public static List<TypeVariableName> typeParametersToTypeVariable(List<? extends TypeParameterElement> typeParameters) {
     return typeParameters.stream().map(tp -> {
-      TypeName[] bounds = tp.getBounds().stream().map(TypeName::get).toList().toArray(new TypeName[]{});
+      TypeName[] bounds = tp.getBounds().stream().map(TypeName::get).collect(Collectors.toList()).toArray(new TypeName[]{});
       return TypeVariableName.get(tp.asType().toString(), bounds);
-    }).toList();
+    }).collect(Collectors.toList());
   }
 
   public static List<ParameterSpec> writeGenericRecognizerConstructor(List<? extends TypeParameterElement> typeParameters, ScopedContext context) {
