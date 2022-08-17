@@ -202,7 +202,6 @@ class LocalChannelTest {
             continue;
           }
         } catch (ChannelClosedException e) {
-          e.printStackTrace();
           break;
         }
 
@@ -225,11 +224,106 @@ class LocalChannelTest {
 
   @Test
   @Timeout(value = 1, unit = TimeUnit.MINUTES)
+  void bulkSendAll() throws ExecutionException, InterruptedException {
+
+    int dataLength = 30000;
+    int capacity = 128;
+
+    TestChannel testChannel = TestChannel.newChannel(capacity);
+    ReadChannel readChannel = testChannel.readChannel;
+    WriteChannel writeChannel = testChannel.writeChannel;
+
+    Random random = new Random();
+    byte[] in = new byte[dataLength];
+    random.nextBytes(in);
+
+    Runnable writeTask = () -> {
+      try {
+        writeChannel.writeAll(in);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+
+      writeChannel.close();
+      assertTrue(writeChannel.isClosed());
+    };
+
+    Runnable readTask = () -> {
+      byte[] out = new byte[dataLength];
+      try {
+        readChannel.readAll(out);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+
+      assertArrayEquals(in, out);
+      readChannel.close();
+
+      assertTrue(readChannel.isClosed());
+    };
+
+    ExecutorService executorService = Executors.newFixedThreadPool(2);
+    Future<?> writeFuture = executorService.submit(writeTask);
+    Future<?> readFuture = executorService.submit(readTask);
+
+    writeFuture.get();
+    readFuture.get();
+  }
+
+  @Test
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
   void testReadWriteAll() throws ExecutionException, InterruptedException {
     int dataLength = 256;
     int capacity = 128;
 
     TestChannel testChannel = TestChannel.newChannel(capacity);
+    ReadChannel readChannel = testChannel.readChannel;
+    WriteChannel writeChannel = testChannel.writeChannel;
+
+    Random random = new Random();
+    byte[] in = new byte[dataLength];
+    random.nextBytes(in);
+
+    Runnable writeTask = () -> {
+      try {
+        writeChannel.writeAll(in);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+
+      writeChannel.close();
+      assertTrue(writeChannel.isClosed());
+    };
+
+    Runnable readTask = () -> {
+      byte[] out = new byte[dataLength];
+      try {
+        readChannel.readAll(out);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+
+      assertArrayEquals(in, out);
+      readChannel.close();
+      assertTrue(readChannel.isClosed());
+    };
+
+    ExecutorService executorService = Executors.newFixedThreadPool(2);
+    Future<?> writeFuture = executorService.submit(writeTask);
+    Future<?> readFuture = executorService.submit(readTask);
+
+    writeFuture.get();
+    readFuture.get();
+
+    executorService.shutdown();
+  }
+
+  @Test
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
+  void smallRead() throws ExecutionException, InterruptedException {
+    int dataLength = 16;
+
+    TestChannel testChannel = TestChannel.newChannel(16 + ByteChannel.HEADER_SIZE);
     ReadChannel readChannel = testChannel.readChannel;
     WriteChannel writeChannel = testChannel.writeChannel;
 

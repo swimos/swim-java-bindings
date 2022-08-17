@@ -29,7 +29,6 @@ public class ReadChannel extends ByteChannel {
     int cursor = 0;
     while (cursor != into.length) {
       int read = read(into, cursor);
-
       if (read == 0) {
         synchronized (lock) {
           int readIdx = buffer.getIntOpaque(READ);
@@ -76,7 +75,7 @@ public class ReadChannel extends ByteChannel {
         available = wrappingSub(writeIdx, readIdx) % len();
 
         if (available != 0) {
-          return read(into);
+          return read(into,offset);
         }
 
         throw new ChannelClosedException("Channel closed");
