@@ -18,8 +18,6 @@ import ai.swim.bridge.HeapByteBuffer;
 import ai.swim.bridge.channel.exceptions.ChannelClosedException;
 import ai.swim.bridge.channel.exceptions.InsufficientCapacityException;
 
-import java.util.Arrays;
-
 import static java.lang.Math.min;
 
 public class WriteChannel extends ByteChannel {
@@ -29,14 +27,14 @@ public class WriteChannel extends ByteChannel {
   }
 
   public void writeAll(byte[] bytes) throws InterruptedException {
+    int cursor = 0;
     while (true) {
       try {
-        int count = write(bytes);
-        if (count == 0 || count == bytes.length) {
+        cursor += write(bytes, cursor);
+
+        if (cursor == bytes.length) {
           break;
         }
-
-        bytes = Arrays.copyOfRange(bytes, count, bytes.length);
       } catch (InsufficientCapacityException e) {
         synchronized (lock) {
           int writeIdx = buffer.getIntAcquire(WRITE);
@@ -54,6 +52,10 @@ public class WriteChannel extends ByteChannel {
   }
 
   public int write(byte[] bytes) {
+    return write(bytes, 0);
+  }
+
+  public int write(byte[] bytes, int from) {
     if (bytes == null) {
       throw new NullPointerException("Provided buffer is null");
     }
@@ -62,9 +64,15 @@ public class WriteChannel extends ByteChannel {
       return 0;
     }
 
+    if (bytes.length - from < 1) {
+      throw new IndexOutOfBoundsException(String.format("Index %s out of bounds for array length %s", from, bytes.length));
+    }
+
     if (isClosed()) {
       throw new ChannelClosedException("Channel closed");
     }
+
+    int insertionCount = bytes.length - from;
 
     int writeIdx = buffer.getIntAcquire(WRITE);
     int readIdx = buffer.getIntOpaque(READ);
@@ -74,12 +82,12 @@ public class WriteChannel extends ByteChannel {
       throw new InsufficientCapacityException("Channel full");
     }
 
-    int toWrite = min(bytes.length, remaining - 1);
+    int toWrite = min(insertionCount, remaining - 1);
     int capped = min(toWrite, len() - writeIdx);
     int cursor = 0;
 
     for (int i = writeIdx; i < writeIdx + capped; i++) {
-      buffer.setByte(idx(i), bytes[cursor++]);
+      buffer.setByte(idx(i), bytes[from + cursor++]);
     }
 
     int newWriteOffset;
@@ -88,7 +96,7 @@ public class WriteChannel extends ByteChannel {
       int lim = toWrite - capped;
 
       for (int i = 0; i < lim; i++) {
-        buffer.setByte(idx(i), bytes[cursor++]);
+        buffer.setByte(idx(i), bytes[from + cursor++]);
       }
       newWriteOffset = lim;
     } else {

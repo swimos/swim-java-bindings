@@ -167,7 +167,7 @@ public class FfiChannelTest {
     assertArrayEquals(input, readBuf);
 
     try {
-      assertEquals(0, readChannel.tryRead(new byte[8]));
+      assertEquals(0, readChannel.read(new byte[8]));
     } catch (ChannelClosedException ignored) {
 
     }
@@ -213,7 +213,7 @@ public class FfiChannelTest {
     assertArrayEquals(input, actual);
 
     try {
-      assertEquals(0, readChannel.tryRead(new byte[8]));
+      assertEquals(0, readChannel.read(new byte[8]));
     } catch (ChannelClosedException ignored) {
 
     }

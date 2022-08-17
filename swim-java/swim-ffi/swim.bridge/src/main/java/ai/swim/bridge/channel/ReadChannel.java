@@ -28,8 +28,7 @@ public class ReadChannel extends ByteChannel {
   public void readAll(byte[] into) throws InterruptedException {
     int cursor = 0;
     while (cursor != into.length) {
-      byte[] buf = new byte[Math.min(len(), into.length - cursor)];
-      int read = tryRead(buf);
+      int read = read(into, cursor);
 
       if (read == 0) {
         synchronized (lock) {
@@ -44,20 +43,26 @@ public class ReadChannel extends ByteChannel {
           lock.wait();
         }
       } else {
-        System.arraycopy(buf, 0, into, cursor, buf.length);
         cursor += read;
       }
     }
   }
 
-  // todo: both this and the tryWrite op should accept a base index to read/write from so the array copies can be removed
-  public int tryRead(byte[] into) throws InterruptedException {
+  public int read(byte[] into) {
+    return read(into, 0);
+  }
+
+  public int read(byte[] into, int offset) {
     if (into == null) {
       throw new NullPointerException("Provided buffer is null");
     }
 
     if (into.length == 0) {
       return 0;
+    }
+
+    if (into.length - offset < 1) {
+      throw new IndexOutOfBoundsException(String.format("Index %s out of bounds for array length %s", offset, into.length));
     }
 
     int readIdx = buffer.getIntOpaque(READ);
@@ -71,7 +76,7 @@ public class ReadChannel extends ByteChannel {
         available = wrappingSub(writeIdx, readIdx) % len();
 
         if (available != 0) {
-          return tryRead(into);
+          return read(into);
         }
 
         throw new ChannelClosedException("Channel closed");
@@ -80,12 +85,12 @@ public class ReadChannel extends ByteChannel {
       }
     }
 
-    int toRead = min(available, into.length);
+    int toRead = min(available, into.length - offset);
     int capped = min(toRead, len() - readIdx);
     int cursor = 0;
 
     for (int i = readIdx; i < readIdx + capped; i++) {
-      into[cursor++] = buffer.getByte(idx(i));
+      into[offset + cursor++] = buffer.getByte(idx(i));
     }
 
     int newReadOffset;
@@ -93,7 +98,7 @@ public class ReadChannel extends ByteChannel {
     if (capped != toRead) {
       int lim = toRead - capped;
       for (int i = 0; i < lim; i++) {
-        into[cursor++] = buffer.getByte(idx(i));
+        into[offset + cursor++] = buffer.getByte(idx(i));
       }
       newReadOffset = lim;
     } else {

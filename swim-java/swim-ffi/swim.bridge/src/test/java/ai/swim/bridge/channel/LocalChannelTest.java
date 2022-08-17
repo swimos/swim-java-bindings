@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,7 +47,8 @@ class LocalChannelTest {
    * Write in to the buffer and read back out using a shared buffer and no FFI calls.
    */
   @Test
-  void fullCircle() throws InterruptedException {
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
+  void fullCircle() {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
     WriteChannel writeChannel = testChannel.writeChannel;
@@ -56,12 +58,12 @@ class LocalChannelTest {
     assertEquals(input.length, wrote);
 
     byte[] readBuf = new byte[input.length];
-    int read = readChannel.tryRead(readBuf);
+    int read = readChannel.read(readBuf);
 
     assertEquals(input.length, read);
     assertArrayEquals(readBuf, input);
 
-    read = readChannel.tryRead(readBuf);
+    read = readChannel.read(readBuf);
     assertEquals(0, read);
   }
 
@@ -97,12 +99,13 @@ class LocalChannelTest {
 
     writeChannel.close();
 
-    ChannelClosedException exception = assertThrows(ChannelClosedException.class, () -> readChannel.tryRead(new byte[1]));
+    ChannelClosedException exception = assertThrows(ChannelClosedException.class, () -> readChannel.read(new byte[1]));
     assertEquals("Channel closed", exception.getMessage());
   }
 
   @Test
-  void closeFlushes() throws InterruptedException {
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
+  void closeFlushes() {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
     WriteChannel writeChannel = testChannel.writeChannel;
@@ -114,28 +117,43 @@ class LocalChannelTest {
     readChannel.close();
 
     byte[] buf = new byte[in.length];
-    int read = readChannel.tryRead(buf);
+    int read = readChannel.read(buf);
     assertEquals(read, in.length);
     assertArrayEquals(in, buf);
 
-    ChannelClosedException exception = assertThrows(ChannelClosedException.class, () -> readChannel.tryRead(new byte[1]));
+    ChannelClosedException exception = assertThrows(ChannelClosedException.class, () -> readChannel.read(new byte[1]));
     assertEquals("Channel closed", exception.getMessage());
   }
 
   @Test
-  void emptyRead() throws InterruptedException {
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
+  void emptyRead() {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
 
-    int read = readChannel.tryRead(new byte[0]);
+    int read = readChannel.read(new byte[0]);
     assertEquals(0, read);
 
-    RuntimeException exception = assertThrows(NullPointerException.class, () -> readChannel.tryRead(null));
+    RuntimeException exception = assertThrows(NullPointerException.class, () -> readChannel.read(null));
     assertEquals("Provided buffer is null", exception.getMessage());
   }
 
   @Test
-  @Timeout(value = 10)
+  void writeFrom() {
+    TestChannel testChannel = TestChannel.newChannel(128);
+    WriteChannel writeChannel = testChannel.writeChannel;
+
+    IndexOutOfBoundsException exception = assertThrows(IndexOutOfBoundsException.class, () -> writeChannel.write(new byte[1], 13));
+    assertEquals("Index 13 out of bounds for array length 1", exception.getMessage());
+
+    exception = assertThrows(IndexOutOfBoundsException.class, () -> writeChannel.write(new byte[8], 8));
+    assertEquals("Index 8 out of bounds for array length 8", exception.getMessage());
+
+    assertEquals(1, writeChannel.write(new byte[8], 7));
+  }
+
+  @Test
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
   void bulkSend() throws InterruptedException, ExecutionException {
     int dataLength = 4096;
     int capacity = 128;
@@ -178,12 +196,12 @@ class LocalChannelTest {
         int read;
 
         try {
-          read = readChannel.tryRead(buf);
+          read = readChannel.read(buf);
           if (read == 0) {
             sleep();
             continue;
           }
-        } catch (ChannelClosedException | InterruptedException e) {
+        } catch (ChannelClosedException e) {
           e.printStackTrace();
           break;
         }
@@ -206,6 +224,7 @@ class LocalChannelTest {
   }
 
   @Test
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
   void testReadWriteAll() throws ExecutionException, InterruptedException {
     int dataLength = 256;
     int capacity = 128;
