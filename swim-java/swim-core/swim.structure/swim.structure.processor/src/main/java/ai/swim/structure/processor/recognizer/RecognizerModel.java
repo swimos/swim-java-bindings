@@ -9,6 +9,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static ai.swim.structure.processor.Utils.isSubType;
 
@@ -79,7 +80,7 @@ public abstract class RecognizerModel {
         if (declaredType.getTypeArguments().isEmpty()) {
           return runtimeLookup(typeMirror);
         } else {
-          RecognizerModel[] typeParameters = declaredType.getTypeArguments().stream().map(ty -> RecognizerModel.from(ty, context)).toList().toArray(RecognizerModel[]::new);
+          RecognizerModel[] typeParameters = declaredType.getTypeArguments().stream().map(ty -> RecognizerModel.from(ty, context)).collect(Collectors.toList()).toArray(RecognizerModel[]::new);
 
           return runtimeLookup(typeMirror, typeParameters);
         }
