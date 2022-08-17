@@ -42,7 +42,7 @@
 //! ```
 
 use std::fmt::{Debug, Formatter};
-use std::io::{ErrorKind, Write};
+use std::io::ErrorKind;
 use std::mem::size_of;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
@@ -213,27 +213,19 @@ where
     loop {
         match f() {
             Ok(o) => {
-                println!("Rust: Io loop ok");
                 let _guard = env.lock_obj(lock).expect("Failed to enter monitor");
                 jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock, &[]));
-                println!("Rust: Io look notified 1");
 
                 break Poll::Ready(Ok(o));
             }
             Err(e) => match e.status() {
                 Status::FullOrEmpty => {
-                    println!("Rust: Io loop full or empty");
-
                     let _guard = env.lock_obj(lock).expect("Failed to enter monitor");
                     jvm_tryf!(env, JavaMethod::WAIT.invoke(&env, lock, &[]));
-                    println!("Rust: Io look notified 2");
                 }
                 Status::Closed => {
-                    println!("Rust: Io loop closed");
-
                     let _guard = env.lock_obj(lock).expect("Failed to enter monitor");
                     jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock, &[]));
-                    println!("Rust: Io loop notified 3");
 
                     break Poll::Ready(Err(ErrorKind::BrokenPipe.into()));
                 }

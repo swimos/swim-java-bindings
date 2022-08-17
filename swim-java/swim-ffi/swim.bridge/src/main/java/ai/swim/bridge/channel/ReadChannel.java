@@ -33,7 +33,7 @@ public class ReadChannel extends ByteChannel {
 
       if (read == 0) {
         synchronized (lock) {
-          int readIdx = buffer.getIntAcquire(READ);
+          int readIdx = buffer.getIntOpaque(READ);
           int writeIdx = buffer.getIntAcquire(WRITE);
           int available = wrappingSub(writeIdx, readIdx) % len();
 
@@ -50,7 +50,8 @@ public class ReadChannel extends ByteChannel {
     }
   }
 
-  public int tryRead(byte[] into) {
+  // todo: both this and the tryWrite op should accept a base index to read/write from so the array copies can be removed
+  public int tryRead(byte[] into) throws InterruptedException {
     if (into == null) {
       throw new NullPointerException("Provided buffer is null");
     }
@@ -59,12 +60,20 @@ public class ReadChannel extends ByteChannel {
       return 0;
     }
 
-    int readIdx = buffer.getIntAcquire(READ);
-    int writeIdx = buffer.getIntOpaque(WRITE);
+    int readIdx = buffer.getIntOpaque(READ);
+    int writeIdx = buffer.getIntAcquire(WRITE);
     int available = wrappingSub(writeIdx, readIdx) % len();
 
     if (available == 0) {
       if (isClosed()) {
+          readIdx = buffer.getIntOpaque(READ);
+          writeIdx = buffer.getIntAcquire(WRITE);
+          available = wrappingSub(writeIdx, readIdx) % len();
+
+          if (available != 0) {
+            return tryRead(into);
+          }
+
         throw new ChannelClosedException("Channel closed");
       } else {
         return 0;

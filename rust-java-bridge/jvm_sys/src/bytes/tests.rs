@@ -134,6 +134,14 @@ fn oob_copy_from_slice() {
 }
 
 #[test]
+#[should_panic]
+fn oob_copy_from_slice2() {
+    let buf: &mut [u8] = &mut [0; 16];
+    let mut bytes = unsafe { Bytes::from_parts(buf, 16) };
+    bytes.copy_from_slice(14, &[1, 2, 3, 4, 5, 6, 7, 8]);
+}
+
+#[test]
 fn set_slice() {
     let buf: &mut [u8] = &mut [0; 8];
     let mut bytes = unsafe { Bytes::from_parts(buf, 8) };

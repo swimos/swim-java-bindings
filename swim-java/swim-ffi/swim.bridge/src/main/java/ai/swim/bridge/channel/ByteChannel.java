@@ -16,6 +16,7 @@ package ai.swim.bridge.channel;
 
 import ai.swim.bridge.HeapByteBuffer;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class ByteChannel {
@@ -28,7 +29,6 @@ public abstract class ByteChannel {
   protected final HeapByteBuffer buffer;
   protected final Object lock;
   private final long ptr;
-
 
   protected ByteChannel(long ptr, HeapByteBuffer buffer, Object lock) {
     this.ptr = ptr;
@@ -55,14 +55,6 @@ public abstract class ByteChannel {
     synchronized (lock) {
       lock.notify();
     }
-  }
-
-  protected void setReadIdx(int to) {
-    buffer.setIntRelease(READ, to);
-  }
-
-  protected void setWriteIdx(int to) {
-    buffer.setIntRelease(WRITE, to);
   }
 
   protected int idx(int from) {

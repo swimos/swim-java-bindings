@@ -20,14 +20,12 @@ import ai.swim.bridge.channel.exceptions.InsufficientCapacityException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,7 +46,7 @@ class LocalChannelTest {
    * Write in to the buffer and read back out using a shared buffer and no FFI calls.
    */
   @Test
-  void fullCircle() {
+  void fullCircle() throws InterruptedException {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
     WriteChannel writeChannel = testChannel.writeChannel;
@@ -104,7 +102,7 @@ class LocalChannelTest {
   }
 
   @Test
-  void closeFlushes() {
+  void closeFlushes() throws InterruptedException {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
     WriteChannel writeChannel = testChannel.writeChannel;
@@ -125,7 +123,7 @@ class LocalChannelTest {
   }
 
   @Test
-  void emptyRead() {
+  void emptyRead() throws InterruptedException {
     TestChannel testChannel = TestChannel.newChannel(128);
     ReadChannel readChannel = testChannel.readChannel;
 
@@ -185,7 +183,8 @@ class LocalChannelTest {
             sleep();
             continue;
           }
-        } catch (ChannelClosedException e) {
+        } catch (ChannelClosedException | InterruptedException e) {
+          e.printStackTrace();
           break;
         }
 
@@ -208,7 +207,6 @@ class LocalChannelTest {
 
   @Test
   void testReadWriteAll() throws ExecutionException, InterruptedException {
-    for (int i = 0; i < 100000; i++) {
       int dataLength = 256;
       int capacity = 128;
 
@@ -244,7 +242,7 @@ class LocalChannelTest {
         assertTrue(readChannel.isClosed());
       };
 
-      ExecutorService executorService = Executors.newCachedThreadPool(Executors.defaultThreadFactory());
+      ExecutorService executorService = Executors.newFixedThreadPool(2);
       Future<?> writeFuture = executorService.submit(writeTask);
       Future<?> readFuture = executorService.submit(readTask);
 
@@ -252,7 +250,6 @@ class LocalChannelTest {
       readFuture.get();
 
       executorService.shutdown();
-    }
   }
 
   private static class TestChannel {

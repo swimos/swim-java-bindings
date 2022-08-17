@@ -18,10 +18,14 @@ import ai.swim.bridge.HeapByteBuffer;
 import ai.swim.bridge.channel.exceptions.ChannelClosedException;
 import ai.swim.bridge.channel.exceptions.InsufficientCapacityException;
 
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 
 import static java.lang.Math.min;
 
+// todo: add a 'awaitShutdown' method that awaits the Rust reader being dropped/draining the buffer after the channel
+//  has been closed. This will be required to avoid the potential condition where the Java writer is closed and the Rust
+//  reader has not had time to finish draining the buffer before the Java writer has been garbage collected. 
 public class WriteChannel extends ByteChannel {
 
   WriteChannel(long ptr, HeapByteBuffer buffer, Object lock) {

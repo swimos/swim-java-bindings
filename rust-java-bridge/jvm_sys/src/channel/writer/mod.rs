@@ -99,8 +99,8 @@ fn write(
         return Err(WriteFailure::Closed);
     }
 
+    let write_offset = write_index.load(Ordering::Relaxed) as usize;
     let read_from = read_index.load(Ordering::Acquire) as usize;
-    let write_offset = write_index.load(Ordering::Acquire) as usize;
 
     let mut remaining = read_from.wrapping_sub(write_offset + 1);
     remaining = remaining % capacity + 1;
@@ -171,30 +171,5 @@ impl AsyncWrite for ByteWriter {
 
         jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, &self.inner.lock, &[]));
         Poll::Ready(Ok(()))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::mem::{size_of, transmute};
-    use std::ptr::NonNull;
-    use std::sync::atomic::{AtomicI32, Ordering};
-
-    use bytes::BytesMut;
-    use jni::descriptors::Desc;
-
-    #[test]
-    fn t() {
-        let mut s: &[u8; 5] = &mut [255, 255, 255, 127, 0];
-        let mut c = s as *const [u8; 5] as *mut AtomicI32;
-
-        unsafe {
-            println!("{:?}", s);
-
-            println!("{}", (*c).load(Ordering::Acquire));
-            (*c).store(i32::from_ne_bytes([1, 1, 1, 1]), Ordering::Relaxed);
-            println!("{}", (*c).load(Ordering::Acquire));
-            println!("{:?}", s);
-        }
     }
 }

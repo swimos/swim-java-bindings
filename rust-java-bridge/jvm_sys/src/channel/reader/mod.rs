@@ -98,16 +98,27 @@ where
         return Ok(());
     }
 
-    let read_from = read_index.load(Ordering::Relaxed) as usize;
-    let write_offset = write_index.load(Ordering::Acquire) as usize;
-    let available = write_offset.wrapping_sub(read_from) % capacity;
-
-    println!("Rust: read_from {}", read_from);
-    println!("Rust: write_offset {}", write_offset);
-    println!("Rust: available {}", available);
+    let mut read_from = read_index.load(Ordering::Relaxed) as usize;
+    let mut write_offset = write_index.load(Ordering::Acquire) as usize;
+    let mut available = write_offset.wrapping_sub(read_from) % capacity;
 
     if available == 0 {
         return if is_closed.load(Ordering::Acquire) {
+            read_from = read_index.load(Ordering::Relaxed) as usize;
+            write_offset = write_index.load(Ordering::Acquire) as usize;
+            available = write_offset.wrapping_sub(read_from) % capacity;
+
+            if available != 0 {
+                return read(
+                    capacity,
+                    is_closed,
+                    write_index,
+                    read_index,
+                    bytes,
+                    read_target,
+                );
+            }
+
             Err(ReadFailure::Closed)
         } else {
             Err(ReadFailure::Empty)
@@ -139,7 +150,6 @@ where
     }
 
     read_index.store(new_read_offset as i32, Ordering::Release);
-    println!("Rust: set read index to {}", new_read_offset as i32);
 
     Ok(())
 }
