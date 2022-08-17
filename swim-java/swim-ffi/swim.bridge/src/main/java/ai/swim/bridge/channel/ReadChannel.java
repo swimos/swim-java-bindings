@@ -66,13 +66,13 @@ public class ReadChannel extends ByteChannel {
 
     if (available == 0) {
       if (isClosed()) {
-          readIdx = buffer.getIntOpaque(READ);
-          writeIdx = buffer.getIntAcquire(WRITE);
-          available = wrappingSub(writeIdx, readIdx) % len();
+        readIdx = buffer.getIntOpaque(READ);
+        writeIdx = buffer.getIntAcquire(WRITE);
+        available = wrappingSub(writeIdx, readIdx) % len();
 
-          if (available != 0) {
-            return tryRead(into);
-          }
+        if (available != 0) {
+          return tryRead(into);
+        }
 
         throw new ChannelClosedException("Channel closed");
       } else {

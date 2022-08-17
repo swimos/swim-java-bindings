@@ -16,16 +16,13 @@ package ai.swim.bridge.channel;
 
 import ai.swim.bridge.HeapByteBuffer;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 public abstract class ByteChannel {
 
   public static final int HEADER_SIZE = 12;
-  private static final int CLOSED = 0;
   protected static final int READ = Integer.SIZE / Byte.SIZE;
   protected static final int WRITE = 2 * (Integer.SIZE / Byte.SIZE);
   protected static final int DATA = 3 * (Integer.SIZE / Byte.SIZE);
+  private static final int CLOSED = 0;
   protected final HeapByteBuffer buffer;
   protected final Object lock;
   private final long ptr;

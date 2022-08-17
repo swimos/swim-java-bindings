@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use std::fmt::Debug;
+use std::io::ErrorKind;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::task::{Context, Poll};
@@ -25,7 +26,7 @@ use tokio::io::{AsyncRead, ReadBuf};
 use sys_util::jvm_tryf;
 
 use crate::bytes::Bytes;
-use crate::channel::{channel_io, offset, Inner, ReadFailure, ReadTarget};
+use crate::channel::{offset, Inner, ReadFailure, ReadTarget};
 use crate::vm::method::InvokeObjectMethod;
 use crate::vm::method::JavaMethod;
 use crate::vm::utils::get_env;
@@ -170,15 +171,36 @@ impl AsyncRead for ByteReader {
             vm,
         } = &mut self.as_mut().get_mut().inner;
 
-        channel_io(lock.as_obj(), vm, || {
-            read(
-                capacity,
-                unsafe { is_closed.as_ref() },
-                unsafe { write_index.as_ref() },
-                unsafe { read_index.as_ref() },
-                bytes,
-                buf,
-            )
-        })
+        let env = get_env(vm).expect("Failed to get JVM environment");
+        let is_closed = unsafe { is_closed.as_ref() };
+        let write_index = unsafe { write_index.as_ref() };
+        let read_index = unsafe { read_index.as_ref() };
+
+        loop {
+            match read(capacity, is_closed, write_index, read_index, bytes, buf) {
+                Ok(()) => {
+                    let _guard = env
+                        .lock_obj(lock.as_obj())
+                        .expect("Failed to enter monitor");
+                    jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock.as_obj(), &[]));
+
+                    break Poll::Ready(Ok(()));
+                }
+                Err(ReadFailure::Empty) => {
+                    let _guard = env
+                        .lock_obj(lock.as_obj())
+                        .expect("Failed to enter monitor");
+
+                    let read_from = read_index.load(Ordering::Relaxed) as usize;
+                    let write_offset = write_index.load(Ordering::Acquire) as usize;
+                    let available = write_offset.wrapping_sub(read_from) % capacity;
+
+                    if available == 0 {
+                        jvm_tryf!(env, JavaMethod::WAIT.invoke(&env, lock.as_obj(), &[]));
+                    }
+                }
+                Err(ReadFailure::Closed) => break Poll::Ready(Err(ErrorKind::BrokenPipe.into())),
+            }
+        }
     }
 }

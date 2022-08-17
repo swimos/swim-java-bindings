@@ -18,8 +18,10 @@ import ai.swim.bridge.HeapByteBuffer;
 import ai.swim.bridge.runtime.RuntimeProxy;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
 
+// todo: add a 'awaitShutdown' method that awaits the Rust reader being dropped/draining the buffer after the channel
+//  has been closed. This will be required to avoid the potential condition where the Java writer is closed and the Rust
+//  reader has not had time to finish draining the buffer before the Java writer has been garbage collected.
 public final class Channels {
 
   static {

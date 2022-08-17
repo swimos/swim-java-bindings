@@ -42,13 +42,11 @@
 //! ```
 
 use std::fmt::{Debug, Formatter};
-use std::io::ErrorKind;
 use std::mem::size_of;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
-use std::task::Poll;
 
-use jni::objects::{GlobalRef, JByteBuffer, JObject};
+use jni::objects::{GlobalRef, JByteBuffer};
 use jni::sys::jobject;
 use jni::{JNIEnv, JavaVM};
 use tokio::io::ReadBuf;
@@ -165,33 +163,6 @@ pub enum ReadFailure {
     Empty,
 }
 
-trait ErrorStatus {
-    fn status(&self) -> Status;
-}
-
-enum Status {
-    FullOrEmpty,
-    Closed,
-}
-
-impl ErrorStatus for WriteFailure {
-    fn status(&self) -> Status {
-        match self {
-            WriteFailure::Closed => Status::Closed,
-            WriteFailure::Full => Status::FullOrEmpty,
-        }
-    }
-}
-
-impl ErrorStatus for ReadFailure {
-    fn status(&self) -> Status {
-        match self {
-            ReadFailure::Closed => Status::Closed,
-            ReadFailure::Empty => Status::FullOrEmpty,
-        }
-    }
-}
-
 impl<'a> ReadTarget for ReadBuf<'a> {
     fn remaining(&self) -> usize {
         ReadBuf::remaining(self)
@@ -199,37 +170,5 @@ impl<'a> ReadTarget for ReadBuf<'a> {
 
     fn put_slice(&mut self, slice: &[u8]) {
         ReadBuf::put_slice(self, slice)
-    }
-}
-
-fn channel_io<F, O, E, E2>(lock: JObject, vm: &JavaVM, mut f: F) -> Poll<Result<O, E2>>
-where
-    F: FnMut() -> Result<O, E>,
-    E: ErrorStatus,
-    E2: From<ErrorKind>,
-{
-    let env = get_env(vm).expect("Failed to get JVM environment");
-
-    loop {
-        match f() {
-            Ok(o) => {
-                let _guard = env.lock_obj(lock).expect("Failed to enter monitor");
-                jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock, &[]));
-
-                break Poll::Ready(Ok(o));
-            }
-            Err(e) => match e.status() {
-                Status::FullOrEmpty => {
-                    let _guard = env.lock_obj(lock).expect("Failed to enter monitor");
-                    jvm_tryf!(env, JavaMethod::WAIT.invoke(&env, lock, &[]));
-                }
-                Status::Closed => {
-                    let _guard = env.lock_obj(lock).expect("Failed to enter monitor");
-                    jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock, &[]));
-
-                    break Poll::Ready(Err(ErrorKind::BrokenPipe.into()));
-                }
-            },
-        }
     }
 }

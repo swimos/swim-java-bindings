@@ -207,49 +207,49 @@ class LocalChannelTest {
 
   @Test
   void testReadWriteAll() throws ExecutionException, InterruptedException {
-      int dataLength = 256;
-      int capacity = 128;
+    int dataLength = 256;
+    int capacity = 128;
 
-      TestChannel testChannel = TestChannel.newChannel(capacity);
-      ReadChannel readChannel = testChannel.readChannel;
-      WriteChannel writeChannel = testChannel.writeChannel;
+    TestChannel testChannel = TestChannel.newChannel(capacity);
+    ReadChannel readChannel = testChannel.readChannel;
+    WriteChannel writeChannel = testChannel.writeChannel;
 
-      Random random = new Random();
-      byte[] in = new byte[dataLength];
-      random.nextBytes(in);
+    Random random = new Random();
+    byte[] in = new byte[dataLength];
+    random.nextBytes(in);
 
-      Runnable writeTask = () -> {
-        try {
-          writeChannel.writeAll(in);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
+    Runnable writeTask = () -> {
+      try {
+        writeChannel.writeAll(in);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
 
-        writeChannel.close();
-        assertTrue(writeChannel.isClosed());
-      };
+      writeChannel.close();
+      assertTrue(writeChannel.isClosed());
+    };
 
-      Runnable readTask = () -> {
-        byte[] out = new byte[dataLength];
-        try {
-          readChannel.readAll(out);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
+    Runnable readTask = () -> {
+      byte[] out = new byte[dataLength];
+      try {
+        readChannel.readAll(out);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
 
-        assertArrayEquals(in, out);
-        readChannel.close();
-        assertTrue(readChannel.isClosed());
-      };
+      assertArrayEquals(in, out);
+      readChannel.close();
+      assertTrue(readChannel.isClosed());
+    };
 
-      ExecutorService executorService = Executors.newFixedThreadPool(2);
-      Future<?> writeFuture = executorService.submit(writeTask);
-      Future<?> readFuture = executorService.submit(readTask);
+    ExecutorService executorService = Executors.newFixedThreadPool(2);
+    Future<?> writeFuture = executorService.submit(writeTask);
+    Future<?> readFuture = executorService.submit(readTask);
 
-      writeFuture.get();
-      readFuture.get();
+    writeFuture.get();
+    readFuture.get();
 
-      executorService.shutdown();
+    executorService.shutdown();
   }
 
   private static class TestChannel {

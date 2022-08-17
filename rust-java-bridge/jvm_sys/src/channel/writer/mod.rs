@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use std::fmt::Debug;
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::task::{Context, Poll};
@@ -26,7 +26,7 @@ use tokio::io::AsyncWrite;
 use sys_util::jvm_tryf;
 
 use crate::bytes::Bytes;
-use crate::channel::{channel_io, Inner};
+use crate::channel::Inner;
 use crate::channel::{offset, WriteFailure};
 use crate::vm::method::InvokeObjectMethod;
 use crate::vm::method::JavaMethod;
@@ -147,16 +147,40 @@ impl AsyncWrite for ByteWriter {
             vm,
         } = &mut self.as_mut().get_mut().inner;
 
-        channel_io(lock.as_obj(), vm, || {
-            write(
-                capacity,
-                unsafe { is_closed.as_ref() },
-                unsafe { read_index.as_ref() },
-                unsafe { write_index.as_ref() },
-                bytes,
-                buf,
-            )
-        })
+        let env = get_env(vm).expect("Failed to get JVM environment");
+
+        let is_closed = unsafe { is_closed.as_ref() };
+        let read_index = unsafe { read_index.as_ref() };
+        let write_index = unsafe { write_index.as_ref() };
+
+        loop {
+            match write(capacity, is_closed, read_index, write_index, bytes, buf) {
+                Ok(count) => {
+                    let _guard = env
+                        .lock_obj(lock.as_obj())
+                        .expect("Failed to enter monitor");
+                    jvm_tryf!(env, JavaMethod::NOTIFY.invoke(&env, lock.as_obj(), &[]));
+
+                    break Poll::Ready(Ok(count));
+                }
+                Err(WriteFailure::Full) => {
+                    let _guard = env
+                        .lock_obj(lock.as_obj())
+                        .expect("Failed to enter monitor");
+
+                    let write_offset = write_index.load(Ordering::Relaxed) as usize;
+                    let read_from = read_index.load(Ordering::Acquire) as usize;
+
+                    let mut remaining = read_from.wrapping_sub(write_offset + 1);
+                    remaining = remaining % capacity + 1;
+
+                    if remaining <= 1 {
+                        jvm_tryf!(env, JavaMethod::WAIT.invoke(&env, lock.as_obj(), &[]));
+                    }
+                }
+                Err(WriteFailure::Closed) => break Poll::Ready(Err(ErrorKind::BrokenPipe.into())),
+            }
+        }
     }
 
     fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Error>> {
