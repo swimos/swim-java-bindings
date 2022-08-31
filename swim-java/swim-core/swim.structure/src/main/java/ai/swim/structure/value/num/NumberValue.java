@@ -14,19 +14,34 @@
 
 package ai.swim.structure.value.num;
 
+
+import ai.swim.structure.value.Value;
+
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
-public class NumberBigDecimal extends NumberValue {
-  private final BigDecimal value;
-
-  public NumberBigDecimal(BigDecimal value) {
-    this.value=value;
+public abstract class NumberValue extends Value {
+  public static Value of(int value) {
+    return new NumberI32(value);
   }
 
-  @Override
-  public String toString() {
-    return "NumBigDecimal{" +
-        "value=" + value +
-        '}';
+  public static Value of(long value) {
+    return new NumberI64(value);
+  }
+
+  public static Value of(float value) {
+    return new NumberF32(value);
+  }
+
+  public static Value of(double value) {
+    return new NumberF64(value);
+  }
+
+  public static Value of(BigInteger value) {
+    return new NumberBigInt(value);
+  }
+
+  public static Value of(BigDecimal value) {
+    return new NumberBigDecimal(value);
   }
 }

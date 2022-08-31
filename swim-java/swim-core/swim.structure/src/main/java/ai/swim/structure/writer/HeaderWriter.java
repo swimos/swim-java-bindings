@@ -14,8 +14,20 @@
 
 package ai.swim.structure.writer;
 
-public class WriterProxy {
-  public static <K> StructuralWritable<K> lookup(Class<?> clazz) {
-    throw new AssertionError("Unimplemented");
+import ai.swim.structure.recognizer.std.ScalarRecognizer;
+import ai.swim.structure.writer.std.ScalarWriters;
+
+import java.util.Objects;
+
+public interface HeaderWriter<T> {
+
+  <V> BodyWriter<T> writeAttrWith(String key, StructuralWritable<V> valueWriter, V value);
+
+  default  < V> BodyWriter<T> writeAttr(String key, V value) {
+    StructuralWritable<V> valueWriter = WriterProxy.lookup(Objects.requireNonNull(value).getClass());
+    return this.writeAttrWith(key, valueWriter, value);
   }
+
+
+  BodyWriter<T> completeHeader(RecordBodyKind mapLike, int numItems);
 }

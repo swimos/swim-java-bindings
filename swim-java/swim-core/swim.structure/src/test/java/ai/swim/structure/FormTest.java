@@ -1,0 +1,52 @@
+// Copyright 2015-2022 Swim Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package ai.swim.structure;
+
+import ai.swim.codec.input.Input;
+import ai.swim.structure.value.Value;
+import ai.swim.structure.writer.Writer;
+import org.junit.jupiter.api.Test;
+
+class FormTest {
+
+//  private static class ValueWriter<I> extends Writer<I, Value> {
+//    public static <I> void write(Writer<Value, I> writer, Value value) {
+//
+//    }
+//  }
+//
+//  private static class ValueForm extends Form<Value> {
+//    @Override
+//    public Value asValue(Value value) {
+//      return value;
+//    }
+//
+//    @Override
+//    public Value readFrom(Input input) {
+//      return null;
+//    }
+//
+//    @Override
+//    public <I> void writeInto(Writer<Value, I> writer, Value value) {
+//      ValueWriter.write(writer, value);
+//    }
+//  }
+//
+//  @Test
+//  void t() {
+//
+//  }
+
+}
