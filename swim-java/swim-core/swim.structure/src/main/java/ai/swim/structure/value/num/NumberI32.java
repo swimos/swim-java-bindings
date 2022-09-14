@@ -14,6 +14,10 @@
 
 package ai.swim.structure.value.num;
 
+import ai.swim.structure.writer.PrimitiveWriter;
+
+import java.util.Objects;
+
 public class NumberI32 extends NumberValue {
   private final int value;
 
@@ -26,5 +30,27 @@ public class NumberI32 extends NumberValue {
     return "NumberI32{" +
         "value=" + value +
         '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    NumberI32 numberI32 = (NumberI32) o;
+    return value == numberI32.value;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
+  }
+
+  @Override
+  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
+    return writer.writeInt(value);
   }
 }

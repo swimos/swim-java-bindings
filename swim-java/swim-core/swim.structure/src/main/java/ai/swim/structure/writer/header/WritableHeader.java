@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.writer;
+package ai.swim.structure.writer.header;
 
-public interface Writer<T> extends PrimitiveWriter<T>{
-  HeaderWriter<T> record(int numAttrs);
+import ai.swim.structure.writer.StructuralWriter;
+
+public interface WritableHeader {
+  <T> T writeInto(StructuralWriter<T> structuralWriter);
 }
-

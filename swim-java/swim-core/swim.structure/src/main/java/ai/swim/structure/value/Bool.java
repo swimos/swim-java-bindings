@@ -14,10 +14,41 @@
 
 package ai.swim.structure.value;
 
-public class Bool extends Value {
+import ai.swim.structure.writer.PrimitiveWriter;
+
+import java.util.Objects;
+
+public class Bool extends PrimitiveValue {
   private final boolean value;
 
   public Bool(boolean value) {
     this.value=value;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Bool bool = (Bool) o;
+    return value == bool.value;
+  }
+
+  @Override
+  public String toString() {
+    return null;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
+  }
+
+  @Override
+  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
+    return writer.writeBool(value);
   }
 }

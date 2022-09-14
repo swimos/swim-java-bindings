@@ -14,6 +14,8 @@
 
 package ai.swim.structure.value;
 
+import java.util.Objects;
+
 public class Slot extends Item {
   private final Value key;
   private final Value value;
@@ -29,5 +31,35 @@ public class Slot extends Item {
         "key=" + key +
         ", value=" + value +
         '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Slot slot = (Slot) o;
+    return Objects.equals(key, slot.key) && Objects.equals(value, slot.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(key, value);
+  }
+
+  @Override
+  public boolean isSlot() {
+    return true;
+  }
+
+  public Value getKey() {
+    return key;
+  }
+
+  public Value getValue() {
+    return value;
   }
 }

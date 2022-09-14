@@ -12,37 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.value;
+package ai.swim.structure.writer.print.strategy;
 
-import ai.swim.structure.writer.PrimitiveWriter;
+import ai.swim.structure.writer.print.Padding;
 
-public class Extant extends PrimitiveValue {
-  private static final Extant VALUE = new Extant();
-
-  public static Value extant() {
-    return Extant.VALUE;
+public class CompactPrintStrategy implements PrintStrategy {
+  @Override
+  public Padding attrPadding() {
+    return Padding.Simple.NO_SPACE;
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return o != null && getClass() == o.getClass();
+  public Padding attrBodyPadding() {
+    return Padding.Simple.NO_SPACE;
   }
 
   @Override
-  public String toString() {
-    return "";
+  public Padding startBlock(int items) {
+    return Padding.Simple.NO_SPACE;
   }
 
   @Override
-  public boolean isExtant() {
-    return true;
+  public Padding endBlock() {
+    return Padding.Simple.NO_SPACE;
   }
 
   @Override
-  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
-   return writer.writeExtant();
+  public Padding itemPadding(boolean inRecord) {
+    return Padding.Simple.NO_SPACE;
   }
+
+  @Override
+  public Padding slotPadding() {
+    return Padding.Simple.NO_SPACE;
+  }
+
 }

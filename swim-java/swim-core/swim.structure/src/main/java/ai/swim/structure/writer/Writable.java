@@ -14,5 +14,6 @@
 
 package ai.swim.structure.writer;
 
-public interface StructuralWritable<T> extends Writable<T> {
+public interface Writable<F> {
+   <T> T writeInto(F from, StructuralWriter<T> structuralWriter);
 }

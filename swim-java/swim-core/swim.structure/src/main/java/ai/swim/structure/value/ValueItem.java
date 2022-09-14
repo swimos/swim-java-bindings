@@ -14,6 +14,8 @@
 
 package ai.swim.structure.value;
 
+import java.util.Objects;
+
 public class ValueItem extends Item {
   private final Value value;
 
@@ -26,5 +28,26 @@ public class ValueItem extends Item {
     return "ValueItem{" +
         "value=" + value +
         '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ValueItem valueItem = (ValueItem) o;
+    return Objects.equals(value, valueItem.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
+  }
+
+  public Value getValue() {
+    return value;
   }
 }

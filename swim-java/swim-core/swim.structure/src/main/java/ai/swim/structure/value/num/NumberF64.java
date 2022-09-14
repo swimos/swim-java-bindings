@@ -14,6 +14,10 @@
 
 package ai.swim.structure.value.num;
 
+import ai.swim.structure.writer.PrimitiveWriter;
+
+import java.util.Objects;
+
 public class NumberF64 extends NumberValue {
   private final double value;
 
@@ -26,5 +30,27 @@ public class NumberF64 extends NumberValue {
     return "NumberF64{" +
         "value=" + value +
         '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    NumberF64 numberF64 = (NumberF64) o;
+    return Double.compare(numberF64.value, value) == 0;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
+  }
+
+  @Override
+  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
+    return writer.writeDouble(value);
   }
 }

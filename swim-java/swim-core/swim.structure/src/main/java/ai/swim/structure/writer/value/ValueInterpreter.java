@@ -19,57 +19,81 @@ import ai.swim.structure.value.Text;
 import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.BodyWriter;
 import ai.swim.structure.writer.HeaderWriter;
-import ai.swim.structure.writer.RecordBodyKind;
-import ai.swim.structure.writer.StructuralWritable;
+import ai.swim.structure.writer.Writable;
+import ai.swim.structure.writer.header.WritableHeader;
 
 public class ValueInterpreter implements HeaderWriter<Value>, BodyWriter<Value> {
-  private final ValueWriter valueWriter;
-  private Record record;
+  private final ValueStructuralWriter valueWriter;
+  private final Record.Builder builder;
 
-  public ValueInterpreter(ValueWriter valueWriter, Record record) {
+  public ValueInterpreter(ValueStructuralWriter valueWriter, int attrCount) {
     this.valueWriter = valueWriter;
-    this.record = record;
+    this.builder = new Record.Builder(attrCount, 0);
   }
 
   @Override
-  public <V> BodyWriter<Value> writeAttrWith(String key, StructuralWritable<V> valueWriter, V value) {
+  public <V> HeaderWriter<Value> writeAttrWith(String key, Writable<V> valueWriter, V value) {
     Text textKey = new Text(key);
     Value interpretedValue = valueWriter.writeInto(value, this.valueWriter);
-    this.record.pushAttr(textKey, interpretedValue);
+    builder.pushAttr(textKey, interpretedValue);
 
     return this;
   }
 
   @Override
-  public BodyWriter<Value> completeHeader(RecordBodyKind mapLike, int numItems) {
-    this.record = Value.record(0, numItems);
+  public HeaderWriter<Value> writeAttr(String key, WritableHeader writable) {
+    Text textKey = new Text(key);
+    Value value = writable.writeInto(valueWriter);
+    builder.pushAttr(textKey, value);
+
     return this;
   }
 
   @Override
-  public <K, V> BodyWriter<Value> writeSlotWith(StructuralWritable<K> keyWriter, K key, StructuralWritable<V> valueWriter, V value) {
+  public <V> Value delegateWith(Writable<V> valueWriter, V value) {
+    Value body = valueWriter.writeInto(value, this.valueWriter);
+    return builder.buildDelegate(body);
+  }
+
+  @Override
+  public BodyWriter<Value> completeHeader(int numItems) {
+    builder.reserveItems(numItems);
+    return this;
+  }
+
+  @Override
+  public HeaderWriter<Value> writeExtantAttr(String key) {
+    builder.pushAttr(new Text(key), Value.extant());
+    return this;
+  }
+
+  @Override
+  public <K, V> BodyWriter<Value> writeSlotWith(Writable<K> keyWriter, K key, Writable<V> valueWriter, V value) {
     Value interpretedKey = keyWriter.writeInto(key, this.valueWriter);
     Value interpretedValue = valueWriter.writeInto(value, this.valueWriter);
-    this.record.pushItem(interpretedKey, interpretedValue);
+    builder.pushItem(interpretedKey, interpretedValue);
 
     return this;
   }
 
   @Override
-  public <V> BodyWriter<Value> writeValueWith(StructuralWritable<V> writer, V value) {
-    return null;
+  public <V> BodyWriter<Value> writeValueWith(Writable<V> valueWriter, V value) {
+    Value interpretedValue = valueWriter.writeInto(value, this.valueWriter);
+    builder.pushItem(interpretedValue);
+
+    return this;
   }
 
   @Override
   public Value done() {
-    return this.record;
+    return builder.build();
   }
 
   @Override
   public String toString() {
     return "ValueInterpreter{" +
         "valueWriter=" + valueWriter +
-        ", record=" + record +
+        ", builder=" + builder +
         '}';
   }
 }

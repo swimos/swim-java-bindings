@@ -18,49 +18,98 @@ import ai.swim.structure.value.num.NumberValue;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 
 public abstract class Value {
   public static Value extant() {
     return Extant.extant();
   }
 
-  public static Value of(int value) {
+  public static NumberValue of(int value) {
     return NumberValue.of(value);
   }
 
-  public static Value of(long value) {
+  public static NumberValue of(long value) {
     return NumberValue.of(value);
   }
 
-  public static Value of(float value) {
+  public static NumberValue of(float value) {
     return NumberValue.of(value);
   }
 
-  public static Value of(double value) {
+  public static NumberValue of(double value) {
     return NumberValue.of(value);
   }
 
-  public static Value of(boolean value) {
+  public static Bool of(boolean value) {
     return new Bool(value);
   }
 
-  public static Value of(BigInteger value) {
+  public static NumberValue of(BigInteger value) {
     return NumberValue.of(value);
   }
 
-  public static Value of(BigDecimal value) {
+  public static NumberValue of(BigDecimal value) {
     return NumberValue.of(value);
   }
 
-  public static Value of(byte[] value) {
+  public static Blob of(byte[] value) {
     return new Blob(value);
   }
 
-  public static Value of(String value) {
+  public static Text of(String value) {
     return new Text(value);
   }
 
   public static Record record(int numAttrs, int numItems) {
     return new Record(numAttrs, numItems);
   }
+
+  public static Record of(List<Attr> attrs, List<Item> items) {
+    return Record.of(attrs, items);
+  }
+
+  public static Record ofAttrs(List<Attr> attrs) {
+    return Record.ofAttrs(attrs);
+  }
+
+  public static Record ofItems(List<Item> items) {
+    return Record.ofItems(items);
+  }
+
+  public static Attr ofAttr(String key) {
+    return new Attr(new Text(key), Value.extant());
+  }
+
+  public static Attr ofAttr(String key, Value value) {
+    return new Attr(new Text(key), value);
+  }
+
+  public static Item ofItem(Value value) {
+    return new ValueItem(value);
+  }
+
+  public static Item ofItem(Value key, Value value) {
+    return new Slot(key, value);
+  }
+
+  public boolean isRecord() {
+    return false;
+  }
+
+  public boolean isExtant() {
+    return false;
+  }
+
+  public boolean isPrimitive() {
+    return false;
+  }
+
+  @Override
+  public abstract boolean equals(Object obj);
+
+  @Override
+  public abstract String toString();
+
+
 }
