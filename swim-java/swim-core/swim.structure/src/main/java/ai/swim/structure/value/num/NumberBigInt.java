@@ -14,7 +14,10 @@
 
 package ai.swim.structure.value.num;
 
+import ai.swim.structure.writer.PrimitiveWriter;
+
 import java.math.BigInteger;
+import java.util.Objects;
 
 public class NumberBigInt extends NumberValue {
   private final BigInteger value;
@@ -28,5 +31,27 @@ public class NumberBigInt extends NumberValue {
     return "NumberBigInt{" +
         "value=" + value +
         '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    NumberBigInt that = (NumberBigInt) o;
+    return Objects.equals(value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
+  }
+
+  @Override
+  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
+    return writer.writeBigInt(value);
   }
 }

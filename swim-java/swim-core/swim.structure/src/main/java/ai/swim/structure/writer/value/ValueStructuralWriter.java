@@ -16,12 +16,12 @@ package ai.swim.structure.writer.value;
 
 import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.HeaderWriter;
-import ai.swim.structure.writer.Writer;
+import ai.swim.structure.writer.StructuralWriter;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-public class ValueWriter implements Writer<Value> {
+public class ValueStructuralWriter implements StructuralWriter<Value> {
   @Override
   public Value writeExtant() {
     return Value.extant();
@@ -74,6 +74,6 @@ public class ValueWriter implements Writer<Value> {
 
   @Override
   public HeaderWriter<Value> record(int numAttrs) {
-    return new ValueInterpreter(this,Value.record(numAttrs,0));
+    return new ValueInterpreter(this, numAttrs);
   }
 }

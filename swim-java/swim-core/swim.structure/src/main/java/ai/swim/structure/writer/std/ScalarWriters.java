@@ -14,28 +14,95 @@
 
 package ai.swim.structure.writer.std;
 
-import ai.swim.structure.writer.StructuralWritable;
-import ai.swim.structure.writer.Writer;
+import ai.swim.structure.writer.Writable;
+import ai.swim.structure.writer.StructuralWriter;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public class ScalarWriters {
-  public final static StructuralWritable<String> STRING = new StructuralWritable<>() {
+  public final static Writable<String> STRING = new Writable<>() {
     @Override
-    public <T> T writeInto(String from, Writer<T> writer) {
-      return writer.writeText(from);
+    public <T> T writeInto(String from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeText(from);
     }
   };
 
-  public final static StructuralWritable<Integer> INT = new StructuralWritable<>() {
+  public final static Writable<Character> CHARACTER = new Writable<>() {
     @Override
-    public <T> T writeInto(Integer from, Writer<T> writer) {
-      return writer.writeInt(from);
+    public <T> T writeInto(Character from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeText(from.toString());
     }
   };
 
-  public final static StructuralWritable<Long> LONG = new StructuralWritable<>() {
+
+  public final static Writable<Integer> INTEGER = new Writable<>() {
     @Override
-    public <T> T writeInto(Long from, Writer<T> writer) {
-      return writer.writeLong(from);
+    public <T> T writeInto(Integer from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeInt(from);
+    }
+  };
+
+  public final static Writable<Long> LONG = new Writable<>() {
+    @Override
+    public <T> T writeInto(Long from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeLong(from);
+    }
+  };
+
+  public final static Writable<Byte> BYTE = new Writable<>() {
+    @Override
+    public <T> T writeInto(Byte from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeInt(from);
+    }
+  };
+
+  public final static Writable<Short> SHORT = new Writable<>() {
+    @Override
+    public <T> T writeInto(Short from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeInt(from);
+    }
+  };
+
+  public final static Writable<Boolean> BOOLEAN = new Writable<>() {
+    @Override
+    public <T> T writeInto(Boolean from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeBool(from);
+    }
+  };
+
+  public final static Writable<Float> FLOAT = new Writable<>() {
+    @Override
+    public <T> T writeInto(Float from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeFloat(from);
+    }
+  };
+
+  public final static Writable<Double> DOUBLE = new Writable<>() {
+    @Override
+    public <T> T writeInto(Double from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeDouble(from);
+    }
+  };
+
+  public final static Writable<byte[]> BLOB = new Writable<>() {
+    @Override
+    public <T> T writeInto(byte[] from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeBlob(from);
+    }
+  };
+
+  public final static Writable<BigInteger> BIG_INT = new Writable<>() {
+    @Override
+    public <T> T writeInto(BigInteger from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeBigInt(from);
+    }
+  };
+
+  public final static Writable<BigDecimal> BIG_DECIMAL = new Writable<>() {
+    @Override
+    public <T> T writeInto(BigDecimal from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeBigDecimal(from);
     }
   };
 }

@@ -16,7 +16,6 @@ package ai.swim.structure;
 
 import ai.swim.codec.input.Input;
 import ai.swim.structure.value.Value;
-import ai.swim.structure.writer.Writer;
 
 public abstract class Form<F> {
 

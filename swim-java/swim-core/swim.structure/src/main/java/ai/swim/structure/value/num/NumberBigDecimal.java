@@ -14,7 +14,10 @@
 
 package ai.swim.structure.value.num;
 
+import ai.swim.structure.writer.PrimitiveWriter;
+
 import java.math.BigDecimal;
+import java.util.Objects;
 
 public class NumberBigDecimal extends NumberValue {
   private final BigDecimal value;
@@ -28,5 +31,27 @@ public class NumberBigDecimal extends NumberValue {
     return "NumBigDecimal{" +
         "value=" + value +
         '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    NumberBigDecimal that = (NumberBigDecimal) o;
+    return Objects.equals(value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
+  }
+
+  @Override
+  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
+    return writer.writeBigDecimal(value);
   }
 }

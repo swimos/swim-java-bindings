@@ -14,7 +14,11 @@
 
 package ai.swim.structure.value;
 
-public class Text extends Value {
+import ai.swim.structure.writer.PrimitiveWriter;
+
+import java.util.Objects;
+
+public class Text extends PrimitiveValue {
   private final String value;
 
   public Text(String value) {
@@ -23,8 +27,28 @@ public class Text extends Value {
 
   @Override
   public String toString() {
-    return "Text{" +
-        "value='" + value + '\'' +
-        '}';
+    return value;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Text text = (Text) o;
+    return Objects.equals(value, text.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
+  }
+
+  @Override
+  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
+    return writer.writeText(value);
   }
 }

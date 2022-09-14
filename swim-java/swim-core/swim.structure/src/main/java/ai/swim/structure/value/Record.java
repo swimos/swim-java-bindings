@@ -14,7 +14,11 @@
 
 package ai.swim.structure.value;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 public class Record extends Value {
   private static final Attr[] EMPTY_ATTR_DATA = {};
@@ -34,11 +38,65 @@ public class Record extends Value {
     this.itemCount = 0;
   }
 
+  private Record(Attr[] attrs, int attrCount, Item[] items, int itemCount) {
+    this.attrs = attrs;
+    this.items = items;
+    this.attrCount = attrCount;
+    this.itemCount = itemCount;
+  }
+
+  public static Record of(List<Attr> attrs, List<Item> items) {
+    Attr[] attrArr = new Attr[attrs.size()];
+    Item[] itemArr = new Item[items.size()];
+
+    attrs.toArray(attrArr);
+    items.toArray(itemArr);
+
+    return new Record(attrArr, attrArr.length, itemArr, itemArr.length);
+  }
+
+  public static Record ofItems(List<Item> items) {
+    Item[] itemArr = new Item[items.size()];
+    items.toArray(itemArr);
+
+    return new Record(EMPTY_ATTR_DATA, 0, itemArr, itemArr.length);
+  }
+
+  public static Record ofAttrs(List<Attr> attrs) {
+    Attr[] attrArr = new Attr[attrs.size()];
+    attrs.toArray(attrArr);
+
+    return new Record(attrArr, attrArr.length, EMPTY_ITEM_DATA, 0);
+  }
+
+  public int getAttrCount() {
+    return attrCount;
+  }
+
+  public int getItemCount() {
+    return itemCount;
+  }
+
+  public Attr[] getAttrs() {
+    return attrs;
+  }
+
+  public Item[] getItems() {
+    return items;
+  }
+
   public void pushItem(Value value) {
     if (itemCount == items.length) {
       growItems(itemCount + 1);
     }
     items[itemCount++] = Item.of(value);
+  }
+
+  public void pushItem(Item value) {
+    if (itemCount == items.length) {
+      growItems(itemCount + 1);
+    }
+    items[itemCount++] = value;
   }
 
   public void pushItem(Value key, Value value) {
@@ -53,6 +111,13 @@ public class Record extends Value {
       growAttrs(attrCount + 1);
     }
     attrs[attrCount++] = new Attr(key, value);
+  }
+
+  public void pushAttr(Attr attr) {
+    if (attrCount == attrs.length) {
+      growAttrs(attrCount + 1);
+    }
+    attrs[attrCount++] = attr;
   }
 
   private void growItems(int by) {
@@ -98,4 +163,143 @@ public class Record extends Value {
         ", itemCount=" + itemCount +
         '}';
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Record record = (Record) o;
+
+    return
+        attrCount == record.attrCount && itemCount == record.itemCount
+            && Arrays.equals(attrs, 0, attrCount, record.attrs, 0, record.attrCount)
+            && Arrays.equals(items, 0, itemCount, record.items, 0, record.itemCount);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(attrCount, itemCount);
+    result = 31 * result + Arrays.hashCode(attrs);
+    result = 31 * result + Arrays.hashCode(items);
+    return result;
+  }
+
+  private void clear() {
+    attrs = EMPTY_ATTR_DATA;
+    items = EMPTY_ITEM_DATA;
+    attrCount = 0;
+    itemCount = 0;
+  }
+
+  public Attr getAttr(int idx) {
+    if (idx >= attrCount) {
+      throw new IndexOutOfBoundsException();
+    } else {
+      return attrs[idx];
+    }
+  }
+
+  public Item getItem(int idx) {
+    if (idx >= itemCount) {
+      throw new IndexOutOfBoundsException();
+    } else {
+      return items[idx];
+    }
+  }
+
+  @Override
+  public boolean isRecord() {
+    return true;
+  }
+
+  public static class Builder {
+    private ArrayList<Attr> attrs;
+    private ArrayList<Item> items;
+
+    public Builder(int attrCount, int itemCount) {
+      this.attrs = new ArrayList<>(attrCount);
+      this.items = new ArrayList<>(itemCount);
+    }
+
+    public int attrCount() {
+      return attrs.size();
+    }
+
+    public int itemCount() {
+      return items.size();
+    }
+
+    public void pushItem(Value value) {
+      items.add(Item.of(value));
+    }
+
+    public void pushItem(Item value) {
+      items.add(value);
+    }
+
+    public void pushItem(Value key, Value value) {
+      items.add(Item.of(key, value));
+    }
+
+    public void pushAttr(Text key, Value value) {
+      attrs.add(new Attr(key, value));
+    }
+
+    public void pushAttr(Attr attr) {
+      attrs.add(attr);
+    }
+
+    public void reserveAttrs(int numAttrs) {
+      attrs.ensureCapacity(numAttrs);
+    }
+
+    public void reserveItems(int numItems) {
+      items.ensureCapacity(numItems);
+    }
+
+    public Value buildDelegate(Value to) {
+      if (!items.isEmpty()) {
+        throw new IllegalStateException("Body already assigned");
+      } else if (attrs.isEmpty()) {
+        return Record.of(Collections.emptyList(), List.of(Item.of(to)));
+      }
+
+      if (to.isRecord()) {
+        Record theirs = (Record) to;
+
+        attrs.addAll(Arrays.asList(theirs.attrs).subList(0, theirs.attrCount));
+        items.addAll(Arrays.asList(theirs.items).subList(0, theirs.itemCount));
+
+        theirs.clear();
+
+        return Record.of(attrs, items);
+      } else {
+        return Record.of(attrs, List.of(Item.of(to)));
+      }
+    }
+
+    public Record build() {
+      Record record = Record.of(attrs, items);
+
+      this.attrs = new ArrayList<>(0);
+      this.items = new ArrayList<>(0);
+
+      return record;
+    }
+
+    @Override
+    public String toString() {
+      return "Record.Builder{" +
+          "attrs=" + attrs +
+          ", items=" + items +
+          '}';
+    }
+
+
+  }
+
 }

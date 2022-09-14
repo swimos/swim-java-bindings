@@ -14,5 +14,7 @@
 
 package ai.swim.structure.writer;
 
-public interface StructuralWritable<T> extends Writable<T> {
+public interface StructuralWriter<T> extends PrimitiveWriter<T>{
+  HeaderWriter<T> record(int numAttrs);
 }
+

@@ -14,11 +14,6 @@
 
 package ai.swim.structure;
 
-import ai.swim.codec.input.Input;
-import ai.swim.structure.value.Value;
-import ai.swim.structure.writer.Writer;
-import org.junit.jupiter.api.Test;
-
 class FormTest {
 
 //  private static class ValueWriter<I> extends Writer<I, Value> {

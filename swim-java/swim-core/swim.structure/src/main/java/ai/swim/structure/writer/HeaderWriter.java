@@ -14,20 +14,18 @@
 
 package ai.swim.structure.writer;
 
-import ai.swim.structure.recognizer.std.ScalarRecognizer;
-import ai.swim.structure.writer.std.ScalarWriters;
-
-import java.util.Objects;
+import ai.swim.structure.writer.header.WritableHeader;
 
 public interface HeaderWriter<T> {
 
-  <V> BodyWriter<T> writeAttrWith(String key, StructuralWritable<V> valueWriter, V value);
+  HeaderWriter<T> writeExtantAttr(String key);
 
-  default  < V> BodyWriter<T> writeAttr(String key, V value) {
-    StructuralWritable<V> valueWriter = WriterProxy.lookup(Objects.requireNonNull(value).getClass());
-    return this.writeAttrWith(key, valueWriter, value);
-  }
+  <V> HeaderWriter<T> writeAttrWith(String key, Writable<V> valueWriter, V value);
 
+  HeaderWriter<T> writeAttr(String key, WritableHeader writable);
 
-  BodyWriter<T> completeHeader(RecordBodyKind mapLike, int numItems);
+  <V> T delegateWith(Writable<V> valueWriter, V value);
+
+  BodyWriter<T> completeHeader(int numItems);
+
 }

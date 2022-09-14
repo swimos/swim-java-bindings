@@ -14,10 +14,42 @@
 
 package ai.swim.structure.value;
 
-public class Blob extends Value {
+import ai.swim.structure.writer.PrimitiveWriter;
+
+import java.util.Arrays;
+import java.util.Base64;
+
+public class Blob extends PrimitiveValue {
   private final byte[] value;
 
   public Blob(byte[] value) {
-    this.value=value;
+    this.value = value;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Blob blob = (Blob) o;
+    return Arrays.equals(value, blob.value);
+  }
+
+  @Override
+  public String toString() {
+    return Base64.getEncoder().encodeToString(value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(value);
+  }
+
+  @Override
+  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
+    return writer.writeBlob(value);
   }
 }

@@ -15,33 +15,34 @@
 package ai.swim.structure.value.num;
 
 
+import ai.swim.structure.value.PrimitiveValue;
 import ai.swim.structure.value.Value;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-public abstract class NumberValue extends Value {
-  public static Value of(int value) {
+public abstract class NumberValue extends PrimitiveValue {
+  public static NumberValue of(int value) {
     return new NumberI32(value);
   }
 
-  public static Value of(long value) {
+  public static NumberValue of(long value) {
     return new NumberI64(value);
   }
 
-  public static Value of(float value) {
+  public static NumberValue of(float value) {
     return new NumberF32(value);
   }
 
-  public static Value of(double value) {
+  public static NumberValue of(double value) {
     return new NumberF64(value);
   }
 
-  public static Value of(BigInteger value) {
+  public static NumberValue of(BigInteger value) {
     return new NumberBigInt(value);
   }
 
-  public static Value of(BigDecimal value) {
+  public static NumberValue of(BigDecimal value) {
     return new NumberBigDecimal(value);
   }
 }

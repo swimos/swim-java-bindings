@@ -14,22 +14,24 @@
 
 package ai.swim.structure.writer;
 
+import ai.swim.structure.writer.proxy.WriterProxy;
+
 import java.util.Objects;
 
 public interface BodyWriter<T> {
-  <K, V> BodyWriter<T> writeSlotWith(StructuralWritable<K> keyWriter, K key, StructuralWritable<V> valueWriter, V value);
+  <K, V> BodyWriter<T> writeSlotWith(Writable<K> keyWriter, K key, Writable<V> valueWriter, V value);
 
   default  <K, V> BodyWriter<T> writeSlot(K key, V value) {
-    StructuralWritable<K> keyWriter = WriterProxy.lookup(Objects.requireNonNull(key).getClass());
-    StructuralWritable<V> valueWriter = WriterProxy.lookup(Objects.requireNonNull(value).getClass());
+    Writable<K> keyWriter = WriterProxy.lookup(Objects.requireNonNull(key).getClass());
+    Writable<V> valueWriter = WriterProxy.lookup(Objects.requireNonNull(value).getClass());
     return this.writeSlotWith(keyWriter, key, valueWriter, value);
   }
 
-  <V> BodyWriter<T> writeValueWith(StructuralWritable<V> writer, V value);
+  <V> BodyWriter<T> writeValueWith(Writable<V> writer, V value);
 
-  default <V> BodyWriter<T> writeValue(StructuralWritable<V> writer, V value) {
-    StructuralWritable<V> valueWriter = WriterProxy.lookup(Objects.requireNonNull(value).getClass());
-    return this.writeValue(valueWriter, value);
+  default <V> BodyWriter<T> writeValue( V value) {
+    Writable<V> valueWriter = WriterProxy.lookup(Objects.requireNonNull(value).getClass());
+    return this.writeValueWith(valueWriter, value);
   }
 
   T done();

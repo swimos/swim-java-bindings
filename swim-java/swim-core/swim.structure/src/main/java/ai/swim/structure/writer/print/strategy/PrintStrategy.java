@@ -12,8 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.writer;
+package ai.swim.structure.writer.print.strategy;
 
-public enum RecordBodyKind {
-  MapLike,
+import ai.swim.structure.writer.print.Padding;
+
+public interface PrintStrategy {
+   Padding attrPadding();
+
+   Padding attrBodyPadding();
+
+   Padding startBlock(int items);
+
+   Padding endBlock();
+
+   Padding itemPadding(boolean inRecord);
+
+   Padding slotPadding();
 }
