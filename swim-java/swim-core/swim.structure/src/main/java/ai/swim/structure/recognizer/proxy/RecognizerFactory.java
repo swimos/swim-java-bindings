@@ -59,7 +59,7 @@ class RecognizerFactory<T> {
   }
 
   @SuppressWarnings("unchecked")
-  public Recognizer<T> newTypedInstance(TypeParameter<?>... typeParameters) {
+  public Recognizer<T> newTypedInstance(RecognizerTypeParameter<?>... typeParameters) {
     if (typedConstructor == null) {
       throw new IllegalStateException("Not a generic recognizer");
     } else {

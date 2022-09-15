@@ -189,7 +189,7 @@ public class Recognizer {
       String typeParameterName = nameFactory.typeParameterName(typeParameter.toString());
       parameters.add(ParameterSpec.builder(TypeName.get(typed), typeParameterName).build());
 
-      nullChecks.add(CodeBlock.of("requireNonNullElse($L, ai.swim.structure.recognizer.proxy.TypeParameter.<$T>untyped())", typeParameterName, typeParameter).toString());
+      nullChecks.add(CodeBlock.of("requireNonNullElse($L, ai.swim.structure.recognizer.proxy.RecognizerTypeParameter.<$T>untyped())", typeParameterName, typeParameter).toString());
     }
 
     CodeBlock body = CodeBlock.of("this(new $L<>($L));", context.getNameFactory().builderClassName(), nullChecks.toString());

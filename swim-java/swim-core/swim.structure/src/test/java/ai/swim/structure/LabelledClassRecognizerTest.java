@@ -42,8 +42,6 @@ class LabelledClassRecognizerTest {
     if (recognizer.isError()) {
       throw recognizer.trap();
     }
-
-    System.out.println(recognizer.bind());
   }
 
   @Test
@@ -88,8 +86,6 @@ class LabelledClassRecognizerTest {
     if (recognizer.isError()) {
       throw recognizer.trap();
     }
-
-    System.out.println(recognizer.bind());
   }
 
   static class InnerClassRecognizer extends Recognizer<InnerPropClass> {

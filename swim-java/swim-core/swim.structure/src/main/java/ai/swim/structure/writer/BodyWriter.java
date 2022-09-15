@@ -21,16 +21,16 @@ import java.util.Objects;
 public interface BodyWriter<T> {
   <K, V> BodyWriter<T> writeSlotWith(Writable<K> keyWriter, K key, Writable<V> valueWriter, V value);
 
-  default  <K, V> BodyWriter<T> writeSlot(K key, V value) {
-    Writable<K> keyWriter = WriterProxy.lookup(Objects.requireNonNull(key).getClass());
-    Writable<V> valueWriter = WriterProxy.lookup(Objects.requireNonNull(value).getClass());
+  default <K, V> BodyWriter<T> writeSlot(K key, V value) {
+    Writable<K> keyWriter = WriterProxy.getProxy().lookupObject(key);
+    Writable<V> valueWriter = WriterProxy.getProxy().lookupObject(value);
     return this.writeSlotWith(keyWriter, key, valueWriter, value);
   }
 
   <V> BodyWriter<T> writeValueWith(Writable<V> writer, V value);
 
-  default <V> BodyWriter<T> writeValue( V value) {
-    Writable<V> valueWriter = WriterProxy.lookup(Objects.requireNonNull(value).getClass());
+  default <V> BodyWriter<T> writeValue(V value) {
+    Writable<V> valueWriter = WriterProxy.getProxy().lookupObject(Objects.requireNonNull(value));
     return this.writeValueWith(valueWriter, value);
   }
 

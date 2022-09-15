@@ -14,14 +14,15 @@
 
 package ai.swim.structure.recognizer.proxy;
 
+import ai.swim.structure.TypeParameter;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.untyped.UntypedRecognizer;
 
 import java.util.function.Supplier;
 
-public abstract class TypeParameter<T> {
+public abstract class RecognizerTypeParameter<T> extends TypeParameter<Recognizer<T>> {
 
-  public static <T> TypeParameter<T> from(Class<T> target) {
+  public static <T> RecognizerTypeParameter<T> from(Class<T> target) {
     if (target == null) {
       return untyped();
     } else {
@@ -29,53 +30,38 @@ public abstract class TypeParameter<T> {
     }
   }
 
-  public static <T> TypeParameter<T> from(Supplier<Recognizer<T>> target) {
+  public static <T> RecognizerTypeParameter<T> from(Supplier<Recognizer<T>> target) {
     if (target == null) {
       return untyped();
     } else {
-      return resolved(target);
+      return forSupplier(target);
     }
   }
 
-  public static <T> TypeParameter<T> forClass(Class<T> target) {
-    return new GenericTypeParameter<>(target);
+  private static <T> RecognizerTypeParameter<T> forClass(Class<T> target) {
+    return forSupplier(() -> RecognizerProxy.getProxy().lookup(target));
   }
 
-  public static <T> TypeParameter<T> resolved(Supplier<Recognizer<T>> recognizer) {
-    return new ResolvedParameter<>(recognizer);
+  private static <T> RecognizerTypeParameter<T> forSupplier(Supplier<Recognizer<T>> recognizer) {
+    return new SupplierParameter<>(recognizer);
   }
 
-  public static <T> TypeParameter<T> untyped() {
+  public static <T> RecognizerTypeParameter<T> untyped() {
     return new UntypedParameter<>();
   }
-
-  public abstract Recognizer<T> build();
 }
 
-final class GenericTypeParameter<T> extends TypeParameter<T> {
-  private final Class<T> target;
-
-  GenericTypeParameter(Class<T> target) {
-    this.target = target;
-  }
-
-  @Override
-  public Recognizer<T> build() {
-    return RecognizerProxy.getProxy().lookup(target);
-  }
-}
-
-final class UntypedParameter<T> extends TypeParameter<T> {
+final class UntypedParameter<T> extends RecognizerTypeParameter<T> {
   @Override
   public Recognizer<T> build() {
     return new UntypedRecognizer<>();
   }
 }
 
-final class ResolvedParameter<T> extends TypeParameter<T> {
+final class SupplierParameter<T> extends RecognizerTypeParameter<T> {
   private final Supplier<Recognizer<T>> recognizer;
 
-  ResolvedParameter(Supplier<Recognizer<T>> recognizer) {
+  SupplierParameter(Supplier<Recognizer<T>> recognizer) {
     this.recognizer = recognizer;
   }
 

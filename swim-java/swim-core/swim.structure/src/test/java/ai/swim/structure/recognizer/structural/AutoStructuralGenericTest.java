@@ -6,7 +6,7 @@ import ai.swim.structure.FormParser;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerException;
-import ai.swim.structure.recognizer.proxy.TypeParameter;
+import ai.swim.structure.recognizer.proxy.RecognizerTypeParameter;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import org.junit.jupiter.api.Test;
 
@@ -106,7 +106,7 @@ public class AutoStructuralGenericTest {
     assertEquals(parser.bind(), new NestedGenerics<>(1, new Typed<>(2, "text"), true));
   }
 
-  <G extends Number, A extends Number, T extends CharSequence> void runNestedTestOk(TypeParameter<G> gTy, TypeParameter<A> aTy, TypeParameter<T> tTy, String input, NestedGenerics<G, A, T> expected) {
+  <G extends Number, A extends Number, T extends CharSequence> void runNestedTestOk(RecognizerTypeParameter<G> gTy, RecognizerTypeParameter<A> aTy, RecognizerTypeParameter<T> tTy, String input, NestedGenerics<G, A, T> expected) {
     Recognizer<NestedGenerics<G, A, T>> recognizer = new NestedGenericsRecognizer<>(gTy, aTy, tTy);
     Parser<NestedGenerics<G, A, T>> parser = new FormParser<>(recognizer);
 
@@ -115,11 +115,11 @@ public class AutoStructuralGenericTest {
   }
 
   @Test
-  void testFromTypeParameters() {
+  void testFromRecognizerTypeParameters() {
     runNestedTestOk(
-        TypeParameter.from(Integer.class),
-        TypeParameter.from(Integer.class),
-        TypeParameter.from(String.class),
+        RecognizerTypeParameter.from(Integer.class),
+        RecognizerTypeParameter.from(Integer.class),
+        RecognizerTypeParameter.from(String.class),
         "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
         new NestedGenerics<>(1, new Typed<>(2, "text"), true)
     );
@@ -134,14 +134,14 @@ public class AutoStructuralGenericTest {
 
     runNestedTestOk(
         null,
-        TypeParameter.from(() -> ScalarRecognizer.INTEGER),
+        RecognizerTypeParameter.from(() -> ScalarRecognizer.INTEGER),
         null,
         "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
         new NestedGenerics<>(1, new Typed<>(2, "text"), true)
     );
   }
 
-  <G extends Number, A extends Number, T extends CharSequence> void runNestedTestErr(TypeParameter<G> gTy, TypeParameter<A> aTy, TypeParameter<T> tTy, String input) {
+  <G extends Number, A extends Number, T extends CharSequence> void runNestedTestErr(RecognizerTypeParameter<G> gTy, RecognizerTypeParameter<A> aTy, RecognizerTypeParameter<T> tTy, String input) {
     Recognizer<NestedGenerics<G, A, T>> recognizer = new NestedGenericsRecognizer<>(gTy, aTy, tTy);
     Parser<NestedGenerics<G, A, T>> parser = new FormParser<>(recognizer);
 
@@ -221,11 +221,11 @@ public class AutoStructuralGenericTest {
   }
 
   @Test
-  void testFromTypeParametersErr() {
+  void testFromRecognizerTypeParametersErr() {
     runNestedTestErr(
-        TypeParameter.from(Integer.class),
-        TypeParameter.from(Integer.class),
-        TypeParameter.from(String.class),
+        RecognizerTypeParameter.from(Integer.class),
+        RecognizerTypeParameter.from(Integer.class),
+        RecognizerTypeParameter.from(String.class),
         "@gen{generic:1,a:@Typed{a:2,t:1},c:true}"
     );
     runNestedTestErr(
@@ -235,16 +235,16 @@ public class AutoStructuralGenericTest {
         "@gen{generic:1,a:@Typed{a:\"\",t:1},c:true}"
     );
 
-    assertThrows(RecognizerException.class, () -> new ClazzRecognizer<>(TypeParameter.from(Void.class), TypeParameter.from(Integer.class), TypeParameter.from(Long.class)));
-    assertThrows(RecognizerException.class, () -> new ClazzRecognizer<>(TypeParameter.from(Integer.class), TypeParameter.from(Long.class), TypeParameter.from(Void.class)));
+    assertThrows(RecognizerException.class, () -> new ClazzRecognizer<>(RecognizerTypeParameter.from(Void.class), RecognizerTypeParameter.from(Integer.class), RecognizerTypeParameter.from(Long.class)));
+    assertThrows(RecognizerException.class, () -> new ClazzRecognizer<>(RecognizerTypeParameter.from(Integer.class), RecognizerTypeParameter.from(Long.class), RecognizerTypeParameter.from(Void.class)));
   }
 
   @Test
   void untyped() {
     Recognizer<Clazz<Integer, Long, Object>> recognizer = new ClazzRecognizer<>(
-        TypeParameter.from(Integer.class),
-        TypeParameter.from(Long.class),
-        TypeParameter.untyped()
+        RecognizerTypeParameter.from(Integer.class),
+        RecognizerTypeParameter.from(Long.class),
+        RecognizerTypeParameter.untyped()
     );
 
     Parser<Clazz<Integer, Long, Object>> parser = new FormParser<>(recognizer);

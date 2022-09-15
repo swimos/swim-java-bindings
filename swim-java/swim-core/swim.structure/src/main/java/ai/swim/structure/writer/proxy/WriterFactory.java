@@ -15,10 +15,14 @@
 package ai.swim.structure.writer.proxy;
 
 import ai.swim.structure.annotations.AutoForm;
+import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.RecognizerException;
+import ai.swim.structure.recognizer.proxy.RecognizerTypeParameter;
 import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.Writable;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.function.Supplier;
 
 class WriterFactory<T> {
@@ -51,6 +55,32 @@ class WriterFactory<T> {
     }
 
     return new WriterFactory<>(supplier, typedConstructor, isStructural, targetClass);
+  }
+
+  public boolean isStructural() {
+    return isStructural;
+  }
+
+  @SuppressWarnings("unchecked")
+  public Writable<T> newInstance() {
+    if (supplier == null) {
+      throw new RecognizerException(targetClass.getSimpleName() + " requires type parameters to instantiate");
+    }
+
+    return (Writable<T>) supplier.get();
+  }
+
+  @SuppressWarnings("unchecked")
+  public Writable<T> newTypedInstance(WriterTypeParameter<?>... typeParameters) {
+    if (typedConstructor == null) {
+      throw new IllegalStateException("Not a generic writer");
+    } else {
+      try {
+        return (Writable<T>) typedConstructor.newInstance((Object[]) typeParameters);
+      } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+        throw new RecognizerException(e);
+      }
+    }
   }
 
 }
