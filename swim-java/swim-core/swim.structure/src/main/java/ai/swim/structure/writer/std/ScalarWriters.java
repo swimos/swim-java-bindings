@@ -14,13 +14,17 @@
 
 package ai.swim.structure.writer.std;
 
-import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.StructuralWriter;
+import ai.swim.structure.writer.Writable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ScalarWriters {
+
   public final static Writable<String> STRING = new Writable<>() {
     @Override
     public <T> T writeInto(String from, StructuralWriter<T> structuralWriter) {
@@ -85,10 +89,23 @@ public class ScalarWriters {
     }
   };
 
-  public final static Writable<byte[]> BLOB = new Writable<>() {
+  public final static Writable<byte[]> PRIMITIVE_BLOB = new Writable<>() {
     @Override
     public <T> T writeInto(byte[] from, StructuralWriter<T> structuralWriter) {
       return structuralWriter.writeBlob(from);
+    }
+  };
+
+  public final static Writable<Byte[]> BOXED_BLOB = new Writable<>() {
+    @Override
+    public <T> T writeInto(Byte[] from, StructuralWriter<T> structuralWriter) {
+      byte[] blob = new byte[from.length];
+
+      for (int i = 0; i < from.length; i++) {
+        blob[i]=from[i];
+      }
+
+      return structuralWriter.writeBlob(blob);
     }
   };
 
@@ -103,6 +120,27 @@ public class ScalarWriters {
     @Override
     public <T> T writeInto(BigDecimal from, StructuralWriter<T> structuralWriter) {
       return structuralWriter.writeBigDecimal(from);
+    }
+  };
+
+  public final static Writable<AtomicInteger> ATOMIC_INTEGER = new Writable<>() {
+    @Override
+    public <T> T writeInto(AtomicInteger from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeInt(from.get());
+    }
+  };
+
+  public final static Writable<AtomicBoolean> ATOMIC_BOOLEAN = new Writable<>() {
+    @Override
+    public <T> T writeInto(AtomicBoolean from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeBool(from.get());
+    }
+  };
+
+  public final static Writable<AtomicLong> ATOMIC_LONG = new Writable<>() {
+    @Override
+    public <T> T writeInto(AtomicLong from, StructuralWriter<T> structuralWriter) {
+      return structuralWriter.writeLong(from.get());
     }
   };
 }

@@ -104,7 +104,7 @@ public class RecognizerProxy {
     return RecognizerProxy.INSTANCE;
   }
 
-  public <T> Recognizer<T> lookup(Class<T> clazz, TypeParameter<?>... typeParameters) {
+  public <T> Recognizer<T> lookup(Class<T> clazz, RecognizerTypeParameter<?>... typeParameters) {
     if (clazz == null) {
       throw new NullPointerException();
     }
@@ -128,7 +128,7 @@ public class RecognizerProxy {
   }
 
   @SuppressWarnings("unchecked")
-  public <T> StructuralRecognizer<T> lookupTyped(Class<T> clazz, TypeParameter<?>... typeParameters) {
+  public <T> StructuralRecognizer<T> lookupTyped(Class<T> clazz, RecognizerTypeParameter<?>... typeParameters) {
     RecognizerFactory<T> factory = (RecognizerFactory<T>) this.recognizers.get(clazz);
 
     if (factory == null) {
@@ -143,7 +143,7 @@ public class RecognizerProxy {
   }
 
   @SuppressWarnings("unchecked")
-  private <T> StructuralRecognizer<T> fromStdClass(Class<T> clazz, TypeParameter<?>... typeParameters) {
+  private <T> StructuralRecognizer<T> fromStdClass(Class<T> clazz, RecognizerTypeParameter<?>... typeParameters) {
     if (Map.class.isAssignableFrom(clazz)) {
       return (StructuralRecognizer<T>) lookupTyped(Map.class, typeParameters);
     }
