@@ -1,8 +1,8 @@
 package ai.swim.structure.processor.schema;
 
-import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.InterfaceMap;
-import ai.swim.structure.processor.writer.recognizer.PolymorphicRecognizer;
+import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.recognizer.models.InterfaceMap;
+import ai.swim.structure.processor.recognizer.writer.recognizer.PolymorphicRecognizer;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
@@ -10,7 +10,7 @@ import com.squareup.javapoet.TypeSpec;
 import javax.lang.model.element.Element;
 import java.io.IOException;
 
-import static ai.swim.structure.processor.writer.Lookups.RECOGNIZER_PROXY;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZER_PROXY;
 
 public class InterfaceSchema implements Schema {
   private final InterfaceMap interfaceMap;

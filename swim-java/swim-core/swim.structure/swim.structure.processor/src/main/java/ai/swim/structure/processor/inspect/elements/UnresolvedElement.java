@@ -12,8 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure;
+package ai.swim.structure.processor.inspect.elements;
 
-public abstract class TypeParameter<T> {
-  public abstract T build();
+import ai.swim.structure.processor.inspect.elements.visitor.ElementVisitor;
+
+import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.TypeElement;
+
+public class UnresolvedElement extends StructuralElement {
+
+  public UnresolvedElement(TypeElement root, PackageElement declaredPackage) {
+    super(root, declaredPackage);
+  }
+
+  @Override
+  public <T> T accept(ElementVisitor<T> visitor) {
+    return visitor.visitUnresolved(this);
+  }
+
 }

@@ -12,8 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure;
+package ai.swim.structure.processor.inspect.elements.visitor;
 
-public abstract class TypeParameter<T> {
-  public abstract T build();
+import ai.swim.structure.processor.inspect.elements.ClassElement;
+import ai.swim.structure.processor.inspect.elements.PrimitiveElement;
+import ai.swim.structure.processor.inspect.elements.InterfaceElement;
+import ai.swim.structure.processor.inspect.elements.UnresolvedElement;
+
+public interface ElementVisitor<R> {
+  R visitPrimitive(PrimitiveElement element);
+
+  R visitClass(ClassElement element);
+
+  R visitInterface(InterfaceElement element);
+
+  R visitUnresolved(UnresolvedElement element);
+
+
 }

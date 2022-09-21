@@ -15,9 +15,10 @@
 package ai.swim.structure.processor;
 
 import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.processor.context.ProcessingContext;
-import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.RecognizerModel;
+import ai.swim.structure.processor.recognizer.context.ProcessingContext;
+import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.recognizer.models.RecognizerFactory;
+import ai.swim.structure.processor.recognizer.models.RecognizerModel;
 import ai.swim.structure.processor.schema.Schema;
 import com.google.auto.service.AutoService;
 
@@ -36,7 +37,7 @@ import java.util.Set;
 @AutoService(Processor.class)
 public class FormProcessor extends AbstractProcessor {
 
-  private ProcessingContext processingContext;
+  private RecognizerFactory recognizerFactory;
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -46,13 +47,23 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-      if (!element.asType().toString().contains("ClassB")) {
+      if (!element.asType().toString().equals("ai.swim.structure.recognizer.structural.AutoStructuralTest.IF2Impl")) {
 //        continue;
       }
 
-      ScopedContext scopedContext = this.processingContext.enter(element);
+      ScopedContext scopedContext = new ScopedContext(processingEnv, recognizerFactory,element);
 
       try {
+        // todo:
+        //  hoist the recognizer code out to a deriveRecognizer package
+        //  add a new package for deriveWritable code
+        //  invoke both of the derive methods here and write out the outputs
+        //  add unit tests for
+        //    - simple writers
+        //    - all form manipulations (header, header_body etc)
+        //    - renaming
+        //    - generics
+
         RecognizerModel recognizer = scopedContext.getRecognizer(element);
 
         if (recognizer == null) {
@@ -62,7 +73,7 @@ public class FormProcessor extends AbstractProcessor {
         Schema.from(recognizer).write(scopedContext);
       } catch (Throwable e) {
         e.printStackTrace();
-        processingContext.getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
       }
     }
 
@@ -72,7 +83,7 @@ public class FormProcessor extends AbstractProcessor {
   @Override
   public synchronized void init(ProcessingEnvironment processingEnv) {
     super.init(processingEnv);
-    this.processingContext = new ProcessingContext(processingEnv);
+    this.recognizerFactory = RecognizerFactory.initFrom(processingEnv);
   }
 
   @Override

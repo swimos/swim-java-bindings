@@ -12,8 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure;
+package ai.swim.structure.processor.inspect.elements;
 
-public abstract class TypeParameter<T> {
-  public abstract T build();
+import ai.swim.structure.processor.inspect.elements.visitor.ElementVisitor;
+
+import javax.lang.model.type.TypeMirror;
+
+public class PrimitiveElement extends JavaElement {
+  private final TypeMirror type;
+
+  private PrimitiveElement(TypeMirror type) {
+    this.type = type;
+  }
+
+  @Override
+  public <T> T accept(ElementVisitor<T> visitor) {
+    return visitor.visitPrimitive(this);
+  }
+
+  public TypeMirror getType() {
+    return type;
+  }
 }

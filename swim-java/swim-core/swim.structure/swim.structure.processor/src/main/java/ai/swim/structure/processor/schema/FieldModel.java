@@ -1,27 +1,35 @@
 package ai.swim.structure.processor.schema;
 
+import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
-import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.inspect.FieldView;
 import ai.swim.structure.processor.inspect.accessor.Accessor;
-import ai.swim.structure.processor.recognizer.RecognizerModel;
+import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.recognizer.models.RecognizerModel;
 import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.*;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Types;
 
 public class FieldModel {
   private final Accessor accessor;
   private final RecognizerModel recognizer;
-  private final FieldView fieldView;
+  private final VariableElement element;
+  private final FieldKind fieldKind;
 
-  public FieldModel(Accessor accessor, RecognizerModel recognizer, FieldView fieldView) {
+  public FieldModel(Accessor accessor, RecognizerModel recognizer, VariableElement element, FieldKind fieldKind) {
     this.accessor = accessor;
     this.recognizer = recognizer;
-    this.fieldView = fieldView;
+    this.element = element;
+    this.fieldKind = fieldKind;
   }
 
   @Override
@@ -29,22 +37,24 @@ public class FieldModel {
     return "FieldModel{" +
         "accessor=" + accessor +
         ", recognizer=" + recognizer +
-        ", fieldView=" + fieldView +
+        ", element=" + element +
+        ", fieldKind=" + fieldKind +
         '}';
   }
 
-  public String fieldName() {
-    return this.fieldView.getName().toString();
-  }
-
   public String propertyName() {
-    return this.fieldView.propertyName();
+    AutoForm.Name name = this.element.getAnnotation(AutoForm.Name.class);
+    if (name != null) {
+      return name.value();
+    } else {
+      return this.element.getSimpleName().toString();
+    }
   }
 
   public TypeMirror type(ProcessingEnvironment environment) {
     TypeMirror type = this.recognizer.type(environment);
     if (type == null) {
-      return this.fieldView.getElement().asType();
+      return this.element.asType();
     } else {
       return type;
     }
@@ -59,7 +69,11 @@ public class FieldModel {
   }
 
   public boolean isOptional() {
-    return this.fieldView.isOptional();
+    return this.element.getAnnotation(AutoForm.Optional.class) != null;
+  }
+
+  public boolean isIgnored() {
+    return this.element.getAnnotation(AutoForm.Ignore.class) != null;
   }
 
   public Object defaultValue() {
@@ -67,15 +81,11 @@ public class FieldModel {
   }
 
   public FieldKind getFieldKind() {
-    return fieldView.getFieldKind();
+    return this.fieldKind;
   }
 
   public Name getName() {
-    return this.fieldView.getName();
-  }
-
-  public FieldView getFieldView() {
-    return this.fieldView;
+    return this.element.getSimpleName();
   }
 
   public TypeMirror boxedType(ProcessingEnvironment environment) {
@@ -117,5 +127,23 @@ public class FieldModel {
       default:
         throw new AssertionError("Unexpected type kind when processing generic parameters: " + typeKind + " in " + context.getRoot());
     }
+  }
+
+  public boolean isPublic() {
+    for (Modifier modifier : this.element.getModifiers()) {
+      switch (modifier) {
+        case PUBLIC:
+          return true;
+        case PROTECTED:
+        case PRIVATE:
+          return false;
+      }
+    }
+
+    return false;
+  }
+
+  public VariableElement getElement() {
+    return element;
   }
 }

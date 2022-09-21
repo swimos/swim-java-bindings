@@ -12,8 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure;
+package ai.swim.structure.processor.recognizer.writer;
 
-public abstract class TypeParameter<T> {
-  public abstract T build();
+import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import com.squareup.javapoet.CodeBlock;
+
+public interface Emitter {
+
+  CodeBlock emit(ScopedContext context);
+
 }
