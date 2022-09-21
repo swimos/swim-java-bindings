@@ -78,13 +78,13 @@ public class WriterProxy {
     return writers;
   }
 
-  public <T> Writable<T> lookupObject(T obj, WriterTypeParameter<?>... typeParameters) {
+  public <T> Writable<T> lookupObject(T obj) {
     if (obj == null) {
       throw new NullPointerException();
     }
 
     @SuppressWarnings("unchecked") Class<T> clazz = (Class<T>) obj.getClass();
-    return lookup(clazz, typeParameters);
+    return lookupUntyped(clazz);
   }
 
   public <T> Writable<T> lookup(Class<T> clazz, WriterTypeParameter<?>... typeParameters) {
@@ -141,4 +141,5 @@ public class WriterProxy {
   public static WriterProxy getProxy() {
     return WriterProxy.INSTANCE;
   }
+
 }

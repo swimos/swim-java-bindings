@@ -1,8 +1,8 @@
 package ai.swim.structure.processor;
 
 import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.RecognizerModel;
+import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.recognizer.models.RecognizerModel;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
@@ -14,7 +14,7 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.List;
 
-import static ai.swim.structure.processor.recognizer.RecognizerModel.untyped;
+import static ai.swim.structure.processor.recognizer.models.RecognizerModel.untyped;
 
 public class Utils {
 

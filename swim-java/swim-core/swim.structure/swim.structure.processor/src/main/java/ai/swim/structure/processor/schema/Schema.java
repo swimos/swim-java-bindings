@@ -1,9 +1,9 @@
 package ai.swim.structure.processor.schema;
 
-import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.ClassMap;
-import ai.swim.structure.processor.recognizer.InterfaceMap;
-import ai.swim.structure.processor.recognizer.RecognizerModel;
+import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.recognizer.models.ClassMap;
+import ai.swim.structure.processor.recognizer.models.InterfaceMap;
+import ai.swim.structure.processor.recognizer.models.RecognizerModel;
 
 import javax.lang.model.element.Element;
 import java.io.IOException;

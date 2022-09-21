@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure;
+package ai.swim.structure.processor.inspect.elements;
 
-public abstract class TypeParameter<T> {
-  public abstract T build();
+import ai.swim.structure.processor.inspect.elements.visitor.ElementVisitor;
+
+public abstract class JavaElement {
+  public abstract <T> T accept(ElementVisitor<T> visitor);
 }
