@@ -15,9 +15,7 @@
 package ai.swim.structure.writer.proxy;
 
 import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerException;
-import ai.swim.structure.recognizer.proxy.RecognizerTypeParameter;
 import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.Writable;
 

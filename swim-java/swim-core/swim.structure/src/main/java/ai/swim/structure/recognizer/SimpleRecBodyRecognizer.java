@@ -3,12 +3,6 @@ package ai.swim.structure.recognizer;
 import ai.swim.recon.event.ReadEvent;
 
 public class SimpleRecBodyRecognizer<T> extends Recognizer<T> {
-  enum State {
-    Init,
-    ReadingValue,
-    AfterValue
-  }
-
   private Recognizer<T> delegate;
   private State state;
 
@@ -50,5 +44,11 @@ public class SimpleRecBodyRecognizer<T> extends Recognizer<T> {
   @Override
   public Recognizer<T> reset() {
     return new SimpleRecBodyRecognizer<>(this.delegate.reset());
+  }
+
+  enum State {
+    Init,
+    ReadingValue,
+    AfterValue
   }
 }

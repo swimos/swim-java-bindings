@@ -60,8 +60,12 @@ public class ParserTransition {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof ParserTransition)) return false;
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ParserTransition)) {
+      return false;
+    }
     ParserTransition that = (ParserTransition) o;
     return Objects.equals(events, that.events) && Objects.equals(change, that.change);
   }

@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.context;
+package ai.swim.structure.processor.context;
 
-import ai.swim.structure.processor.recognizer.models.RecognizerFactory;
-import ai.swim.structure.processor.recognizer.models.RecognizerModel;
+import ai.swim.structure.processor.recognizer.RecognizerFactory;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -53,23 +52,12 @@ public class ScopedContext {
     return recognizerFactory;
   }
 
-  public RecognizerModel getRecognizer(Element element) {
-    return recognizerFactory.getOrInspect(element, this);
-  }
-
   public ProcessingEnvironment getProcessingEnvironment() {
     return processingEnvironment;
-  }
-
-  public RecognizerFactory getFactory() {
-    return recognizerFactory;
   }
 
   public NameFactory getNameFactory() {
     return formatter;
   }
 
-  public ScopedContext rescope(Element to) {
-    return new ScopedContext(processingEnvironment, recognizerFactory,to);
-  }
 }

@@ -14,14 +14,14 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder.header;
 
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.writer.Emitter;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.Lookups;
 import ai.swim.structure.processor.recognizer.writer.WriterUtils;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.HeaderSet;
 import ai.swim.structure.processor.schema.PartitionedFields;
+import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;

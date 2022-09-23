@@ -16,7 +16,10 @@ package ai.swim.structure.processor.inspect.elements;
 
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.inspect.accessor.Accessor;
+import ai.swim.structure.processor.models.ModelLookup;
+import ai.swim.structure.processor.schema.FieldModel;
 
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
@@ -34,11 +37,6 @@ public class FieldElement {
     this.fieldKind = fieldKind;
   }
 
-
-  public String fieldName() {
-    return this.element.getSimpleName().toString();
-  }
-
   public String propertyName() {
     AutoForm.Name name = this.element.getAnnotation(AutoForm.Name.class);
     if (name != null) {
@@ -52,20 +50,12 @@ public class FieldElement {
     return element.asType();
   }
 
-  public Accessor getAccessor() {
-    return accessor;
-  }
-
   public boolean isOptional() {
     return this.element.getAnnotation(AutoForm.Optional.class) != null;
   }
 
-  public FieldKind getFieldKind() {
-    return fieldKind;
-  }
-
   public boolean isIgnored() {
-    return this.element.getAnnotation(AutoForm.Ignore.class)!=null;
+    return this.element.getAnnotation(AutoForm.Ignore.class) != null;
   }
 
   public Name getName() {
@@ -74,5 +64,14 @@ public class FieldElement {
 
   public VariableElement getElement() {
     return this.element;
+  }
+
+  public FieldModel transform(ModelLookup modelLookup, ScopedContext context) {
+    return new FieldModel(
+        accessor,
+        modelLookup.lookup(element.asType(), context),
+        element,
+        fieldKind
+    );
   }
 }

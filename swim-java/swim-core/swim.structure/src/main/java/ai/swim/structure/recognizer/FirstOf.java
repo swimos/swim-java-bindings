@@ -3,12 +3,6 @@ package ai.swim.structure.recognizer;
 import ai.swim.recon.event.ReadEvent;
 
 public class FirstOf<T> extends Recognizer<T> {
-  enum State {
-    Both,
-    Left,
-    Right
-  }
-
   private Recognizer<T> left;
   private Recognizer<T> right;
   private State state;
@@ -67,5 +61,11 @@ public class FirstOf<T> extends Recognizer<T> {
   @Override
   public Recognizer<T> reset() {
     return new FirstOf<>(left.reset(), right.reset());
+  }
+
+  enum State {
+    Both,
+    Left,
+    Right
   }
 }

@@ -26,7 +26,7 @@ public class MethodAccessor extends Accessor {
   }
 
   @Override
-  public void write(CodeBlock.Builder builder, String instance, Object arg) {
+  public void writeSet(CodeBlock.Builder builder, String instance, Object arg) {
     builder.add("$L.$L($L);\n", instance, this.method.getSimpleName(), arg);
   }
 

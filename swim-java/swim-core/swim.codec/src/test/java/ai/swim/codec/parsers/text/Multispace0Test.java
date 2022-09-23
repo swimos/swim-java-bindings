@@ -10,6 +10,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Multispace0Test {
 
+  @Test
+  void multispace0Test() {
+    Parser<String> parser = Prop.parser().feed(Input.string("     12345"));
+    assertTrue(parser.isDone());
+    assertEquals(parser.bind(), "12345");
+
+    parser = new Prop().feed(Input.string("12345"));
+    assertTrue(parser.isDone());
+    assertEquals(parser.bind(), "12345");
+  }
+
   public static class Prop extends Parser<String> {
     private final StringBuilder state;
 
@@ -39,17 +50,6 @@ class Multispace0Test {
         throw new AssertionError();
       }
     }
-  }
-
-  @Test
-  void multispace0Test() {
-    Parser<String> parser = Prop.parser().feed(Input.string("     12345"));
-    assertTrue(parser.isDone());
-    assertEquals(parser.bind(), "12345");
-
-    parser = new Prop().feed(Input.string("12345"));
-    assertTrue(parser.isDone());
-    assertEquals(parser.bind(), "12345");
   }
 
 }

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.models;
+package ai.swim.structure.processor.models;
 
 import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.FieldModel;
 import com.squareup.javapoet.CodeBlock;
 
@@ -27,14 +27,14 @@ import javax.lang.model.type.TypeMirror;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClassMap extends StructuralRecognizer {
+public abstract class ClassMap extends StructuralModel {
 
-  private final TypeElement root;
-  private List<FieldModel> memberVariables;
-  private List<ExecutableElement> methods;
-  private final PackageElement declaredPackage;
-  private List<RecognizerModel> subTypes;
-  private boolean isAbstract;
+  protected final TypeElement root;
+  protected final PackageElement declaredPackage;
+  protected List<FieldModel> memberVariables;
+  protected List<ExecutableElement> methods;
+  protected List<Model> subTypes;
+  protected boolean isAbstract;
 
   public ClassMap(TypeElement root, PackageElement declaredPackage) {
     super(root.asType());
@@ -45,17 +45,11 @@ public class ClassMap extends StructuralRecognizer {
     this.subTypes = new ArrayList<>();
   }
 
-  public String recognizerName() {
-    return this.getJavaClassName() + "Recognizer";
-  }
-
-  public String canonicalRecognizerName() {
-    return String.format("%s.%s", this.declaredPackage.getQualifiedName().toString(), this.recognizerName());
-  }
+  public abstract String concreteName();
 
   @Override
   public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
-    return CodeBlock.of("new $L()", this.canonicalRecognizerName());
+    return CodeBlock.of("new $L()", this.concreteName());
   }
 
   public PackageElement getDeclaredPackage() {
@@ -78,6 +72,10 @@ public class ClassMap extends StructuralRecognizer {
 
   public List<ExecutableElement> getMethods() {
     return methods;
+  }
+
+  public void setMethods(List<ExecutableElement> methods) {
+    this.methods = methods;
   }
 
   @Override
@@ -104,27 +102,28 @@ public class ClassMap extends StructuralRecognizer {
     return this.memberVariables;
   }
 
-  public void setSubTypes(List<RecognizerModel> subTypes) {
-    this.subTypes = subTypes;
+  public boolean isAbstract() {
+    return isAbstract;
   }
 
   public void setAbstract(boolean isAbstract) {
     this.isAbstract = isAbstract;
   }
 
-  public boolean isAbstract() {
-    return isAbstract;
-  }
-
-  public List<RecognizerModel> getSubTypes() {
+  public List<Model> getSubTypes() {
     return subTypes;
   }
 
-  public void setMethods(List<ExecutableElement> methods) {
-    this.methods = methods;
+  public void setSubTypes(List<Model> subTypes) {
+    this.subTypes = subTypes;
   }
 
   public void setFields(List<FieldModel> fieldModels) {
     this.memberVariables = fieldModels;
+  }
+
+  @Override
+  public boolean isClass() {
+    return true;
   }
 }

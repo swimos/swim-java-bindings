@@ -16,7 +16,7 @@ package ai.swim.structure.value;
 
 import ai.swim.structure.writer.PrimitiveWriter;
 
-public abstract class PrimitiveValue extends Value{
+public abstract class PrimitiveValue extends Value {
   @Override
   public boolean isPrimitive() {
     return true;

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.models;
+package ai.swim.structure.processor.models;
 
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.context.ScopedContext;
 import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -23,11 +23,13 @@ import javax.lang.model.util.Types;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public class RuntimeLookup extends RecognizerModel {
-  private final RecognizerModel[] parameters;
+public class RuntimeLookupModel extends Model {
+  private final Model[] parameters;
+  private final String tyName;
 
-  public RuntimeLookup(TypeMirror mirror, RecognizerModel[] parameters) {
+  public RuntimeLookupModel(String tyName, TypeMirror mirror, Model[] parameters) {
     super(mirror);
+    this.tyName = tyName;
     this.parameters = parameters;
   }
 
@@ -41,7 +43,7 @@ public class RuntimeLookup extends RecognizerModel {
 
     if (parameters != null) {
       typeParameters = Arrays.stream(parameters).map(ty -> {
-        return String.format("RecognizerTypeParameter.from(() -> %s)", ty.initializer(context, inConstructor));
+        return String.format("%s.from(() -> %s)", tyName, ty.initializer(context, inConstructor));
       }).collect(Collectors.joining(", "));
     }
 

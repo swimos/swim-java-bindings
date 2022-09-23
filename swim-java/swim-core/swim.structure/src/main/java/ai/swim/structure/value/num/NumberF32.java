@@ -22,7 +22,7 @@ public class NumberF32 extends NumberValue {
   private final float value;
 
   public NumberF32(float value) {
-    this.value=value;
+    this.value = value;
   }
 
   @Override

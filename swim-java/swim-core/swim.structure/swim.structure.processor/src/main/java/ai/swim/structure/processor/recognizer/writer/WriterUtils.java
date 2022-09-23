@@ -14,8 +14,8 @@
 
 package ai.swim.structure.processor.recognizer.writer;
 
-import ai.swim.structure.processor.recognizer.context.NameFactory;
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.context.NameFactory;
+import ai.swim.structure.processor.context.ScopedContext;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
@@ -57,7 +57,7 @@ public class WriterUtils {
 
   public static List<TypeVariableName> typeParametersToTypeVariable(List<? extends TypeParameterElement> typeParameters) {
     return typeParameters.stream().map(tp -> {
-      TypeName[] bounds = tp.getBounds().stream().map(TypeName::get).collect(Collectors.toList()).toArray(new TypeName[]{});
+      TypeName[] bounds = tp.getBounds().stream().map(TypeName::get).collect(Collectors.toList()).toArray(new TypeName[] {});
       return TypeVariableName.get(tp.asType().toString(), bounds);
     }).collect(Collectors.toList());
   }

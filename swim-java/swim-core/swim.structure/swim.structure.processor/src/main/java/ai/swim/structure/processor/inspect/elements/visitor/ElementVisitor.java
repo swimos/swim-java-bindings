@@ -15,18 +15,19 @@
 package ai.swim.structure.processor.inspect.elements.visitor;
 
 import ai.swim.structure.processor.inspect.elements.ClassElement;
-import ai.swim.structure.processor.inspect.elements.PrimitiveElement;
 import ai.swim.structure.processor.inspect.elements.InterfaceElement;
+import ai.swim.structure.processor.inspect.elements.PrimitiveElement;
 import ai.swim.structure.processor.inspect.elements.UnresolvedElement;
+import ai.swim.structure.processor.models.Model;
 
-public interface ElementVisitor<R> {
-  R visitPrimitive(PrimitiveElement element);
+public interface ElementVisitor {
+  Model visitPrimitive(PrimitiveElement element);
 
-  R visitClass(ClassElement element);
+  Model visitClass(ClassElement element);
 
-  R visitInterface(InterfaceElement element);
+  Model visitInterface(InterfaceElement element);
 
-  R visitUnresolved(UnresolvedElement element);
+  Model visitUnresolved(UnresolvedElement element);
 
 
 }

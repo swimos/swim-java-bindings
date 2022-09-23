@@ -11,17 +11,6 @@ import ai.swim.structure.recognizer.structural.tag.TagSpec;
 
 public class LabelledClassRecognizer<T> extends ClassRecognizer<LabelledClassRecognizer.State, LabelledFieldKey, T> {
 
-  enum State {
-    Init,
-    Header,
-    NoHeader,
-    AttrBetween,
-    AttrItem,
-    BodyBetween,
-    BodyExpectingSlot,
-    BodyItem,
-  }
-
   public LabelledClassRecognizer(TagSpec tagSpec, RecognizingBuilder<T> builder, int fieldCount, IndexFn<LabelledFieldKey> indexFn) {
     super(tagSpec, builder, fieldCount, indexFn, State.Init);
   }
@@ -131,5 +120,16 @@ public class LabelledClassRecognizer<T> extends ClassRecognizer<LabelledClassRec
   @Override
   public Recognizer<T> reset() {
     return new LabelledClassRecognizer<>(this.tagSpec, this.builder.reset(), this.bitSet.size(), this.indexFn);
+  }
+
+  enum State {
+    Init,
+    Header,
+    NoHeader,
+    AttrBetween,
+    AttrItem,
+    BodyBetween,
+    BodyExpectingSlot,
+    BodyItem,
   }
 }

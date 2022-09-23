@@ -11,18 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EnumRecognizerTest {
 
-  enum Level {
-    Info(0),
-    Warn(1),
-    Error(2);
-
-    private final int idx;
-
-    Level(int idx) {
-      this.idx = idx;
-    }
-  }
-
   @Test
   void readSimpleEnum() {
     Recognizer<Level> recognizer = new EnumRecognizer<>(Level.class);
@@ -35,6 +23,18 @@ class EnumRecognizerTest {
 
     Level level = runTest(recognizer, events);
     assertEquals(level, Level.Warn);
+  }
+
+  enum Level {
+    Info(0),
+    Warn(1),
+    Error(2);
+
+    private final int idx;
+
+    Level(int idx) {
+      this.idx = idx;
+    }
   }
 
 }

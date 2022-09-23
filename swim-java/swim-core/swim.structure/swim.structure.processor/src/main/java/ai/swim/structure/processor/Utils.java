@@ -1,11 +1,17 @@
 package ai.swim.structure.processor;
 
 import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.models.RecognizerModel;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.models.Model;
+import ai.swim.structure.processor.models.ModelLookup;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.*;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -13,8 +19,6 @@ import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.List;
-
-import static ai.swim.structure.processor.recognizer.models.RecognizerModel.untyped;
 
 public class Utils {
 
@@ -88,23 +92,12 @@ public class Utils {
     return null;
   }
 
-  public static class UnrolledType {
-    public TypeMirror typeMirror;
-    public RecognizerModel recognizerModel;
-
-    public UnrolledType(TypeMirror typeMirror, RecognizerModel recognizerModel) {
-      this.typeMirror = typeMirror;
-      this.recognizerModel = recognizerModel;
-    }
-  }
-
-  public static UnrolledType unrollType(ScopedContext context, TypeMirror typeMirror) {
+  public static UnrolledType unrollType(ModelLookup modelLookup, ScopedContext context, TypeMirror typeMirror) {
     switch (typeMirror.getKind()) {
       case DECLARED:
-        RecognizerModel delegate = RecognizerModel.from(typeMirror, context);
-        return new UnrolledType(typeMirror, delegate);
+        return new UnrolledType(typeMirror, modelLookup.lookup(typeMirror, context));
       case TYPEVAR:
-        return new UnrolledType(typeMirror, untyped(typeMirror));
+        return new UnrolledType(typeMirror, modelLookup.untyped(typeMirror));
       case WILDCARD:
         WildcardType wildcardType = (WildcardType) typeMirror;
         TypeMirror bound = wildcardType.getExtendsBound();
@@ -114,7 +107,7 @@ public class Utils {
         } else {
           TypeMirror superBound = wildcardType.getSuperBound();
           if (superBound != null) {
-            String message = "cannot derive a recognizer for a field that contains both a super & extends bound";
+            String message = "cannot derive a generic field that contains both a super & extends bound";
             context.getMessager().error(message);
             throw new RuntimeException(message);
           }
@@ -125,12 +118,22 @@ public class Utils {
 
         if (bound == null) {
           TypeElement objectTypeElement = elementUtils.getTypeElement(Object.class.getCanonicalName());
-          return new UnrolledType(objectTypeElement.asType(), untyped(objectTypeElement.asType()));
+          return new UnrolledType(objectTypeElement.asType(), modelLookup.untyped(objectTypeElement.asType()));
         } else {
-          return new UnrolledType(bound, RecognizerModel.from(bound, context));
+          return new UnrolledType(bound, modelLookup.lookup(bound, context));
         }
       default:
         throw new AssertionError("Unrolled type: " + typeMirror.getKind());
+    }
+  }
+
+  public static class UnrolledType {
+    public TypeMirror typeMirror;
+    public Model model;
+
+    public UnrolledType(TypeMirror typeMirror, Model model) {
+      this.typeMirror = typeMirror;
+      this.model = model;
     }
   }
 

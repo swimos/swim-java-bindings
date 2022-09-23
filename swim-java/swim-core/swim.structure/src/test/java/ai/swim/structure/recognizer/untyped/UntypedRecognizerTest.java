@@ -10,7 +10,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UntypedRecognizerTest {
 
@@ -25,10 +27,10 @@ class UntypedRecognizerTest {
   @Test
   void readsScalars() {
     Recognizer<?> recognizer = new UntypedRecognizer<>();
-    recognizer = recognizer.feedEvent(ReadEvent.blob(new byte[]{1, 2, 3}));
+    recognizer = recognizer.feedEvent(ReadEvent.blob(new byte[] {1, 2, 3}));
 
     assertTrue(recognizer.isDone());
-    assertArrayEquals((byte[]) recognizer.bind(), new byte[]{1, 2, 3});
+    assertArrayEquals((byte[]) recognizer.bind(), new byte[] {1, 2, 3});
 
     singleEventOk(ReadEvent.bool(true), true);
     singleEventOk(ReadEvent.number(1), 1);

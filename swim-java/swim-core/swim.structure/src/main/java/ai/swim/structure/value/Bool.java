@@ -22,7 +22,7 @@ public class Bool extends PrimitiveValue {
   private final boolean value;
 
   public Bool(boolean value) {
-    this.value=value;
+    this.value = value;
   }
 
   @Override

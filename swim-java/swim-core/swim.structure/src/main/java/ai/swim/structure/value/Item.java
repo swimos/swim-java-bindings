@@ -25,8 +25,8 @@ public abstract class Item {
     return new ValueItem(value);
   }
 
-  public static Item of(Value key, Value value){
-    return new Slot(key,value);
+  public static Item of(Value key, Value value) {
+    return new Slot(key, value);
   }
 
   public static Item valueItem(int value) {

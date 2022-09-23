@@ -14,10 +14,10 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder;
 
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.recognizer.writer.Emitter;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.recognizer.RecognizerTransformation;
+import ai.swim.structure.processor.schema.FieldModel;
+import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.CodeBlock;
 
 import static ai.swim.structure.processor.recognizer.writer.Lookups.FIELD_RECOGNIZING_BUILDER_CLASS;

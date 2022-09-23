@@ -22,7 +22,7 @@ public class NumberF64 extends NumberValue {
   private final double value;
 
   public NumberF64(double value) {
-    this.value=value;
+    this.value = value;
   }
 
   @Override

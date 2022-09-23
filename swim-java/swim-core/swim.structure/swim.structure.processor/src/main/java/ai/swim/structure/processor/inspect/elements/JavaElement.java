@@ -15,7 +15,8 @@
 package ai.swim.structure.processor.inspect.elements;
 
 import ai.swim.structure.processor.inspect.elements.visitor.ElementVisitor;
+import ai.swim.structure.processor.models.Model;
 
 public abstract class JavaElement {
-  public abstract <T> T accept(ElementVisitor<T> visitor);
+  public abstract Model accept(ElementVisitor visitor);
 }

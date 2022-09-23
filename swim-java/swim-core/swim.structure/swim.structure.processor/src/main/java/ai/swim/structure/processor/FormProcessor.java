@@ -15,11 +15,12 @@
 package ai.swim.structure.processor;
 
 import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.processor.recognizer.context.ProcessingContext;
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.models.RecognizerFactory;
-import ai.swim.structure.processor.recognizer.models.RecognizerModel;
-import ai.swim.structure.processor.schema.Schema;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.inspect.ElementInspector;
+import ai.swim.structure.processor.inspect.elements.StructuralElement;
+import ai.swim.structure.processor.recognizer.RecognizerFactory;
+import ai.swim.structure.processor.recognizer.RecognizerModel;
+import ai.swim.structure.processor.recognizer.RecognizerVisitor;
 import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -51,7 +52,7 @@ public class FormProcessor extends AbstractProcessor {
 //        continue;
       }
 
-      ScopedContext scopedContext = new ScopedContext(processingEnv, recognizerFactory,element);
+      ScopedContext scopedContext = new ScopedContext(processingEnv, recognizerFactory, element);
 
       try {
         // todo:
@@ -64,13 +65,13 @@ public class FormProcessor extends AbstractProcessor {
         //    - renaming
         //    - generics
 
-        RecognizerModel recognizer = scopedContext.getRecognizer(element);
+        StructuralElement model = ElementInspector.inspect((TypeElement) element, scopedContext);
 
-        if (recognizer == null) {
+        if (model == null) {
           return true;
         }
 
-        Schema.from(recognizer).write(scopedContext);
+        RecognizerModel.write(model.accept(new RecognizerVisitor(scopedContext)), scopedContext);
       } catch (Throwable e) {
         e.printStackTrace();
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());

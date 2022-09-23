@@ -4,7 +4,12 @@ import ai.swim.recon.event.ReadBlobValue;
 import ai.swim.recon.event.ReadBooleanValue;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadTextValue;
-import ai.swim.recon.event.number.*;
+import ai.swim.recon.event.number.ReadBigDecimalValue;
+import ai.swim.recon.event.number.ReadBigIntValue;
+import ai.swim.recon.event.number.ReadDoubleValue;
+import ai.swim.recon.event.number.ReadFloatValue;
+import ai.swim.recon.event.number.ReadIntValue;
+import ai.swim.recon.event.number.ReadLongValue;
 import ai.swim.structure.recognizer.Recognizer;
 
 import java.util.Collections;
@@ -19,12 +24,6 @@ public class UntypedRecognizer<T> extends Recognizer<T> {
   public UntypedRecognizer() {
     this.state = State.Init;
     this.nested = null;
-  }
-
-  private enum State {
-    Init,
-    Between,
-    KeyOrValue,
   }
 
   static <P> Recognizer<P> done(Recognizer<P> recognizer, Object value) {
@@ -101,6 +100,12 @@ public class UntypedRecognizer<T> extends Recognizer<T> {
   @Override
   public Recognizer<T> reset() {
     return new UntypedRecognizer<>();
+  }
+
+  private enum State {
+    Init,
+    Between,
+    KeyOrValue,
   }
 
 }

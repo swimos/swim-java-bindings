@@ -18,7 +18,9 @@ import ai.swim.codec.input.Input;
 import ai.swim.codec.parsers.text.StringParser;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StringParserTest {
 

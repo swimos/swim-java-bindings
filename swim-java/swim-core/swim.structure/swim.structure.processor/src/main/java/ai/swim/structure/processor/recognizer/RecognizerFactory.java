@@ -12,16 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.models;
+package ai.swim.structure.processor.recognizer;
 
-import ai.swim.structure.processor.inspect.ElementInspector;
-import ai.swim.structure.processor.inspect.elements.ClassElement;
-import ai.swim.structure.processor.inspect.elements.InterfaceElement;
-import ai.swim.structure.processor.recognizer.RecognizerProcessor;
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.models.Model;
+import ai.swim.structure.processor.models.ModelInstance;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeMirror;
@@ -35,9 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RecognizerFactory {
-  private final HashMap<String, RecognizerModel> recognizers;
+  private final HashMap<String, Model> recognizers;
 
-  private RecognizerFactory(HashMap<String, RecognizerModel> recognizers) {
+  private RecognizerFactory(HashMap<String, Model> recognizers) {
     this.recognizers = recognizers;
   }
 
@@ -47,10 +43,10 @@ public class RecognizerFactory {
   public static RecognizerFactory initFrom(ProcessingEnvironment processingEnvironment) {
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
-    HashMap<String, RecognizerModel> recognizers = new HashMap<>();
+    HashMap<String, Model> recognizers = new HashMap<>();
 
     // init core types
-    RecognizerInstance.Resolver primitiveResolver = RecognizerInstance.resolver("ai.swim.structure.recognizer.std.ScalarRecognizer");
+    ModelInstance.Resolver primitiveResolver = ModelInstance.resolver("ai.swim.structure.recognizer.std.ScalarRecognizer");
     recognizers.put(_getOrThrowType(elementUtils, Byte.class), primitiveResolver.resolve(processingEnvironment, "BYTE"));
     recognizers.put(_getOrThrowType(elementUtils, Short.class), primitiveResolver.resolve(processingEnvironment, "SHORT"));
     recognizers.put(_getOrThrowType(elementUtils, Integer.class), primitiveResolver.resolve(processingEnvironment, "INTEGER"));
@@ -65,7 +61,7 @@ public class RecognizerFactory {
     recognizers.put(_getOrThrowArrayType(elementUtils, typeUtils, Byte.class), primitiveResolver.resolve(processingEnvironment, "BLOB"));
 
     // init atomics
-    RecognizerInstance.Resolver atomicResolver = RecognizerInstance.resolver("ai.swim.structure.recognizer.std.AtomicRecognizer");
+    ModelInstance.Resolver atomicResolver = ModelInstance.resolver("ai.swim.structure.recognizer.std.AtomicRecognizer");
     recognizers.put(_getOrThrowType(elementUtils, AtomicBoolean.class), atomicResolver.resolve(processingEnvironment, "ATOMIC_BOOLEAN"));
     recognizers.put(_getOrThrowType(elementUtils, AtomicInteger.class), atomicResolver.resolve(processingEnvironment, "ATOMIC_INTEGER"));
     recognizers.put(_getOrThrowType(elementUtils, AtomicLong.class), atomicResolver.resolve(processingEnvironment, "ATOMIC_LONG"));
@@ -101,64 +97,8 @@ public class RecognizerFactory {
     return new RuntimeException("Failed to initialise recognizer factory with class: " + clazz);
   }
 
-  public RecognizerModel lookup(TypeMirror typeMirror) {
+  public Model lookup(TypeMirror typeMirror) {
     return this.recognizers.get(typeMirror.toString());
-  }
-
-  public RecognizerModel getOrInspect(Element element, ScopedContext context) {
-    RecognizerModel map = this.recognizers.get(element.asType().toString());
-
-    if (map != null) {
-      return map;
-    }
-
-    ScopedContext rescoped = context.rescope(element);
-
-    if (element.getKind().isClass()) {
-      return inspectAndInsertClass((TypeElement) element, rescoped);
-    } else if (element.getKind().isInterface()) {
-      return inspectAndInsertInterface((TypeElement) element, rescoped);
-    } else {
-      context.getMessager().error("Cannot inspect a: " + element.getKind());
-      return null;
-    }
-  }
-
-  private RecognizerModel inspectAndInsertInterface(TypeElement element, ScopedContext context) {
-    InterfaceElement interfaceElement = ElementInspector.inspectInterface(element, context);
-
-    if (interfaceElement == null) {
-      return null;
-    }
-
-    RecognizerModel recognizerModel = interfaceElement.accept(new RecognizerProcessor(context));
-    if (recognizerModel == null) {
-      return null;
-    }
-
-
-    this.recognizers.put(element.asType().toString(), recognizerModel);
-    return recognizerModel;
-  }
-
-  private RecognizerModel inspectAndInsertClass(TypeElement element, ScopedContext context) {
-    if (!element.getKind().isClass()) {
-      throw new RuntimeException("Element is not an interface: " + element);
-    }
-
-    ClassElement classElement = ElementInspector.inspectClass(element, context);
-
-    if (classElement == null) {
-      return null;
-    }
-
-    RecognizerModel recognizerModel = classElement.accept(new RecognizerProcessor(context));
-    if (recognizerModel == null) {
-      return null;
-    }
-
-    this.recognizers.put(element.asType().toString(), recognizerModel);
-    return recognizerModel;
   }
 
 }

@@ -14,18 +14,23 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder.classBuilder;
 
-import ai.swim.structure.processor.recognizer.context.NameFactory;
-import ai.swim.structure.processor.recognizer.context.ProcessingContext;
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.context.NameFactory;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.recognizer.writer.builder.Builder;
+import ai.swim.structure.processor.recognizer.writer.builder.header.HeaderIndexFn;
 import ai.swim.structure.processor.recognizer.writer.recognizer.TypeVarFieldInitializer;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.PartitionedFields;
-import ai.swim.structure.processor.recognizer.writer.Emitter;
-import ai.swim.structure.processor.recognizer.writer.builder.Builder;
-import ai.swim.structure.processor.recognizer.writer.builder.header.HeaderIndexFn;
-import com.squareup.javapoet.*;
+import ai.swim.structure.processor.writer.Emitter;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeSpec;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
@@ -83,7 +88,6 @@ public class ClassBuilder extends Builder {
             body.add(initialiseTypeVarField(context, fieldModel));
             break;
           case DECLARED:
-            DeclaredType declaredType = (DeclaredType) element.asType();
             body.add(initialiseParameterisedField(context, fieldModel));
             break;
           default:

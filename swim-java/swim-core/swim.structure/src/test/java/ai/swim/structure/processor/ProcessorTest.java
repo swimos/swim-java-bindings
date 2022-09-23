@@ -21,46 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProcessorTest {
 
-  @AutoForm
-  public static class SimpleClass {
-    private String a;
-    public int b;
-
-    public SimpleClass() {
-
-    }
-
-    public SimpleClass(String a, int b) {
-      this.a = a;
-      this.b = b;
-    }
-
-    public void setA(String a) {
-      this.a = a;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof SimpleClass)) return false;
-      SimpleClass that = (SimpleClass) o;
-      return b == that.b && Objects.equals(a, that.a);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(a, b);
-    }
-
-    @Override
-    public String toString() {
-      return "SimpleClass{" +
-          "a='" + a + '\'' +
-          ", b=" + b +
-          '}';
-    }
-  }
-
   @Test
   void readSimpleClass() {
     Recognizer<SimpleClass> recognizer = new SimpleClassRecognizer();
@@ -82,50 +42,6 @@ public class ProcessorTest {
     SimpleClass expected = new SimpleClass("valueA", 2);
 
     assertEquals(simpleClass, expected);
-  }
-
-  @AutoForm
-  public static class SimpleClassSkippedField {
-    @AutoForm.Ignore
-    private int a = 0;
-    private String b;
-
-    public SimpleClassSkippedField() {
-
-    }
-
-    public SimpleClassSkippedField(String b) {
-      this.b = b;
-    }
-
-    public void setA(int a) {
-      this.a = a;
-    }
-
-    public void setB(String b) {
-      this.b = b;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof SimpleClassSkippedField)) return false;
-      SimpleClassSkippedField that = (SimpleClassSkippedField) o;
-      return Objects.equals(b, that.b);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(a, b);
-    }
-
-    @Override
-    public String toString() {
-      return "SimpleClassSkippedField{" +
-          "a=" + a +
-          ", b='" + b + '\'' +
-          '}';
-    }
   }
 
   @Test
@@ -172,49 +88,6 @@ public class ProcessorTest {
     }
   }
 
-  @AutoForm
-  public static class ListClass {
-    private List<Integer> list;
-    private int number;
-
-    public ListClass() {
-    }
-
-    public ListClass(List<Integer> list, int number) {
-      this.list = list;
-      this.number = number;
-    }
-
-    public void setList(List<Integer> list) {
-      this.list = list;
-    }
-
-    public void setNumber(int number) {
-      this.number = number;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof ListClass)) return false;
-      ListClass listClass = (ListClass) o;
-      return number == listClass.number && Objects.equals(list, listClass.list);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(list, number);
-    }
-
-    @Override
-    public String toString() {
-      return "ListClass{" +
-          "list=" + list +
-          ", number=" + number +
-          '}';
-    }
-  }
-
   @Test
   void readListClass() {
     Recognizer<ListClass> recognizer = new ListClassRecognizer();
@@ -242,6 +115,280 @@ public class ProcessorTest {
     assertEquals(listClass, expected);
   }
 
+  /**
+   * The derived dependant builder will have a field that dynamically looks up the type of WrittenDependant through
+   * the recognizer proxy. For this test to succeed, the annotation processor will have to have failed to have looked it
+   * up and will instead write this proxy lookup instead.
+   */
+  @Test
+  void testWrittenDependant() {
+    Recognizer<Dependant> recognizer = new DependantRecognizer();
+    List<ReadEvent> readEvents = List.of(
+        ReadEvent.startAttribute("Dependant"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.text("writtenDependant"),
+        ReadEvent.slot(),
+        ReadEvent.startAttribute("WrittenDependant"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.text("a"),
+        ReadEvent.slot(),
+        ReadEvent.text("stringy"),
+        ReadEvent.endRecord(),
+        ReadEvent.endRecord()
+    );
+
+    Dependant actual = runTest(recognizer, readEvents);
+    Dependant expected = new Dependant(new WrittenDependant("stringy"));
+    assertEquals(actual, expected);
+  }
+
+  @Test
+  void testRenamedField() {
+    Recognizer<RenamedFieldClass> recognizer = new RenamedFieldClassRecognizer();
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("RenamedFieldClass"),
+        ReadEvent.extant(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.text("renamed_field"),
+        ReadEvent.slot(),
+        ReadEvent.number(13),
+        ReadEvent.endRecord()
+    );
+
+    RenamedFieldClass obj = runTest(recognizer, events);
+    RenamedFieldClass expected = new RenamedFieldClass(13);
+
+    assertEquals(obj, expected);
+  }
+
+  @Test
+  void testTagOk() {
+    Recognizer<TagClass> recognizer = new TagClassRecognizer();
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("tag"),
+        ReadEvent.extant(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.text("a"),
+        ReadEvent.slot(),
+        ReadEvent.number(13),
+        ReadEvent.endRecord()
+    );
+
+    TagClass obj = runTest(recognizer, events);
+    TagClass expected = new TagClass(13);
+
+    assertEquals(obj, expected);
+  }
+
+  @Test
+  void testTagMismatch() {
+    Recognizer<TagClass> recognizer = new TagClassRecognizer();
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("TagClass"),
+        ReadEvent.extant(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.text("a"),
+        ReadEvent.slot(),
+        ReadEvent.number(13),
+        ReadEvent.endRecord()
+    );
+
+    try {
+      runTest(recognizer, events);
+    } catch (RuntimeException e) {
+      assertEquals(e.getMessage(), "Unexpected attribute: TagClass");
+    }
+  }
+
+  @Test
+  void testOptionalWithout() {
+    Recognizer<OptionalFieldClass> recognizer = new OptionalFieldClassRecognizer();
+
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("OptionalFieldClass"),
+        ReadEvent.extant(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.text("b"),
+        ReadEvent.slot(),
+        ReadEvent.text("value"),
+        ReadEvent.endRecord()
+    );
+
+    OptionalFieldClass optionalFieldClass = runTest(recognizer, events);
+    OptionalFieldClass expected = new OptionalFieldClass("value");
+
+    assertEquals(optionalFieldClass, expected);
+  }
+
+  @Test
+  void testOptionalWith() {
+    Recognizer<OptionalFieldClass> recognizer = new OptionalFieldClassRecognizer();
+
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("OptionalFieldClass"),
+        ReadEvent.extant(),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.text("a"),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.text("b"),
+        ReadEvent.slot(),
+        ReadEvent.text("value"),
+        ReadEvent.endRecord()
+    );
+
+    OptionalFieldClass optionalFieldClass = runTest(recognizer, events);
+    OptionalFieldClass expected = new OptionalFieldClass(1, "value");
+
+    assertEquals(optionalFieldClass, expected);
+  }
+
+  @AutoForm
+  public static class SimpleClass {
+    public int b;
+    private String a;
+
+    public SimpleClass() {
+
+    }
+
+    public SimpleClass(String a, int b) {
+      this.a = a;
+      this.b = b;
+    }
+
+    public void setA(String a) {
+      this.a = a;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof SimpleClass)) {
+        return false;
+      }
+      SimpleClass that = (SimpleClass) o;
+      return b == that.b && Objects.equals(a, that.a);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(a, b);
+    }
+
+    @Override
+    public String toString() {
+      return "SimpleClass{" +
+          "a='" + a + '\'' +
+          ", b=" + b +
+          '}';
+    }
+  }
+
+  @AutoForm
+  public static class SimpleClassSkippedField {
+    @AutoForm.Ignore
+    private int a = 0;
+    private String b;
+
+    public SimpleClassSkippedField() {
+
+    }
+
+    public SimpleClassSkippedField(String b) {
+      this.b = b;
+    }
+
+    public void setA(int a) {
+      this.a = a;
+    }
+
+    public void setB(String b) {
+      this.b = b;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof SimpleClassSkippedField)) {
+        return false;
+      }
+      SimpleClassSkippedField that = (SimpleClassSkippedField) o;
+      return Objects.equals(b, that.b);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(a, b);
+    }
+
+    @Override
+    public String toString() {
+      return "SimpleClassSkippedField{" +
+          "a=" + a +
+          ", b='" + b + '\'' +
+          '}';
+    }
+  }
+
+  @AutoForm
+  public static class ListClass {
+    private List<Integer> list;
+    private int number;
+
+    public ListClass() {
+    }
+
+    public ListClass(List<Integer> list, int number) {
+      this.list = list;
+      this.number = number;
+    }
+
+    public void setList(List<Integer> list) {
+      this.list = list;
+    }
+
+    public void setNumber(int number) {
+      this.number = number;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ListClass)) {
+        return false;
+      }
+      ListClass listClass = (ListClass) o;
+      return number == listClass.number && Objects.equals(list, listClass.list);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(list, number);
+    }
+
+    @Override
+    public String toString() {
+      return "ListClass{" +
+          "list=" + list +
+          ", number=" + number +
+          '}';
+    }
+  }
+
   public static class WrittenDependant {
     private String a;
 
@@ -259,8 +406,12 @@ public class ProcessorTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof WrittenDependant)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof WrittenDependant)) {
+        return false;
+      }
       WrittenDependant writtenDependant = (WrittenDependant) o;
       return Objects.equals(a, writtenDependant.a);
     }
@@ -386,8 +537,12 @@ public class ProcessorTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Dependant)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Dependant)) {
+        return false;
+      }
       Dependant that = (Dependant) o;
       return Objects.equals(writtenDependant, that.writtenDependant);
     }
@@ -403,35 +558,6 @@ public class ProcessorTest {
           "writtenDependant=" + writtenDependant +
           '}';
     }
-  }
-
-  /**
-   * The derived dependant builder will have a field that dynamically looks up the type of WrittenDependant through
-   * the recognizer proxy. For this test to succeed, the annotation processor will have to have failed to have looked it
-   * up and will instead write this proxy lookup instead.
-   */
-  @Test
-  void testWrittenDependant() {
-    Recognizer<Dependant> recognizer = new DependantRecognizer();
-    List<ReadEvent> readEvents = List.of(
-        ReadEvent.startAttribute("Dependant"),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("writtenDependant"),
-        ReadEvent.slot(),
-        ReadEvent.startAttribute("WrittenDependant"),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.text("stringy"),
-        ReadEvent.endRecord(),
-        ReadEvent.endRecord()
-    );
-
-    Dependant actual = runTest(recognizer, readEvents);
-    Dependant expected = new Dependant(new WrittenDependant("stringy"));
-    assertEquals(actual, expected);
   }
 
   @AutoForm
@@ -460,8 +586,12 @@ public class ProcessorTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof RenamedFieldClass)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof RenamedFieldClass)) {
+        return false;
+      }
       RenamedFieldClass that = (RenamedFieldClass) o;
       return a == that.a;
     }
@@ -470,26 +600,6 @@ public class ProcessorTest {
     public int hashCode() {
       return Objects.hash(a);
     }
-  }
-
-  @Test
-  void testRenamedField() {
-    Recognizer<RenamedFieldClass> recognizer = new RenamedFieldClassRecognizer();
-    List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("RenamedFieldClass"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("renamed_field"),
-        ReadEvent.slot(),
-        ReadEvent.number(13),
-        ReadEvent.endRecord()
-    );
-
-    RenamedFieldClass obj = runTest(recognizer, events);
-    RenamedFieldClass expected = new RenamedFieldClass(13);
-
-    assertEquals(obj, expected);
   }
 
   @AutoForm(value = "tag")
@@ -517,8 +627,12 @@ public class ProcessorTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof TagClass)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof TagClass)) {
+        return false;
+      }
       TagClass that = (TagClass) o;
       return a == that.a;
     }
@@ -529,52 +643,11 @@ public class ProcessorTest {
     }
   }
 
-  @Test
-  void testTagOk() {
-    Recognizer<TagClass> recognizer = new TagClassRecognizer();
-    List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("tag"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.number(13),
-        ReadEvent.endRecord()
-    );
-
-    TagClass obj = runTest(recognizer, events);
-    TagClass expected = new TagClass(13);
-
-    assertEquals(obj, expected);
-  }
-
-  @Test
-  void testTagMismatch() {
-    Recognizer<TagClass> recognizer = new TagClassRecognizer();
-    List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("TagClass"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.number(13),
-        ReadEvent.endRecord()
-    );
-
-    try {
-      runTest(recognizer, events);
-    } catch (RuntimeException e) {
-      assertEquals(e.getMessage(), "Unexpected attribute: TagClass");
-    }
-  }
-
   @AutoForm
   public static class OptionalFieldClass {
+    public String b;
     @AutoForm.Optional
     private int a;
-    public String b;
 
     public OptionalFieldClass() {
 
@@ -603,8 +676,12 @@ public class ProcessorTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof OptionalFieldClass)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof OptionalFieldClass)) {
+        return false;
+      }
       OptionalFieldClass that = (OptionalFieldClass) o;
       return a == that.a && Objects.equals(b, that.b);
     }
@@ -613,51 +690,6 @@ public class ProcessorTest {
     public int hashCode() {
       return Objects.hash(a, b);
     }
-  }
-
-  @Test
-  void testOptionalWithout() {
-    Recognizer<OptionalFieldClass> recognizer = new OptionalFieldClassRecognizer();
-
-    List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("OptionalFieldClass"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("b"),
-        ReadEvent.slot(),
-        ReadEvent.text("value"),
-        ReadEvent.endRecord()
-    );
-
-    OptionalFieldClass optionalFieldClass = runTest(recognizer, events);
-    OptionalFieldClass expected = new OptionalFieldClass("value");
-
-    assertEquals(optionalFieldClass, expected);
-  }
-
-  @Test
-  void testOptionalWith() {
-    Recognizer<OptionalFieldClass> recognizer = new OptionalFieldClassRecognizer();
-
-    List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("OptionalFieldClass"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.number(1),
-        ReadEvent.text("b"),
-        ReadEvent.slot(),
-        ReadEvent.text("value"),
-        ReadEvent.endRecord()
-    );
-
-    OptionalFieldClass optionalFieldClass = runTest(recognizer, events);
-    OptionalFieldClass expected = new OptionalFieldClass(1, "value");
-
-    assertEquals(optionalFieldClass, expected);
   }
 
 

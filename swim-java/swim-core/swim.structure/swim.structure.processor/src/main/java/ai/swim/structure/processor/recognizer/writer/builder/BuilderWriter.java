@@ -14,14 +14,18 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder;
 
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.Lookups;
 import ai.swim.structure.processor.recognizer.writer.builder.classBuilder.ClassBuilder;
+import ai.swim.structure.processor.recognizer.writer.builder.header.HeaderBuilder;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.HeaderSet;
-import ai.swim.structure.processor.recognizer.writer.builder.header.HeaderBuilder;
-import com.squareup.javapoet.*;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;

@@ -199,8 +199,8 @@ class LabelledClassRecognizerTest {
 
   static class OuterPropClass {
 
-    private String c;
     public InnerPropClass d;
+    private String c;
 
     public OuterPropClass() {
 

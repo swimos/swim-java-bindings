@@ -21,8 +21,8 @@ public class Slot extends Item {
   private final Value value;
 
   public Slot(Value key, Value value) {
-    this.key=key;
-    this.value=value;
+    this.key = key;
+    this.value = value;
   }
 
   @Override

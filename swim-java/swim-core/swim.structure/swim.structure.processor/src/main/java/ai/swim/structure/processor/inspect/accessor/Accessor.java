@@ -18,7 +18,7 @@ import com.squareup.javapoet.CodeBlock;
 
 public abstract class Accessor {
 
-  public abstract void write(CodeBlock.Builder builder, String instance, Object arg);
+  public abstract void writeSet(CodeBlock.Builder builder, String instance, Object arg);
 
   @Override
   public abstract String toString();
