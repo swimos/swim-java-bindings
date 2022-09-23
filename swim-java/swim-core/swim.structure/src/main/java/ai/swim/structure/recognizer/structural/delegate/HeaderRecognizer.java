@@ -14,21 +14,11 @@ import java.util.function.Supplier;
 public class HeaderRecognizer<T> extends Recognizer<T> {
   private final boolean hasBody;
   private final boolean flattened;
-  private State state;
   private final RecognizingBuilder<T> builder;
-  private int index;
   private final BitSet bitSet;
   private final IndexFn<HeaderFieldKey> indexFn;
-
-  enum State {
-    Init,
-    ExpectingBody,
-    BodyItem,
-    BetweenSlots,
-    ExpectingSlot,
-    SlotItem,
-    End,
-  }
+  private State state;
+  private int index;
 
   public HeaderRecognizer(boolean hasBody, boolean flattened, RecognizingBuilder<T> builder, int slotCount, IndexFn<HeaderFieldKey> indexFn) {
     this.hasBody = hasBody;
@@ -38,6 +28,13 @@ public class HeaderRecognizer<T> extends Recognizer<T> {
     this.indexFn = indexFn;
     this.index = 0;
     this.state = flattened ? !hasBody ? State.BetweenSlots : State.ExpectingBody : State.Init;
+  }
+
+  public static <T> RecognizingBuilder<T> headerBuilder(boolean hasBody, Supplier<RecognizingBuilder<T>> builder, int numSlots, IndexFn<HeaderFieldKey> indexFn) {
+    return new FieldRecognizingBuilder<>(new FirstOf<>(
+        new HeaderRecognizer<>(hasBody, true, builder.get(), numSlots, indexFn),
+        new HeaderRecognizer<>(hasBody, false, builder.get(), numSlots, indexFn)
+    ));
   }
 
   @Override
@@ -148,10 +145,13 @@ public class HeaderRecognizer<T> extends Recognizer<T> {
     return new HeaderRecognizer<>(this.hasBody, this.flattened, this.builder.reset(), !this.hasBody ? fieldCount : fieldCount - 1, this.indexFn);
   }
 
-  public static <T> RecognizingBuilder<T> headerBuilder(boolean hasBody, Supplier<RecognizingBuilder<T>> builder, int numSlots, IndexFn<HeaderFieldKey> indexFn) {
-    return new FieldRecognizingBuilder<>(new FirstOf<>(
-        new HeaderRecognizer<>(hasBody, true, builder.get(), numSlots, indexFn),
-        new HeaderRecognizer<>(hasBody, false, builder.get(), numSlots, indexFn)
-    ));
+  enum State {
+    Init,
+    ExpectingBody,
+    BodyItem,
+    BetweenSlots,
+    ExpectingSlot,
+    SlotItem,
+    End,
   }
 }

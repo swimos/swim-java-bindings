@@ -18,12 +18,6 @@ class UntypedMapRecognizer<T> extends Recognizer<T> {
     this.state = State.Value;
   }
 
-  private enum State {
-    Key,
-    Slot,
-    Value
-  }
-
   @Override
   public Recognizer<T> feedEvent(ReadEvent event) {
     switch (this.state) {
@@ -85,5 +79,11 @@ class UntypedMapRecognizer<T> extends Recognizer<T> {
   @Override
   public Recognizer<T> reset() {
     return new UntypedRecognizer<>();
+  }
+
+  private enum State {
+    Key,
+    Slot,
+    Value
   }
 }

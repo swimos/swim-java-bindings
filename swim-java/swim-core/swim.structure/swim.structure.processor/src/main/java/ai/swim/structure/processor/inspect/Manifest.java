@@ -15,7 +15,7 @@
 package ai.swim.structure.processor.inspect;
 
 import ai.swim.structure.annotations.FieldKind;
-import ai.swim.structure.processor.recognizer.context.ScopedMessager;
+import ai.swim.structure.processor.context.ScopedMessager;
 
 public class Manifest {
   boolean hasHeaderBody;

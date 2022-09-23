@@ -15,8 +15,8 @@
 package ai.swim.structure.writer.header;
 
 import ai.swim.structure.writer.BodyWriter;
-import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.StructuralWriter;
+import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.std.ScalarWriters;
 
 import java.util.Objects;

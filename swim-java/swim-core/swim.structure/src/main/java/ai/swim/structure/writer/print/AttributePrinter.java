@@ -17,9 +17,9 @@ package ai.swim.structure.writer.print;
 import ai.swim.structure.writer.BodyWriter;
 import ai.swim.structure.writer.HeaderWriter;
 import ai.swim.structure.writer.StringMeta;
-import ai.swim.structure.writer.Writable;
-import ai.swim.structure.writer.SuppressingWriter;
 import ai.swim.structure.writer.StructuralWriter;
+import ai.swim.structure.writer.SuppressingWriter;
+import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.header.WritableHeader;
 import ai.swim.structure.writer.print.strategy.PrintStrategy;
 
@@ -230,7 +230,7 @@ public class AttributePrinter implements HeaderWriter<String>, BodyWriter<String
     if (value == null) {
       return "null";
     } else {
-      return "%"+Base64.getEncoder().encodeToString(value);
+      return "%" + Base64.getEncoder().encodeToString(value);
     }
   }
 

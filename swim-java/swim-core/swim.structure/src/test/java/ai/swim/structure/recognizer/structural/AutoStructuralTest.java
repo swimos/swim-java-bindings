@@ -33,6 +33,92 @@ public class AutoStructuralTest {
     }
   }
 
+  @Test
+  void testFieldManipulation() {
+    runTestOk(new PropClassRecognizer(), new PropClass(1, "b", "c"), "@PropClass(a:1,b:b){c}");
+  }
+
+  @Test
+  void testFieldManipulation2() {
+    runTestOk(new PropClass2Recognizer(), new PropClass2(1, 2, 3), "@PropClass2(b:2)@a(1){3}");
+  }
+
+  @Test
+  void testAbstractClassImpl() {
+    runTestOk(new Impl1Recognizer(), new Impl1("key", "value"), "@Impl1{KEY:key,value:value}");
+  }
+
+  @Test
+  void testNested() {
+    runTestOk(new OuterRecognizer(), new Outer("node_uri", new Inner(1034, "inside")), "@Outer(node: node_uri) @Inner { first: 1034, second: inside }");
+  }
+
+  @Test
+  void testComplexHeader() {
+    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3(6, node: node_uri, lane: lane_uri) { first: -34, second: \"name\" }");
+    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3(6, lane: lane_uri, node: node_uri) { first: -34, second: \"name\" }");
+    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3({6, lane: lane_uri, node: node_uri}) { first: -34, second: \"name\" }");
+  }
+
+  @Test
+  void envelopes() {
+    runTestOk(new EnvelopeRecognizer(), new CommandMessage("node_uri", "lane_uri", 13), "@command(node:node_uri,lane:lane_uri){13}");
+    runTestOk(new EnvelopeRecognizer(), new AuthRequest(13), "@auth{13}");
+  }
+
+  @Test
+  void abstractClasses() {
+    runTestOk(new BaseRecognizer(), new Imp3("hello"), "@Imp3{c:hello}");
+    runTestOk(new Imp3Recognizer(), new Imp3("hello"), "@Imp3{c:hello}");
+    runTestOk(new BaseRecognizer(), new Con2("hello"), "@Con2{b:hello}");
+    runTestOk(new Con2Recognizer(), new Con2("hello"), "@Con2{b:hello}");
+    runTestOk(new BaseRecognizer(), new ImpBase2("hello"), "@ImpBase2{a:hello}");
+    runTestOk(new Base2Recognizer(), new ImpBase2("hello"), "@ImpBase2{a:hello}");
+    runTestOk(new ImpBase2Recognizer(), new ImpBase2("hello"), "@ImpBase2{a:hello}");
+  }
+
+  @Test
+  void testInterfaceHierarchy() {
+    runTestOk(new IF1Recognizer(), new IFAbsImpl(), "@IFAbsImpl");
+    runTestOk(new IF1Recognizer(), new IF2Impl(), "@IF2Impl");
+    runTestOk(new IF2Recognizer(), new IF2Impl(), "@IF2Impl");
+    runTestOk(new IFAbsRecognizer(), new IFAbsImpl(), "@IFAbsImpl");
+  }
+
+  @Test
+  void testMixedHierarchy() {
+    runTestOk(new MixedBaseRecognizer(), new Mixed(), "@Mixed");
+    runTestOk(new MixedInterfaceRecognizer(), new Mixed(), "@Mixed");
+    runTestOk(new MixedRecognizer(), new Mixed(), "@Mixed");
+  }
+
+  @Test
+  void testComplexEnvelope() {
+    runTestOk(new MapEnvelopeRecognizer(), new MapUpdate(1, 2), "@update(key:1)2");
+    runTestOk(new MapEnvelopeRecognizer(), new MapRemove(1), "@remove(key:1)");
+    runTestOk(new MapEnvelopeRecognizer(), new MapClear(), "@clear");
+    runTestOk(new MapEnvelopeRecognizer(), new MapTake(13), "@take(13)");
+    runTestOk(new MapEnvelopeRecognizer(), new MapDrop(13), "@drop(13)");
+  }
+
+  @AutoForm(subTypes = {
+      @AutoForm.Type(IF2.class),
+      @AutoForm.Type(IFAbs.class)
+  })
+  public interface IF1 {
+
+  }
+
+  @AutoForm(subTypes = @AutoForm.Type(IF2Impl.class))
+  public interface IF2 extends IF1 {
+
+  }
+
+  @AutoForm(subTypes = @AutoForm.Type(Mixed.class))
+  public interface MixedInterface {
+
+  }
+
   @AutoForm
   public static class PropClass {
     @AutoForm.Kind(FieldKind.Header)
@@ -66,8 +152,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof PropClass)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof PropClass)) {
+        return false;
+      }
       PropClass propClass = (PropClass) o;
       return a == propClass.a && Objects.equals(b, propClass.b) && Objects.equals(c, propClass.c);
     }
@@ -85,11 +175,6 @@ public class AutoStructuralTest {
           ", c='" + c + '\'' +
           '}';
     }
-  }
-
-  @Test
-  void testFieldManipulation() {
-    runTestOk(new PropClassRecognizer(), new PropClass(1, "b", "c"), "@PropClass(a:1,b:b){c}");
   }
 
   @AutoForm
@@ -125,8 +210,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof PropClass2)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof PropClass2)) {
+        return false;
+      }
       PropClass2 that = (PropClass2) o;
       return a == that.a && Objects.equals(b, that.b) && Objects.equals(c, that.c);
     }
@@ -144,11 +233,6 @@ public class AutoStructuralTest {
           ", c='" + c + '\'' +
           '}';
     }
-  }
-
-  @Test
-  void testFieldManipulation2() {
-    runTestOk(new PropClass2Recognizer(), new PropClass2(1, 2, 3), "@PropClass2(b:2)@a(1){3}");
   }
 
   public static abstract class AbstractBase {
@@ -169,8 +253,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof AbstractBase)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof AbstractBase)) {
+        return false;
+      }
       AbstractBase that = (AbstractBase) o;
       return Objects.equals(key, that.key);
     }
@@ -200,9 +288,15 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Impl1)) return false;
-      if (!super.equals(o)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Impl1)) {
+        return false;
+      }
+      if (!super.equals(o)) {
+        return false;
+      }
       Impl1 impl1 = (Impl1) o;
       return Objects.equals(value, impl1.value);
     }
@@ -211,11 +305,6 @@ public class AutoStructuralTest {
     public int hashCode() {
       return Objects.hash(value);
     }
-  }
-
-  @Test
-  void testAbstractClassImpl() {
-    runTestOk(new Impl1Recognizer(), new Impl1("key", "value"), "@Impl1{KEY:key,value:value}");
   }
 
   @AutoForm
@@ -250,8 +339,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Inner)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Inner)) {
+        return false;
+      }
       Inner inner = (Inner) o;
       return first == inner.first && Objects.equals(second, inner.second);
     }
@@ -295,8 +388,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Outer)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Outer)) {
+        return false;
+      }
       Outer outer = (Outer) o;
       return Objects.equals(node, outer.node) && Objects.equals(inner, outer.inner);
     }
@@ -305,11 +402,6 @@ public class AutoStructuralTest {
     public int hashCode() {
       return Objects.hash(node, inner);
     }
-  }
-
-  @Test
-  void testNested() {
-    runTestOk(new OuterRecognizer(), new Outer("node_uri", new Inner(1034, "inside")), "@Outer(node: node_uri) @Inner { first: 1034, second: inside }");
   }
 
   @AutoForm
@@ -360,8 +452,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Prop3)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Prop3)) {
+        return false;
+      }
       Prop3 prop3 = (Prop3) o;
       return count == prop3.count && first == prop3.first && Objects.equals(node, prop3.node) && Objects.equals(lane, prop3.lane) && Objects.equals(second, prop3.second);
     }
@@ -370,13 +466,6 @@ public class AutoStructuralTest {
     public int hashCode() {
       return Objects.hash(count, node, lane, first, second);
     }
-  }
-
-  @Test
-  void testComplexHeader() {
-    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3(6, node: node_uri, lane: lane_uri) { first: -34, second: \"name\" }");
-    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3(6, lane: lane_uri, node: node_uri) { first: -34, second: \"name\" }");
-    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3({6, lane: lane_uri, node: node_uri}) { first: -34, second: \"name\" }");
   }
 
   @AutoForm(subTypes = {
@@ -420,8 +509,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof LaneAddressed)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof LaneAddressed)) {
+        return false;
+      }
       LaneAddressed that = (LaneAddressed) o;
       return Objects.equals(nodeUri, that.nodeUri) && Objects.equals(laneUri, that.laneUri) && Objects.equals(body, that.body);
     }
@@ -482,8 +575,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof AuthRequest)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof AuthRequest)) {
+        return false;
+      }
       AuthRequest that = (AuthRequest) o;
       return Objects.equals(body, that.body);
     }
@@ -499,12 +596,6 @@ public class AutoStructuralTest {
           "body='" + body + '\'' +
           '}';
     }
-  }
-
-  @Test
-  void envelopes() {
-    runTestOk(new EnvelopeRecognizer(), new CommandMessage("node_uri", "lane_uri", 13), "@command(node:node_uri,lane:lane_uri){13}");
-    runTestOk(new EnvelopeRecognizer(), new AuthRequest(13), "@auth{13}");
   }
 
   @AutoForm(subTypes = {
@@ -547,8 +638,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof ImpBase2)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ImpBase2)) {
+        return false;
+      }
       ImpBase2 impBase2 = (ImpBase2) o;
       return Objects.equals(a, impBase2.a);
     }
@@ -584,8 +679,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Imp3)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Imp3)) {
+        return false;
+      }
       Imp3 imp3 = (Imp3) o;
       return Objects.equals(c, imp3.c);
     }
@@ -621,8 +720,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Con2)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Con2)) {
+        return false;
+      }
       Con2 con2 = (Con2) o;
       return Objects.equals(b, con2.b);
     }
@@ -631,30 +734,6 @@ public class AutoStructuralTest {
     public int hashCode() {
       return Objects.hash(b);
     }
-  }
-
-  @Test
-  void abstractClasses() {
-    runTestOk(new BaseRecognizer(), new Imp3("hello"), "@Imp3{c:hello}");
-    runTestOk(new Imp3Recognizer(), new Imp3("hello"), "@Imp3{c:hello}");
-    runTestOk(new BaseRecognizer(), new Con2("hello"), "@Con2{b:hello}");
-    runTestOk(new Con2Recognizer(), new Con2("hello"), "@Con2{b:hello}");
-    runTestOk(new BaseRecognizer(), new ImpBase2("hello"), "@ImpBase2{a:hello}");
-    runTestOk(new Base2Recognizer(), new ImpBase2("hello"), "@ImpBase2{a:hello}");
-    runTestOk(new ImpBase2Recognizer(), new ImpBase2("hello"), "@ImpBase2{a:hello}");
-  }
-
-  @AutoForm(subTypes = {
-      @AutoForm.Type(IF2.class),
-      @AutoForm.Type(IFAbs.class)
-  })
-  public interface IF1 {
-
-  }
-
-  @AutoForm(subTypes = @AutoForm.Type(IF2Impl.class))
-  public interface IF2 extends IF1 {
-
   }
 
   @AutoForm
@@ -678,21 +757,8 @@ public class AutoStructuralTest {
     }
   }
 
-  @Test
-  void testInterfaceHierarchy() {
-    runTestOk(new IF1Recognizer(), new IFAbsImpl(), "@IFAbsImpl");
-    runTestOk(new IF1Recognizer(), new IF2Impl(), "@IF2Impl");
-    runTestOk(new IF2Recognizer(), new IF2Impl(), "@IF2Impl");
-    runTestOk(new IFAbsRecognizer(), new IFAbsImpl(), "@IFAbsImpl");
-  }
-
   @AutoForm(subTypes = @AutoForm.Type(Mixed.class))
   public static abstract class MixedBase {
-
-  }
-
-  @AutoForm(subTypes = @AutoForm.Type(Mixed.class))
-  public interface MixedInterface {
 
   }
 
@@ -702,13 +768,6 @@ public class AutoStructuralTest {
     public boolean equals(Object obj) {
       return obj instanceof Mixed;
     }
-  }
-
-  @Test
-  void testMixedHierarchy() {
-    runTestOk(new MixedBaseRecognizer(), new Mixed(), "@Mixed");
-    runTestOk(new MixedInterfaceRecognizer(), new Mixed(), "@Mixed");
-    runTestOk(new MixedRecognizer(), new Mixed(), "@Mixed");
   }
 
   @AutoForm(subTypes = {
@@ -740,8 +799,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof MapUpdate)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof MapUpdate)) {
+        return false;
+      }
       MapUpdate update = (MapUpdate) o;
       return Objects.equals(key, update.key) && Objects.equals(value, update.value);
     }
@@ -767,8 +830,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof MapRemove)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof MapRemove)) {
+        return false;
+      }
       MapRemove mapRemove = (MapRemove) o;
       return Objects.equals(key, mapRemove.key);
     }
@@ -802,8 +869,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof MapTake)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof MapTake)) {
+        return false;
+      }
       MapTake mapTake = (MapTake) o;
       return count == mapTake.count;
     }
@@ -829,8 +900,12 @@ public class AutoStructuralTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof MapDrop)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof MapDrop)) {
+        return false;
+      }
       MapDrop mapDrop = (MapDrop) o;
       return count == mapDrop.count;
     }
@@ -839,15 +914,6 @@ public class AutoStructuralTest {
     public int hashCode() {
       return Objects.hash(count);
     }
-  }
-
-  @Test
-  void testComplexEnvelope() {
-    runTestOk(new MapEnvelopeRecognizer(), new MapUpdate(1, 2), "@update(key:1)2");
-    runTestOk(new MapEnvelopeRecognizer(), new MapRemove(1), "@remove(key:1)");
-    runTestOk(new MapEnvelopeRecognizer(), new MapClear(), "@clear");
-    runTestOk(new MapEnvelopeRecognizer(), new MapTake(13), "@take(13)");
-    runTestOk(new MapEnvelopeRecognizer(), new MapDrop(13), "@drop(13)");
   }
 
   // used to check that all the core types find recognizers correctly

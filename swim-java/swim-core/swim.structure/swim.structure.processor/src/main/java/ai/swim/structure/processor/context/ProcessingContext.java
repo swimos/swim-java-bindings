@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.context;
+package ai.swim.structure.processor.context;
 
-import ai.swim.structure.processor.recognizer.models.RecognizerFactory;
+import ai.swim.structure.processor.recognizer.RecognizerFactory;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
 
 public class ProcessingContext {
 

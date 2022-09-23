@@ -15,6 +15,7 @@
 package ai.swim.structure.processor.inspect.elements;
 
 import ai.swim.structure.processor.inspect.elements.visitor.ElementVisitor;
+import ai.swim.structure.processor.models.Model;
 
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
@@ -26,11 +27,11 @@ public class InterfaceElement extends StructuralElement {
   }
 
   public InterfaceElement(TypeElement root, PackageElement declaredPackage, List<StructuralElement> subTypes) {
-    super(root, declaredPackage,subTypes);
+    super(root, declaredPackage, subTypes);
   }
 
   @Override
-  public <T> T accept(ElementVisitor<T> visitor) {
+  public Model accept(ElementVisitor visitor) {
     return visitor.visitInterface(this);
   }
 }

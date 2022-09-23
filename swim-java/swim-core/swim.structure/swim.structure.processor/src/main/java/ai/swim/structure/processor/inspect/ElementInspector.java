@@ -16,17 +16,19 @@ package ai.swim.structure.processor.inspect;
 
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.context.ScopedMessager;
 import ai.swim.structure.processor.inspect.accessor.FieldAccessor;
 import ai.swim.structure.processor.inspect.accessor.MethodAccessor;
+import ai.swim.structure.processor.inspect.elements.ClassElement;
 import ai.swim.structure.processor.inspect.elements.FieldElement;
 import ai.swim.structure.processor.inspect.elements.InterfaceElement;
 import ai.swim.structure.processor.inspect.elements.StructuralElement;
 import ai.swim.structure.processor.inspect.elements.UnresolvedElement;
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.context.ScopedMessager;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
@@ -42,7 +44,6 @@ import java.util.List;
 
 import static ai.swim.structure.processor.Utils.getNoArgConstructor;
 import static ai.swim.structure.processor.Utils.setterFor;
-import ai.swim.structure.processor.inspect.elements.ClassElement;
 
 public abstract class ElementInspector {
 
@@ -50,7 +51,18 @@ public abstract class ElementInspector {
 
   }
 
-  public static ClassElement inspectClass(TypeElement element, ScopedContext context) {
+  public static StructuralElement inspect(TypeElement element, ScopedContext context) {
+    ElementKind kind = element.getKind();
+    if (kind.isClass()) {
+      return inspectClass(element, context);
+    } else if (kind.isInterface()) {
+      return inspectInterface(element, context);
+    } else {
+      throw new AssertionError("Unsupported structure type for inspection: " + kind);
+    }
+  }
+
+  private static ClassElement inspectClass(TypeElement element, ScopedContext context) {
     ProcessingEnvironment env = context.getProcessingEnvironment();
     ConstructorElement constructor = getConstructor(element, context.getMessager());
 
@@ -113,6 +125,7 @@ public abstract class ElementInspector {
       if (isPublic) {
         classElement.addField(new FieldElement(new FieldAccessor(variableName.toString()), variable, fieldKind));
       } else {
+        // todo: add getter
         ExecutableElement setter = setterFor(classElement.getMethods(), variableName);
         if (!validateSetter(setter, variableName, variableType, ctx)) {
           return false;
@@ -253,7 +266,7 @@ public abstract class ElementInspector {
         return false;
       }
 
-      if (!typeElement.getKind().isClass()){
+      if (!typeElement.getKind().isClass()) {
         continue;
       }
 
@@ -297,7 +310,7 @@ public abstract class ElementInspector {
     return new ConstructorElement(constructor);
   }
 
-  public static InterfaceElement inspectInterface(TypeElement rootElement, ScopedContext context) {
+  private static InterfaceElement inspectInterface(TypeElement rootElement, ScopedContext context) {
     if (!rootElement.getKind().isInterface()) {
       throw new RuntimeException("Element is not an interface: " + rootElement);
     }

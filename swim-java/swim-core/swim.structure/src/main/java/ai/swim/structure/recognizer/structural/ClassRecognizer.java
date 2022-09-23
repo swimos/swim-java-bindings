@@ -11,9 +11,9 @@ public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
   protected final RecognizingBuilder<T> builder;
   protected final BitSet bitSet;
   protected final IndexFn<Key> indexFn;
+  protected final TagSpec tagSpec;
   protected int index;
   protected State state;
-  protected final TagSpec tagSpec;
 
   protected ClassRecognizer(TagSpec tagSpec, RecognizingBuilder<T> builder, int fieldCount, IndexFn<Key> indexFn, State state) {
     this.tagSpec = tagSpec;

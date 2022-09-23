@@ -29,6 +29,7 @@ public abstract class RecognizerTypeParameter<T> extends TypeParameter<Recognize
       return forClass(target);
     }
   }
+
   public static <T> RecognizerTypeParameter<T> from(Supplier<Recognizer<T>> target) {
     if (target == null) {
       return untyped();

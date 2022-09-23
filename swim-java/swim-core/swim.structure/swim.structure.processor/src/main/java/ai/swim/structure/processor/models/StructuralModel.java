@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.models;
+package ai.swim.structure.processor.models;
 
 import javax.lang.model.type.TypeMirror;
 
-public abstract class StructuralRecognizer extends RecognizerInstance {
+public abstract class StructuralModel extends ModelInstance {
 
-  protected StructuralRecognizer(TypeMirror typeMirror) {
-    super(typeMirror,  String.format("new %s()", typeMirror.toString()));
+  protected StructuralModel(TypeMirror typeMirror) {
+    super(typeMirror, String.format("new %s()", typeMirror.toString()));
   }
 
 }

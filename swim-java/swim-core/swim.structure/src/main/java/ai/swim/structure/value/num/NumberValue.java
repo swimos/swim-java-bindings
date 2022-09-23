@@ -16,7 +16,6 @@ package ai.swim.structure.value.num;
 
 
 import ai.swim.structure.value.PrimitiveValue;
-import ai.swim.structure.value.Value;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

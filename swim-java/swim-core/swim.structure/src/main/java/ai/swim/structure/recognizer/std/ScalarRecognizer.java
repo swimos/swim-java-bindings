@@ -4,7 +4,12 @@ import ai.swim.recon.event.ReadBlobValue;
 import ai.swim.recon.event.ReadBooleanValue;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadTextValue;
-import ai.swim.recon.event.number.*;
+import ai.swim.recon.event.number.ReadBigDecimalValue;
+import ai.swim.recon.event.number.ReadBigIntValue;
+import ai.swim.recon.event.number.ReadDoubleValue;
+import ai.swim.recon.event.number.ReadFloatValue;
+import ai.swim.recon.event.number.ReadIntValue;
+import ai.swim.recon.event.number.ReadLongValue;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.SimpleRecognizer;
 

@@ -4,26 +4,6 @@ import java.util.List;
 
 public abstract class FieldDiscriminate {
 
-  public boolean isTag() {
-    return false;
-  }
-
-  public boolean isHeader() {
-    return false;
-  }
-
-  public boolean isAttribute() {
-    return false;
-  }
-
-  public boolean isItem() {
-    return false;
-  }
-
-  public boolean isBody() {
-    return false;
-  }
-
   public static FieldDiscriminate tag(FieldModel field) {
     return new SingleField(field) {
       @Override
@@ -67,6 +47,26 @@ public abstract class FieldDiscriminate {
         return true;
       }
     };
+  }
+
+  public boolean isTag() {
+    return false;
+  }
+
+  public boolean isHeader() {
+    return false;
+  }
+
+  public boolean isAttribute() {
+    return false;
+  }
+
+  public boolean isItem() {
+    return false;
+  }
+
+  public boolean isBody() {
+    return false;
   }
 
   public static class SingleField extends FieldDiscriminate {

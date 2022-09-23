@@ -2,9 +2,9 @@ package ai.swim.structure.processor.schema;
 
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.inspect.accessor.Accessor;
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.models.RecognizerModel;
+import ai.swim.structure.processor.models.Model;
 import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -21,13 +21,13 @@ import javax.lang.model.util.Types;
 
 public class FieldModel {
   private final Accessor accessor;
-  private final RecognizerModel recognizer;
+  private final Model model;
   private final VariableElement element;
   private final FieldKind fieldKind;
 
-  public FieldModel(Accessor accessor, RecognizerModel recognizer, VariableElement element, FieldKind fieldKind) {
+  public FieldModel(Accessor accessor, Model model, VariableElement element, FieldKind fieldKind) {
     this.accessor = accessor;
-    this.recognizer = recognizer;
+    this.model = model;
     this.element = element;
     this.fieldKind = fieldKind;
   }
@@ -36,7 +36,7 @@ public class FieldModel {
   public String toString() {
     return "FieldModel{" +
         "accessor=" + accessor +
-        ", recognizer=" + recognizer +
+        ", model=" + model +
         ", element=" + element +
         ", fieldKind=" + fieldKind +
         '}';
@@ -52,7 +52,7 @@ public class FieldModel {
   }
 
   public TypeMirror type(ProcessingEnvironment environment) {
-    TypeMirror type = this.recognizer.type(environment);
+    TypeMirror type = this.model.type(environment);
     if (type == null) {
       return this.element.asType();
     } else {
@@ -61,7 +61,7 @@ public class FieldModel {
   }
 
   public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
-    return this.recognizer.initializer(context, inConstructor);
+    return this.model.initializer(context, inConstructor);
   }
 
   public Accessor getAccessor() {
@@ -77,7 +77,7 @@ public class FieldModel {
   }
 
   public Object defaultValue() {
-    return this.recognizer.defaultValue();
+    return this.model.defaultValue();
   }
 
   public FieldKind getFieldKind() {
@@ -90,14 +90,14 @@ public class FieldModel {
 
   public TypeMirror boxedType(ProcessingEnvironment environment) {
     Types typeUtils = environment.getTypeUtils();
-    TypeMirror recognizerType = type(environment);
+    TypeMirror modelType = type(environment);
 
-    if (recognizerType.getKind().isPrimitive()) {
-      TypeElement boxedClass = typeUtils.boxedClass((PrimitiveType) recognizer.type(environment));
-      recognizerType = boxedClass.asType();
+    if (modelType.getKind().isPrimitive()) {
+      TypeElement boxedClass = typeUtils.boxedClass((PrimitiveType) model.type(environment));
+      modelType = boxedClass.asType();
     }
 
-    return recognizerType;
+    return modelType;
   }
 
   public boolean isParameterised(ScopedContext context) {

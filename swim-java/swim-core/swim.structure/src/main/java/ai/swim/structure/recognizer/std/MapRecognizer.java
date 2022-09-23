@@ -24,20 +24,12 @@ import java.util.Map;
 
 public class MapRecognizer<K, V> extends StructuralRecognizer<Map<K, V>> {
 
+  private final boolean isAttrBody;
+  private final Map<K, V> map;
   private Recognizer<K> keyRecognizer;
   private Recognizer<V> valueRecognizer;
   private State state;
-  private final boolean isAttrBody;
   private K key;
-  private final Map<K, V> map;
-
-  private enum State {
-    Init,
-    Between,
-    Key,
-    Slot,
-    Value,
-  }
 
   @AutoForm.TypedConstructor
   public MapRecognizer(Recognizer<K> keyRecognizer, Recognizer<V> valueRecognizer) {
@@ -122,6 +114,14 @@ public class MapRecognizer<K, V> extends StructuralRecognizer<Map<K, V>> {
   @Override
   public Recognizer<Map<K, V>> reset() {
     return new MapRecognizer<>(this.keyRecognizer.reset(), this.valueRecognizer.reset(), this.isAttrBody);
+  }
+
+  private enum State {
+    Init,
+    Between,
+    Key,
+    Slot,
+    Value,
   }
 
 }

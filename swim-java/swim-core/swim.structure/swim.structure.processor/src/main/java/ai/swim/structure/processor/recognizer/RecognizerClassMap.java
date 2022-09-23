@@ -12,13 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.writer;
+package ai.swim.structure.processor.recognizer;
 
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import com.squareup.javapoet.CodeBlock;
+import ai.swim.structure.processor.models.ClassMap;
 
-public interface Emitter {
+import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.TypeElement;
 
-  CodeBlock emit(ScopedContext context);
+public class RecognizerClassMap extends ClassMap {
+  public RecognizerClassMap(TypeElement root, PackageElement declaredPackage) {
+    super(root, declaredPackage);
+  }
 
+  public String concreteName() {
+    return this.getJavaClassName() + "Recognizer";
+  }
 }

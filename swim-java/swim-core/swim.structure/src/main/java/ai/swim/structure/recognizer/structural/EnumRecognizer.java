@@ -6,13 +6,6 @@ import ai.swim.structure.recognizer.Recognizer;
 
 public class EnumRecognizer<T extends Enum<T>> extends Recognizer<T> {
 
-  enum State {
-    None,
-    EndAttribute,
-    StartBody,
-    EndRecord
-  }
-
   private final Class<T> clazz;
   private State state;
   private T target;
@@ -52,6 +45,13 @@ public class EnumRecognizer<T extends Enum<T>> extends Recognizer<T> {
   @Override
   public Recognizer<T> reset() {
     return new EnumRecognizer<>(this.clazz);
+  }
+
+  enum State {
+    None,
+    EndAttribute,
+    StartBody,
+    EndRecord
   }
 
 }

@@ -23,6 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PrecededTest {
 
+  @Test
+  void precededTestFin() {
+    Parser<String> parser = Prop.parser();
+    parser = parser.feed(Input.string("@abc"));
+
+    assertTrue(parser.isDone());
+    assertEquals(parser.bind(), "abc");
+  }
+
   public static class Prop extends Parser<String> {
     private final StringBuilder state;
 
@@ -52,15 +61,6 @@ class PrecededTest {
         throw new AssertionError();
       }
     }
-  }
-
-  @Test
-  void precededTestFin() {
-    Parser<String> parser = Prop.parser();
-    parser = parser.feed(Input.string("@abc"));
-
-    assertTrue(parser.isDone());
-    assertEquals(parser.bind(), "abc");
   }
 
 

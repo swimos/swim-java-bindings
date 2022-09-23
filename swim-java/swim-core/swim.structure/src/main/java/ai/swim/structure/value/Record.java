@@ -69,6 +69,20 @@ public class Record extends Value {
     return new Record(attrArr, attrArr.length, EMPTY_ITEM_DATA, 0);
   }
 
+  private static int newArrayLength(int old, int minGrowth, int growthFactor) {
+    int prefLength = old + Math.max(minGrowth, growthFactor);
+    if (0 < prefLength && prefLength <= MAX_LENGTH) {
+      return prefLength;
+    } else {
+      int minLength = old + minGrowth;
+      if (minLength < 0) {
+        throw new OutOfMemoryError(String.format("Array overflow: %s + %s", old, growthFactor));
+      } else {
+        return Math.max(minLength, MAX_LENGTH);
+      }
+    }
+  }
+
   public int getAttrCount() {
     return attrCount;
   }
@@ -137,20 +151,6 @@ public class Record extends Value {
       attrs = Arrays.copyOf(attrs, newCapacity);
     } else {
       attrs = new Attr[Math.max(DEFAULT_CAPACITY, by)];
-    }
-  }
-
-  private static int newArrayLength(int old, int minGrowth, int growthFactor) {
-    int prefLength = old + Math.max(minGrowth, growthFactor);
-    if (0 < prefLength && prefLength <= MAX_LENGTH) {
-      return prefLength;
-    } else {
-      int minLength = old + minGrowth;
-      if (minLength < 0) {
-        throw new OutOfMemoryError(String.format("Array overflow: %s + %s", old, growthFactor));
-      } else {
-        return Math.max(minLength, MAX_LENGTH);
-      }
     }
   }
 

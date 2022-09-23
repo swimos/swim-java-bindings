@@ -14,7 +14,6 @@
 
 package ai.swim.structure.writer.std;
 
-import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.writer.BodyWriter;
 import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.StructuralWriter;
@@ -35,7 +34,7 @@ public abstract class CollectionStructuralWritable<E, C extends Collection<E>> i
     BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
 
     for (E e : from) {
-      bodyWriter = bodyWriter.writeValueWith(eWritable,e);
+      bodyWriter = bodyWriter.writeValueWith(eWritable, e);
     }
 
     return bodyWriter.done();

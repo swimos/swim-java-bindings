@@ -18,6 +18,10 @@ public class ListRecognizer<E> extends CollectionRecognizer<E, List<E>> {
     super(delegate, new ArrayList<>(), isAttrBody);
   }
 
+  public static <E> Recognizer<? extends List<E>> bounded(Recognizer<E> delegate) {
+    return new ListRecognizer<>(delegate);
+  }
+
   @Override
   public Recognizer<List<E>> reset() {
     return new ListRecognizer<>(this.delegate.reset(), isAttrBody);
@@ -29,9 +33,5 @@ public class ListRecognizer<E> extends CollectionRecognizer<E, List<E>> {
         new ListRecognizer<>(this.delegate.reset(), true),
         new SimpleAttrBodyRecognizer<>(new ListRecognizer<>(this.delegate.reset(), false))
     );
-  }
-
-  public static <E> Recognizer<? extends List<E>> bounded(Recognizer<E> delegate) {
-    return new ListRecognizer<>(delegate);
   }
 }

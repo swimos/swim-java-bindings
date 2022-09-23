@@ -8,14 +8,10 @@ import java.util.Collection;
 
 public abstract class CollectionRecognizer<T, E extends Collection<T>> extends StructuralRecognizer<E> {
 
-  protected Recognizer<T> delegate;
   protected final E collection;
-  protected State state;
   protected final boolean isAttrBody;
-
-  private enum State {
-    Init, Item, Between
-  }
+  protected Recognizer<T> delegate;
+  protected State state;
 
   protected CollectionRecognizer(Recognizer<T> delegate, E collection) {
     this(delegate, collection, false);
@@ -66,6 +62,10 @@ public abstract class CollectionRecognizer<T, E extends Collection<T>> extends S
     }
 
     return this;
+  }
+
+  private enum State {
+    Init, Item, Between
   }
 
 

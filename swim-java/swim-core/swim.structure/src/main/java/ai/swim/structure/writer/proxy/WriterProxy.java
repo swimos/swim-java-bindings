@@ -78,6 +78,10 @@ public class WriterProxy {
     return writers;
   }
 
+  public static WriterProxy getProxy() {
+    return WriterProxy.INSTANCE;
+  }
+
   public <T> Writable<T> lookupObject(T obj) {
     if (obj == null) {
       throw new NullPointerException();
@@ -136,10 +140,6 @@ public class WriterProxy {
     }
 
     throw new WriterException("No writer found for class: " + clazz);
-  }
-
-  public static WriterProxy getProxy() {
-    return WriterProxy.INSTANCE;
   }
 
 }

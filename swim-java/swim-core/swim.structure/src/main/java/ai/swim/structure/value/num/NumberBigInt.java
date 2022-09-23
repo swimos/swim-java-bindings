@@ -23,7 +23,7 @@ public class NumberBigInt extends NumberValue {
   private final BigInteger value;
 
   public NumberBigInt(BigInteger value) {
-    this.value=value;
+    this.value = value;
   }
 
   @Override

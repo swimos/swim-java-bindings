@@ -14,9 +14,9 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder.classBuilder;
 
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.models.RecognizerModel;
-import ai.swim.structure.processor.recognizer.writer.Emitter;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.models.Model;
+import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -28,9 +28,9 @@ import javax.lang.model.util.Types;
 import static ai.swim.structure.processor.recognizer.writer.Lookups.TYPE_PARAMETER;
 
 public class TypeParameterEmitter implements Emitter {
-  private final RecognizerModel model;
+  private final Model model;
 
-  public TypeParameterEmitter(RecognizerModel model) {
+  public TypeParameterEmitter(Model model) {
     this.model = model;
   }
 

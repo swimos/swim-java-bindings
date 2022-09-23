@@ -102,7 +102,7 @@ public class ScalarWriters {
       byte[] blob = new byte[from.length];
 
       for (int i = 0; i < from.length; i++) {
-        blob[i]=from[i];
+        blob[i] = from[i];
       }
 
       return structuralWriter.writeBlob(blob);

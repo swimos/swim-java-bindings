@@ -28,6 +28,14 @@ public class Attr extends Value {
     this.value = value;
   }
 
+  public static Attr ofAttr(String key) {
+    return new Attr(new Text(key), Value.extant());
+  }
+
+  public static Attr ofAttr(String key, Value value) {
+    return new Attr(new Text(key), value);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -39,6 +47,14 @@ public class Attr extends Value {
     Attr attr = (Attr) o;
     return Objects.equals(value, attr.value) && Objects.equals(key, attr.key);
   }
+
+//  @Override
+//  public String debug() {
+//    return "Attr{" +
+//        "value=" + value +
+//        ", key=" + key +
+//        '}';
+//  }
 
   @Override
   public int hashCode() {
@@ -66,22 +82,6 @@ public class Attr extends Value {
     } else {
       return String.format("@%s(%s)", key, value);
     }
-  }
-
-//  @Override
-//  public String debug() {
-//    return "Attr{" +
-//        "value=" + value +
-//        ", key=" + key +
-//        '}';
-//  }
-
-  public static Attr ofAttr(String key) {
-    return new Attr(new Text(key), Value.extant());
-  }
-
-  public static Attr ofAttr(String key, Value value) {
-    return new Attr(new Text(key), value);
   }
 
   public Text getKey() {

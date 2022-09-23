@@ -14,11 +14,11 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder.classBuilder;
 
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.writer.Emitter;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.FieldModel;
+import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 
@@ -45,13 +45,13 @@ public class BindEmitter implements Emitter {
         body.addStatement("$T header = this.headerBuilder.bind()", headerElement);
 
         for (FieldModel field : headerFields.getFields()) {
-          field.getAccessor().write(body, "obj", String.format("header.%s", field.getName().toString()));
+          field.getAccessor().writeSet(body, "obj", String.format("header.%s", field.getName().toString()));
         }
 
         FieldModel tagBody = headerFields.getTagBody();
 
         if (tagBody != null) {
-          tagBody.getAccessor().write(body, "obj", String.format("header.%s", tagBody.getName().toString()));
+          tagBody.getAccessor().writeSet(body, "obj", String.format("header.%s", tagBody.getName().toString()));
         }
       } else {
         FieldDiscriminate.SingleField singleField = (FieldDiscriminate.SingleField) fieldDiscriminate;
@@ -59,9 +59,9 @@ public class BindEmitter implements Emitter {
         String fieldName = context.getNameFactory().fieldBuilderName(field.getName().toString());
 
         if (field.isOptional()) {
-          field.getAccessor().write(body, "obj", String.format("this.%s.bindOr(%s)", fieldName, field.defaultValue()));
+          field.getAccessor().writeSet(body, "obj", String.format("this.%s.bindOr(%s)", fieldName, field.defaultValue()));
         } else {
-          field.getAccessor().write(body, "obj", String.format("this.%s.bind()", fieldName));
+          field.getAccessor().writeSet(body, "obj", String.format("this.%s.bind()", fieldName));
         }
       }
     }

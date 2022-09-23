@@ -26,8 +26,8 @@ import java.util.List;
 public abstract class StructuralElement extends JavaElement {
   protected final List<ExecutableElement> methods;
   protected final PackageElement declaredPackage;
-  protected List<StructuralElement> subTypes;
   protected final TypeElement root;
+  protected List<StructuralElement> subTypes;
 
   protected StructuralElement(TypeElement root, PackageElement declaredPackage) {
     this.root = root;
@@ -36,7 +36,7 @@ public abstract class StructuralElement extends JavaElement {
     this.methods = new ArrayList<>();
   }
 
-  protected StructuralElement(TypeElement root, PackageElement declaredPackage,List<StructuralElement> subTypes) {
+  protected StructuralElement(TypeElement root, PackageElement declaredPackage, List<StructuralElement> subTypes) {
     this.root = root;
     this.declaredPackage = declaredPackage;
     this.subTypes = subTypes;
@@ -77,12 +77,12 @@ public abstract class StructuralElement extends JavaElement {
     return root.asType();
   }
 
-  public void setSubTypes(List<StructuralElement> subTypes) {
-    this.subTypes = subTypes;
-  }
-
   public List<StructuralElement> getSubTypes() {
     return subTypes;
+  }
+
+  public void setSubTypes(List<StructuralElement> subTypes) {
+    this.subTypes = subTypes;
   }
 
 }

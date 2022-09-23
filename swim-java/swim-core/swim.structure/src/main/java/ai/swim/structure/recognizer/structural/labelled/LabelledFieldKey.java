@@ -1,6 +1,27 @@
 package ai.swim.structure.recognizer.structural.labelled;
 
 public abstract class LabelledFieldKey {
+  public static LabelledFieldKey TAG = new LabelledFieldKey() {
+    @Override
+    public boolean isTag() {
+      return true;
+    }
+  };
+  public static LabelledFieldKey HEADER = new LabelledFieldKey() {
+    @Override
+    public boolean isHeader() {
+      return true;
+    }
+  };
+
+  public static LabelledFieldKey attr(String name) {
+    return new AttrFieldKey(name);
+  }
+
+  public static LabelledFieldKey item(String name) {
+    return new ItemFieldKey(name);
+  }
+
   public boolean isTag() {
     return false;
   }
@@ -15,28 +36,6 @@ public abstract class LabelledFieldKey {
 
   public boolean isItem() {
     return false;
-  }
-
-  public static LabelledFieldKey TAG = new LabelledFieldKey() {
-    @Override
-    public boolean isTag() {
-      return true;
-    }
-  };
-
-  public static LabelledFieldKey HEADER = new LabelledFieldKey() {
-    @Override
-    public boolean isHeader() {
-      return true;
-    }
-  };
-
-  public static LabelledFieldKey attr(String name) {
-    return new AttrFieldKey(name);
-  }
-
-  public static LabelledFieldKey item(String name) {
-    return new ItemFieldKey(name);
   }
 
   public static class AttrFieldKey extends LabelledFieldKey {

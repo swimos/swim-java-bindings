@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HeaderSet {
-  public FieldModel tagName;
-  public FieldModel tagBody;
   public final List<FieldModel> headerFields;
   public final List<FieldModel> attributes;
+  public FieldModel tagName;
+  public FieldModel tagBody;
 
   public HeaderSet() {
     this.headerFields = new ArrayList<>();
@@ -20,10 +20,6 @@ public class HeaderSet {
 
   public boolean hasTagName() {
     return this.tagName != null;
-  }
-
-  public void setTagBody(FieldModel tagBody) {
-    this.tagBody = tagBody;
   }
 
   public void addHeaderField(FieldModel field) {
@@ -40,6 +36,10 @@ public class HeaderSet {
 
   public FieldModel getTagBody() {
     return tagBody;
+  }
+
+  public void setTagBody(FieldModel tagBody) {
+    this.tagBody = tagBody;
   }
 
   public List<FieldModel> getHeaderFields() {

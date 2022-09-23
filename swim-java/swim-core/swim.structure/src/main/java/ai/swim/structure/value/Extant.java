@@ -43,6 +43,6 @@ public class Extant extends PrimitiveValue {
 
   @Override
   protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
-   return writer.writeExtant();
+    return writer.writeExtant();
   }
 }

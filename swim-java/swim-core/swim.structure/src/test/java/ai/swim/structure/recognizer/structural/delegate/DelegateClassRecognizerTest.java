@@ -18,6 +18,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DelegateClassRecognizerTest {
 
+  @Test
+  void testDelegateRecognizer() {
+    Recognizer<Prop> recognizer = new PropRecognizer();
+    List<ReadEvent> events = List.of(
+        ReadEvent.startAttribute("Prop"),
+        ReadEvent.text("a"),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.text("b"),
+        ReadEvent.slot(),
+        ReadEvent.text("b"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.text("string"),
+        ReadEvent.endRecord()
+    );
+
+    Prop obj = runTest(recognizer, events);
+    assertEquals(obj, new Prop(1, "b", "string"));
+  }
+
   public static class PropHeader {
     int a;
     String b;
@@ -92,8 +113,12 @@ class DelegateClassRecognizerTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Prop)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Prop)) {
+        return false;
+      }
       Prop prop = (Prop) o;
       return a == prop.a && Objects.equals(b, prop.b) && Objects.equals(c, prop.c);
     }
@@ -203,27 +228,6 @@ class DelegateClassRecognizerTest {
     public Prop bind() {
       return this.delegate.bind();
     }
-  }
-
-  @Test
-  void testDelegateRecognizer() {
-    Recognizer<Prop> recognizer = new PropRecognizer();
-    List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("Prop"),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.number(1),
-        ReadEvent.text("b"),
-        ReadEvent.slot(),
-        ReadEvent.text("b"),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("string"),
-        ReadEvent.endRecord()
-    );
-
-    Prop obj = runTest(recognizer, events);
-    assertEquals(obj, new Prop(1, "b", "string"));
   }
 
 }

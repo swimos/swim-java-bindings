@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.models;
+package ai.swim.structure.processor.models;
 
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.context.ScopedContext;
 import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -29,21 +29,21 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.List;
 
-public class RecognizerInstance extends RecognizerModel {
+public class ModelInstance extends Model {
   private final String init;
 
-  public RecognizerInstance(TypeMirror type, String init) {
+  public ModelInstance(TypeMirror type, String init) {
     super(type);
     this.init = init;
+  }
+
+  public static Resolver resolver(String root) {
+    return new Resolver(root);
   }
 
   @Override
   public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
     return CodeBlock.of("$L", init);
-  }
-
-  public static Resolver resolver(String root) {
-    return new Resolver(root);
   }
 
   public static class Resolver {
@@ -53,7 +53,7 @@ public class RecognizerInstance extends RecognizerModel {
       this.root = root;
     }
 
-    public RecognizerInstance resolve(ProcessingEnvironment environment, String elementName) {
+    public ModelInstance resolve(ProcessingEnvironment environment, String elementName) {
       Elements elementUtils = environment.getElementUtils();
       Types typeUtils = environment.getTypeUtils();
       String canonicalPath = String.format("%s.%s", root, elementName);
@@ -63,15 +63,15 @@ public class RecognizerInstance extends RecognizerModel {
         element = elementUtils.getTypeElement(root);
         DeclaredType declaredType = (DeclaredType) element.asType();
 
-        // we couldn't find the element itself but perhaps the class contains static instances of a reusable recognizer.
+        // we couldn't find the element itself but perhaps the class contains static instances of a reusable model.
         // iterate over those and try and find a matching type
         for (Element enclosedElement : declaredType.asElement().getEnclosedElements()) {
           if (enclosedElement.getKind().isField()) {
             VariableElement field = (VariableElement) enclosedElement;
 
             if (field.getSimpleName().contentEquals(elementName)) {
-              if (!field.getModifiers().contains(Modifier.STATIC)){
-                throw new RuntimeException("Recognizer lookups must reference static variables. Attempted to reference: " + canonicalPath);
+              if (!field.getModifiers().contains(Modifier.STATIC)) {
+                throw new RuntimeException("Lookups must reference static variables. Attempted to reference: " + canonicalPath);
               }
 
               if (field.asType().getKind() == TypeKind.DECLARED) {
@@ -79,14 +79,14 @@ public class RecognizerInstance extends RecognizerModel {
                 List<? extends TypeMirror> typeArguments = fieldType.getTypeArguments();
 
                 if (typeArguments.size() == 0) {
-                  return new RecognizerInstance(field.asType(), canonicalPath);
+                  return new ModelInstance(field.asType(), canonicalPath);
                 } else if (typeArguments.size() == 1) {
-                  return new RecognizerInstance(typeArguments.get(0), canonicalPath);
+                  return new ModelInstance(typeArguments.get(0), canonicalPath);
                 } else {
-                  throw new RuntimeException("Recognizer has more than one type parameter: " + elementName);
+                  throw new RuntimeException("Model has more than one type parameter: " + elementName);
                 }
               } else {
-                return new RecognizerInstance(field.asType(), canonicalPath);
+                return new ModelInstance(field.asType(), canonicalPath);
               }
             }
           }
@@ -94,7 +94,7 @@ public class RecognizerInstance extends RecognizerModel {
 
         throw new IllegalStateException(String.format("%s.%s could not be resolved", root, elementName));
       } else {
-        return new RecognizerInstance(typeUtils.erasure(element.asType()), canonicalPath);
+        return new ModelInstance(typeUtils.erasure(element.asType()), canonicalPath);
       }
     }
   }

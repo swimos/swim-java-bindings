@@ -13,50 +13,34 @@ import ai.swim.recon.models.state.StateChange;
 import ai.swim.recon.result.ParseResult;
 import ai.swim.recon.result.ResultError;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
 
 import static ai.swim.codec.Parser.preceded;
 import static ai.swim.codec.parsers.combinators.Alt.alt;
 import static ai.swim.codec.parsers.text.Multispace0.multispace0;
 import static ai.swim.codec.parsers.text.StringExt.space0;
-import static ai.swim.recon.ReconParserParts.*;
+import static ai.swim.recon.ReconParserParts.parseAfterAttr;
+import static ai.swim.recon.ReconParserParts.parseAfterSlot;
+import static ai.swim.recon.ReconParserParts.parseAfterValue;
+import static ai.swim.recon.ReconParserParts.parseInit;
+import static ai.swim.recon.ReconParserParts.parseNotAfterItem;
+import static ai.swim.recon.ReconParserParts.parseSlotValue;
 
 /**
  * An incremental recon parser.
  */
 public final class ReconParser {
 
-  private Input input;
   private final Deque<ParseState> state;
+  private Input input;
   private Parser<ParserTransition> current;
   private PendingEvents pending;
   private boolean complete;
   private boolean clearIfNone;
-
-  private static class PendingEvents {
-    private final List<ReadEvent> events;
-    private int idx;
-
-    private PendingEvents(List<ReadEvent> events) {
-      this.events = events;
-      this.idx = 0;
-    }
-
-    public boolean done() {
-      return idx >= events.size();
-    }
-
-    public ReadEvent next() {
-      if (done()) {
-        return null;
-      } else {
-        ReadEvent event = events.get(idx);
-        idx += 1;
-
-        return event;
-      }
-    }
-  }
 
   public ReconParser() {
     this.state = new ArrayDeque<>(Collections.singleton(ParseState.Init));
@@ -71,6 +55,22 @@ public final class ReconParser {
     this.pending = pending;
     this.complete = complete;
     this.clearIfNone = clearIfNone;
+  }
+
+  private static Parser<ParserTransition> initParser() {
+    return alt(
+        new Parser<>() {
+          @Override
+          public Parser<ParserTransition> feed(Input input) {
+            if (input.isDone()) {
+              return Parser.done(ReadEvent.extant().transition());
+            } else {
+              return Parser.error(input, "Expected an empty input");
+            }
+          }
+        },
+        preceded(multispace0(), parseInit())
+    );
   }
 
   /**
@@ -268,22 +268,6 @@ public final class ReconParser {
     return this.feed();
   }
 
-  private static Parser<ParserTransition> initParser() {
-    return alt(
-        new Parser<>() {
-          @Override
-          public Parser<ParserTransition> feed(Input input) {
-            if (input.isDone()) {
-              return Parser.done(ReadEvent.extant().transition());
-            } else {
-              return Parser.error(input, "Expected an empty input");
-            }
-          }
-        },
-        preceded(multispace0(), parseInit())
-    );
-  }
-
   private ParseResult<List<ReadEvent>> nextEvent() {
     switch (this.state.getLast()) {
       case Init:
@@ -447,5 +431,30 @@ public final class ReconParser {
         ", complete=" + complete +
         ", clearIfNone=" + clearIfNone +
         '}';
+  }
+
+  private static class PendingEvents {
+    private final List<ReadEvent> events;
+    private int idx;
+
+    private PendingEvents(List<ReadEvent> events) {
+      this.events = events;
+      this.idx = 0;
+    }
+
+    public boolean done() {
+      return idx >= events.size();
+    }
+
+    public ReadEvent next() {
+      if (done()) {
+        return null;
+      } else {
+        ReadEvent event = events.get(idx);
+        idx += 1;
+
+        return event;
+      }
+    }
   }
 }

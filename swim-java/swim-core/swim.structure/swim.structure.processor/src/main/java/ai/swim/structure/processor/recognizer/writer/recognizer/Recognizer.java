@@ -16,17 +16,25 @@ package ai.swim.structure.processor.recognizer.writer.recognizer;
 
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
-import ai.swim.structure.processor.recognizer.context.NameFactory;
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.models.ClassMap;
-import ai.swim.structure.processor.recognizer.models.RecognizerModel;
+import ai.swim.structure.processor.context.NameFactory;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.models.ClassMap;
+import ai.swim.structure.processor.models.Model;
+import ai.swim.structure.processor.recognizer.writer.WriterUtils;
+import ai.swim.structure.processor.recognizer.writer.builder.BuilderWriter;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.HeaderSet;
 import ai.swim.structure.processor.schema.PartitionedFields;
-import ai.swim.structure.processor.recognizer.writer.WriterUtils;
-import ai.swim.structure.processor.recognizer.writer.builder.BuilderWriter;
-import com.squareup.javapoet.*;
+import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
@@ -41,7 +49,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import static ai.swim.structure.processor.recognizer.writer.Lookups.*;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.DELEGATE_CLASS_RECOGNIZER;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.DELEGATE_ORDINAL_ATTR_KEY;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.FIELD_TAG_SPEC;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.FIXED_TAG_SPEC;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.LABELLED_ATTR_FIELD_KEY;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.LABELLED_CLASS_RECOGNIZER;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.LABELLED_ITEM_FIELD_KEY;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZER_CLASS;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZER_PROXY;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.STRUCTURAL_RECOGNIZER_CLASS;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.TYPE_PARAMETER;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.TYPE_READ_EVENT;
 import static ai.swim.structure.processor.recognizer.writer.WriterUtils.typeParametersToTypeVariable;
 import static ai.swim.structure.processor.recognizer.writer.recognizer.PolymorphicRecognizer.buildPolymorphicRecognizer;
 
@@ -49,7 +68,7 @@ public class Recognizer {
 
   public static void writeRecognizer(ClassSchema schema, ScopedContext context) throws IOException {
     ClassMap classMap = schema.getClassMap();
-    List<RecognizerModel> subTypes = classMap.getSubTypes();
+    List<Model> subTypes = classMap.getSubTypes();
     NameFactory nameFactory = context.getNameFactory();
 
     TypeSpec typeSpec;
@@ -58,7 +77,7 @@ public class Recognizer {
       typeSpec = buildPolymorphicRecognizer(subTypes, context).build();
     } else if (!subTypes.isEmpty()) {
       TypeSpec.Builder concreteRecognizer = writeClassRecognizer(true, schema, context);
-      subTypes.add(new RecognizerModel( null) {
+      subTypes.add(new Model(null) {
         @Override
         public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
           return CodeBlock.of("new $L()", nameFactory.concreteRecognizerClassName());

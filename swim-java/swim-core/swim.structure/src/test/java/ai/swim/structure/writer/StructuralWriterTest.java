@@ -32,58 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StructuralWriterTest {
 
-  static class Prop {
-    public int a;
-    public long b;
-
-    public Prop(int a, long b) {
-      this.a = a;
-      this.b = b;
-    }
-  }
-
-  enum WriteStrategy {
-    Plain,
-    Body, // b is the body
-    HeaderBody // b is the header body
-  }
-
-  static class PropWriter implements Writable<Prop> {
-    private final WriteStrategy strategy;
-
-    public PropWriter(WriteStrategy strategy) {
-      this.strategy = strategy;
-    }
-
-    @Override
-    public <T> T writeInto(Prop from, StructuralWriter<T> structuralWriter) {
-      switch (strategy) {
-        case Plain:
-          return structuralWriter
-              .record(1)
-              .writeExtantAttr("Prop")
-              .completeHeader(2)
-              .writeSlotWith(ScalarWriters.STRING, "a", ScalarWriters.INTEGER, from.a)
-              .writeSlotWith(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
-              .done();
-        case Body:
-          return structuralWriter
-              .record(2)
-              .writeAttr("Prop", Header.NoSlots.prepend("a", ScalarWriters.INTEGER, from.a).simple())
-              .delegateWith(ScalarWriters.LONG, from.b);
-        case HeaderBody:
-          return structuralWriter
-              .record(1)
-              .writeAttrWith("Prop", ScalarWriters.INTEGER, from.a)
-              .completeHeader(1)
-              .writeSlotWith(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
-              .done();
-        default:
-          throw new AssertionError(strategy);
-      }
-    }
-  }
-
   @Test
   void simple_write() {
     Prop prop = new Prop(1, 2);
@@ -129,6 +77,76 @@ class StructuralWriterTest {
     assertEquals(expected, actual);
   }
 
+  @Test
+  void manualGenericWriter() {
+    GenericClass<Integer> genericClass = new GenericClass<>(13, "value");
+    GenericClassWriter<Integer> genericClassWriter = new GenericClassWriter<>(ScalarWriters.INTEGER);
+    Value actual = genericClassWriter.writeInto(genericClass, new ValueStructuralWriter());
+
+    assertTrue(actual.isRecord());
+    Record expected = Value.of(
+        List.of(Value.ofAttr("GenericClass")),
+        List.of(
+            Value.ofItem(Value.of("gen"), Value.of(13)),
+            Value.ofItem(Value.of("key"), Value.of("value"))
+        )
+    );
+
+    assertEquals(expected, actual);
+  }
+
+  enum WriteStrategy {
+    Plain,
+    Body, // b is the body
+    HeaderBody // b is the header body
+  }
+
+  static class Prop {
+    public int a;
+    public long b;
+
+    public Prop(int a, long b) {
+      this.a = a;
+      this.b = b;
+    }
+  }
+
+  static class PropWriter implements Writable<Prop> {
+    private final WriteStrategy strategy;
+
+    public PropWriter(WriteStrategy strategy) {
+      this.strategy = strategy;
+    }
+
+    @Override
+    public <T> T writeInto(Prop from, StructuralWriter<T> structuralWriter) {
+      switch (strategy) {
+        case Plain:
+          return structuralWriter
+              .record(1)
+              .writeExtantAttr("Prop")
+              .completeHeader(2)
+              .writeSlotWith(ScalarWriters.STRING, "a", ScalarWriters.INTEGER, from.a)
+              .writeSlotWith(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
+              .done();
+        case Body:
+          return structuralWriter
+              .record(2)
+              .writeAttr("Prop", Header.NoSlots.prepend("a", ScalarWriters.INTEGER, from.a).simple())
+              .delegateWith(ScalarWriters.LONG, from.b);
+        case HeaderBody:
+          return structuralWriter
+              .record(1)
+              .writeAttrWith("Prop", ScalarWriters.INTEGER, from.a)
+              .completeHeader(1)
+              .writeSlotWith(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
+              .done();
+        default:
+          throw new AssertionError(strategy);
+      }
+    }
+  }
+
   private static class GenericClass<G> {
     public final G gen;
     public final String key;
@@ -157,24 +175,6 @@ class StructuralWriterTest {
           .writeSlotWith(ScalarWriters.STRING, "key", ScalarWriters.STRING, from.key)
           .done();
     }
-  }
-
-  @Test
-  void manualGenericWriter() {
-    GenericClass<Integer> genericClass = new GenericClass<>(13, "value");
-    GenericClassWriter<Integer> genericClassWriter = new GenericClassWriter<>(ScalarWriters.INTEGER);
-    Value actual = genericClassWriter.writeInto(genericClass, new ValueStructuralWriter());
-
-    assertTrue(actual.isRecord());
-    Record expected = Value.of(
-        List.of(Value.ofAttr("GenericClass")),
-        List.of(
-            Value.ofItem(Value.of("gen"), Value.of(13)),
-            Value.ofItem(Value.of("key"), Value.of("value"))
-        )
-    );
-
-    assertEquals(expected, actual);
   }
 
 }

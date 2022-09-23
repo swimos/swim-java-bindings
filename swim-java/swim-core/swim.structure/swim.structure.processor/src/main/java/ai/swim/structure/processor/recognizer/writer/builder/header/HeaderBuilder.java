@@ -14,13 +14,13 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder.header;
 
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.writer.Emitter;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.Lookups;
 import ai.swim.structure.processor.recognizer.writer.builder.Builder;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.FieldModel;
+import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;

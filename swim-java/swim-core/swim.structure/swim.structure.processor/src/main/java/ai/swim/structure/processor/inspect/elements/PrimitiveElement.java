@@ -15,6 +15,7 @@
 package ai.swim.structure.processor.inspect.elements;
 
 import ai.swim.structure.processor.inspect.elements.visitor.ElementVisitor;
+import ai.swim.structure.processor.models.Model;
 
 import javax.lang.model.type.TypeMirror;
 
@@ -26,7 +27,7 @@ public class PrimitiveElement extends JavaElement {
   }
 
   @Override
-  public <T> T accept(ElementVisitor<T> visitor) {
+  public Model accept(ElementVisitor visitor) {
     return visitor.visitPrimitive(this);
   }
 

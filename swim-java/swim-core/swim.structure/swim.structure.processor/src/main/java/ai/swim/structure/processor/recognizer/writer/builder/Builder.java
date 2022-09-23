@@ -14,10 +14,10 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder;
 
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.recognizer.writer.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
@@ -33,7 +33,11 @@ import javax.lang.model.util.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-import static ai.swim.structure.processor.recognizer.writer.Lookups.*;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_BIND;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_CLASS;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_FEED_INDEX;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_RESET;
+import static ai.swim.structure.processor.recognizer.writer.Lookups.TYPE_READ_EVENT;
 
 public abstract class Builder {
 

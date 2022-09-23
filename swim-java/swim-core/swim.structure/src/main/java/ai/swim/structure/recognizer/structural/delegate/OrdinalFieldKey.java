@@ -2,6 +2,29 @@ package ai.swim.structure.recognizer.structural.delegate;
 
 public abstract class OrdinalFieldKey {
 
+  public static final OrdinalFieldKey TAG = new OrdinalFieldKey() {
+    @Override
+    public boolean isTag() {
+      return true;
+    }
+  };
+  public static final OrdinalFieldKey HEADER = new OrdinalFieldKey() {
+    @Override
+    public boolean isHeader() {
+      return true;
+    }
+  };
+  public static final OrdinalFieldKey FIRST_ITEM = new OrdinalFieldKey() {
+    @Override
+    public boolean isFirstItem() {
+      return true;
+    }
+  };
+
+  public static OrdinalFieldKey attr(String name) {
+    return new OrdinalFieldKeyAttr(name);
+  }
+
   public boolean isHeader() {
     return false;
   }
@@ -16,31 +39,6 @@ public abstract class OrdinalFieldKey {
 
   public boolean isTag() {
     return false;
-  }
-
-  public static final OrdinalFieldKey TAG = new OrdinalFieldKey() {
-    @Override
-    public boolean isTag() {
-      return true;
-    }
-  };
-
-  public static final OrdinalFieldKey HEADER = new OrdinalFieldKey() {
-    @Override
-    public boolean isHeader() {
-      return true;
-    }
-  };
-
-  public static final OrdinalFieldKey FIRST_ITEM = new OrdinalFieldKey() {
-    @Override
-    public boolean isFirstItem() {
-      return true;
-    }
-  };
-
-  public static OrdinalFieldKey attr(String name) {
-    return new OrdinalFieldKeyAttr(name);
   }
 
   public static class OrdinalFieldKeyAttr extends OrdinalFieldKey {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.context;
+package ai.swim.structure.processor.context;
 
 import javax.annotation.processing.Messager;
 import javax.lang.model.element.Element;

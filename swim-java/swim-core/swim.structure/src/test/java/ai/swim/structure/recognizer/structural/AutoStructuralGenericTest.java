@@ -14,86 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AutoStructuralGenericTest {
-
-  @AutoForm("gen")
-  public static class NestedGenerics<G extends Number, A extends Number, T extends CharSequence> {
-    public G generic;
-    public Typed<A, T> a;
-    public boolean c;
-
-    public NestedGenerics() {
-
-    }
-
-    public NestedGenerics(G generic, Typed<A, T> a, boolean c) {
-      this.generic = generic;
-      this.a = a;
-      this.c = c;
-    }
-
-
-    @Override
-    public String toString() {
-      return "SimpleGeneric{" +
-          "generic=" + generic +
-          ", a=" + a +
-          ", c=" + c +
-          '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof NestedGenerics)) return false;
-      NestedGenerics<?, ?, ?> that = (NestedGenerics<?, ?, ?>) o;
-      return c == that.c && Objects.equals(generic, that.generic) && Objects.equals(a, that.a);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(generic, a, c);
-    }
-  }
-
-
-  @AutoForm
-  public static class Typed<A extends Number, T extends CharSequence> {
-    public A a;
-    public T t;
-
-    public Typed() {
-
-    }
-
-    public Typed(A a, T t) {
-      this.a = a;
-      this.t = t;
-    }
-
-    @Override
-    public String toString() {
-      return "Typed{" +
-          "a=" + a +
-          ", t=" + t +
-          '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Typed)) return false;
-      Typed<?, ?> typed = (Typed<?, ?>) o;
-      return Objects.equals(a, typed.a) && Objects.equals(t, typed.t);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(a, t);
-    }
-  }
 
   @Test
   void testInferred() {
@@ -149,77 +74,6 @@ public class AutoStructuralGenericTest {
     assertTrue(parser.isError());
   }
 
-  @AutoForm
-  public static class Clazz<C, A, T> {
-    public C c;
-    public A a;
-    public I<T> i;
-
-    public Clazz() {
-    }
-
-    public Clazz(C c, A a, I<T> i) {
-      this.c = c;
-      this.a = a;
-      this.i = i;
-    }
-
-    @Override
-    public String toString() {
-      return "Clazz{" +
-          "c=" + c +
-          ", a=" + a +
-          ", i=" + i +
-          '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Clazz)) return false;
-      Clazz<?, ?, ?> clazz = (Clazz<?, ?, ?>) o;
-      return Objects.equals(c, clazz.c) && Objects.equals(a, clazz.a) && Objects.equals(i, clazz.i);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(c, a, i);
-    }
-  }
-
-  @AutoForm
-  public static class I<T> {
-    public T t;
-
-    public I() {
-
-    }
-
-    public I(T t) {
-      this.t = t;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof I)) return false;
-      I<?> i = (I<?>) o;
-      return Objects.equals(t, i.t);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(t);
-    }
-
-    @Override
-    public String toString() {
-      return "I{" +
-          "t=" + t +
-          '}';
-    }
-  }
-
   @Test
   void testFromRecognizerTypeParametersErr() {
     runNestedTestErr(
@@ -255,6 +109,178 @@ public class AutoStructuralGenericTest {
     assertEquals(new Clazz<>(1, 2L, new I<>(List.of(List.of(4), List.of(5), List.of(6)))), parser.bind());
   }
 
+  @Test
+  void testMixedGenerics() {
+    Parser<MixedGenerics<String>> parser = new FormParser<>(new MixedGenericsRecognizer<>());
+    parser = parser.feed(Input.string("@MixedGenerics{outer:text,wildcard:{2,3.1,4,5}}"));
+
+    assertTrue(parser.isDone());
+    assertEquals(new MixedGenerics<>("text", List.of(2, 3.1, 4, 5)), parser.bind());
+  }
+
+  @AutoForm("gen")
+  public static class NestedGenerics<G extends Number, A extends Number, T extends CharSequence> {
+    public G generic;
+    public Typed<A, T> a;
+    public boolean c;
+
+    public NestedGenerics() {
+
+    }
+
+    public NestedGenerics(G generic, Typed<A, T> a, boolean c) {
+      this.generic = generic;
+      this.a = a;
+      this.c = c;
+    }
+
+
+    @Override
+    public String toString() {
+      return "SimpleGeneric{" +
+          "generic=" + generic +
+          ", a=" + a +
+          ", c=" + c +
+          '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof NestedGenerics)) {
+        return false;
+      }
+      NestedGenerics<?, ?, ?> that = (NestedGenerics<?, ?, ?>) o;
+      return c == that.c && Objects.equals(generic, that.generic) && Objects.equals(a, that.a);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(generic, a, c);
+    }
+  }
+
+  @AutoForm
+  public static class Typed<A extends Number, T extends CharSequence> {
+    public A a;
+    public T t;
+
+    public Typed() {
+
+    }
+
+    public Typed(A a, T t) {
+      this.a = a;
+      this.t = t;
+    }
+
+    @Override
+    public String toString() {
+      return "Typed{" +
+          "a=" + a +
+          ", t=" + t +
+          '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Typed)) {
+        return false;
+      }
+      Typed<?, ?> typed = (Typed<?, ?>) o;
+      return Objects.equals(a, typed.a) && Objects.equals(t, typed.t);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(a, t);
+    }
+  }
+
+  @AutoForm
+  public static class Clazz<C, A, T> {
+    public C c;
+    public A a;
+    public I<T> i;
+
+    public Clazz() {
+    }
+
+    public Clazz(C c, A a, I<T> i) {
+      this.c = c;
+      this.a = a;
+      this.i = i;
+    }
+
+    @Override
+    public String toString() {
+      return "Clazz{" +
+          "c=" + c +
+          ", a=" + a +
+          ", i=" + i +
+          '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Clazz)) {
+        return false;
+      }
+      Clazz<?, ?, ?> clazz = (Clazz<?, ?, ?>) o;
+      return Objects.equals(c, clazz.c) && Objects.equals(a, clazz.a) && Objects.equals(i, clazz.i);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(c, a, i);
+    }
+  }
+
+  @AutoForm
+  public static class I<T> {
+    public T t;
+
+    public I() {
+
+    }
+
+    public I(T t) {
+      this.t = t;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof I)) {
+        return false;
+      }
+      I<?> i = (I<?>) o;
+      return Objects.equals(t, i.t);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(t);
+    }
+
+    @Override
+    public String toString() {
+      return "I{" +
+          "t=" + t +
+          '}';
+    }
+  }
+
   @AutoForm
   static class MixedGenerics<A extends CharSequence> {
     public A outer;
@@ -271,8 +297,12 @@ public class AutoStructuralGenericTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof MixedGenerics)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof MixedGenerics)) {
+        return false;
+      }
       MixedGenerics<?> that = (MixedGenerics<?>) o;
       return Objects.equals(outer, that.outer) && Objects.equals(wildcard, that.wildcard);
     }
@@ -289,15 +319,6 @@ public class AutoStructuralGenericTest {
           ", wildcard=" + wildcard +
           '}';
     }
-  }
-
-  @Test
-  void testMixedGenerics() {
-    Parser<MixedGenerics<String>> parser = new FormParser<>(new MixedGenericsRecognizer<>());
-    parser = parser.feed(Input.string("@MixedGenerics{outer:text,wildcard:{2,3.1,4,5}}"));
-
-    assertTrue(parser.isDone());
-    assertEquals(new MixedGenerics<>("text", List.of(2, 3.1, 4, 5)), parser.bind());
   }
 
   @AutoForm

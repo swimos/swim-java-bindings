@@ -16,34 +16,34 @@ package ai.swim.structure.writer.print.strategy;
 
 import ai.swim.structure.writer.print.Padding;
 
-public class StandardPrintStrategy implements PrintStrategy{
+public class StandardPrintStrategy implements PrintStrategy {
   @Override
   public Padding attrPadding() {
     return Padding.Simple.SINGLE_SPACE;
   }
 
   @Override
-  public  Padding attrBodyPadding() {
+  public Padding attrBodyPadding() {
     return Padding.Simple.NO_SPACE;
   }
 
   @Override
-  public  Padding startBlock(int items) {
+  public Padding startBlock(int items) {
     return items == 0 ? Padding.Simple.NO_SPACE : Padding.Simple.SINGLE_SPACE;
   }
 
   @Override
-  public  Padding endBlock() {
+  public Padding endBlock() {
     return Padding.Simple.SINGLE_SPACE;
   }
 
   @Override
-  public  Padding itemPadding(boolean inRecord) {
+  public Padding itemPadding(boolean inRecord) {
     return Padding.Simple.SINGLE_SPACE;
   }
 
   @Override
-  public  Padding slotPadding() {
+  public Padding slotPadding() {
     return Padding.Simple.SINGLE_SPACE;
   }
 }

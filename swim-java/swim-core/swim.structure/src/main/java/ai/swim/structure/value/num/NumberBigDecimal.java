@@ -23,7 +23,7 @@ public class NumberBigDecimal extends NumberValue {
   private final BigDecimal value;
 
   public NumberBigDecimal(BigDecimal value) {
-    this.value=value;
+    this.value = value;
   }
 
   @Override

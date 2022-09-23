@@ -17,15 +17,15 @@ package ai.swim.structure.writer.print.strategy;
 import ai.swim.structure.writer.print.Padding;
 
 public interface PrintStrategy {
-   Padding attrPadding();
+  Padding attrPadding();
 
-   Padding attrBodyPadding();
+  Padding attrBodyPadding();
 
-   Padding startBlock(int items);
+  Padding startBlock(int items);
 
-   Padding endBlock();
+  Padding endBlock();
 
-   Padding itemPadding(boolean inRecord);
+  Padding itemPadding(boolean inRecord);
 
-   Padding slotPadding();
+  Padding slotPadding();
 }

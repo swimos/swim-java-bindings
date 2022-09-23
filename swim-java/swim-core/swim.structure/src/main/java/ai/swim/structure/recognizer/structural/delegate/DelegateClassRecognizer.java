@@ -9,15 +9,6 @@ import ai.swim.structure.recognizer.structural.IndexFn;
 import ai.swim.structure.recognizer.structural.tag.TagSpec;
 
 public class DelegateClassRecognizer<T> extends ClassRecognizer<DelegateClassRecognizer.State, OrdinalFieldKey, T> {
-  enum State {
-    Init,
-    Header,
-    NoHeader,
-    AttrBetween,
-    AttrItem,
-    Delegated,
-  }
-
   public DelegateClassRecognizer(TagSpec tagSpec, RecognizingBuilder<T> builder, int fieldCount, IndexFn<OrdinalFieldKey> indexFn) {
     super(tagSpec, builder, fieldCount, indexFn, State.Init);
   }
@@ -120,5 +111,14 @@ public class DelegateClassRecognizer<T> extends ClassRecognizer<DelegateClassRec
   @Override
   public Recognizer<T> reset() {
     return new DelegateClassRecognizer<>(this.tagSpec, this.builder.reset(), this.bitSet.size(), this.indexFn);
+  }
+
+  enum State {
+    Init,
+    Header,
+    NoHeader,
+    AttrBetween,
+    AttrItem,
+    Delegated,
   }
 }

@@ -39,9 +39,15 @@ public abstract class ReadNumberValue<N> extends ReadEvent {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof ReadNumberValue)) return false;
-    if (!super.equals(o)) return false;
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ReadNumberValue)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
     ReadNumberValue<?> that = (ReadNumberValue<?>) o;
     return Objects.equals(value, that.value);
   }

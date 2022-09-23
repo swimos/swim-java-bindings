@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.models;
+package ai.swim.structure.processor.models;
 
-import ai.swim.structure.processor.recognizer.context.NameFactory;
-import ai.swim.structure.processor.recognizer.context.ScopedContext;
+import ai.swim.structure.processor.context.NameFactory;
+import ai.swim.structure.processor.context.ScopedContext;
 import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -26,12 +26,13 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
-import static ai.swim.structure.processor.recognizer.writer.Lookups.UNTYPED_RECOGNIZER;
+public class UntypedModel extends StructuralModel {
 
-public class UntypedRecognizer extends StructuralRecognizer {
+  private final String untypedModel;
 
-  public UntypedRecognizer(TypeMirror typeMirror) {
+  public UntypedModel(TypeMirror typeMirror, String untypedModel) {
     super(typeMirror);
+    this.untypedModel = untypedModel;
   }
 
   @Override
@@ -45,10 +46,11 @@ public class UntypedRecognizer extends StructuralRecognizer {
       Elements elementUtils = processingEnvironment.getElementUtils();
       Types typeUtils = processingEnvironment.getTypeUtils();
 
-      TypeElement typeElement = elementUtils.getTypeElement(UNTYPED_RECOGNIZER);
+      TypeElement typeElement = elementUtils.getTypeElement(untypedModel);
       DeclaredType declaredType = typeUtils.getDeclaredType(typeElement, type);
 
       return CodeBlock.of("new $T()", declaredType);
     }
   }
+
 }

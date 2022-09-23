@@ -30,8 +30,8 @@ class MapStructuralWritableTest {
 
   @Test
   void writeMap() {
-    Map<String,Integer> map = new TreeMap<>();
-    map.put("a",1);
+    Map<String, Integer> map = new TreeMap<>();
+    map.put("a", 1);
     map.put("b", 2);
     map.put("c", 3);
     map.put("d", 4);
