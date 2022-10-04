@@ -45,6 +45,12 @@ public @interface AutoForm {
     String value();
   }
 
+  @Target(ElementType.METHOD)
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface Getter {
+    String value();
+  }
+
   @Target(ElementType.FIELD)
   @Retention(RetentionPolicy.RUNTIME)
   @interface Optional {
@@ -66,6 +72,12 @@ public @interface AutoForm {
   @Target({ElementType.CONSTRUCTOR})
   @Retention(RetentionPolicy.RUNTIME)
   @interface TypedConstructor {
+
+  }
+
+  @Target({ElementType.CONSTRUCTOR})
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface ArrayTypedConstructor {
 
   }
 

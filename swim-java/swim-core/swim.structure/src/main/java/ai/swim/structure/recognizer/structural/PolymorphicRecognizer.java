@@ -16,7 +16,6 @@ public class PolymorphicRecognizer<T> extends StructuralRecognizer<T> {
     if (recognizers.isEmpty()) {
       throw new IllegalArgumentException("Cannot initialise a polymorphic recognizer with no recognizers");
     }
-
     this.recognizers = recognizers;
   }
 

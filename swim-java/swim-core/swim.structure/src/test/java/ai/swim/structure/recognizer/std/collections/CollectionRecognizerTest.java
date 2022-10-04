@@ -1,6 +1,7 @@
 package ai.swim.structure.recognizer.std.collections;
 
 import ai.swim.recon.event.ReadEvent;
+import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 import static ai.swim.structure.RecognizerTestUtil.runTest;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CollectionRecognizerTest {
@@ -24,8 +26,8 @@ class CollectionRecognizerTest {
     );
   }
 
-  private static <T, E extends Collection<T>> void runCollectionTest(CollectionRecognizer<T, E> recognizer, E expected) {
-    E collection = runTest(recognizer, events());
+  private static <T, E extends Collection<T>, O> void runCollectionTest(CollectionRecognizer<T, E, O> recognizer, O expected) {
+    O collection = runTest(recognizer, events());
     assertEquals(collection, expected);
   }
 
@@ -37,6 +39,12 @@ class CollectionRecognizerTest {
   @Test
   void testHashSet() {
     runCollectionTest(new HashSetRecognizer<>(ScalarRecognizer.INTEGER, false), new HashSet<>(Set.of(1, 2, 3)));
+  }
+
+  @Test
+  void testArray() {
+    Integer[] actual = runTest(new ArrayRecognizer<>(Integer.class, ScalarRecognizer.INTEGER), events());
+    assertArrayEquals(actual, new Integer[] {1, 2, 3});
   }
 
 }

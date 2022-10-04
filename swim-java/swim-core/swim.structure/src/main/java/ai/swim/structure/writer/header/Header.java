@@ -36,7 +36,6 @@ public class Header {
 
     public static <V> HeaderSlots<V> prepend(String key, Writable<V> valueWriter, V value) {
       Objects.requireNonNull(valueWriter);
-
       return new HeaderSlots<>(key, valueWriter, value, new NoSlots());
     }
 
@@ -84,11 +83,11 @@ public class Header {
       return tail.append(writer);
     }
 
-    public HeaderWithBody<V> prepend(V value) {
+    public HeaderWithBody<V> withBody(V value) {
       return new HeaderWithBody<>(null, value, this);
     }
 
-    public HeaderWithBody<V> prepend(Writable<V> valueWriter, V value) {
+    public HeaderWithBody<V> withBody(Writable<V> valueWriter, V value) {
       Objects.requireNonNull(valueWriter);
       return new HeaderWithBody<>(valueWriter, value, this);
     }

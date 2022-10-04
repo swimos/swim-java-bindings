@@ -18,33 +18,23 @@ import ai.swim.structure.writer.BodyWriter;
 import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
-import ai.swim.structure.writer.proxy.WriterProxy;
 
-import java.util.Collection;
+public class ArrayStructuralWritable<E> implements StructuralWritable<E[]> {
+  private final Writable<E> writable;
 
-public abstract class CollectionStructuralWritable<E, C extends Collection<E>> implements StructuralWritable<C> {
-  private Writable<E> eWritable;
-
-  public CollectionStructuralWritable(Writable<E> eWritable) {
-    this.eWritable = eWritable;
+  public ArrayStructuralWritable(Writable<E> writable) {
+    this.writable = writable;
   }
 
   @Override
-  public <T> T writeInto(C from, StructuralWriter<T> structuralWriter) {
-    int len = from.size();
+  public <T> T writeInto(E[] from, StructuralWriter<T> structuralWriter) {
+    int len = from.length;
     BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
 
-    if (len != 0 && eWritable == null) {
-      E first = from.iterator().next();
-      //noinspection unchecked
-      eWritable = (Writable<E>) WriterProxy.getProxy().lookup(first.getClass());
-    }
-
-    for (E e : from) {
-      bodyWriter = bodyWriter.writeValueWith(eWritable, e);
+    for (E elem : from) {
+      bodyWriter = bodyWriter.writeValueWith(writable, elem);
     }
 
     return bodyWriter.done();
   }
 }
-

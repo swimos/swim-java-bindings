@@ -34,7 +34,7 @@ public class RuntimeLookupModel extends Model {
   }
 
   @Override
-  public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
+  public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Types typeUtils = processingEnvironment.getTypeUtils();
     TypeMirror erasure = typeUtils.erasure(type);
@@ -43,12 +43,18 @@ public class RuntimeLookupModel extends Model {
 
     if (parameters != null) {
       typeParameters = Arrays.stream(parameters).map(ty -> {
-        return String.format("%s.from(() -> %s)", tyName, ty.initializer(context, inConstructor));
+        return String.format("%s.from(() -> %s)", tyName, ty.initializer(context, inConstructor, isAbstract));
       }).collect(Collectors.joining(", "));
     }
 
     typeParameters = typeParameters.isBlank() ? "" : ", " + typeParameters;
 
-    return CodeBlock.of("getProxy().lookup((Class<$T>) (Class<?>) $T.class $L)", type, erasure, typeParameters);
+    if (isAbstract) {
+      TypeMirror rootType = context.getRoot().asType();
+      return CodeBlock.of("getProxy().lookup((Class<? extends $T>) (Class<?>) $T.class $L)", rootType, erasure, typeParameters);
+//      return CodeBlock.of("getProxy().lookup($T.class $L)", erasure, typeParameters);
+    } else {
+      return CodeBlock.of("getProxy().lookup((Class<$T>) (Class<?>) $T.class $L)", type, erasure, typeParameters);
+    }
   }
 }

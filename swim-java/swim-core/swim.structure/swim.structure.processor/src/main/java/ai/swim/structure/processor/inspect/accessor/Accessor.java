@@ -20,6 +20,8 @@ public abstract class Accessor {
 
   public abstract void writeSet(CodeBlock.Builder builder, String instance, Object arg);
 
+  public abstract void writeGet(CodeBlock.Builder builder, String instance);
+
   @Override
   public abstract String toString();
 }

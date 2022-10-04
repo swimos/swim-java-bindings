@@ -65,6 +65,10 @@ public class NameFactory {
     return String.format("%sRecognizer", this.name);
   }
 
+  public String writerClassName() {
+    return String.format("%sWriter", this.name);
+  }
+
   public String concreteRecognizerClassName() {
     return String.format("%sConcreteRecognizer", this.name);
   }

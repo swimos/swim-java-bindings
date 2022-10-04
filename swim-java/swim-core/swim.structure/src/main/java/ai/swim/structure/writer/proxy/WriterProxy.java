@@ -14,24 +14,32 @@
 
 package ai.swim.structure.writer.proxy;
 
+import ai.swim.structure.annotations.AutoloadedWriter;
 import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.ValueStructuralWritable;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.WriterException;
+import ai.swim.structure.writer.std.ArrayStructuralWritable;
 import ai.swim.structure.writer.std.ListStructuralWritable;
 import ai.swim.structure.writer.std.MapStructuralWritable;
 import ai.swim.structure.writer.std.ScalarWriters;
+import org.reflections.Reflections;
+import org.reflections.util.ClasspathHelper;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 public class WriterProxy {
 
@@ -71,11 +79,56 @@ public class WriterProxy {
     writers.put(AtomicLong.class, WriterFactory.buildFrom(AtomicLong.class, Writable.class, () -> ScalarWriters.ATOMIC_LONG));
     writers.put(AtomicBoolean.class, WriterFactory.buildFrom(AtomicBoolean.class, Writable.class, () -> ScalarWriters.ATOMIC_BOOLEAN));
     writers.put(Value.class, WriterFactory.buildFrom(Value.class, StructuralWritable.class, ValueStructuralWritable::new));
-    writers.put(Map.class, WriterFactory.buildFrom(Map.class, MapStructuralWritable.class, null));
-    writers.put(Collection.class, WriterFactory.buildFrom(Collection.class, ListStructuralWritable.class, null));
-    writers.put(List.class, WriterFactory.buildFrom(Map.class, ListStructuralWritable.class, null));
+    writers.put(Map.class, WriterFactory.buildFrom(Map.class, MapStructuralWritable.class, MapStructuralWritable::new));
+    writers.put(Collection.class, WriterFactory.buildFrom(Collection.class, ListStructuralWritable.class, ListStructuralWritable::new));
+
+    loadFromClassPath(writers);
 
     return writers;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void loadFromClassPath(ConcurrentHashMap<Class<?>, WriterFactory<?>> writers) {
+    Reflections reflections = new Reflections(ClasspathHelper.forJavaClassPath(), "ai.swim");
+    Set<Class<?>> classes = reflections.getTypesAnnotatedWith(AutoloadedWriter.class);
+
+    for (Class<?> clazz : classes) {
+      AutoloadedWriter annotation = clazz.getAnnotation(AutoloadedWriter.class);
+      Class<?> targetClass = annotation.value();
+
+      if (!Writable.class.isAssignableFrom(targetClass)) {
+        String error = String.format("%S is annotated with @%s(%s.class) but %s does not extend %s",
+            clazz.getCanonicalName(),
+            AutoloadedWriter.class.getSimpleName(),
+            targetClass.getCanonicalName(),
+            clazz.getCanonicalName(),
+            Writable.class.getSimpleName()
+        );
+        throw new RuntimeException(error);
+      }
+
+      if (!clazz.getNestHost().equals(clazz)) {
+        if (!Modifier.isStatic(clazz.getModifiers())) {
+          throw new RuntimeException("Nested non-static classes are not supported by writers: " + clazz.getCanonicalName());
+        }
+      }
+
+      try {
+        Constructor<?> constructor = clazz.getConstructor();
+        Supplier<Writable<?>> supplier = () -> {
+          try {
+            return (Writable<?>) constructor.newInstance();
+          } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(String.format("Failed to create a new instance of writable '%s'", clazz.getCanonicalName()), e);
+          }
+        };
+        // safety: checked that the class is assignable above
+        Class<Writable<?>> typedClass = (Class<Writable<?>>) clazz;
+        writers.put(targetClass, WriterFactory.buildFromAny(clazz, typedClass, supplier));
+      } catch (NoSuchMethodException e) {
+        throw new RuntimeException(String.format("Writable '%s' does not contain a zero-arg constructor", clazz.getCanonicalName()), e);
+      }
+    }
   }
 
   public static WriterProxy getProxy() {
@@ -108,7 +161,7 @@ public class WriterProxy {
     WriterFactory<T> factory = (WriterFactory<T>) this.writers.get(clazz);
 
     if (factory == null) {
-      throw new WriterException("No writer found for class: " + clazz);
+      return fromStdClassUntyped(clazz);
     }
 
     return factory.newInstance();
@@ -119,7 +172,7 @@ public class WriterProxy {
     WriterFactory<T> factory = (WriterFactory<T>) this.writers.get(clazz);
 
     if (factory == null) {
-      return fromStdClass(clazz, typeParameters);
+      return fromStdClassTyped(clazz, typeParameters);
     }
 
     if (!factory.isStructural()) {
@@ -130,7 +183,7 @@ public class WriterProxy {
   }
 
   @SuppressWarnings("unchecked")
-  private <T> Writable<T> fromStdClass(Class<T> clazz, WriterTypeParameter<?>... typeParameters) {
+  private <T> Writable<T> fromStdClassTyped(Class<T> clazz, WriterTypeParameter<?>... typeParameters) {
     if (Map.class.isAssignableFrom(clazz)) {
       return (Writable<T>) lookupTyped(Map.class, typeParameters);
     }
@@ -139,7 +192,48 @@ public class WriterProxy {
       return (Writable<T>) lookupTyped(Collection.class, typeParameters);
     }
 
+    if (clazz.isArray()) {
+      return (Writable<T>) arrayType(clazz.getComponentType(), typeParameters);
+    }
+
     throw new WriterException("No writer found for class: " + clazz);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T> Writable<T> fromStdClassUntyped(Class<T> clazz) {
+    if (Map.class.isAssignableFrom(clazz)) {
+      return (Writable<T>) lookupUntyped(Map.class);
+    }
+
+    if (Collection.class.isAssignableFrom(clazz)) {
+      return (Writable<T>) lookupUntyped(Collection.class);
+    }
+
+    if (clazz.isArray()) {
+      return (Writable<T>) arrayType(clazz.getComponentType());
+    }
+
+    throw new WriterException("No writer found for class: " + clazz);
+  }
+
+  public <E> Writable<E[]> arrayType(Class<E> elementType, WriterTypeParameter<?>... typeParameters) {
+    if (elementType == null) {
+      throw new NullPointerException();
+    }
+
+    Writable<E> writable;
+
+    if (typeParameters != null && typeParameters.length != 0) {
+      writable = lookupTyped(elementType, typeParameters);
+    } else {
+      writable = lookupUntyped(elementType);
+    }
+
+    return new ArrayStructuralWritable<>(writable);
+  }
+
+  public <E, W extends Writable<E>> void register(Class<E> clazz, Class<W> writableClass, Supplier<Writable<?>> supplier) {
+    writers.put(clazz, WriterFactory.buildFrom(clazz, writableClass, supplier));
   }
 
 }

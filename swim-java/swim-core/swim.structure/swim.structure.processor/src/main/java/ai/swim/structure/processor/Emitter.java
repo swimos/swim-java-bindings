@@ -12,31 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.processor.recognizer.writer.recognizer;
+package ai.swim.structure.processor;
 
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.Emitter;
 import com.squareup.javapoet.CodeBlock;
 
-public class RecognizerTransformation implements Emitter {
+public interface Emitter {
 
-  private final FieldModel fieldModel;
-
-  public RecognizerTransformation(FieldModel fieldModel) {
-    this.fieldModel = fieldModel;
-  }
-
-  @Override
-  public CodeBlock emit(ScopedContext context) {
-    switch (fieldModel.getFieldKind()) {
-      case Body:
-        return CodeBlock.of(".asBodyRecognizer()");
-      case Attr:
-        return CodeBlock.of(".asAttrRecognizer()");
-      default:
-        return CodeBlock.of("");
-    }
-  }
+  CodeBlock emit(ScopedContext context);
 
 }

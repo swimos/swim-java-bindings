@@ -14,6 +14,7 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder.classBuilder;
 
+import ai.swim.structure.processor.Emitter;
 import ai.swim.structure.processor.context.NameFactory;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.builder.Builder;
@@ -23,13 +24,13 @@ import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.PartitionedFields;
-import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -38,8 +39,10 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -70,7 +73,9 @@ public class ClassBuilder extends Builder {
   }
 
   private MethodSpec buildDefaultConstructor() {
-    return MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build();
+    return MethodSpec.constructorBuilder()
+        .addModifiers(Modifier.PUBLIC)
+        .build();
   }
 
   private MethodSpec buildParameterisedConstructor() {
@@ -119,7 +124,7 @@ public class ClassBuilder extends Builder {
     NameFactory nameFactory = context.getNameFactory();
     String builderName = nameFactory.fieldBuilderName(fieldModel.getName().toString());
 
-    return CodeBlock.of("this.$L = new $T($L);\n", builderName, typedBuilder, fieldModel.initializer(context, true));
+    return CodeBlock.of("this.$L = new $T($L);\n", builderName, typedBuilder, fieldModel.initializer(context, true, false));
   }
 
   @Override
@@ -143,16 +148,21 @@ public class ClassBuilder extends Builder {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
 
+    PartitionedFields partitionedFields = schema.getPartitionedFields();
+    HashSet<TypeMirror> headerTypeParameters = partitionedFields.headerSet.typeParameters();
     TypeElement recognizingBuilderElement = elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS);
-    ParameterizedTypeName builderType = ParameterizedTypeName.get(ClassName.get(recognizingBuilderElement), ClassName.bestGuess(nameFactory.headerCanonicalName()));
+
+    TypeName targetType = ClassName.get(recognizingBuilderElement);
+    if (!headerTypeParameters.isEmpty()) {
+      targetType = ParameterizedTypeName.get((ClassName) targetType, headerTypeParameters.stream().map(TypeName::get).collect(Collectors.toList()).toArray(TypeName[]::new));
+    }
 
     FieldSpec.Builder fieldBuilder = FieldSpec.builder(
-        builderType,
+        targetType,
         nameFactory.headerBuilderFieldName(),
         Modifier.PRIVATE
     );
 
-    PartitionedFields partitionedFields = schema.getPartitionedFields();
     int numSlots = partitionedFields.headerSet.headerFields.size();
 
     boolean hasBody = partitionedFields.headerSet.hasTagBody();

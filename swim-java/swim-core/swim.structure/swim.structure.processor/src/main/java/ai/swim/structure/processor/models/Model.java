@@ -48,6 +48,10 @@ public abstract class Model {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Types typeUtils = processingEnvironment.getTypeUtils();
 
+    if (unrolledType.model == null) {
+      return null;
+    }
+
     // retype the container now that we've unrolled the type. I.e, turn List<N extends Number> into List<Number>
     DeclaredType typed = typeUtils.getDeclaredType(container, unrolledType.typeMirror);
     return modelLookup.generic(context, typed, proxy, unrolledType);
@@ -67,6 +71,10 @@ public abstract class Model {
     Utils.UnrolledType unrolledKey = unrollType(modelLookup, context, keyType);
     Utils.UnrolledType unrolledValue = unrollType(modelLookup, context, valueType);
 
+    if (unrolledKey.model == null || unrolledValue.model == null) {
+      return null;
+    }
+
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Types typeUtils = processingEnvironment.getTypeUtils();
 
@@ -79,7 +87,7 @@ public abstract class Model {
     return null;
   }
 
-  public abstract CodeBlock initializer(ScopedContext context, boolean inConstructor);
+  public abstract CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract);
 
   public TypeMirror type(ProcessingEnvironment environment) {
     return type;

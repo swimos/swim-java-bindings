@@ -89,9 +89,11 @@ public final class ScalarRecognizer<T> {
         return null;
       }
     }
+
   };
 
   public static final Recognizer<Short> SHORT = new SimpleRecognizer<>(false, "Short") {
+
     @Override
     public Short feed(ReadEvent event) {
       if (event.isReadLong()) {
@@ -133,6 +135,7 @@ public final class ScalarRecognizer<T> {
   };
 
   public static final Recognizer<Long> LONG = new SimpleRecognizer<>(false, "Long") {
+
     @Override
     public Long feed(ReadEvent event) {
       if (event.isReadLong()) {
@@ -162,6 +165,7 @@ public final class ScalarRecognizer<T> {
   };
 
   public static final Recognizer<Boolean> BOOLEAN = new SimpleRecognizer<>(false, "Boolean") {
+
     @Override
     public Boolean feed(ReadEvent event) {
       if (event.isBoolean()) {
@@ -174,6 +178,7 @@ public final class ScalarRecognizer<T> {
   };
 
   public static final Recognizer<Float> FLOAT = new SimpleRecognizer<>(true, "Float") {
+
     @Override
     public Float feed(ReadEvent event) {
       if (event.isReadFloat()) {
@@ -227,6 +232,7 @@ public final class ScalarRecognizer<T> {
   };
 
   public static final Recognizer<byte[]> BLOB = new SimpleRecognizer<>(false, "byte[]") {
+
     @Override
     public byte[] feed(ReadEvent event) {
       if (event.isBlob()) {
@@ -239,6 +245,7 @@ public final class ScalarRecognizer<T> {
   };
 
   public static final Recognizer<String> STRING = new SimpleRecognizer<>(true, "String") {
+
     @Override
     public String feed(ReadEvent event) {
       if (event.isText()) {
@@ -251,6 +258,7 @@ public final class ScalarRecognizer<T> {
   };
 
   public static final Recognizer<Character> CHARACTER = new SimpleRecognizer<>(true, "Character") {
+
     @Override
     public Character feed(ReadEvent event) {
       if (event.isText()) {
@@ -268,6 +276,7 @@ public final class ScalarRecognizer<T> {
   };
 
   public static final Recognizer<BigInteger> BIG_INTEGER = new SimpleRecognizer<>(true, "BigInteger") {
+
     @Override
     public BigInteger feed(ReadEvent event) {
       if (event.isReadBigInt()) {
@@ -293,6 +302,7 @@ public final class ScalarRecognizer<T> {
   };
 
   public static final Recognizer<BigDecimal> BIG_DECIMAL = new SimpleRecognizer<>(true, "BigDecimal") {
+
     @Override
     public BigDecimal feed(ReadEvent event) {
       if (event.isReadBigInt()) {
@@ -320,6 +330,7 @@ public final class ScalarRecognizer<T> {
   };
 
   public static final Recognizer<Number> NUMBER = new SimpleRecognizer<>(true, "Number") {
+
     @Override
     protected Number feed(ReadEvent event) {
       if (event.isReadInt()) {

@@ -19,21 +19,29 @@ import com.squareup.javapoet.CodeBlock;
 import javax.lang.model.element.ExecutableElement;
 
 public class MethodAccessor extends Accessor {
-  private final ExecutableElement method;
+  private final ExecutableElement setMethod;
+  private final ExecutableElement getMethod;
 
-  public MethodAccessor(ExecutableElement method) {
-    this.method = method;
+  public MethodAccessor(ExecutableElement setMethod, ExecutableElement getMethod) {
+    this.setMethod = setMethod;
+    this.getMethod = getMethod;
   }
 
   @Override
   public void writeSet(CodeBlock.Builder builder, String instance, Object arg) {
-    builder.add("$L.$L($L);\n", instance, this.method.getSimpleName(), arg);
+    builder.add("$L.$L($L);\n", instance, this.setMethod.getSimpleName(), arg);
+  }
+
+  @Override
+  public void writeGet(CodeBlock.Builder builder, String instance) {
+    builder.add("$L.$L()", instance,this.setMethod.getSimpleName());
   }
 
   @Override
   public String toString() {
     return "MethodAccessor{" +
-        "method=" + method +
+        "setMethod=" + setMethod +
+        "getMethod=" + getMethod +
         '}';
   }
 }

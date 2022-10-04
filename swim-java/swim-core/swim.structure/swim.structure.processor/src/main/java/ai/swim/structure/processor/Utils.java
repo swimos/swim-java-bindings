@@ -1,6 +1,5 @@
 package ai.swim.structure.processor;
 
-import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.models.Model;
 import ai.swim.structure.processor.models.ModelLookup;
@@ -18,23 +17,25 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import java.lang.annotation.Annotation;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class Utils {
 
-  public static ExecutableElement setterFor(List<ExecutableElement> methods, Name name) {
+  public static <A extends Annotation> ExecutableElement accessorFor(List<ExecutableElement> methods, String prefix, Name name, Class<A> annotation, Predicate<A> predicate) {
     for (ExecutableElement method : methods) {
       String methodName = method.getSimpleName().toString().toLowerCase();
       String fieldName = name.toString().toLowerCase();
 
-      if (methodName.contentEquals("set" + fieldName)) {
+      if (methodName.contentEquals(prefix + fieldName)) {
         return method;
       }
 
-      AutoForm.Setter setter = method.getAnnotation(AutoForm.Setter.class);
+      A actualAnnotation = method.getAnnotation(annotation);
 
-      if (setter != null) {
-        if (setter.value().equals(name.toString())) {
+      if (actualAnnotation != null) {
+        if (predicate.test(actualAnnotation)){
           return method;
         }
       }
@@ -100,30 +101,35 @@ public class Utils {
         return new UnrolledType(typeMirror, modelLookup.untyped(typeMirror));
       case WILDCARD:
         WildcardType wildcardType = (WildcardType) typeMirror;
-        TypeMirror bound = wildcardType.getExtendsBound();
-
-        if (bound == null) {
-          bound = wildcardType.getSuperBound();
-        } else {
-          TypeMirror superBound = wildcardType.getSuperBound();
-          if (superBound != null) {
-            String message = "cannot derive a generic field that contains both a super & extends bound";
-            context.getMessager().error(message);
-            throw new RuntimeException(message);
-          }
-        }
-
-        ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
-        Elements elementUtils = processingEnvironment.getElementUtils();
-
-        if (bound == null) {
-          TypeElement objectTypeElement = elementUtils.getTypeElement(Object.class.getCanonicalName());
-          return new UnrolledType(objectTypeElement.asType(), modelLookup.untyped(objectTypeElement.asType()));
-        } else {
-          return new UnrolledType(bound, modelLookup.lookup(bound, context));
-        }
+        return unrollBoundedType(wildcardType.getExtendsBound(), wildcardType.getSuperBound(), modelLookup, context);
       default:
         throw new AssertionError("Unrolled type: " + typeMirror.getKind());
+    }
+  }
+
+  public static UnrolledType unrollBoundedType(TypeMirror lowerBound, TypeMirror upperBound, ModelLookup modelLookup, ScopedContext context) {
+    TypeMirror bound = lowerBound;
+
+    if (bound == null || bound.getKind() == TypeKind.NULL) {
+      bound = upperBound;
+    } else if (upperBound != null && upperBound.getKind() != TypeKind.NULL) {
+      String message = "cannot derive a generic field that contains both a lower & upper bound";
+      context.getMessager().error(message);
+      throw new RuntimeException(message);
+    }
+
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Elements elementUtils = processingEnvironment.getElementUtils();
+
+    if (bound == null) {
+      TypeElement objectTypeElement = elementUtils.getTypeElement(Object.class.getCanonicalName());
+      return new UnrolledType(objectTypeElement.asType(), modelLookup.untyped(objectTypeElement.asType()));
+    } else {
+      // we need to retype the model here so that the new, unrolled, type is shifted up a level. I.e, if the type that
+      // we're unrolling is List<? extends Number> then the new model is List<Number> and that is now the element's
+      // type; this will then be propagated up to the callee when they retype the field itself.
+      Model unrolled = modelLookup.lookup(bound, context);
+      return new UnrolledType(unrolled.type(processingEnvironment), unrolled);
     }
   }
 

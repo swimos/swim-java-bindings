@@ -16,8 +16,11 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Types;
+import java.util.Collections;
+import java.util.List;
 
 public class FieldModel {
   private final Accessor accessor;
@@ -60,8 +63,8 @@ public class FieldModel {
     }
   }
 
-  public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
-    return this.model.initializer(context, inConstructor);
+  public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
+    return this.model.initializer(context, inConstructor, isAbstract);
   }
 
   public Accessor getAccessor() {
@@ -145,5 +148,19 @@ public class FieldModel {
 
   public VariableElement getElement() {
     return element;
+  }
+
+  public List<? extends TypeMirror> typeParameters() {
+    TypeMirror ty = element.asType();
+    switch (ty.getKind()) {
+      case DECLARED:
+        DeclaredType typeVar = (DeclaredType) ty;
+        return typeVar.getTypeArguments();
+      case WILDCARD:
+      case TYPEVAR:
+        return List.of(ty);
+      default:
+        return Collections.emptyList();
+    }
   }
 }

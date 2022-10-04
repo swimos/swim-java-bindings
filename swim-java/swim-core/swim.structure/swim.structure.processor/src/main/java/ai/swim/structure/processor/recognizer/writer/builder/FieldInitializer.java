@@ -17,7 +17,7 @@ package ai.swim.structure.processor.recognizer.writer.builder;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.recognizer.RecognizerTransformation;
 import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.writer.Emitter;
+import ai.swim.structure.processor.Emitter;
 import com.squareup.javapoet.CodeBlock;
 
 import static ai.swim.structure.processor.recognizer.writer.Lookups.FIELD_RECOGNIZING_BUILDER_CLASS;
@@ -32,6 +32,6 @@ public class FieldInitializer implements Emitter {
 
   @Override
   public CodeBlock emit(ScopedContext context) {
-    return CodeBlock.of("new $L<>($L$L)", FIELD_RECOGNIZING_BUILDER_CLASS, fieldModel.initializer(context, false), new RecognizerTransformation(fieldModel).emit(context));
+    return CodeBlock.of("new $L<>($L$L)", FIELD_RECOGNIZING_BUILDER_CLASS, fieldModel.initializer(context, false, false), new RecognizerTransformation(fieldModel).emit(context));
   }
 }

@@ -18,6 +18,7 @@ import ai.swim.structure.processor.Utils;
 import ai.swim.structure.processor.context.ScopedContext;
 import com.squareup.javapoet.CodeBlock;
 
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
@@ -41,8 +42,13 @@ public interface ModelLookup {
     DeclaredType declaredType = context.getProcessingEnvironment().getTypeUtils().getDeclaredType(proxy, unrolledType.typeMirror);
     return new Model(containerType) {
       @Override
-      public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
-        return CodeBlock.of("new $T($L)", declaredType, unrolledType.model.initializer(context, inConstructor));
+      public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
+        return CodeBlock.of("new $T($L)", declaredType, unrolledType.model.initializer(context, inConstructor,isAbstract));
+      }
+
+      @Override
+      public TypeMirror type(ProcessingEnvironment environment) {
+        return this.type;
       }
     };
   }
@@ -54,8 +60,13 @@ public interface ModelLookup {
     DeclaredType declaredType = context.getProcessingEnvironment().getTypeUtils().getDeclaredType(proxy, left.typeMirror, right.typeMirror);
     return new Model(containerType) {
       @Override
-      public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
-        return CodeBlock.of("new $T($L, $L)", declaredType, left.model.initializer(context, inConstructor), right.model.initializer(context, inConstructor));
+      public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
+        return CodeBlock.of("new $T($L, $L)", declaredType, left.model.initializer(context, inConstructor,isAbstract), right.model.initializer(context, inConstructor,isAbstract));
+      }
+
+      @Override
+      public TypeMirror type(ProcessingEnvironment environment) {
+        return this.type;
       }
     };
   }

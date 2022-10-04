@@ -21,11 +21,13 @@ import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.TypeVariableName;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.List;
@@ -35,17 +37,23 @@ public class PolymorphicRecognizer {
   public static final String POLYMORPHIC_RECOGNIZER = "ai.swim.structure.recognizer.structural.PolymorphicRecognizer";
 
   public static TypeSpec.Builder buildPolymorphicRecognizer(List<Model> subTypes, ScopedContext context) {
+    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Elements elementUtils = processingEnvironment.getElementUtils();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+    DeclaredType declaredType = (DeclaredType) context.getRoot().asType();
+
     AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
-        .addMember("value", "$T.class", context.getRoot().asType())
+        .addMember("value", "$T.class", typeUtils.erasure(declaredType))
         .build();
+
 
     TypeSpec.Builder classSpec = TypeSpec.classBuilder(context.getNameFactory().recognizerClassName())
         .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
         .addAnnotation(recognizerAnnotationSpec);
 
-    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
-    Elements elementUtils = processingEnvironment.getElementUtils();
-    Types typeUtils = processingEnvironment.getTypeUtils();
+    for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
+      classSpec.addTypeVariable((TypeVariableName) TypeVariableName.get(typeArgument));
+    }
 
     TypeElement recognizerTypeElement = elementUtils.getTypeElement(POLYMORPHIC_RECOGNIZER);
     DeclaredType recognizerType = typeUtils.getDeclaredType(recognizerTypeElement, context.getRoot().asType());
@@ -67,7 +75,7 @@ public class PolymorphicRecognizer {
       boolean fin = i + 1 >= subTypes.size();
       Model recognizerModel = subTypes.get(i);
 
-      initializer.append(recognizerModel.initializer(context, false)).append(fin ? "" : ", ");
+      initializer.append(recognizerModel.initializer(context, false, true)).append(fin ? "" : ", ");
     }
 
     return initializer.append(")").toString();

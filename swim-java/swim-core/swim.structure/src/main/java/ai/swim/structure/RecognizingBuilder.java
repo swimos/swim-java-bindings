@@ -2,7 +2,7 @@ package ai.swim.structure;
 
 import ai.swim.recon.event.ReadEvent;
 
-public interface RecognizingBuilder<I> {
+public interface RecognizingBuilder<T> {
 
   default boolean feedIndexed(int index, ReadEvent event) {
     throw new UnsupportedOperationException();
@@ -12,11 +12,11 @@ public interface RecognizingBuilder<I> {
     throw new UnsupportedOperationException();
   }
 
-  I bind();
+  T bind();
 
-  default I bindOr(I defaultValue) {
+  default T bindOr(T defaultValue) {
     throw new UnsupportedOperationException();
   }
 
-  RecognizingBuilder<I> reset();
+  RecognizingBuilder<T> reset();
 }
