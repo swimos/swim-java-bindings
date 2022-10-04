@@ -14,13 +14,18 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder.header;
 
+import ai.swim.structure.processor.Emitter;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 
+import javax.lang.model.type.TypeMirror;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BindEmitter implements Emitter {
   private final List<FieldModel> fields;
@@ -31,12 +36,25 @@ public class BindEmitter implements Emitter {
 
   @Override
   public CodeBlock emit(ScopedContext context) {
-    ClassName classType = ClassName.bestGuess(context.getNameFactory().headerCanonicalName());
+    LinkedHashSet<TypeName> typeParameters = new LinkedHashSet<>();
+    for (FieldModel field : fields) {
+      List<? extends TypeMirror> typeMirrors = field.typeParameters();
+      System.out.printf("%s: %s\n", field.getElement(),typeMirrors);
+
+      typeParameters.addAll(field.typeParameters().stream().map(TypeName::get).collect(Collectors.toList()));
+    }
+
+    TypeName classType;
+    if (typeParameters.isEmpty()) {
+      classType = ClassName.bestGuess(context.getNameFactory().headerCanonicalName());
+    } else {
+      classType = ParameterizedTypeName.get(ClassName.bestGuess(context.getNameFactory().headerCanonicalName()), typeParameters.toArray(TypeName[]::new));
+    }
 
     CodeBlock.Builder body = CodeBlock.builder();
     body.add("$T obj = new $T();\n\n", classType, classType);
 
-    for (FieldModel field : this.fields) {
+    for (FieldModel field : fields) {
       String builderName = context.getNameFactory().fieldBuilderName(field.getName().toString());
 
       if (field.isOptional()) {

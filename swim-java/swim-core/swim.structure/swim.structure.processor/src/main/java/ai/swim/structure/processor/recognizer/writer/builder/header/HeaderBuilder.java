@@ -14,16 +14,19 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder.header;
 
+import ai.swim.structure.processor.Emitter;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.Lookups;
 import ai.swim.structure.processor.recognizer.writer.builder.Builder;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.TypeVariableName;
 
 import javax.lang.model.element.Modifier;
 import java.util.ArrayList;
@@ -32,19 +35,28 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class HeaderBuilder extends Builder {
-  public HeaderBuilder(ClassSchema classSchema, ScopedContext context) {
+  private final List<TypeVariableName> typeParameters;
+
+  public HeaderBuilder(ClassSchema classSchema, ScopedContext context, List<TypeVariableName> typeParameters) {
     super(classSchema, context);
+    this.typeParameters = typeParameters;
   }
 
   @Override
   protected TypeSpec.Builder init() {
     return TypeSpec.classBuilder(context.getNameFactory().headerBuilderClassName())
-        .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL);
+        .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+        .addTypeVariables(typeParameters);
   }
 
   @Override
   protected MethodSpec buildBind() {
-    ClassName classType = ClassName.bestGuess(context.getNameFactory().headerCanonicalName());
+    TypeName classType = ClassName.bestGuess(context.getNameFactory().headerCanonicalName());
+
+    if (!typeParameters.isEmpty()){
+      classType = ParameterizedTypeName.get((ClassName) classType, typeParameters.toArray(TypeName[]::new));
+    }
+
     MethodSpec.Builder builder = MethodSpec.methodBuilder(Lookups.RECOGNIZING_BUILDER_BIND)
         .addModifiers(Modifier.PUBLIC)
         .addAnnotation(Override.class)

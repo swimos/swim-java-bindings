@@ -30,4 +30,5 @@ public class RecognizerRequired<T> extends Recognizer<T> {
   public Recognizer<T> reset() {
     return new RecognizerRequired<>(this.delegate.reset());
   }
+
 }

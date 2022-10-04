@@ -48,7 +48,7 @@ public abstract class ClassMap extends StructuralModel {
   public abstract String concreteName();
 
   @Override
-  public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
+  public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
     return CodeBlock.of("new $L()", this.concreteName());
   }
 

@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.writer.std;
+package ai.swim.structure.processor.writer;
 
-import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.writer.Writable;
-import ai.swim.structure.writer.proxy.WriterTypeParameter;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.models.Model;
+import ai.swim.structure.processor.models.ModelLookup;
 
-import java.util.List;
+import javax.lang.model.type.TypeMirror;
 
-public class ListStructuralWritable<T> extends CollectionStructuralWritable<T, List<T>> {
-  public ListStructuralWritable(Writable<T> listWritable) {
-    super(listWritable);
+public class WriterModelLookup implements ModelLookup {
+  @Override
+  public Model lookup(TypeMirror typeMirror, ScopedContext context) {
+    return WriterModel.from(typeMirror,context);
   }
 
-  public ListStructuralWritable() {
-    super(null);
+  @Override
+  public Model untyped(TypeMirror type) {
+    throw new AssertionError("Unimplemented: untyped writer");
   }
-
 }

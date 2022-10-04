@@ -8,7 +8,7 @@ import ai.swim.structure.recognizer.SimpleAttrBodyRecognizer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ListRecognizer<E> extends CollectionRecognizer<E, List<E>> {
+public class ListRecognizer<E> extends CollectionRecognizer<E, List<E>, List<E>> {
   @AutoForm.TypedConstructor
   public ListRecognizer(Recognizer<E> delegate) {
     super(delegate, new ArrayList<>());
@@ -16,10 +16,6 @@ public class ListRecognizer<E> extends CollectionRecognizer<E, List<E>> {
 
   public ListRecognizer(Recognizer<E> delegate, boolean isAttrBody) {
     super(delegate, new ArrayList<>(), isAttrBody);
-  }
-
-  public static <E> Recognizer<? extends List<E>> bounded(Recognizer<E> delegate) {
-    return new ListRecognizer<>(delegate);
   }
 
   @Override
@@ -33,5 +29,12 @@ public class ListRecognizer<E> extends CollectionRecognizer<E, List<E>> {
         new ListRecognizer<>(this.delegate.reset(), true),
         new SimpleAttrBodyRecognizer<>(new ListRecognizer<>(this.delegate.reset(), false))
     );
+  }
+
+
+
+  @Override
+  protected List<E> map(List<E> collection) {
+    return collection;
   }
 }

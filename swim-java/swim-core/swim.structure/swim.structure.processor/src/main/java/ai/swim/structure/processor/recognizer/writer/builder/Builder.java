@@ -14,10 +14,10 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder;
 
+import ai.swim.structure.processor.Emitter;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.writer.Emitter;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
@@ -86,7 +86,7 @@ public abstract class Builder {
   }
 
   private List<MethodSpec> buildMethods() {
-    return List.of(buildFeedIndexed(), buildBind(), buildReset());
+    return List.of( buildFeedIndexed(), buildBind(), buildReset());
   }
 
   private MethodSpec buildReset() {

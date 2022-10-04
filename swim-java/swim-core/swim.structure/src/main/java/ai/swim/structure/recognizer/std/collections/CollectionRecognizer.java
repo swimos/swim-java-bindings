@@ -6,7 +6,7 @@ import ai.swim.structure.recognizer.structural.StructuralRecognizer;
 
 import java.util.Collection;
 
-public abstract class CollectionRecognizer<T, E extends Collection<T>> extends StructuralRecognizer<E> {
+public abstract class CollectionRecognizer<T, E extends Collection<T>, O> extends StructuralRecognizer<O> {
 
   protected final E collection;
   protected final boolean isAttrBody;
@@ -25,7 +25,7 @@ public abstract class CollectionRecognizer<T, E extends Collection<T>> extends S
   }
 
   @Override
-  public Recognizer<E> feedEvent(ReadEvent event) {
+  public Recognizer<O> feedEvent(ReadEvent event) {
     switch (this.state) {
       case Init:
         if (event.isStartBody()) {
@@ -38,9 +38,9 @@ public abstract class CollectionRecognizer<T, E extends Collection<T>> extends S
         return this.feedElement(event);
       case Between:
         if (event.isEndRecord() && !this.isAttrBody) {
-          return Recognizer.done(this.collection, this);
+          return Recognizer.done(map(this.collection), this);
         } else if (event.isEndAttribute() && this.isAttrBody) {
-          return Recognizer.done(this.collection, this);
+          return Recognizer.done(map(this.collection), this);
         } else {
           this.state = State.Item;
           return this.feedElement(event);
@@ -50,7 +50,9 @@ public abstract class CollectionRecognizer<T, E extends Collection<T>> extends S
     }
   }
 
-  private Recognizer<E> feedElement(ReadEvent event) {
+  protected abstract O map(E collection);
+
+  private Recognizer<O> feedElement(ReadEvent event) {
     this.delegate = this.delegate.feedEvent(event);
 
     if (this.delegate.isDone()) {

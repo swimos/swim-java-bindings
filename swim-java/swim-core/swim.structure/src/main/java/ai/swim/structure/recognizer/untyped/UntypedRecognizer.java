@@ -15,7 +15,6 @@ import ai.swim.structure.recognizer.Recognizer;
 import java.util.Collections;
 import java.util.List;
 
-// todo add type parameter back in
 public class UntypedRecognizer<T> extends Recognizer<T> {
   private Recognizer<Object> nested;
   private State state;

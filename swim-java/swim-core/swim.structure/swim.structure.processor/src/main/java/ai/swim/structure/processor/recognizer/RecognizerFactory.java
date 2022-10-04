@@ -31,9 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RecognizerFactory {
-  private final HashMap<String, Model> recognizers;
+  private final HashMap<TypeMirror, Model> recognizers;
 
-  private RecognizerFactory(HashMap<String, Model> recognizers) {
+  private RecognizerFactory(HashMap<TypeMirror, Model> recognizers) {
     this.recognizers = recognizers;
   }
 
@@ -43,7 +43,7 @@ public class RecognizerFactory {
   public static RecognizerFactory initFrom(ProcessingEnvironment processingEnvironment) {
     Elements elementUtils = processingEnvironment.getElementUtils();
     Types typeUtils = processingEnvironment.getTypeUtils();
-    HashMap<String, Model> recognizers = new HashMap<>();
+    HashMap<TypeMirror, Model> recognizers = new HashMap<>();
 
     // init core types
     ModelInstance.Resolver primitiveResolver = ModelInstance.resolver("ai.swim.structure.recognizer.std.ScalarRecognizer");
@@ -69,16 +69,16 @@ public class RecognizerFactory {
     return new RecognizerFactory(recognizers);
   }
 
-  private static <T> String _getOrThrowType(Elements elementUtils, Class<T> clazz) {
+  private static <T> TypeMirror _getOrThrowType(Elements elementUtils, Class<T> clazz) {
     TypeElement typeElement = elementUtils.getTypeElement(clazz.getCanonicalName());
     if (typeElement == null) {
       throw classInitFailure(clazz);
     }
 
-    return typeElement.asType().toString();
+    return typeElement.asType();
   }
 
-  private static <T> String _getOrThrowArrayType(Elements elementUtils, Types typeUtils, Class<T> clazz) {
+  private static <T> TypeMirror _getOrThrowArrayType(Elements elementUtils, Types typeUtils, Class<T> clazz) {
     TypeElement typeElement = elementUtils.getTypeElement(clazz.getCanonicalName());
     if (typeElement == null) {
       throw classInitFailure(clazz);
@@ -90,7 +90,7 @@ public class RecognizerFactory {
       throw classInitFailure(clazz);
     }
 
-    return arrayType.getComponentType().toString();
+    return arrayType;
   }
 
   private static RuntimeException classInitFailure(Class<?> clazz) {
@@ -98,7 +98,7 @@ public class RecognizerFactory {
   }
 
   public Model lookup(TypeMirror typeMirror) {
-    return this.recognizers.get(typeMirror.toString());
+    return this.recognizers.get(typeMirror);
   }
 
 }

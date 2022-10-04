@@ -36,4 +36,5 @@ public class SimpleAttrBodyRecognizer<T> extends Recognizer<T> {
   public Recognizer<T> reset() {
     return new SimpleRecBodyRecognizer<>(this.delegate.reset());
   }
+
 }

@@ -120,7 +120,7 @@ public class PrimitiveRecognizer<T> extends Model {
   }
 
   @Override
-  public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
+  public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
     return CodeBlock.of("$L", type);
   }
 

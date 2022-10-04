@@ -76,10 +76,12 @@ public class Recognizer {
     if (classMap.isAbstract()) {
       typeSpec = buildPolymorphicRecognizer(subTypes, context).build();
     } else if (!subTypes.isEmpty()) {
+      System.out.println(context.getRoot());
+
       TypeSpec.Builder concreteRecognizer = writeClassRecognizer(true, schema, context);
       subTypes.add(new Model(null) {
         @Override
-        public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
+        public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
           return CodeBlock.of("new $L()", nameFactory.concreteRecognizerClassName());
         }
       });

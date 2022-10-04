@@ -15,6 +15,7 @@
 package ai.swim.structure.processor.context;
 
 import ai.swim.structure.processor.recognizer.RecognizerFactory;
+import ai.swim.structure.processor.writer.WriterFactory;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -26,9 +27,10 @@ public class ScopedContext {
   private final ScopedMessager messager;
   private final NameFactory formatter;
   private final RecognizerFactory recognizerFactory;
+  private final WriterFactory writerFactory;
   private final ProcessingEnvironment processingEnvironment;
 
-  public ScopedContext(ProcessingEnvironment processingEnvironment, RecognizerFactory recognizerFactory, Element root) {
+  public ScopedContext(ProcessingEnvironment processingEnvironment, RecognizerFactory recognizerFactory,WriterFactory writerFactory, Element root) {
     this.root = root;
     this.messager = new ScopedMessager(processingEnvironment.getMessager(), root);
 
@@ -37,6 +39,7 @@ public class ScopedContext {
 
     this.formatter = new NameFactory(root.getSimpleName().toString(), packageElement);
     this.recognizerFactory = recognizerFactory;
+    this.writerFactory=writerFactory;
     this.processingEnvironment = processingEnvironment;
   }
 
@@ -50,6 +53,10 @@ public class ScopedContext {
 
   public RecognizerFactory getRecognizerFactory() {
     return recognizerFactory;
+  }
+
+  public WriterFactory getWriterFactory() {
+    return writerFactory;
   }
 
   public ProcessingEnvironment getProcessingEnvironment() {

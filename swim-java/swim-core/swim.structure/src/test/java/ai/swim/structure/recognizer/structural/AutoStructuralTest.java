@@ -150,6 +150,18 @@ public class AutoStructuralTest {
       this.c = c;
     }
 
+    public int getA() {
+      return a;
+    }
+
+    public String getB() {
+      return b;
+    }
+
+    public String getC() {
+      return c;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -208,6 +220,18 @@ public class AutoStructuralTest {
       this.c = c;
     }
 
+    public int getA() {
+      return a;
+    }
+
+    public int getB() {
+      return b;
+    }
+
+    public int getC() {
+      return c;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -251,6 +275,10 @@ public class AutoStructuralTest {
       this.key = key;
     }
 
+    public String getKey() {
+      return key;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -284,6 +312,10 @@ public class AutoStructuralTest {
 
     public void setValue(String value) {
       this.value = value;
+    }
+
+    public String getValue() {
+      return value;
     }
 
     @Override
@@ -327,6 +359,14 @@ public class AutoStructuralTest {
 
     public void setSecond(String second) {
       this.second = second;
+    }
+
+    public int getFirst() {
+      return first;
+    }
+
+    public String getSecond() {
+      return second;
     }
 
     @Override
@@ -386,6 +426,14 @@ public class AutoStructuralTest {
           '}';
     }
 
+    public String getNode() {
+      return node;
+    }
+
+    public Inner getInner() {
+      return inner;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -437,6 +485,26 @@ public class AutoStructuralTest {
 
     public void setSecond(String second) {
       this.second = second;
+    }
+
+    public int getCount() {
+      return count;
+    }
+
+    public String getNode() {
+      return node;
+    }
+
+    public String getLane() {
+      return lane;
+    }
+
+    public int getFirst() {
+      return first;
+    }
+
+    public String getSecond() {
+      return second;
     }
 
     @Override
@@ -507,6 +575,18 @@ public class AutoStructuralTest {
       this.body = body;
     }
 
+    public String getNodeUri() {
+      return nodeUri;
+    }
+
+    public String getLaneUri() {
+      return laneUri;
+    }
+
+    public Object getBody() {
+      return body;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -560,6 +640,10 @@ public class AutoStructuralTest {
 
     public void setBody(Object body) {
       this.body = body;
+    }
+
+    public Object getBody() {
+      return body;
     }
   }
 
@@ -629,6 +713,10 @@ public class AutoStructuralTest {
       this.a = a;
     }
 
+    public String getA() {
+      return a;
+    }
+
     @Override
     public String toString() {
       return "ImpBase2{" +
@@ -670,6 +758,10 @@ public class AutoStructuralTest {
       this.c = c;
     }
 
+    public String getC() {
+      return c;
+    }
+
     @Override
     public String toString() {
       return "Imp3{" +
@@ -709,6 +801,10 @@ public class AutoStructuralTest {
 
     public void setB(String b) {
       this.b = b;
+    }
+
+    public String getB() {
+      return b;
     }
 
     @Override
@@ -920,17 +1016,24 @@ public class AutoStructuralTest {
   @AutoForm
   public static final class StdTypes {
     public byte a;
+    public Byte aB;
     public short b;
+    public Short bB;
     public int c;
+    public Integer cC;
     public float d;
+    public Float dD;
     public boolean e;
+    public Boolean eE;
     public String f;
     public AtomicBoolean g;
     public AtomicInteger h;
     public AtomicLong i;
     public char j;
+    public Character jJ;
     public BigInteger k;
     public BigDecimal l;
+    public Number m;
   }
 
 }

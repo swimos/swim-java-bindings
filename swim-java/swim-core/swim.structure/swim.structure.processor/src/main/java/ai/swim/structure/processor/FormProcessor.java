@@ -21,6 +21,9 @@ import ai.swim.structure.processor.inspect.elements.StructuralElement;
 import ai.swim.structure.processor.recognizer.RecognizerFactory;
 import ai.swim.structure.processor.recognizer.RecognizerModel;
 import ai.swim.structure.processor.recognizer.RecognizerVisitor;
+import ai.swim.structure.processor.writer.WriterFactory;
+import ai.swim.structure.processor.writer.WriterModel;
+import ai.swim.structure.processor.writer.WriterVisitor;
 import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -30,6 +33,7 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -39,6 +43,7 @@ import java.util.Set;
 public class FormProcessor extends AbstractProcessor {
 
   private RecognizerFactory recognizerFactory;
+  private WriterFactory writerFactory;
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -48,23 +53,13 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-      if (!element.asType().toString().equals("ai.swim.structure.recognizer.structural.AutoStructuralTest.IF2Impl")) {
-//        continue;
+      if (!element.asType().toString().contains("ai.swim.structure.writer.AutoStructuralWriterTest.Event")) {
+        continue;
       }
 
-      ScopedContext scopedContext = new ScopedContext(processingEnv, recognizerFactory, element);
+      ScopedContext scopedContext = new ScopedContext(processingEnv, recognizerFactory,writerFactory, element);
 
       try {
-        // todo:
-        //  hoist the recognizer code out to a deriveRecognizer package
-        //  add a new package for deriveWritable code
-        //  invoke both of the derive methods here and write out the outputs
-        //  add unit tests for
-        //    - simple writers
-        //    - all form manipulations (header, header_body etc)
-        //    - renaming
-        //    - generics
-
         StructuralElement model = ElementInspector.inspect((TypeElement) element, scopedContext);
 
         if (model == null) {
@@ -72,6 +67,7 @@ public class FormProcessor extends AbstractProcessor {
         }
 
         RecognizerModel.write(model.accept(new RecognizerVisitor(scopedContext)), scopedContext);
+//        WriterModel.write(model.accept(new WriterVisitor(scopedContext)), scopedContext);
       } catch (Throwable e) {
         e.printStackTrace();
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
@@ -85,6 +81,7 @@ public class FormProcessor extends AbstractProcessor {
   public synchronized void init(ProcessingEnvironment processingEnv) {
     super.init(processingEnv);
     this.recognizerFactory = RecognizerFactory.initFrom(processingEnv);
+    this.writerFactory = WriterFactory.initFrom(processingEnv);
   }
 
   @Override

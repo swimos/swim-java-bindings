@@ -21,7 +21,7 @@ import ai.swim.structure.recognizer.SimpleAttrBodyRecognizer;
 
 import java.util.HashSet;
 
-public class HashSetRecognizer<E> extends CollectionRecognizer<E, HashSet<E>> {
+public class HashSetRecognizer<E> extends CollectionRecognizer<E, HashSet<E>, HashSet<E>> {
   @AutoForm.TypedConstructor
   public HashSetRecognizer(Recognizer<E> delegate) {
     super(delegate, new HashSet<>());
@@ -44,4 +44,9 @@ public class HashSetRecognizer<E> extends CollectionRecognizer<E, HashSet<E>> {
     );
   }
 
+
+  @Override
+  protected HashSet<E> map(HashSet<E> collection) {
+    return collection;
+  }
 }

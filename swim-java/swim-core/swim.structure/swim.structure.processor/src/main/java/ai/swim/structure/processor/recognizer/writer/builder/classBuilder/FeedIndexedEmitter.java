@@ -18,7 +18,7 @@ import ai.swim.structure.processor.context.NameFactory;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
-import ai.swim.structure.processor.writer.Emitter;
+import ai.swim.structure.processor.Emitter;
 import com.squareup.javapoet.CodeBlock;
 
 import java.util.List;

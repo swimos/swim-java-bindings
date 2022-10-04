@@ -19,29 +19,39 @@ import ai.swim.structure.writer.BodyWriter;
 import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
+import ai.swim.structure.writer.proxy.WriterProxy;
 import ai.swim.structure.writer.proxy.WriterTypeParameter;
 
 import java.util.Map;
 
 public class MapStructuralWritable<K, V> implements StructuralWritable<Map<K, V>> {
-  private final Writable<K> kWriter;
-  private final Writable<V> vWriter;
+  private Writable<K> kWriter;
+  private Writable<V> vWriter;
 
   public MapStructuralWritable(Writable<K> kWriter, Writable<V> vWriter) {
     this.kWriter = kWriter;
     this.vWriter = vWriter;
   }
 
-  @AutoForm.TypedConstructor
-  public MapStructuralWritable(WriterTypeParameter<K> kWriter, WriterTypeParameter<V> vWriter) {
-    this.kWriter = kWriter.build();
-    this.vWriter = vWriter.build();
+  public MapStructuralWritable() {
+
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public <T> T writeInto(Map<K, V> from, StructuralWriter<T> structuralWriter) {
     int len = from.size();
     BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
+
+    if (len != 0) {
+      Map.Entry<K, V> entry = from.entrySet().iterator().next();
+      if (kWriter == null) {
+        kWriter = (Writable<K>) WriterProxy.getProxy().lookup(entry.getKey().getClass());
+      }
+      if (vWriter == null && entry.getValue() != null) {
+        vWriter = (Writable<V>) WriterProxy.getProxy().lookup(entry.getValue().getClass());
+      }
+    }
 
     for (Map.Entry<K, V> entry : from.entrySet()) {
       bodyWriter = bodyWriter.writeSlotWith(kWriter, entry.getKey(), vWriter, entry.getValue());

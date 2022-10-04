@@ -47,6 +47,7 @@ public class EnumRecognizer<T extends Enum<T>> extends Recognizer<T> {
     return new EnumRecognizer<>(this.clazz);
   }
 
+
   enum State {
     None,
     EndAttribute,

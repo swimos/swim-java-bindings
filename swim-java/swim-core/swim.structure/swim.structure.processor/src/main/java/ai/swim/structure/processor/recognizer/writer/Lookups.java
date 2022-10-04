@@ -16,6 +16,10 @@ package ai.swim.structure.processor.recognizer.writer;
 
 public class Lookups {
 
+  private Lookups() {
+    throw new AssertionError();
+  }
+
   public static final String RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.RecognizingBuilder";
   public static final String FIELD_RECOGNIZING_BUILDER_CLASS = "ai.swim.structure.FieldRecognizingBuilder";
   public static final String RECOGNIZING_BUILDER_FEED_INDEX = "feedIndexed";

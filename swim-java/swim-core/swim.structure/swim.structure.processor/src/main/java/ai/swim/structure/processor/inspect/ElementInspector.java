@@ -42,8 +42,8 @@ import javax.lang.model.util.Types;
 import java.util.ArrayList;
 import java.util.List;
 
+import static ai.swim.structure.processor.Utils.accessorFor;
 import static ai.swim.structure.processor.Utils.getNoArgConstructor;
-import static ai.swim.structure.processor.Utils.setterFor;
 
 public abstract class ElementInspector {
 
@@ -125,13 +125,18 @@ public abstract class ElementInspector {
       if (isPublic) {
         classElement.addField(new FieldElement(new FieldAccessor(variableName.toString()), variable, fieldKind));
       } else {
-        // todo: add getter
-        ExecutableElement setter = setterFor(classElement.getMethods(), variableName);
+        ExecutableElement setter = accessorFor(classElement.getMethods(), "set", variableName, AutoForm.Setter.class, (anno) -> anno.value().equals(variableName.toString()));
+        ExecutableElement getter = accessorFor(classElement.getMethods(), "get", variableName, AutoForm.Getter.class, (anno) -> anno.value().equals(variableName.toString()));
+
         if (!validateSetter(setter, variableName, variableType, ctx)) {
           return false;
         }
 
-        classElement.addField(new FieldElement(new MethodAccessor(setter), variable, fieldKind));
+        if (!validateGetter(getter, variableName, variableType, ctx)) {
+          return false;
+        }
+
+        classElement.addField(new FieldElement(new MethodAccessor(setter, getter), variable, fieldKind));
       }
     }
 
@@ -196,7 +201,7 @@ public abstract class ElementInspector {
         return null;
       }
 
-      if (!typeUtils.isSubtype(subTypeMirror, rootType)) {
+      if (!typeUtils.isSubtype(typeUtils.erasure(subTypeMirror), typeUtils.erasure(rootType))) {
         messager.error(String.format("%s is not a subtype of %s", subTypeMirror, rootType));
         return null;
       }
@@ -217,6 +222,11 @@ public abstract class ElementInspector {
       return false;
     }
 
+    if (!setter.getModifiers().contains(Modifier.PUBLIC)) {
+      messager.error("Private field: '" + name + "' has no public setter");
+      return false;
+    }
+
     List<? extends VariableElement> parameters = setter.getParameters();
     if (parameters.size() != 1) {
       messager.error("expected a setter for field '" + name + "' that takes one parameter");
@@ -233,6 +243,34 @@ public abstract class ElementInspector {
 
     return true;
   }
+
+  private static boolean validateGetter(ExecutableElement getter, Name name, TypeMirror expectedType, ScopedContext ctx) {
+    ScopedMessager messager = ctx.getMessager();
+    Types typeUtils = ctx.getProcessingEnvironment().getTypeUtils();
+
+    if (getter == null) {
+      messager.error("Private field: '" + name + "' has no getter");
+      return false;
+    }
+
+    if (!getter.getModifiers().contains(Modifier.PUBLIC)) {
+      messager.error("Private field: '" + name + "' has no public getter");
+      return false;
+    }
+
+    if (!getter.getParameters().isEmpty()) {
+      messager.error("getter for field '" + name + "' should have no parameter");
+      return false;
+    }
+
+    if (!typeUtils.isSameType(getter.getReturnType(),expectedType)) {
+      messager.error("getter for field '" + name + "' returns an incorrect type");
+      return false;
+    }
+
+    return true;
+  }
+
 
   private static FieldKind getFieldKind(Element element) {
     AutoForm.Kind kind = element.getAnnotation(AutoForm.Kind.class);
@@ -256,7 +294,7 @@ public abstract class ElementInspector {
         continue;
       }
 
-      TypeElement typeElement = elementUtils.getTypeElement(superType.toString());
+      TypeElement typeElement = elementUtils.getTypeElement(typeUtils.erasure(superType).toString());
 
       boolean isAbstract = typeElement.getModifiers().contains(Modifier.ABSTRACT);
       AutoForm autoForm = typeElement.getAnnotation(AutoForm.class);

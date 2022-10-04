@@ -19,6 +19,7 @@ import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -26,7 +27,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
+import java.nio.channels.SelectionKey;
 import java.util.List;
 
 public class ModelInstance extends Model {
@@ -42,7 +43,7 @@ public class ModelInstance extends Model {
   }
 
   @Override
-  public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
+  public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
     return CodeBlock.of("$L", init);
   }
 
@@ -55,47 +56,48 @@ public class ModelInstance extends Model {
 
     public ModelInstance resolve(ProcessingEnvironment environment, String elementName) {
       Elements elementUtils = environment.getElementUtils();
-      Types typeUtils = environment.getTypeUtils();
       String canonicalPath = String.format("%s.%s", root, elementName);
-      TypeElement element = elementUtils.getTypeElement(canonicalPath);
+      TypeElement element = elementUtils.getTypeElement(root);
 
       if (element == null) {
-        element = elementUtils.getTypeElement(root);
-        DeclaredType declaredType = (DeclaredType) element.asType();
+        throw new IllegalArgumentException(String.format("Element %s does not exist", root));
+      }
 
-        // we couldn't find the element itself but perhaps the class contains static instances of a reusable model.
-        // iterate over those and try and find a matching type
-        for (Element enclosedElement : declaredType.asElement().getEnclosedElements()) {
-          if (enclosedElement.getKind().isField()) {
-            VariableElement field = (VariableElement) enclosedElement;
+      ElementKind elementKind = element.getKind();
+      if (!(elementKind.isClass() || elementKind.isInterface())) {
+        throw new IllegalArgumentException(String.format("Element resolvers can only resolve members of interfaces or classes: %s", canonicalPath));
+      }
 
-            if (field.getSimpleName().contentEquals(elementName)) {
-              if (!field.getModifiers().contains(Modifier.STATIC)) {
-                throw new RuntimeException("Lookups must reference static variables. Attempted to reference: " + canonicalPath);
-              }
+      DeclaredType declaredType = (DeclaredType) element.asType();
 
-              if (field.asType().getKind() == TypeKind.DECLARED) {
-                DeclaredType fieldType = (DeclaredType) field.asType();
-                List<? extends TypeMirror> typeArguments = fieldType.getTypeArguments();
+      for (Element enclosedElement : declaredType.asElement().getEnclosedElements()) {
+        if (enclosedElement.getKind().isField()) {
+          VariableElement field = (VariableElement) enclosedElement;
 
-                if (typeArguments.size() == 0) {
-                  return new ModelInstance(field.asType(), canonicalPath);
-                } else if (typeArguments.size() == 1) {
-                  return new ModelInstance(typeArguments.get(0), canonicalPath);
-                } else {
-                  throw new RuntimeException("Model has more than one type parameter: " + elementName);
-                }
-              } else {
+          if (field.getSimpleName().contentEquals(elementName)) {
+            if (!field.getModifiers().contains(Modifier.STATIC)) {
+              throw new RuntimeException("Lookups must reference static variables. Attempted to reference: " + canonicalPath);
+            }
+
+            if (field.asType().getKind() == TypeKind.DECLARED) {
+              DeclaredType fieldType = (DeclaredType) field.asType();
+              List<? extends TypeMirror> typeArguments = fieldType.getTypeArguments();
+
+              if (typeArguments.size() == 0) {
                 return new ModelInstance(field.asType(), canonicalPath);
+              } else if (typeArguments.size() == 1) {
+                return new ModelInstance(typeArguments.get(0), canonicalPath);
+              } else {
+                throw new RuntimeException("Model has more than one type parameter: " + elementName);
               }
+            } else {
+              return new ModelInstance(field.asType(), canonicalPath);
             }
           }
         }
-
-        throw new IllegalStateException(String.format("%s.%s could not be resolved", root, elementName));
-      } else {
-        return new ModelInstance(typeUtils.erasure(element.asType()), canonicalPath);
       }
+
+      throw new IllegalStateException(String.format("%s could not be resolved", canonicalPath));
     }
   }
 }

@@ -27,6 +27,16 @@ public interface BodyWriter<T> {
     return this.writeSlotWith(keyWriter, key, valueWriter, value);
   }
 
+  default <K, V> BodyWriter<T> writeSlot(Writable<K> keyWriter, K key, V value) {
+    Writable<V> valueWriter = WriterProxy.getProxy().lookupObject(value);
+    return this.writeSlotWith(keyWriter, key, valueWriter, value);
+  }
+
+  default <K, V> BodyWriter<T> writeSlot(K key, Writable<V> valueWriter, V value) {
+    Writable<K> keyWriter = WriterProxy.getProxy().lookupObject(key);
+    return this.writeSlotWith(keyWriter, key, valueWriter, value);
+  }
+
   <V> BodyWriter<T> writeValueWith(Writable<V> writer, V value);
 
   default <V> BodyWriter<T> writeValue(V value) {

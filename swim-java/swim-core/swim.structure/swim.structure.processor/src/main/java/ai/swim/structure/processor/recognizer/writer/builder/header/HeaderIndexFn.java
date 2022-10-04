@@ -21,7 +21,7 @@ import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.HeaderSet;
 import ai.swim.structure.processor.schema.PartitionedFields;
-import ai.swim.structure.processor.writer.Emitter;
+import ai.swim.structure.processor.Emitter;
 import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;

@@ -36,7 +36,7 @@ public class UntypedModel extends StructuralModel {
   }
 
   @Override
-  public CodeBlock initializer(ScopedContext context, boolean inConstructor) {
+  public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
     if (inConstructor) {
       NameFactory nameFactory = context.getNameFactory();
       TypeVariable typeVariable = (TypeVariable) type;

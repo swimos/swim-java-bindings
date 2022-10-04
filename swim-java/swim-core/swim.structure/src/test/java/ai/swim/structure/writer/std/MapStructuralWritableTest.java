@@ -16,6 +16,7 @@ package ai.swim.structure.writer.std;
 
 import ai.swim.structure.value.Item;
 import ai.swim.structure.value.Value;
+import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.value.ValueStructuralWriter;
 import org.junit.jupiter.api.Test;
 
@@ -52,6 +53,27 @@ class MapStructuralWritableTest {
             )
         ),
         value
+    );
+  }
+
+  @Test
+  void resolvesWriters() {
+    Map<String, List<Integer>> map = new TreeMap<>();
+    map.put("a", List.of(1, 2, 3));
+    map.put("b", List.of(4, 5, 6));
+    map.put("c", List.of(7, 8, 9));
+
+    Writable<Map<String, List<Integer>>> writable = new MapStructuralWritable<>();
+    Value actual = writable.writeInto(map, new ValueStructuralWriter());
+
+    assertTrue(actual.isRecord());
+    assertEquals(
+        Value.ofItems(List.of(
+            Item.of(Value.of("a"), Value.ofItems(List.of(Item.valueItem(1), Item.valueItem(2), Item.valueItem(3)))),
+            Item.of(Value.of("b"), Value.ofItems(List.of(Item.valueItem(4), Item.valueItem(5), Item.valueItem(6)))),
+            Item.of(Value.of("c"), Value.ofItems(List.of(Item.valueItem(7), Item.valueItem(8), Item.valueItem(9))))
+        )),
+        actual
     );
   }
 }

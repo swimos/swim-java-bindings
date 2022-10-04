@@ -14,31 +14,25 @@
 
 package ai.swim.structure.processor.writer;
 
-import ai.swim.structure.processor.inspect.elements.ClassElement;
-import ai.swim.structure.processor.inspect.elements.InterfaceElement;
+import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.inspect.elements.AbstractVisitor;
 import ai.swim.structure.processor.inspect.elements.PrimitiveElement;
 import ai.swim.structure.processor.inspect.elements.UnresolvedElement;
-import ai.swim.structure.processor.inspect.elements.visitor.ElementVisitor;
 import ai.swim.structure.processor.models.Model;
+import ai.swim.structure.processor.models.RuntimeLookupModel;
 
-public class WriterProcessor implements ElementVisitor {
+public class WriterVisitor extends AbstractVisitor {
+  public WriterVisitor(ScopedContext context) {
+    super(context, new WriterModelLookup());
+  }
+
   @Override
   public Model visitPrimitive(PrimitiveElement element) {
-    return null;
-  }
-
-  @Override
-  public Model visitClass(ClassElement element) {
-    return null;
-  }
-
-  @Override
-  public Model visitInterface(InterfaceElement element) {
-    return null;
+    return context.getWriterFactory().lookup(element.getType());
   }
 
   @Override
   public Model visitUnresolved(UnresolvedElement element) {
-    return null;
+    return new RuntimeLookupModel(WriterModel.RUNTIME_LOOKUP, element.type(), null);
   }
 }

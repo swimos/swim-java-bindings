@@ -268,6 +268,14 @@ public class ProcessorTest {
       this.a = a;
     }
 
+    public String getA() {
+      return a;
+    }
+
+    public int getB() {
+      return b;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -316,6 +324,14 @@ public class ProcessorTest {
       this.b = b;
     }
 
+    public int getA() {
+      return a;
+    }
+
+    public String getB() {
+      return b;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -361,6 +377,14 @@ public class ProcessorTest {
 
     public void setNumber(int number) {
       this.number = number;
+    }
+
+    public List<Integer> getList() {
+      return list;
+    }
+
+    public int getNumber() {
+      return number;
     }
 
     @Override
@@ -535,6 +559,10 @@ public class ProcessorTest {
       this.writtenDependant = writtenDependant;
     }
 
+    public WrittenDependant getWrittenDependant() {
+      return writtenDependant;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -577,6 +605,10 @@ public class ProcessorTest {
       this.a = a;
     }
 
+    public int getA() {
+      return a;
+    }
+
     @Override
     public String toString() {
       return "RenamedFieldClass{" +
@@ -616,6 +648,10 @@ public class ProcessorTest {
 
     public void setA(int a) {
       this.a = a;
+    }
+
+    public int getA() {
+      return a;
     }
 
     @Override
@@ -664,6 +700,14 @@ public class ProcessorTest {
 
     public void setA(int a) {
       this.a = a;
+    }
+
+    public String getB() {
+      return b;
+    }
+
+    public int getA() {
+      return a;
     }
 
     @Override

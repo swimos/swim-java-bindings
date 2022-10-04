@@ -39,7 +39,6 @@ public class ScalarWriters {
     }
   };
 
-
   public final static Writable<Integer> INTEGER = new Writable<>() {
     @Override
     public <T> T writeInto(Integer from, StructuralWriter<T> structuralWriter) {

@@ -29,6 +29,11 @@ public class FieldAccessor extends Accessor {
   }
 
   @Override
+  public void writeGet(CodeBlock.Builder builder, String instance) {
+    builder.add("$L.$L", instance, fieldName);
+  }
+
+  @Override
   public String toString() {
     return "FieldAccessor{" +
         "fieldName=" + fieldName +

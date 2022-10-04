@@ -36,7 +36,6 @@ class WriterFactory<T> {
     this.targetClass = targetClass;
   }
 
-
   @SuppressWarnings("unchecked")
   public static <T, W extends Writable<T>> WriterFactory<T> buildFrom(Class<T> targetClass, Class<W> writerClass, Supplier<Writable<?>> supplier) {
     Constructor<Writable<?>> typedConstructor = null;
@@ -53,6 +52,11 @@ class WriterFactory<T> {
     }
 
     return new WriterFactory<>(supplier, typedConstructor, isStructural, targetClass);
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  public static WriterFactory buildFromAny(Class<?> targetClass, Class<? extends Writable> clazz, Supplier<Writable<?>> supplier) {
+    return buildFrom(targetClass, clazz, supplier);
   }
 
   public boolean isStructural() {
