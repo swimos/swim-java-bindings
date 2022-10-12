@@ -22,7 +22,7 @@ public class EqChar extends Parser<Character> {
         input.step();
         return Parser.done(head);
       } else {
-        return Parser.error(input, "Expected: " + c + ", found: " + head);
+        return Parser.error(input, String.format("Expected '%s', found '%s'", c, head));
       }
     } else if (input.isDone()) {
       return Parser.error(input, "Insufficient data");

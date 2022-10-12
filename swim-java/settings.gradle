@@ -3,3 +3,7 @@ rootProject.name = 'swim-java'
 include 'swim.codec'
 project(':swim.codec').projectDir = file('swim-core/swim.codec')
 project(':swim.codec').name = 'swim-codec'
+
+include 'swim.recon'
+project(':swim.recon').projectDir = file('swim-core/swim.recon')
+project(':swim.recon').name = 'swim-recon'

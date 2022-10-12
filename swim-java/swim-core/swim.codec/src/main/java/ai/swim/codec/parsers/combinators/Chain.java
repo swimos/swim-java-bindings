@@ -35,12 +35,12 @@ public class Chain<T> extends Parser<T> {
         if (parser.isError()) {
           return Parser.error(input, ((ParserError<?>) parser).cause());
         } else if (parser.isDone()) {
-          parsers[idx] = parser;
-          idx += 1;
-
-          if (idx == parsers.length) {
+          if (idx == parsers.length - 1) {
             //noinspection unchecked
             return Parser.done((T) parser.bind());
+          } else {
+            parsers[idx] = parser;
+            idx += 1;
           }
         } else if (parser.isCont()) {
           parsers[idx] = parser;
@@ -53,6 +53,8 @@ public class Chain<T> extends Parser<T> {
         } else {
           throw new AssertionError("Unexpected state");
         }
+      } else {
+        return this;
       }
     }
   }
