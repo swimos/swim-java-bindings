@@ -138,28 +138,28 @@ public class AutoStructuralTest {
       this.c = c;
     }
 
-    public void setA(int a) {
-      this.a = a;
-    }
-
-    public void setB(String b) {
-      this.b = b;
-    }
-
-    public void setC(String c) {
-      this.c = c;
-    }
-
     public int getA() {
       return a;
+    }
+
+    public void setA(int a) {
+      this.a = a;
     }
 
     public String getB() {
       return b;
     }
 
+    public void setB(String b) {
+      this.b = b;
+    }
+
     public String getC() {
       return c;
+    }
+
+    public void setC(String c) {
+      this.c = c;
     }
 
     @Override
@@ -208,28 +208,28 @@ public class AutoStructuralTest {
       this.c = c;
     }
 
-    public void setA(int a) {
-      this.a = a;
-    }
-
-    public void setB(int b) {
-      this.b = b;
-    }
-
-    public void setC(int c) {
-      this.c = c;
-    }
-
     public int getA() {
       return a;
+    }
+
+    public void setA(int a) {
+      this.a = a;
     }
 
     public int getB() {
       return b;
     }
 
+    public void setB(int b) {
+      this.b = b;
+    }
+
     public int getC() {
       return c;
+    }
+
+    public void setC(int c) {
+      this.c = c;
     }
 
     @Override
@@ -271,12 +271,12 @@ public class AutoStructuralTest {
       this.key = key;
     }
 
-    public void setKey(String key) {
-      this.key = key;
-    }
-
     public String getKey() {
       return key;
+    }
+
+    public void setKey(String key) {
+      this.key = key;
     }
 
     @Override
@@ -310,12 +310,12 @@ public class AutoStructuralTest {
       this.value = value;
     }
 
-    public void setValue(String value) {
-      this.value = value;
-    }
-
     public String getValue() {
       return value;
+    }
+
+    public void setValue(String value) {
+      this.value = value;
     }
 
     @Override
@@ -353,20 +353,20 @@ public class AutoStructuralTest {
       this.second = second;
     }
 
-    public void setFirst(int first) {
-      this.first = first;
-    }
-
-    public void setSecond(String second) {
-      this.second = second;
-    }
-
     public int getFirst() {
       return first;
     }
 
+    public void setFirst(int first) {
+      this.first = first;
+    }
+
     public String getSecond() {
       return second;
+    }
+
+    public void setSecond(String second) {
+      this.second = second;
     }
 
     @Override
@@ -410,14 +410,6 @@ public class AutoStructuralTest {
       this.inner = inner;
     }
 
-    public void setNode(String node) {
-      this.node = node;
-    }
-
-    public void setInner(Inner inner) {
-      this.inner = inner;
-    }
-
     @Override
     public String toString() {
       return "Outer{" +
@@ -430,8 +422,16 @@ public class AutoStructuralTest {
       return node;
     }
 
+    public void setNode(String node) {
+      this.node = node;
+    }
+
     public Inner getInner() {
       return inner;
+    }
+
+    public void setInner(Inner inner) {
+      this.inner = inner;
     }
 
     @Override
@@ -475,18 +475,6 @@ public class AutoStructuralTest {
       this.second = second;
     }
 
-    public void setLane(String lane) {
-      this.lane = lane;
-    }
-
-    public void setFirst(int first) {
-      this.first = first;
-    }
-
-    public void setSecond(String second) {
-      this.second = second;
-    }
-
     public int getCount() {
       return count;
     }
@@ -499,12 +487,24 @@ public class AutoStructuralTest {
       return lane;
     }
 
+    public void setLane(String lane) {
+      this.lane = lane;
+    }
+
     public int getFirst() {
       return first;
     }
 
+    public void setFirst(int first) {
+      this.first = first;
+    }
+
     public String getSecond() {
       return second;
+    }
+
+    public void setSecond(String second) {
+      this.second = second;
     }
 
     @Override
@@ -563,28 +563,28 @@ public class AutoStructuralTest {
       this.body = body;
     }
 
-    public void setNodeUri(String nodeUri) {
-      this.nodeUri = nodeUri;
-    }
-
-    public void setLaneUri(String laneUri) {
-      this.laneUri = laneUri;
-    }
-
-    public void setBody(Object body) {
-      this.body = body;
-    }
-
     public String getNodeUri() {
       return nodeUri;
+    }
+
+    public void setNodeUri(String nodeUri) {
+      this.nodeUri = nodeUri;
     }
 
     public String getLaneUri() {
       return laneUri;
     }
 
+    public void setLaneUri(String laneUri) {
+      this.laneUri = laneUri;
+    }
+
     public Object getBody() {
       return body;
+    }
+
+    public void setBody(Object body) {
+      this.body = body;
     }
 
     @Override
@@ -638,12 +638,12 @@ public class AutoStructuralTest {
       this.body = body;
     }
 
-    public void setBody(Object body) {
-      this.body = body;
-    }
-
     public Object getBody() {
       return body;
+    }
+
+    public void setBody(Object body) {
+      this.body = body;
     }
   }
 
@@ -709,12 +709,12 @@ public class AutoStructuralTest {
       this.a = a;
     }
 
-    public void setA(String a) {
-      this.a = a;
-    }
-
     public String getA() {
       return a;
+    }
+
+    public void setA(String a) {
+      this.a = a;
     }
 
     @Override
@@ -754,12 +754,12 @@ public class AutoStructuralTest {
       this.c = c;
     }
 
-    public void setC(String c) {
-      this.c = c;
-    }
-
     public String getC() {
       return c;
+    }
+
+    public void setC(String c) {
+      this.c = c;
     }
 
     @Override
@@ -799,12 +799,12 @@ public class AutoStructuralTest {
       this.b = b;
     }
 
-    public void setB(String b) {
-      this.b = b;
-    }
-
     public String getB() {
       return b;
+    }
+
+    public void setB(String b) {
+      this.b = b;
     }
 
     @Override
@@ -908,6 +908,14 @@ public class AutoStructuralTest {
     @Override
     public int hashCode() {
       return Objects.hash(key, value);
+    }
+
+    @Override
+    public String toString() {
+      return "MapUpdate{" +
+          "key=" + key +
+          ", value=" + value +
+          '}';
     }
   }
 
@@ -1035,5 +1043,6 @@ public class AutoStructuralTest {
     public BigDecimal l;
     public Number m;
   }
+
 
 }

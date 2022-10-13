@@ -16,8 +16,10 @@ package ai.swim.structure.writer;
 
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
-import ai.swim.structure.writer.std.ScalarWriters;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Objects;
 
 class AutoStructuralWriterTest {
 
@@ -48,7 +50,10 @@ class AutoStructuralWriterTest {
     }
   }
 
-  @AutoForm(subTypes = {@AutoForm.Type(Event.class)})
+  @AutoForm(subTypes = {
+      @AutoForm.Type(Event.class),
+      @AutoForm.Type(Link.class)
+  })
   public abstract static class Envelope<B> {
     public String lane;
     public String node;
@@ -62,7 +67,7 @@ class AutoStructuralWriterTest {
 //    @AutoForm.Kind(FieldKind.HeaderBody)
 //    public int body;
 
-    public C c;
+    public List<C> c;
 
     public Event() {
 
@@ -72,29 +77,76 @@ class AutoStructuralWriterTest {
       this.value = i;
     }
   }
-//
-//  public static class EventWriter<E> implements Writable<Event<E>> {
-//    @Override
-//    public <T> T writeInto(Event<E> from, StructuralWriter<T> structuralWriter) {
-//      int numAttrs = 1;
-//
-//      HeaderWriter<T> record = structuralWriter.record(numAttrs);
-//
-//      record.writeExtantAttr("Prop");
-//
-//      BodyWriter<T> bodyWriter = record.completeHeader(0);
-//      if (from.lane != null) {
-//        bodyWriter.writeSlot("lane", ScalarWriters.STRING);
-//      }
-//      if (from.node != null) {
-//        bodyWriter.writeSlot("node", ScalarWriters.STRING);
-//      }
-//      if (from.value != null) {
-//        bodyWriter.writeSlot(ScalarWriters.STRING, "value", from.value);
-//      }
-//
-//      return bodyWriter.done();
-//    }
-//  }
+
+  @AutoForm
+  public static class Link extends Envelope<String> {
+
+  }
+
+  public static class PropClass {
+    private int a;
+    private String b;
+    private String c;
+
+    public PropClass() {
+
+    }
+
+    public PropClass(int a, String b, String c) {
+      this.a = a;
+      this.b = b;
+      this.c = c;
+    }
+
+    public int getA() {
+      return a;
+    }
+
+    public void setA(int a) {
+      this.a = a;
+    }
+
+    public String getB() {
+      return b;
+    }
+
+    public void setB(String b) {
+      this.b = b;
+    }
+
+    public String getC() {
+      return c;
+    }
+
+    public void setC(String c) {
+      this.c = c;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof PropClass)) {
+        return false;
+      }
+      PropClass propClass = (PropClass) o;
+      return a == propClass.a && Objects.equals(b, propClass.b) && Objects.equals(c, propClass.c);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(a, b, c);
+    }
+
+    @Override
+    public String toString() {
+      return "PropClass{" +
+          "a=" + a +
+          ", b='" + b + '\'' +
+          ", c='" + c + '\'' +
+          '}';
+    }
+  }
 
 }

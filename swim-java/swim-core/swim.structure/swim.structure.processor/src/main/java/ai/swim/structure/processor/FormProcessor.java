@@ -21,8 +21,8 @@ import ai.swim.structure.processor.inspect.elements.StructuralElement;
 import ai.swim.structure.processor.recognizer.RecognizerFactory;
 import ai.swim.structure.processor.recognizer.RecognizerModel;
 import ai.swim.structure.processor.recognizer.RecognizerVisitor;
+import ai.swim.structure.processor.writer.ClassWriter;
 import ai.swim.structure.processor.writer.WriterFactory;
-import ai.swim.structure.processor.writer.WriterModel;
 import ai.swim.structure.processor.writer.WriterVisitor;
 import com.google.auto.service.AutoService;
 
@@ -33,7 +33,6 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -48,16 +47,18 @@ public class FormProcessor extends AbstractProcessor {
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     for (Element element : roundEnv.getElementsAnnotatedWith(AutoForm.class)) {
+      AutoForm autoForm = element.getAnnotation(AutoForm.class);
+
       if (!element.getKind().isClass() && !element.getKind().isInterface()) {
         this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, element + " cannot be annotated with @" + AutoForm.class.getSimpleName() + ". It may only be used on classes and interfaces");
         return true;
       }
 
-      if (!element.asType().toString().contains("ai.swim.structure.writer.AutoStructuralWriterTest.Event")) {
-        continue;
+      if (!element.asType().toString().contains("ai.swim.structure.recognizer.structural.AutoStructuralTest.StdTypes")) {
+//        continue;
       }
 
-      ScopedContext scopedContext = new ScopedContext(processingEnv, recognizerFactory,writerFactory, element);
+      ScopedContext scopedContext = new ScopedContext(processingEnv, recognizerFactory, writerFactory, element);
 
       try {
         StructuralElement model = ElementInspector.inspect((TypeElement) element, scopedContext);
@@ -66,8 +67,13 @@ public class FormProcessor extends AbstractProcessor {
           return true;
         }
 
-        RecognizerModel.write(model.accept(new RecognizerVisitor(scopedContext)), scopedContext);
-//        WriterModel.write(model.accept(new WriterVisitor(scopedContext)), scopedContext);
+        if (autoForm.recognizer()) {
+          RecognizerModel.write(model.accept(new RecognizerVisitor(scopedContext)), scopedContext);
+        }
+
+        if (autoForm.writer()) {
+          ClassWriter.writeClass(model.accept(new WriterVisitor(scopedContext)), scopedContext);
+        }
       } catch (Throwable e) {
         e.printStackTrace();
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());

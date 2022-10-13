@@ -32,7 +32,6 @@ public class ListRecognizer<E> extends CollectionRecognizer<E, List<E>, List<E>>
   }
 
 
-
   @Override
   protected List<E> map(List<E> collection) {
     return collection;

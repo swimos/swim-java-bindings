@@ -33,6 +33,6 @@ public class RecognizerVisitor extends AbstractVisitor {
 
   @Override
   public Model visitUnresolved(UnresolvedElement element) {
-    return new RuntimeLookupModel(RecognizerModel.RUNTIME_LOOKUP, element.type(), null);
+    return new RuntimeLookupModel(RecognizerModel.RUNTIME_LOOKUP, element.type());
   }
 }

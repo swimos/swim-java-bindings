@@ -1,7 +1,6 @@
 package ai.swim.structure.recognizer.std.collections;
 
 import ai.swim.recon.event.ReadEvent;
-import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import org.junit.jupiter.api.Test;
 

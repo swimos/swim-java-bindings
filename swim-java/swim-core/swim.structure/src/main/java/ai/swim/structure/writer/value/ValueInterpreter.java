@@ -32,7 +32,7 @@ public class ValueInterpreter implements HeaderWriter<Value>, BodyWriter<Value> 
   }
 
   @Override
-  public <V> HeaderWriter<Value> writeAttrWith(String key, Writable<V> valueWriter, V value) {
+  public <V> HeaderWriter<Value> writeAttr(String key, Writable<V> valueWriter, V value) {
     Text textKey = new Text(key);
     Value interpretedValue = valueWriter.writeInto(value, this.valueWriter);
     builder.pushAttr(textKey, interpretedValue);
@@ -50,7 +50,7 @@ public class ValueInterpreter implements HeaderWriter<Value>, BodyWriter<Value> 
   }
 
   @Override
-  public <V> Value delegateWith(Writable<V> valueWriter, V value) {
+  public <V> Value delegate(Writable<V> valueWriter, V value) {
     Value body = valueWriter.writeInto(value, this.valueWriter);
     return builder.buildDelegate(body);
   }
@@ -68,7 +68,7 @@ public class ValueInterpreter implements HeaderWriter<Value>, BodyWriter<Value> 
   }
 
   @Override
-  public <K, V> BodyWriter<Value> writeSlotWith(Writable<K> keyWriter, K key, Writable<V> valueWriter, V value) {
+  public <K, V> BodyWriter<Value> writeSlot(Writable<K> keyWriter, K key, Writable<V> valueWriter, V value) {
     Value interpretedKey = keyWriter.writeInto(key, this.valueWriter);
     Value interpretedValue = valueWriter.writeInto(value, this.valueWriter);
     builder.pushItem(interpretedKey, interpretedValue);
@@ -77,7 +77,7 @@ public class ValueInterpreter implements HeaderWriter<Value>, BodyWriter<Value> 
   }
 
   @Override
-  public <V> BodyWriter<Value> writeValueWith(Writable<V> valueWriter, V value) {
+  public <V> BodyWriter<Value> writeValue(Writable<V> valueWriter, V value) {
     Value interpretedValue = valueWriter.writeInto(value, this.valueWriter);
     builder.pushItem(interpretedValue);
 

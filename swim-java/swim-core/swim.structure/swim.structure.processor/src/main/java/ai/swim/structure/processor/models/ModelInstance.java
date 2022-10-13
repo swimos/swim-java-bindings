@@ -27,7 +27,6 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import java.nio.channels.SelectionKey;
 import java.util.List;
 
 public class ModelInstance extends Model {
@@ -45,6 +44,13 @@ public class ModelInstance extends Model {
   @Override
   public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
     return CodeBlock.of("$L", init);
+  }
+
+  @Override
+  public String toString() {
+    return "ModelInstance{" +
+        "init='" + init + '\'' +
+        '}';
   }
 
   public static class Resolver {

@@ -30,7 +30,7 @@ public class ScopedContext {
   private final WriterFactory writerFactory;
   private final ProcessingEnvironment processingEnvironment;
 
-  public ScopedContext(ProcessingEnvironment processingEnvironment, RecognizerFactory recognizerFactory,WriterFactory writerFactory, Element root) {
+  public ScopedContext(ProcessingEnvironment processingEnvironment, RecognizerFactory recognizerFactory, WriterFactory writerFactory, Element root) {
     this.root = root;
     this.messager = new ScopedMessager(processingEnvironment.getMessager(), root);
 
@@ -39,7 +39,7 @@ public class ScopedContext {
 
     this.formatter = new NameFactory(root.getSimpleName().toString(), packageElement);
     this.recognizerFactory = recognizerFactory;
-    this.writerFactory=writerFactory;
+    this.writerFactory = writerFactory;
     this.processingEnvironment = processingEnvironment;
   }
 

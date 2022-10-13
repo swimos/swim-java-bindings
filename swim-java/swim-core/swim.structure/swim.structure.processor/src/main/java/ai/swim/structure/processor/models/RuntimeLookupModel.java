@@ -27,7 +27,7 @@ public class RuntimeLookupModel extends Model {
   private final Model[] parameters;
   private final String tyName;
 
-  public RuntimeLookupModel(String tyName, TypeMirror mirror, Model[] parameters) {
+  public RuntimeLookupModel(String tyName, TypeMirror mirror, Model... parameters) {
     super(mirror);
     this.tyName = tyName;
     this.parameters = parameters;
@@ -41,7 +41,7 @@ public class RuntimeLookupModel extends Model {
 
     String typeParameters = "";
 
-    if (parameters != null) {
+    if (parameters != null && parameters.length != 0) {
       typeParameters = Arrays.stream(parameters).map(ty -> {
         return String.format("%s.from(() -> %s)", tyName, ty.initializer(context, inConstructor, isAbstract));
       }).collect(Collectors.joining(", "));
@@ -52,9 +52,13 @@ public class RuntimeLookupModel extends Model {
     if (isAbstract) {
       TypeMirror rootType = context.getRoot().asType();
       return CodeBlock.of("getProxy().lookup((Class<? extends $T>) (Class<?>) $T.class $L)", rootType, erasure, typeParameters);
-//      return CodeBlock.of("getProxy().lookup($T.class $L)", erasure, typeParameters);
     } else {
       return CodeBlock.of("getProxy().lookup((Class<$T>) (Class<?>) $T.class $L)", type, erasure, typeParameters);
     }
+  }
+
+  @Override
+  public boolean isRuntimeLookup() {
+    return true;
   }
 }

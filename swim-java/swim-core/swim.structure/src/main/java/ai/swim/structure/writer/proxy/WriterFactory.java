@@ -75,7 +75,7 @@ class WriterFactory<T> {
   @SuppressWarnings("unchecked")
   public Writable<T> newTypedInstance(WriterTypeParameter<?>... typeParameters) {
     if (typedConstructor == null) {
-      throw new IllegalStateException("Not a generic writer");
+      throw new IllegalStateException(String.format("%s is not a generic writer", targetClass));
     } else {
       try {
         return (Writable<T>) typedConstructor.newInstance((Object[]) typeParameters);

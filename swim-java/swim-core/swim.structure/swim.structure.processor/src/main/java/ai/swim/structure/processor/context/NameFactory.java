@@ -25,6 +25,16 @@ public class NameFactory {
     this.packageElement = packageElement;
   }
 
+  private static String replaceBounds(String from) {
+    if (from.startsWith("<")) {
+      from = from.replace("<", "");
+    }
+    if (from.endsWith(">")) {
+      from = from.replace(">", "");
+    }
+    return from;
+  }
+
   public String getName() {
     return name;
   }
@@ -74,13 +84,10 @@ public class NameFactory {
   }
 
   public String typeParameterName(String gen) {
-    if (gen.startsWith("<")) {
-      gen = gen.replace("<", "");
-    }
-    if (gen.startsWith(">")) {
-      gen = gen.replace(">", "");
-    }
+    return String.format("%sType", replaceBounds(gen).toLowerCase());
+  }
 
-    return String.format("%sType", gen.toLowerCase());
+  public String writableName(String gen) {
+    return String.format("%sWritable", replaceBounds(gen).toLowerCase());
   }
 }

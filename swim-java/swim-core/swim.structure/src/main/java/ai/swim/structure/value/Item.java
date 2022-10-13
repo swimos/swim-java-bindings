@@ -33,6 +33,10 @@ public abstract class Item {
     return Item.of(NumberValue.of(value));
   }
 
+  public static Item valueItem(char value) {
+    return Item.of(Text.of(value));
+  }
+
   public static Item valueItem(long value) {
     return Item.of(NumberValue.of(value));
   }

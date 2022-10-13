@@ -14,13 +14,13 @@
 
 package ai.swim.structure.writer.std;
 
+import ai.swim.structure.TypeParameter;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.writer.BodyWriter;
 import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.proxy.WriterProxy;
-import ai.swim.structure.writer.proxy.WriterTypeParameter;
 
 import java.util.Map;
 
@@ -31,6 +31,12 @@ public class MapStructuralWritable<K, V> implements StructuralWritable<Map<K, V>
   public MapStructuralWritable(Writable<K> kWriter, Writable<V> vWriter) {
     this.kWriter = kWriter;
     this.vWriter = vWriter;
+  }
+
+  @AutoForm.TypedConstructor
+  public MapStructuralWritable(TypeParameter<Writable<K>> kWriter, TypeParameter<Writable<V>> vWriter) {
+    this.kWriter = kWriter.build();
+    this.vWriter = vWriter.build();
   }
 
   public MapStructuralWritable() {
@@ -54,7 +60,7 @@ public class MapStructuralWritable<K, V> implements StructuralWritable<Map<K, V>
     }
 
     for (Map.Entry<K, V> entry : from.entrySet()) {
-      bodyWriter = bodyWriter.writeSlotWith(kWriter, entry.getKey(), vWriter, entry.getValue());
+      bodyWriter = bodyWriter.writeSlot(kWriter, entry.getKey(), vWriter, entry.getValue());
     }
 
     return bodyWriter.done();

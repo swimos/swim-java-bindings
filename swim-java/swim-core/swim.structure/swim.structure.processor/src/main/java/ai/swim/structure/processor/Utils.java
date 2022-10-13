@@ -35,7 +35,7 @@ public class Utils {
       A actualAnnotation = method.getAnnotation(annotation);
 
       if (actualAnnotation != null) {
-        if (predicate.test(actualAnnotation)){
+        if (predicate.test(actualAnnotation)) {
           return method;
         }
       }

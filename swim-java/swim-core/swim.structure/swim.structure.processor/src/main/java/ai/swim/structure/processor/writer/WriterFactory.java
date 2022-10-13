@@ -57,6 +57,7 @@ public class WriterFactory {
     writers.put(_getOrThrowType(elementUtils, Boolean.class), resolver.resolve(processingEnvironment, "BOOLEAN"));
     writers.put(_getOrThrowType(elementUtils, String.class), resolver.resolve(processingEnvironment, "STRING"));
     writers.put(_getOrThrowType(elementUtils, Character.class), resolver.resolve(processingEnvironment, "CHARACTER"));
+    writers.put(_getOrThrowType(elementUtils, Number.class), resolver.resolve(processingEnvironment, "NUMBER"));
     writers.put(typeUtils.getPrimitiveType(TypeKind.BYTE), resolver.resolve(processingEnvironment, "BYTE"));
     writers.put(typeUtils.getPrimitiveType(TypeKind.SHORT), resolver.resolve(processingEnvironment, "SHORT"));
     writers.put(typeUtils.getPrimitiveType(TypeKind.INT), resolver.resolve(processingEnvironment, "INTEGER"));
@@ -98,7 +99,7 @@ public class WriterFactory {
       throw classInitFailure(clazz.getCanonicalName());
     }
 
-    return arrayType.getComponentType();
+    return arrayType;
   }
 
   private static TypeMirror _getOrThrowArrayType(Types typeUtils, TypeKind typeKind) {
@@ -109,7 +110,7 @@ public class WriterFactory {
       throw classInitFailure(typeKind.toString());
     }
 
-    return arrayType.getComponentType();
+    return arrayType;
   }
 
   private static RuntimeException classInitFailure(String elem) {

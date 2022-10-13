@@ -25,6 +25,11 @@ public class ListStructuralWritable<T> extends CollectionStructuralWritable<T, L
     super(listWritable);
   }
 
+  @AutoForm.TypedConstructor
+  public ListStructuralWritable(WriterTypeParameter<T> tWriter) {
+    super(tWriter.build());
+  }
+
   public ListStructuralWritable() {
     super(null);
   }

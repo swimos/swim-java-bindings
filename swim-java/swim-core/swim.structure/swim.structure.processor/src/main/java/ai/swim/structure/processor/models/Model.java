@@ -34,7 +34,7 @@ public abstract class Model {
     this.type = type;
   }
 
-  public static Model singleGeneric(ModelLookup modelLookup, TypeElement container, TypeElement proxy, TypeMirror typeMirror, ScopedContext context) {
+  public static Model singleGeneric(ModelLookup modelLookup, TypeElement container, TypeElement proxy, TypeMirror typeMirror, ScopedContext context, boolean isProxy) {
     DeclaredType variableType = (DeclaredType) typeMirror;
     List<? extends TypeMirror> typeArguments = variableType.getTypeArguments();
 
@@ -54,10 +54,10 @@ public abstract class Model {
 
     // retype the container now that we've unrolled the type. I.e, turn List<N extends Number> into List<Number>
     DeclaredType typed = typeUtils.getDeclaredType(container, unrolledType.typeMirror);
-    return modelLookup.generic(context, typed, proxy, unrolledType);
+    return modelLookup.generic(context, typed, proxy, unrolledType, isProxy);
   }
 
-  public static Model twoGenerics(ModelLookup modelLookup, TypeElement container, TypeElement proxy, TypeMirror typeMirror, ScopedContext context) {
+  public static Model twoGenerics(ModelLookup modelLookup, TypeElement container, TypeElement proxy, TypeMirror typeMirror, ScopedContext context, boolean isProxy) {
     DeclaredType variableType = (DeclaredType) typeMirror;
     List<? extends TypeMirror> typeArguments = variableType.getTypeArguments();
 
@@ -80,7 +80,7 @@ public abstract class Model {
 
     // retype the container now that we've unrolled the type. I.e, turn List<N extends Number> into List<Number>
     DeclaredType typed = typeUtils.getDeclaredType(container, unrolledKey.typeMirror, unrolledValue.typeMirror);
-    return modelLookup.twoGenerics(context, typed, proxy, unrolledKey, unrolledValue);
+    return modelLookup.twoGenerics(context, typed, proxy, unrolledKey, unrolledValue, isProxy);
   }
 
   public Object defaultValue() {
@@ -98,6 +98,10 @@ public abstract class Model {
   }
 
   public boolean isInterface() {
+    return false;
+  }
+
+  public boolean isRuntimeLookup() {
     return false;
   }
 }

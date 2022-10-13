@@ -15,6 +15,7 @@ public class DelegateClassRecognizer<T> extends ClassRecognizer<DelegateClassRec
 
   @Override
   public Recognizer<T> feedEvent(ReadEvent event) {
+    System.out.printf("State: %s, event: %s\n", state, event);
     switch (state) {
       case Init:
         return onInit(event, OrdinalFieldKey.HEADER);

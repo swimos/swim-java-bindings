@@ -17,17 +17,18 @@ package ai.swim.structure.processor.writer;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.models.Model;
 import ai.swim.structure.processor.models.ModelLookup;
+import ai.swim.structure.processor.models.RuntimeLookupModel;
 
 import javax.lang.model.type.TypeMirror;
 
 public class WriterModelLookup implements ModelLookup {
   @Override
   public Model lookup(TypeMirror typeMirror, ScopedContext context) {
-    return WriterModel.from(typeMirror,context);
+    return WriterModel.from(typeMirror, context);
   }
 
   @Override
   public Model untyped(TypeMirror type) {
-    throw new AssertionError("Unimplemented: untyped writer");
+    return new RuntimeLookupModel(WriterModel.RUNTIME_LOOKUP, type);
   }
 }

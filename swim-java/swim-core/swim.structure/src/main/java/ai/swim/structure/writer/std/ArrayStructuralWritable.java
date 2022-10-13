@@ -26,13 +26,139 @@ public class ArrayStructuralWritable<E> implements StructuralWritable<E[]> {
     this.writable = writable;
   }
 
+  public static StructuralWritable<int[]> forInt() {
+    return new IntArrayStructuralWritable();
+  }
+
+  public static StructuralWritable<char[]> forChar() {
+    return new CharArrayStructuralWritable();
+  }
+
+  public static StructuralWritable<long[]> forLong() {
+    return new LongArrayStructuralWritable();
+  }
+
+  public static StructuralWritable<short[]> forShort() {
+    return new ShortArrayStructuralWritable();
+  }
+
+  public static StructuralWritable<boolean[]> forBoolean() {
+    return new BooleanArrayStructuralWritable();
+  }
+
+  public static StructuralWritable<float[]> forFloat() {
+    return new FloatArrayStructuralWritable();
+  }
+
+  public static StructuralWritable<double[]> forDouble() {
+    return new DoubleArrayStructuralWritable();
+  }
+
   @Override
   public <T> T writeInto(E[] from, StructuralWriter<T> structuralWriter) {
     int len = from.length;
     BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
 
     for (E elem : from) {
-      bodyWriter = bodyWriter.writeValueWith(writable, elem);
+      bodyWriter = bodyWriter.writeValue(writable, elem);
+    }
+
+    return bodyWriter.done();
+  }
+}
+
+class IntArrayStructuralWritable implements StructuralWritable<int[]> {
+  @Override
+  public <T> T writeInto(int[] from, StructuralWriter<T> structuralWriter) {
+    int len = from.length;
+    BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
+
+    for (int elem : from) {
+      bodyWriter = bodyWriter.writeValue(ScalarWriters.INTEGER, elem);
+    }
+
+    return bodyWriter.done();
+  }
+}
+
+class CharArrayStructuralWritable implements StructuralWritable<char[]> {
+  @Override
+  public <T> T writeInto(char[] from, StructuralWriter<T> structuralWriter) {
+    int len = from.length;
+    BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
+
+    for (char elem : from) {
+      bodyWriter = bodyWriter.writeValue(ScalarWriters.CHARACTER, elem);
+    }
+
+    return bodyWriter.done();
+  }
+}
+
+class LongArrayStructuralWritable implements StructuralWritable<long[]> {
+  @Override
+  public <T> T writeInto(long[] from, StructuralWriter<T> structuralWriter) {
+    int len = from.length;
+    BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
+
+    for (long elem : from) {
+      bodyWriter = bodyWriter.writeValue(ScalarWriters.LONG, elem);
+    }
+
+    return bodyWriter.done();
+  }
+}
+
+class ShortArrayStructuralWritable implements StructuralWritable<short[]> {
+  @Override
+  public <T> T writeInto(short[] from, StructuralWriter<T> structuralWriter) {
+    int len = from.length;
+    BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
+
+    for (short elem : from) {
+      bodyWriter = bodyWriter.writeValue(ScalarWriters.SHORT, elem);
+    }
+
+    return bodyWriter.done();
+  }
+}
+
+class BooleanArrayStructuralWritable implements StructuralWritable<boolean[]> {
+  @Override
+  public <T> T writeInto(boolean[] from, StructuralWriter<T> structuralWriter) {
+    int len = from.length;
+    BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
+
+    for (boolean elem : from) {
+      bodyWriter = bodyWriter.writeValue(ScalarWriters.BOOLEAN, elem);
+    }
+
+    return bodyWriter.done();
+  }
+}
+
+class FloatArrayStructuralWritable implements StructuralWritable<float[]> {
+  @Override
+  public <T> T writeInto(float[] from, StructuralWriter<T> structuralWriter) {
+    int len = from.length;
+    BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
+
+    for (float elem : from) {
+      bodyWriter = bodyWriter.writeValue(ScalarWriters.FLOAT, elem);
+    }
+
+    return bodyWriter.done();
+  }
+}
+
+class DoubleArrayStructuralWritable implements StructuralWritable<double[]> {
+  @Override
+  public <T> T writeInto(double[] from, StructuralWriter<T> structuralWriter) {
+    int len = from.length;
+    BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
+
+    for (double elem : from) {
+      bodyWriter = bodyWriter.writeValue(ScalarWriters.DOUBLE, elem);
     }
 
     return bodyWriter.done();
