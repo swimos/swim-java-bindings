@@ -14,9 +14,9 @@
 
 package ai.swim.structure.processor.recognizer.writer.recognizer;
 
+import ai.swim.structure.processor.Emitter;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.Emitter;
 import com.squareup.javapoet.CodeBlock;
 
 public class RecognizerTransformation implements Emitter {

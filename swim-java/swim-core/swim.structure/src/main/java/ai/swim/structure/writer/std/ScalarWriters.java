@@ -142,4 +142,25 @@ public class ScalarWriters {
       return structuralWriter.writeLong(from.get());
     }
   };
+
+  public final static Writable<Number> NUMBER = new Writable<>() {
+    @Override
+    public <T> T writeInto(Number from, StructuralWriter<T> structuralWriter) {
+      if (from instanceof Integer) {
+        return structuralWriter.writeInt(from.intValue());
+      } else if (from instanceof Long) {
+        return structuralWriter.writeLong(from.longValue());
+      } else if (from instanceof Float) {
+        return structuralWriter.writeFloat(from.floatValue());
+      } else if (from instanceof Double) {
+        return structuralWriter.writeDouble(from.doubleValue());
+      } else if (from instanceof Byte) {
+        return structuralWriter.writeInt(from.byteValue());
+      } else if (from instanceof Short) {
+        return structuralWriter.writeInt(from.shortValue());
+      } else {
+        return structuralWriter.writeFloat(from.floatValue());
+      }
+    }
+  };
 }

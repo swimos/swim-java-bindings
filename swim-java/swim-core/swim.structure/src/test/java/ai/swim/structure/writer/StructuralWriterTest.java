@@ -126,20 +126,20 @@ class StructuralWriterTest {
               .record(1)
               .writeExtantAttr("Prop")
               .completeHeader(2)
-              .writeSlotWith(ScalarWriters.STRING, "a", ScalarWriters.INTEGER, from.a)
-              .writeSlotWith(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
+              .writeSlot(ScalarWriters.STRING, "a", ScalarWriters.INTEGER, from.a)
+              .writeSlot(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
               .done();
         case Body:
           return structuralWriter
               .record(2)
               .writeAttr("Prop", Header.NoSlots.prepend("a", ScalarWriters.INTEGER, from.a).simple())
-              .delegateWith(ScalarWriters.LONG, from.b);
+              .delegate(ScalarWriters.LONG, from.b);
         case HeaderBody:
           return structuralWriter
               .record(1)
-              .writeAttrWith("Prop", ScalarWriters.INTEGER, from.a)
+              .writeAttr("Prop", ScalarWriters.INTEGER, from.a)
               .completeHeader(1)
-              .writeSlotWith(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
+              .writeSlot(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
               .done();
         default:
           throw new AssertionError(strategy);
@@ -171,8 +171,8 @@ class StructuralWriterTest {
           .record(1)
           .writeExtantAttr("GenericClass")
           .completeHeader(2)
-          .writeSlotWith(ScalarWriters.STRING, "gen", genWriter, from.gen)
-          .writeSlotWith(ScalarWriters.STRING, "key", ScalarWriters.STRING, from.key)
+          .writeSlot(ScalarWriters.STRING, "gen", genWriter, from.gen)
+          .writeSlot(ScalarWriters.STRING, "key", ScalarWriters.STRING, from.key)
           .done();
     }
   }

@@ -33,6 +33,6 @@ public class WriterVisitor extends AbstractVisitor {
 
   @Override
   public Model visitUnresolved(UnresolvedElement element) {
-    return new RuntimeLookupModel(WriterModel.RUNTIME_LOOKUP, element.type(), null);
+    return new RuntimeLookupModel(WriterModel.RUNTIME_LOOKUP, element.type());
   }
 }

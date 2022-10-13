@@ -36,14 +36,17 @@ public interface ModelLookup {
    * @param proxy         a recognizer or writer that will be typed by this generic. E.g, a ListRecognizer.
    * @param unrolledType  an unrolled type of the generic type parameter and its model. E.g, <N extends Number> unrolled
    *                      to <Number> and a paired NumberRecognizer.
+   * @param isProxy       whether the typed object contains a value behind a proxy. If this is true, then the field's
+   *                      initializer will not be written.
    * @return a model bounded by this generic type parameter.
    */
-  default Model generic(ScopedContext context, TypeMirror containerType, TypeElement proxy, Utils.UnrolledType unrolledType) {
+  default Model generic(ScopedContext context, TypeMirror containerType, TypeElement proxy, Utils.UnrolledType unrolledType, boolean isProxy) {
     DeclaredType declaredType = context.getProcessingEnvironment().getTypeUtils().getDeclaredType(proxy, unrolledType.typeMirror);
     return new Model(containerType) {
       @Override
       public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
-        return CodeBlock.of("new $T($L)", declaredType, unrolledType.model.initializer(context, inConstructor,isAbstract));
+        CodeBlock init = isProxy ? CodeBlock.builder().build() : unrolledType.model.initializer(context, inConstructor, isAbstract);
+        return CodeBlock.of("new $T($L)", declaredType, init);
       }
 
       @Override
@@ -56,12 +59,13 @@ public interface ModelLookup {
   /**
    * Same as a single generic model but for two generics.
    */
-  default Model twoGenerics(ScopedContext context, TypeMirror containerType, TypeElement proxy, Utils.UnrolledType left, Utils.UnrolledType right) {
+  default Model twoGenerics(ScopedContext context, TypeMirror containerType, TypeElement proxy, Utils.UnrolledType left, Utils.UnrolledType right, boolean isProxy) {
     DeclaredType declaredType = context.getProcessingEnvironment().getTypeUtils().getDeclaredType(proxy, left.typeMirror, right.typeMirror);
     return new Model(containerType) {
       @Override
       public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
-        return CodeBlock.of("new $T($L, $L)", declaredType, left.model.initializer(context, inConstructor,isAbstract), right.model.initializer(context, inConstructor,isAbstract));
+        CodeBlock init = isProxy ? CodeBlock.builder().build() : CodeBlock.of("$L, $L", left.model.initializer(context, inConstructor, isAbstract), right.model.initializer(context, inConstructor, isAbstract));
+        return CodeBlock.of("new $T($L)", declaredType, init);
       }
 
       @Override

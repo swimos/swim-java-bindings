@@ -263,7 +263,7 @@ public abstract class ElementInspector {
       return false;
     }
 
-    if (!typeUtils.isSameType(getter.getReturnType(),expectedType)) {
+    if (!typeUtils.isSameType(getter.getReturnType(), expectedType)) {
       messager.error("getter for field '" + name + "' returns an incorrect type");
       return false;
     }

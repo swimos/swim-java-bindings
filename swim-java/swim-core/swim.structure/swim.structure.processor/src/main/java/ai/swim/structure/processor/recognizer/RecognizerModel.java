@@ -31,7 +31,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.Elements;
 import java.io.IOException;
 import java.util.Collection;
@@ -73,7 +72,7 @@ public class RecognizerModel {
         DeclaredType declaredType = (DeclaredType) typeMirror;
 
         if (declaredType.getTypeArguments().isEmpty()) {
-          return new RuntimeLookupModel(RUNTIME_LOOKUP, typeMirror, null);
+          return new RuntimeLookupModel(RUNTIME_LOOKUP, typeMirror);
         } else {
           Model[] typeParameters = declaredType.getTypeArguments().stream().map(ty -> RecognizerModel.from(ty, context)).collect(Collectors.toList()).toArray(Model[]::new);
           return new RuntimeLookupModel(RUNTIME_LOOKUP, typeMirror, typeParameters);
@@ -85,7 +84,7 @@ public class RecognizerModel {
       default:
         // We're out of options now. The recognizer isn't available to us now, so we'll have to hope that it's been
         // registered with the recognizer proxy for a runtime lookup.
-        return new RuntimeLookupModel(RUNTIME_LOOKUP, typeMirror, null);
+        return new RuntimeLookupModel(RUNTIME_LOOKUP, typeMirror);
     }
   }
 
@@ -99,7 +98,8 @@ public class RecognizerModel {
           elementUtils.getTypeElement(List.class.getCanonicalName()),
           elementUtils.getTypeElement(LIST_RECOGNIZER_CLASS),
           mirror,
-          context
+          context,
+          false
       );
     }
 
@@ -109,7 +109,8 @@ public class RecognizerModel {
           elementUtils.getTypeElement(Map.class.getCanonicalName()),
           elementUtils.getTypeElement(MAP_RECOGNIZER_CLASS),
           mirror,
-          context
+          context,
+          false
       );
     }
 

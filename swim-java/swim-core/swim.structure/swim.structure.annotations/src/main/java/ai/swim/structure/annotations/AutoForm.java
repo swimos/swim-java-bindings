@@ -23,6 +23,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AutoForm {
 
+  boolean writer() default true;
+
+  boolean recognizer() default true;
+
   String value() default "";
 
   Type[] subTypes() default {};

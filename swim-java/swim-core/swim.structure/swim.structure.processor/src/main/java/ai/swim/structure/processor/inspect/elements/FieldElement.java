@@ -31,7 +31,7 @@ public class FieldElement {
   private final VariableElement element;
   private final FieldKind fieldKind;
 
-  public FieldElement(Accessor accessor,  VariableElement element, FieldKind fieldKind) {
+  public FieldElement(Accessor accessor, VariableElement element, FieldKind fieldKind) {
     this.accessor = accessor;
     this.element = element;
     this.fieldKind = fieldKind;

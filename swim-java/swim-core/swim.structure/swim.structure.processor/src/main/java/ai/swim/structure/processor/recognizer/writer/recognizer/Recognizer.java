@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import static ai.swim.structure.processor.recognizer.writer.Lookups.DELEGATE_CLASS_RECOGNIZER;
 import static ai.swim.structure.processor.recognizer.writer.Lookups.DELEGATE_ORDINAL_ATTR_KEY;
@@ -76,8 +77,6 @@ public class Recognizer {
     if (classMap.isAbstract()) {
       typeSpec = buildPolymorphicRecognizer(subTypes, context).build();
     } else if (!subTypes.isEmpty()) {
-      System.out.println(context.getRoot());
-
       TypeSpec.Builder concreteRecognizer = writeClassRecognizer(true, schema, context);
       subTypes.add(new Model(null) {
         @Override
@@ -185,7 +184,7 @@ public class Recognizer {
 
   private static List<MethodSpec> buildConstructors(ClassSchema schema, ScopedContext context) {
     List<MethodSpec> constructors = new ArrayList<>();
-    constructors.add(buildDefaultConstructor(context));
+    constructors.add(buildDefaultConstructor(schema, context));
     constructors.add(buildParameterisedConstructor(schema, context));
 
     if (!schema.getTypeParameters().isEmpty()) {
@@ -195,10 +194,11 @@ public class Recognizer {
     return constructors;
   }
 
-  private static MethodSpec buildDefaultConstructor(ScopedContext context) {
+  private static MethodSpec buildDefaultConstructor(ClassSchema schema, ScopedContext context) {
+    String recognizers = schema.getTypeParameters().stream().map(ty -> "ai.swim.structure.recognizer.proxy.RecognizerTypeParameter.untyped()").collect(Collectors.joining(", "));
     return MethodSpec.constructorBuilder()
         .addModifiers(Modifier.PUBLIC)
-        .addCode("this(new $L());", context.getNameFactory().builderClassName())
+        .addCode("this(new $L($L));", context.getNameFactory().builderClassName(), recognizers)
         .build();
   }
 

@@ -15,10 +15,6 @@
 package ai.swim.structure.processor.writer;
 
 public class Lookups {
-  
-  private Lookups() {
-    throw new AssertionError();
-  }
 
   public static final String LIST_WRITER_CLASS = "ai.swim.structure.writer.std.ListStructuralWritable";
   public static final String MAP_WRITER_CLASS = "ai.swim.structure.writer.std.MapStructuralWritable";
@@ -26,7 +22,12 @@ public class Lookups {
   public static final String WRITABLE_WRITE_INTO = "writeInto";
   public static final String STRUCTURAL_WRITER_CLASS = "ai.swim.structure.writer.StructuralWriter";
   public static final String WRITER_PROXY = "ai.swim.structure.writer.proxy.WriterProxy";
+  public static final String SCALAR_WRITERS = "ai.swim.structure.writer.std.ScalarWriters";
   public static final String WRITER_EXCEPTION = "ai.swim.structure.writer.WriterException";
   public static final String HEADER_WRITER = "ai.swim.structure.writer.HeaderWriter";
-  public static final String HEADER_NO_SLOTS = "ai.swim.structure.writer.header.NoSlots";
+  public static final String BODY_WRITER = "ai.swim.structure.writer.BodyWriter";
+  public static final String HEADER_NO_SLOTS = "ai.swim.structure.writer.header.Header.NoSlots";
+  private Lookups() {
+    throw new AssertionError();
+  }
 }

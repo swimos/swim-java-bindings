@@ -264,12 +264,12 @@ public class ProcessorTest {
       this.b = b;
     }
 
-    public void setA(String a) {
-      this.a = a;
-    }
-
     public String getA() {
       return a;
+    }
+
+    public void setA(String a) {
+      this.a = a;
     }
 
     public int getB() {
@@ -316,20 +316,20 @@ public class ProcessorTest {
       this.b = b;
     }
 
-    public void setA(int a) {
-      this.a = a;
-    }
-
-    public void setB(String b) {
-      this.b = b;
-    }
-
     public int getA() {
       return a;
     }
 
+    public void setA(int a) {
+      this.a = a;
+    }
+
     public String getB() {
       return b;
+    }
+
+    public void setB(String b) {
+      this.b = b;
     }
 
     @Override
@@ -371,20 +371,20 @@ public class ProcessorTest {
       this.number = number;
     }
 
-    public void setList(List<Integer> list) {
-      this.list = list;
-    }
-
-    public void setNumber(int number) {
-      this.number = number;
-    }
-
     public List<Integer> getList() {
       return list;
     }
 
+    public void setList(List<Integer> list) {
+      this.list = list;
+    }
+
     public int getNumber() {
       return number;
+    }
+
+    public void setNumber(int number) {
+      this.number = number;
     }
 
     @Override
@@ -555,12 +555,12 @@ public class ProcessorTest {
       this.writtenDependant = writtenDependant;
     }
 
-    public void setWrittenDependant(WrittenDependant writtenDependant) {
-      this.writtenDependant = writtenDependant;
-    }
-
     public WrittenDependant getWrittenDependant() {
       return writtenDependant;
+    }
+
+    public void setWrittenDependant(WrittenDependant writtenDependant) {
+      this.writtenDependant = writtenDependant;
     }
 
     @Override
@@ -601,12 +601,12 @@ public class ProcessorTest {
       this.a = a;
     }
 
-    public void setA(int a) {
-      this.a = a;
-    }
-
     public int getA() {
       return a;
+    }
+
+    public void setA(int a) {
+      this.a = a;
     }
 
     @Override
@@ -646,12 +646,12 @@ public class ProcessorTest {
       this.a = a;
     }
 
-    public void setA(int a) {
-      this.a = a;
-    }
-
     public int getA() {
       return a;
+    }
+
+    public void setA(int a) {
+      this.a = a;
     }
 
     @Override
@@ -698,16 +698,16 @@ public class ProcessorTest {
       this.b = b;
     }
 
-    public void setA(int a) {
-      this.a = a;
-    }
-
     public String getB() {
       return b;
     }
 
     public int getA() {
       return a;
+    }
+
+    public void setA(int a) {
+      this.a = a;
     }
 
     @Override

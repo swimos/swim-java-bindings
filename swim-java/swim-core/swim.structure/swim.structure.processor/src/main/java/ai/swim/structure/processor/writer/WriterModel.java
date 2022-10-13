@@ -15,47 +15,25 @@
 package ai.swim.structure.processor.writer;
 
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.models.ClassMap;
-import ai.swim.structure.processor.models.InterfaceMap;
 import ai.swim.structure.processor.models.Model;
 import ai.swim.structure.processor.models.RuntimeLookupModel;
-import ai.swim.structure.processor.schema.ClassSchema;
-import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static ai.swim.structure.processor.Utils.isSubType;
 import static ai.swim.structure.processor.writer.Lookups.LIST_WRITER_CLASS;
 import static ai.swim.structure.processor.writer.Lookups.MAP_WRITER_CLASS;
 
-public class WriterModel extends Model {
+public class WriterModel {
   public static final String RUNTIME_LOOKUP = "WriterTypeParameter";
-
-  protected WriterModel(TypeMirror type) {
-    super(type);
-  }
-
-  public static void write(Model model, ScopedContext context) throws IOException {
-    if (model.isClass()) {
-      ClassWriter.writeClass(ClassSchema.fromMap((ClassMap) model), context);
-    } else if (model.isInterface()) {
-      InterfaceMap interfaceMap = (InterfaceMap) model;
-    } else {
-      throw new RuntimeException("Unimplemented schema type: " + model);
-    }
-  }
 
   public static Model from(TypeMirror typeMirror, ScopedContext context) {
     Model writer = context.getWriterFactory().lookup(typeMirror);
-
     if (writer != null) {
       return writer;
     }
@@ -66,25 +44,9 @@ public class WriterModel extends Model {
       return writer;
     }
 
-    switch (typeMirror.getKind()) {
-      case DECLARED:
-        DeclaredType declaredType = (DeclaredType) typeMirror;
-
-        if (declaredType.getTypeArguments().isEmpty()) {
-          return new RuntimeLookupModel(RUNTIME_LOOKUP, typeMirror, null);
-        } else {
-          Model[] typeParameters = declaredType.getTypeArguments().stream().map(ty -> WriterModel.from(ty, context)).collect(Collectors.toList()).toArray(Model[]::new);
-          return new RuntimeLookupModel(RUNTIME_LOOKUP, typeMirror, typeParameters);
-        }
-      case TYPEVAR:
-        return new ReflectModel(typeMirror);
-      case WILDCARD:
-        throw new AssertionError("Writer model wildcard type");
-      default:
-        // We're out of options now. The writer isn't available to us now, so we'll have to hope that it's been
-        // registered with the writer proxy for a runtime lookup.
-        return new RuntimeLookupModel(RUNTIME_LOOKUP, typeMirror, null);
-    }
+    // We're out of options now. The writer isn't available to us now, so we'll have to hope that it's been
+    // registered with the writer proxy for a runtime lookup.
+    return new RuntimeLookupModel(RUNTIME_LOOKUP, typeMirror);
   }
 
   private static Model fromStdType(TypeMirror mirror, ScopedContext context) {
@@ -97,7 +59,8 @@ public class WriterModel extends Model {
           elementUtils.getTypeElement(List.class.getCanonicalName()),
           elementUtils.getTypeElement(LIST_WRITER_CLASS),
           mirror,
-          context
+          context,
+          true
       );
     }
 
@@ -107,15 +70,11 @@ public class WriterModel extends Model {
           elementUtils.getTypeElement(Map.class.getCanonicalName()),
           elementUtils.getTypeElement(MAP_WRITER_CLASS),
           mirror,
-          context
+          context, true
       );
     }
 
     return null;
   }
 
-  @Override
-  public CodeBlock initializer(ScopedContext context, boolean inConstructor, boolean isAbstract) {
-    return null;
-  }
 }

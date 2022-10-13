@@ -41,7 +41,7 @@ public abstract class CollectionStructuralWritable<E, C extends Collection<E>> i
     }
 
     for (E e : from) {
-      bodyWriter = bodyWriter.writeValueWith(eWritable, e);
+      bodyWriter = bodyWriter.writeValue(eWritable, e);
     }
 
     return bodyWriter.done();

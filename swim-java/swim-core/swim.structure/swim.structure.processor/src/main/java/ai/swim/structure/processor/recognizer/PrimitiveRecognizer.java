@@ -19,6 +19,7 @@ import ai.swim.structure.processor.models.Model;
 import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 public class PrimitiveRecognizer<T> extends Model {
@@ -33,16 +34,18 @@ public class PrimitiveRecognizer<T> extends Model {
   private static Model DOUBLE_RECOGNIZER;
   private final T defaultValue;
   private final String type;
+  private final TypeKind ty;
 
-  public PrimitiveRecognizer(String type, T defaultValue) {
+  public PrimitiveRecognizer(String type, T defaultValue, TypeKind ty) {
     super(null);
     this.type = type;
     this.defaultValue = defaultValue;
+    this.ty = ty;
   }
 
   public static Model booleanRecognizer() {
     if (BOOLEAN_RECOGNIZER == null) {
-      BOOLEAN_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.BOOLEAN", false);
+      BOOLEAN_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.BOOLEAN", false, TypeKind.BOOLEAN);
     }
 
     return BOOLEAN_RECOGNIZER;
@@ -50,7 +53,7 @@ public class PrimitiveRecognizer<T> extends Model {
 
   public static Model byteRecognizer() {
     if (BYTE_RECOGNIZER == null) {
-      BYTE_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.BYTE", (byte) 0);
+      BYTE_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.BYTE", (byte) 0, TypeKind.BYTE);
     }
 
     return BYTE_RECOGNIZER;
@@ -58,7 +61,7 @@ public class PrimitiveRecognizer<T> extends Model {
 
   public static Model shortRecognizer() {
     if (SHORT_RECOGNIZER == null) {
-      SHORT_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.SHORT", (short) 0);
+      SHORT_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.SHORT", (short) 0, TypeKind.SHORT);
     }
 
     return SHORT_RECOGNIZER;
@@ -66,7 +69,7 @@ public class PrimitiveRecognizer<T> extends Model {
 
   public static Model intRecognizer() {
     if (INT_RECOGNIZER == null) {
-      INT_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.INTEGER", 0);
+      INT_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.INTEGER", 0, TypeKind.INT);
     }
 
     return INT_RECOGNIZER;
@@ -74,7 +77,7 @@ public class PrimitiveRecognizer<T> extends Model {
 
   public static Model longRecognizer() {
     if (LONG_RECOGNIZER == null) {
-      LONG_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.LONG", 0L);
+      LONG_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.LONG", 0L, TypeKind.LONG);
     }
 
     return LONG_RECOGNIZER;
@@ -82,7 +85,7 @@ public class PrimitiveRecognizer<T> extends Model {
 
   public static Model charRecognizer() {
     if (CHAR_RECOGNIZER == null) {
-      CHAR_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.CHARACTER", '\u0000');
+      CHAR_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.CHARACTER", '\u0000', TypeKind.CHAR);
     }
 
     return CHAR_RECOGNIZER;
@@ -90,7 +93,7 @@ public class PrimitiveRecognizer<T> extends Model {
 
   public static Model floatRecognizer() {
     if (FLOAT_RECOGNIZER == null) {
-      FLOAT_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.FLOAT", 0f);
+      FLOAT_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.FLOAT", 0f, TypeKind.FLOAT);
     }
 
     return FLOAT_RECOGNIZER;
@@ -98,7 +101,7 @@ public class PrimitiveRecognizer<T> extends Model {
 
   public static Model doubleRecognizer() {
     if (DOUBLE_RECOGNIZER == null) {
-      DOUBLE_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.DOUBLE", 0d);
+      DOUBLE_RECOGNIZER = new PrimitiveRecognizer<>("ai.swim.structure.recognizer.std.ScalarRecognizer.DOUBLE", 0d, TypeKind.DOUBLE);
     }
 
     return DOUBLE_RECOGNIZER;
@@ -116,7 +119,7 @@ public class PrimitiveRecognizer<T> extends Model {
 
   @Override
   public TypeMirror type(ProcessingEnvironment environment) {
-    return environment.getElementUtils().getTypeElement(defaultValue.getClass().getCanonicalName()).asType();
+    return environment.getTypeUtils().getPrimitiveType(ty);
   }
 
   @Override

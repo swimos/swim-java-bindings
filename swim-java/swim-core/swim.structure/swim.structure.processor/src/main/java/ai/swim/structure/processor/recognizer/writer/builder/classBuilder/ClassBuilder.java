@@ -18,6 +18,7 @@ import ai.swim.structure.processor.Emitter;
 import ai.swim.structure.processor.context.NameFactory;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.builder.Builder;
+import ai.swim.structure.processor.recognizer.writer.builder.FieldInitializer;
 import ai.swim.structure.processor.recognizer.writer.builder.header.HeaderIndexFn;
 import ai.swim.structure.processor.recognizer.writer.recognizer.TypeVarFieldInitializer;
 import ai.swim.structure.processor.schema.ClassSchema;
@@ -35,19 +36,16 @@ import com.squareup.javapoet.TypeSpec;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.swim.structure.processor.recognizer.writer.Lookups.FIELD_RECOGNIZING_BUILDER_CLASS;
 import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_CLASS;
 import static ai.swim.structure.processor.recognizer.writer.WriterUtils.typeParametersToTypeVariable;
 import static ai.swim.structure.processor.recognizer.writer.WriterUtils.writeGenericRecognizerConstructor;
@@ -60,50 +58,54 @@ public class ClassBuilder extends Builder {
 
   @Override
   protected TypeSpec.Builder init() {
-    TypeSpec.Builder builder = TypeSpec.classBuilder(context.getNameFactory().builderClassName())
+    return TypeSpec.classBuilder(context.getNameFactory().builderClassName())
         .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-        .addMethod(buildDefaultConstructor())
         .addTypeVariables(typeParametersToTypeVariable(schema.getTypeParameters()));
-
-    if (!schema.getTypeParameters().isEmpty()) {
-      builder.addMethod(buildParameterisedConstructor());
-    }
-
-    return builder;
   }
 
-  private MethodSpec buildDefaultConstructor() {
-    return MethodSpec.constructorBuilder()
-        .addModifiers(Modifier.PUBLIC)
-        .build();
-  }
-
-  private MethodSpec buildParameterisedConstructor() {
+  @Override
+  protected List<MethodSpec> buildConstructors() {
     MethodSpec.Builder builder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
     List<ParameterSpec> parameters = writeGenericRecognizerConstructor(schema.getTypeParameters(), context);
     CodeBlock.Builder body = CodeBlock.builder();
 
-    for (FieldModel fieldModel : schema.getClassMap().getFieldModels()) {
-      if (fieldModel.isParameterised(context)) {
+    PartitionedFields partitionedFields = schema.getPartitionedFields();
+
+
+    for (FieldDiscriminate discriminate : partitionedFields.discriminate()) {
+      if (!discriminate.isHeader()) {
+        FieldModel fieldModel = discriminate.getSingleField();
         VariableElement element = fieldModel.getElement();
         TypeKind typeKind = element.asType().getKind();
 
-        switch (typeKind) {
-          case TYPEVAR:
-            body.add(initialiseTypeVarField(context, fieldModel));
-            break;
-          case DECLARED:
-            body.add(initialiseParameterisedField(context, fieldModel));
-            break;
-          default:
-            throw new AssertionError("Unexpected type kind when processing generic parameters: " + typeKind + " in " + context.getRoot());
+        if (typeKind.equals(TypeKind.TYPEVAR)) {
+          body.add(initialiseTypeVarField(context, fieldModel));
+        } else {
+          body.add(initialiseParameterisedField(context, fieldModel));
         }
       }
     }
 
-    return builder.addParameters(parameters)
+    if (partitionedFields.hasHeaderFields()) {
+      NameFactory nameFactory = context.getNameFactory();
+      HashSet<TypeMirror> headerTypeParameters = partitionedFields.headerSet.typeParameters();
+      String typeParameters = headerTypeParameters.stream().map(ty -> nameFactory.typeParameterName(ty.toString())).collect(Collectors.joining(", "));
+
+      body.add(CodeBlock.of(
+          "this.$L = $L($L, () -> new $L($L), $L, $L);",
+          nameFactory.headerBuilderFieldName(),
+          nameFactory.headerBuilderMethod(),
+          partitionedFields.headerSet.hasTagBody(),
+          nameFactory.headerBuilderCanonicalName(),
+          typeParameters,
+          partitionedFields.headerSet.headerFields.size(),
+          new HeaderIndexFn(schema).emit(context)
+      ));
+    }
+
+    return new ArrayList<>(List.of(builder.addParameters(parameters)
         .addCode(body.build())
-        .build();
+        .build()));
   }
 
   private CodeBlock initialiseTypeVarField(ScopedContext context, FieldModel fieldModel) {
@@ -114,17 +116,10 @@ public class ClassBuilder extends Builder {
   }
 
   private CodeBlock initialiseParameterisedField(ScopedContext context, FieldModel fieldModel) {
-    ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
-    Types typeUtils = processingEnvironment.getTypeUtils();
-    Elements elementUtils = processingEnvironment.getElementUtils();
-
-    TypeElement fieldRecognizingBuilder = elementUtils.getTypeElement(FIELD_RECOGNIZING_BUILDER_CLASS);
-    DeclaredType typedBuilder = typeUtils.getDeclaredType(fieldRecognizingBuilder, fieldModel.type(processingEnvironment));
-
     NameFactory nameFactory = context.getNameFactory();
     String builderName = nameFactory.fieldBuilderName(fieldModel.getName().toString());
 
-    return CodeBlock.of("this.$L = new $T($L);\n", builderName, typedBuilder, fieldModel.initializer(context, true, false));
+    return CodeBlock.of("this.$L = $L;\n", builderName, new FieldInitializer(fieldModel, true, false).emit(context));
   }
 
   @Override
@@ -150,35 +145,21 @@ public class ClassBuilder extends Builder {
 
     PartitionedFields partitionedFields = schema.getPartitionedFields();
     HashSet<TypeMirror> headerTypeParameters = partitionedFields.headerSet.typeParameters();
-    TypeElement recognizingBuilderElement = elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS);
 
-    TypeName targetType = ClassName.get(recognizingBuilderElement);
+    TypeName targetType = ClassName.bestGuess(nameFactory.headerClassName());
+
     if (!headerTypeParameters.isEmpty()) {
       targetType = ParameterizedTypeName.get((ClassName) targetType, headerTypeParameters.stream().map(TypeName::get).collect(Collectors.toList()).toArray(TypeName[]::new));
     }
 
-    FieldSpec.Builder fieldBuilder = FieldSpec.builder(
-        targetType,
+    ClassName recognizingBuilder = ClassName.get(elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS));
+    ParameterizedTypeName typedBuilder = ParameterizedTypeName.get(recognizingBuilder, targetType);
+
+    return FieldSpec.builder(
+        typedBuilder,
         nameFactory.headerBuilderFieldName(),
         Modifier.PRIVATE
-    );
-
-    int numSlots = partitionedFields.headerSet.headerFields.size();
-
-    boolean hasBody = partitionedFields.headerSet.hasTagBody();
-    String headerBuilder = nameFactory.headerBuilderCanonicalName();
-
-    CodeBlock.Builder initializer = CodeBlock.builder();
-    initializer.add(
-        "$L($L, () -> new $L(), $L, $L)",
-        nameFactory.headerBuilderMethod(),
-        hasBody,
-        headerBuilder,
-        numSlots,
-        new HeaderIndexFn(schema).emit(context)
-    );
-
-    return fieldBuilder.initializer(initializer.build()).build();
+    ).build();
   }
 
   @Override

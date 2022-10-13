@@ -54,6 +54,13 @@ public class WriterProxy {
   private static ConcurrentHashMap<Class<?>, WriterFactory<?>> loadWriters() {
     ConcurrentHashMap<Class<?>, WriterFactory<?>> writers = new ConcurrentHashMap<>();
 
+    writers.put(int[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forInt));
+    writers.put(char[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forChar));
+    writers.put(long[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forLong));
+    writers.put(short[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forShort));
+    writers.put(boolean[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forBoolean));
+    writers.put(float[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forFloat));
+    writers.put(double[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forDouble));
     writers.put(Integer.class, WriterFactory.buildFrom(Integer.class, Writable.class, () -> ScalarWriters.INTEGER));
     writers.put(Integer.TYPE, WriterFactory.buildFrom(Integer.TYPE, Writable.class, () -> ScalarWriters.INTEGER));
     writers.put(String.class, WriterFactory.buildFrom(String.class, Writable.class, () -> ScalarWriters.STRING));
@@ -73,6 +80,7 @@ public class WriterProxy {
     writers.put(Double.class, WriterFactory.buildFrom(Double.class, Writable.class, () -> ScalarWriters.DOUBLE));
     writers.put(Double.TYPE, WriterFactory.buildFrom(Double.TYPE, Writable.class, () -> ScalarWriters.DOUBLE));
     writers.put(byte[].class, WriterFactory.buildFrom(byte[].class, Writable.class, () -> ScalarWriters.PRIMITIVE_BLOB));
+    writers.put(Number.class, WriterFactory.buildFrom(Number.class, Writable.class, () -> ScalarWriters.NUMBER));
     writers.put(BigInteger.class, WriterFactory.buildFrom(BigInteger.class, Writable.class, () -> ScalarWriters.BIG_INT));
     writers.put(BigDecimal.class, WriterFactory.buildFrom(BigDecimal.class, Writable.class, () -> ScalarWriters.BIG_DECIMAL));
     writers.put(AtomicInteger.class, WriterFactory.buildFrom(AtomicInteger.class, Writable.class, () -> ScalarWriters.ATOMIC_INTEGER));

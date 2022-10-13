@@ -17,10 +17,13 @@ package ai.swim.structure.processor.writer;
 import ai.swim.structure.annotations.AutoloadedWriter;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.models.ClassMap;
+import ai.swim.structure.processor.models.InterfaceMap;
+import ai.swim.structure.processor.models.Model;
 import ai.swim.structure.processor.schema.ClassSchema;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
@@ -41,28 +44,40 @@ import java.io.IOException;
 import static ai.swim.structure.processor.writer.Lookups.STRUCTURAL_WRITER_CLASS;
 import static ai.swim.structure.processor.writer.Lookups.WRITABLE_CLASS;
 import static ai.swim.structure.processor.writer.Lookups.WRITABLE_WRITE_INTO;
+import static ai.swim.structure.processor.writer.Lookups.WRITER_PROXY;
 
 public abstract class ClassWriter {
-  protected final ScopedContext context;
-  protected final ClassSchema classSchema;
   protected static final TypeVariableName writerType = TypeVariableName.get("__Writable_Ty__");
+  protected final ScopedContext context;
 
-  protected ClassWriter(ScopedContext scopedContext, ClassSchema classSchema) {
+  protected ClassWriter(ScopedContext scopedContext) {
     this.context = scopedContext;
-    this.classSchema = classSchema;
   }
 
-  public static void writeClass(ClassSchema classSchema, ScopedContext context) throws IOException {
-    ClassMap classMap = classSchema.getClassMap();
+  public static void writeClass(Model model, ScopedContext context) throws IOException {
     TypeSpec typeSpec;
+    String declaredPackage;
 
-    if (classMap.isAbstract()) {
-      typeSpec = new AbstractClassWriter(context, classSchema).build();
+    if (model.isClass()) {
+      ClassMap classMap = (ClassMap) model;
+      declaredPackage = classMap.getDeclaredPackage().getQualifiedName().toString();
+      if (classMap.isAbstract()) {
+        typeSpec = new AbstractClassWriter(context, classMap.getSubTypes()).build();
+      } else {
+        ClassSchema classSchema = ClassSchema.fromMap((ClassMap) model);
+        typeSpec = new ConcreteClassWriter(context, classSchema).build();
+      }
+    } else if (model.isInterface()) {
+      InterfaceMap interfaceMap = (InterfaceMap) model;
+      declaredPackage = interfaceMap.getDeclaredPackage().getQualifiedName().toString();
+      typeSpec = new AbstractClassWriter(context, interfaceMap.getSubTypes()).build();
     } else {
-      typeSpec = new ConcreteClassWriter(context, classSchema).build();
+      throw new RuntimeException("Unimplemented schema type: " + model);
     }
 
-    JavaFile javaFile = JavaFile.builder(classSchema.getDeclaredPackage().getQualifiedName().toString(), typeSpec).build();
+    JavaFile javaFile = JavaFile.builder(declaredPackage, typeSpec)
+        .addStaticImport(ClassName.bestGuess(WRITER_PROXY), "getProxy")
+        .build();
     javaFile.writeTo(context.getProcessingEnvironment().getFiler());
   }
 
@@ -85,10 +100,11 @@ public abstract class ClassWriter {
 
     TypeElement writableTypeElement = elementUtils.getTypeElement(WRITABLE_CLASS);
     DeclaredType writableType = typeUtils.getDeclaredType(writableTypeElement, context.getRoot().asType());
-    classSpec.addSuperinterface(TypeName.get(writableType));
 
+    classSpec.addSuperinterface(TypeName.get(writableType));
     classSpec.addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build());
     classSpec.addMethod(buildWriteInto());
+    classSpec.addFields(getFields());
 
     return classSpec.build();
   }
@@ -111,6 +127,7 @@ public abstract class ClassWriter {
     return builder.addCode(writeIntoBody()).build();
   }
 
+  public abstract Iterable<FieldSpec> getFields();
 
   public abstract CodeBlock writeIntoBody();
 

@@ -16,7 +16,6 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Types;
 import java.util.Collections;
@@ -128,7 +127,8 @@ public class FieldModel {
           }
         });
       default:
-        throw new AssertionError("Unexpected type kind when processing generic parameters: " + typeKind + " in " + context.getRoot());
+//        throw new AssertionError("Unexpected type kind when processing generic parameters: '" + typeKind + "' in " + context.getRoot());
+        return false;
     }
   }
 
@@ -162,5 +162,9 @@ public class FieldModel {
       default:
         return Collections.emptyList();
     }
+  }
+
+  public Model getModel() {
+    return model;
   }
 }

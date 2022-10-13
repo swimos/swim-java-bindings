@@ -78,7 +78,6 @@ public abstract class Builder {
       DeclaredType memberRecognizingBuilder = typeUtils.getDeclaredType(fieldFieldRecognizingBuilder, recognizerType);
       FieldSpec.Builder fieldSpec = FieldSpec.builder(TypeName.get(memberRecognizingBuilder), context.getNameFactory().fieldBuilderName(recognizer.getName().toString()), Modifier.PRIVATE);
 
-      fieldSpec.initializer(new FieldInitializer(recognizer).emit(context));
       fieldSpecs.add(fieldSpec.build());
     }
 
@@ -86,8 +85,12 @@ public abstract class Builder {
   }
 
   private List<MethodSpec> buildMethods() {
-    return List.of( buildFeedIndexed(), buildBind(), buildReset());
+    List<MethodSpec> methods = buildConstructors();
+    methods.addAll(List.of(buildFeedIndexed(), buildBind(), buildReset()));
+    return methods;
   }
+
+  protected abstract List<MethodSpec> buildConstructors();
 
   private MethodSpec buildReset() {
     MethodSpec.Builder builder = MethodSpec.methodBuilder(RECOGNIZING_BUILDER_RESET)

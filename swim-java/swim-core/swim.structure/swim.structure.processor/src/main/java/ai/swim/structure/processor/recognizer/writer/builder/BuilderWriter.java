@@ -105,7 +105,7 @@ public class BuilderWriter {
    * @param root           the root processing element.
    * @return a mapped list of type variable names.
    */
-  private static List<TypeVariableName> typeParametersToVariables(Collection<TypeMirror> typeParameters, Collection<? extends TypeParameterElement> rootParameters, Element root) {
+  public static List<TypeVariableName> typeParametersToVariables(Collection<TypeMirror> typeParameters, Collection<? extends TypeParameterElement> rootParameters, Element root) {
     List<TypeParameterElement> mappedTypeParameters = new ArrayList<>(typeParameters.size());
 
     for (TypeMirror headerTypeParameter : typeParameters) {

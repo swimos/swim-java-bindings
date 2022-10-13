@@ -42,7 +42,6 @@ public abstract class AbstractVisitor implements ElementVisitor {
     List<ExecutableElement> methods = classMap.getMethods();
     classMap.setMethods(methods);
 
-
     classMap.setFields(element.getFields().stream().map(f -> f.transform(modelLookup, context)).collect(Collectors.toList()));
     classMap.setSubTypes(element.getSubTypes().stream().map(subType -> subType.accept(this)).collect(Collectors.toList()));
     classMap.setAbstract(element.isAbstract());

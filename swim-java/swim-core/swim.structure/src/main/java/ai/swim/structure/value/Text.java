@@ -25,6 +25,10 @@ public class Text extends PrimitiveValue {
     this.value = value;
   }
 
+  public static Text of(char value) {
+    return new Text(String.valueOf(value));
+  }
+
   @Override
   public String toString() {
     return value;

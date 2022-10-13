@@ -22,7 +22,6 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 
-import javax.lang.model.type.TypeMirror;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,9 +37,6 @@ public class BindEmitter implements Emitter {
   public CodeBlock emit(ScopedContext context) {
     LinkedHashSet<TypeName> typeParameters = new LinkedHashSet<>();
     for (FieldModel field : fields) {
-      List<? extends TypeMirror> typeMirrors = field.typeParameters();
-      System.out.printf("%s: %s\n", field.getElement(),typeMirrors);
-
       typeParameters.addAll(field.typeParameters().stream().map(TypeName::get).collect(Collectors.toList()));
     }
 

@@ -1,14 +1,14 @@
 // Copyright 2015-2022 Swim Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// you may not use this file except in compliance  the License.
 // You may obtain a copy of the License at
 //
 //      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// OUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -47,7 +47,7 @@ public class AttributePrinter implements HeaderWriter<String>, BodyWriter<String
   }
 
   @Override
-  public <V> BodyWriter<String> writeValueWith(Writable<V> writer, V value) {
+  public <V> BodyWriter<String> writeValue(Writable<V> writer, V value) {
     if (!braceWritten && !hasAttr && singleItem) {
       this.writer.writeUnchecked('{');
       printStrategy.startBlock(1).writeInto(this.writer);
@@ -68,7 +68,7 @@ public class AttributePrinter implements HeaderWriter<String>, BodyWriter<String
   }
 
   @Override
-  public <K, V> BodyWriter<String> writeSlotWith(Writable<K> keyWriter, K key, Writable<V> valueWriter, V value) {
+  public <K, V> BodyWriter<String> writeSlot(Writable<K> keyWriter, K key, Writable<V> valueWriter, V value) {
     if (first) {
       first = false;
     } else {
@@ -101,7 +101,7 @@ public class AttributePrinter implements HeaderWriter<String>, BodyWriter<String
   }
 
   @Override
-  public <V> HeaderWriter<String> writeAttrWith(String key, Writable<V> valueWriter, V value) {
+  public <V> HeaderWriter<String> writeAttr(String key, Writable<V> valueWriter, V value) {
     if (hasAttr) {
       printStrategy.attrPadding().writeInto(writer);
     } else {
@@ -131,7 +131,7 @@ public class AttributePrinter implements HeaderWriter<String>, BodyWriter<String
   }
 
   @Override
-  public <V> String delegateWith(Writable<V> valueWriter, V value) {
+  public <V> String delegate(Writable<V> valueWriter, V value) {
     delegated = true;
     return valueWriter.writeInto(value, this);
   }

@@ -14,15 +14,21 @@
 
 package ai.swim.structure.processor.recognizer.writer.builder.classBuilder;
 
+import ai.swim.structure.processor.Emitter;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.FieldModel;
-import ai.swim.structure.processor.Emitter;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeVariableName;
 
 import javax.lang.model.type.TypeMirror;
+import java.util.List;
+
+import static ai.swim.structure.processor.recognizer.writer.builder.BuilderWriter.typeParametersToVariables;
 
 public class BindEmitter implements Emitter {
   private final ClassSchema schema;
@@ -40,9 +46,15 @@ public class BindEmitter implements Emitter {
     for (FieldDiscriminate fieldDiscriminate : schema.discriminate()) {
       if (fieldDiscriminate.isHeader()) {
         FieldDiscriminate.HeaderFields headerFields = (FieldDiscriminate.HeaderFields) fieldDiscriminate;
+
+        List<TypeVariableName> mappedTypeParameters = typeParametersToVariables(schema.getPartitionedFields().headerSet.typeParameters(), schema.getTypeParameters(), context.getRoot());
         ClassName headerElement = ClassName.bestGuess(context.getNameFactory().headerCanonicalName());
 
-        body.addStatement("$T header = this.headerBuilder.bind()", headerElement);
+        if (mappedTypeParameters.isEmpty()) {
+          body.addStatement("$T header = this.headerBuilder.bind()", headerElement);
+        } else {
+          body.addStatement("$T header = this.headerBuilder.bind()", ParameterizedTypeName.get(headerElement, mappedTypeParameters.toArray(TypeName[]::new)));
+        }
 
         for (FieldModel field : headerFields.getFields()) {
           field.getAccessor().writeSet(body, "obj", String.format("header.%s", field.getName().toString()));

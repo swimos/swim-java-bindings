@@ -15,16 +15,21 @@
 package ai.swim.structure.writer;
 
 import ai.swim.structure.writer.header.WritableHeader;
+import ai.swim.structure.writer.proxy.WriterProxy;
 
 public interface HeaderWriter<T> {
 
   HeaderWriter<T> writeExtantAttr(String key);
 
-  <V> HeaderWriter<T> writeAttrWith(String key, Writable<V> valueWriter, V value);
+  <V> HeaderWriter<T> writeAttr(String key, Writable<V> valueWriter, V value);
 
   HeaderWriter<T> writeAttr(String key, WritableHeader writable);
 
-  <V> T delegateWith(Writable<V> valueWriter, V value);
+  <V> T delegate(Writable<V> valueWriter, V value);
+
+  default <V> T delegate(V value) {
+    return delegate(WriterProxy.getProxy().lookupObject(value), value);
+  }
 
   BodyWriter<T> completeHeader(int numItems);
 

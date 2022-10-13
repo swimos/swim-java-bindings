@@ -68,6 +68,14 @@ public class Header {
       return tail.numItems() + (value == null ? 0 : 1);
     }
 
+    public <N> HeaderSlots<N> prepend(String key, N value) {
+      return new HeaderSlots<>(key, null, value, this);
+    }
+
+    public <N> HeaderSlots<N> prepend(String key, Writable<N> nWritable, N value) {
+      return new HeaderSlots<>(key, nWritable, value, this);
+    }
+
     @Override
     public <T, B extends BodyWriter<T>> B append(B writer) {
       if (value == null) {
@@ -75,7 +83,7 @@ public class Header {
       }
 
       if (valueWriter != null) {
-        writer.writeSlotWith(ScalarWriters.STRING, key, valueWriter, value);
+        writer.writeSlot(ScalarWriters.STRING, key, valueWriter, value);
       } else {
         writer.writeSlot(key, value);
       }
@@ -83,11 +91,11 @@ public class Header {
       return tail.append(writer);
     }
 
-    public HeaderWithBody<V> withBody(V value) {
+    public <N> HeaderWithBody<N> withBody(N value) {
       return new HeaderWithBody<>(null, value, this);
     }
 
-    public HeaderWithBody<V> withBody(Writable<V> valueWriter, V value) {
+    public <N> HeaderWithBody<N> withBody(Writable<N> valueWriter, N value) {
       Objects.requireNonNull(valueWriter);
       return new HeaderWithBody<>(valueWriter, value, this);
     }
@@ -95,7 +103,6 @@ public class Header {
     public SimpleHeader<V> simple() {
       return new SimpleHeader<>(this);
     }
-
   }
 
   public static class SimpleHeader<V> implements WritableHeader {
@@ -132,7 +139,7 @@ public class Header {
       BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len());
 
       if (valueWriter != null) {
-        bodyWriter.writeValueWith(valueWriter, value);
+        bodyWriter.writeValue(valueWriter, value);
       } else {
         bodyWriter.writeValue(value);
       }

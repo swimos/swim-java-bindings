@@ -34,7 +34,7 @@ public class MethodAccessor extends Accessor {
 
   @Override
   public void writeGet(CodeBlock.Builder builder, String instance) {
-    builder.add("$L.$L()", instance,this.setMethod.getSimpleName());
+    builder.add("$L.$L()", instance, this.getMethod.getSimpleName());
   }
 
   @Override

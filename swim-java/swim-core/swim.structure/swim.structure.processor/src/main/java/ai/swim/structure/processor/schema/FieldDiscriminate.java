@@ -14,12 +14,7 @@ public abstract class FieldDiscriminate {
   }
 
   public static FieldDiscriminate header(FieldModel tagBody, List<FieldModel> fields) {
-    return new HeaderFields(tagBody, fields) {
-      @Override
-      public boolean isHeader() {
-        return true;
-      }
-    };
+    return new HeaderFields(tagBody, fields);
   }
 
   public static FieldDiscriminate attribute(FieldModel field) {
@@ -27,6 +22,11 @@ public abstract class FieldDiscriminate {
       @Override
       public boolean isAttribute() {
         return true;
+      }
+
+      @Override
+      public FieldModel getSingleField() {
+        return getField();
       }
     };
   }
@@ -36,6 +36,11 @@ public abstract class FieldDiscriminate {
       @Override
       public boolean isItem() {
         return true;
+      }
+
+      @Override
+      public FieldModel getSingleField() {
+        return getField();
       }
     };
   }
@@ -69,6 +74,10 @@ public abstract class FieldDiscriminate {
     return false;
   }
 
+  public FieldModel getSingleField() {
+    throw new UnsupportedOperationException();
+  }
+
   public static class SingleField extends FieldDiscriminate {
     private final FieldModel field;
 
@@ -85,6 +94,11 @@ public abstract class FieldDiscriminate {
       return "SingleField{" +
           "field=" + field +
           '}';
+    }
+
+    @Override
+    public FieldModel getSingleField() {
+      return field;
     }
   }
 

@@ -1,14 +1,14 @@
 // Copyright 2015-2022 Swim Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// you may not use this file except in compliance  the License.
 // You may obtain a copy of the License at
 //
 //      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// OUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -35,7 +35,7 @@ public class ValueStructuralWritable implements StructuralWritable<Value> {
 
       for (int i = 0; i < attrCount; i++) {
         Attr attr = record.getAttr(i);
-        header.writeAttrWith(attr.getKey().toString(), this, attr.getValue());
+        header.writeAttr(attr.getKey().toString(), this, attr.getValue());
       }
 
       BodyWriter<T> bodyWriter = header.completeHeader(record.getItemCount());
@@ -45,10 +45,10 @@ public class ValueStructuralWritable implements StructuralWritable<Value> {
         Item item = record.getItem(i);
         if (item.isSlot()) {
           Slot slot = (Slot) item;
-          bodyWriter.writeSlotWith(this, slot.getKey(), this, slot.getValue());
+          bodyWriter.writeSlot(this, slot.getKey(), this, slot.getValue());
         } else {
           ValueItem valueItem = (ValueItem) item;
-          bodyWriter.writeValueWith(this, valueItem.getValue());
+          bodyWriter.writeValue(this, valueItem.getValue());
         }
       }
 
