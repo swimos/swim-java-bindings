@@ -10,6 +10,8 @@ import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import ai.swim.structure.recognizer.std.collections.ListRecognizer;
 import ai.swim.structure.recognizer.structural.StructuralRecognizer;
 import ai.swim.structure.recognizer.untyped.UntypedRecognizer;
+import ai.swim.structure.recognizer.value.ValueRecognizer;
+import ai.swim.structure.value.Value;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
 
@@ -41,6 +43,12 @@ public class RecognizerProxy {
     recognizers.put(byte[].class, RecognizerFactory.buildFrom(byte[].class, SimpleRecognizer.class, () -> ScalarRecognizer.BLOB));
     recognizers.put(Boolean.class, RecognizerFactory.buildFrom(Boolean.class, SimpleRecognizer.class, () -> ScalarRecognizer.BOOLEAN));
     recognizers.put(Float.class, RecognizerFactory.buildFrom(Float.class, SimpleRecognizer.class, () -> ScalarRecognizer.FLOAT));
+    recognizers.put(Double.class, RecognizerFactory.buildFrom(Double.class, SimpleRecognizer.class, () -> ScalarRecognizer.DOUBLE));
+    recognizers.put(Integer.TYPE, RecognizerFactory.buildFrom(Integer.TYPE, SimpleRecognizer.class, () -> ScalarRecognizer.INTEGER));
+    recognizers.put(Long.TYPE, RecognizerFactory.buildFrom(Long.TYPE, SimpleRecognizer.class, () -> ScalarRecognizer.LONG));
+    recognizers.put(Boolean.TYPE, RecognizerFactory.buildFrom(Boolean.TYPE, SimpleRecognizer.class, () -> ScalarRecognizer.BOOLEAN));
+    recognizers.put(Float.TYPE, RecognizerFactory.buildFrom(Float.TYPE, SimpleRecognizer.class, () -> ScalarRecognizer.FLOAT));
+    recognizers.put(Double.TYPE, RecognizerFactory.buildFrom(Double.TYPE, SimpleRecognizer.class, () -> ScalarRecognizer.DOUBLE));
     recognizers.put(String.class, RecognizerFactory.buildFrom(String.class, SimpleRecognizer.class, () -> ScalarRecognizer.STRING));
     recognizers.put(Object.class, RecognizerFactory.buildFrom(Object.class, UntypedRecognizer.class, UntypedRecognizer::new));
     recognizers.put(BigDecimal.class, RecognizerFactory.buildFrom(BigDecimal.class, SimpleRecognizer.class, () -> ScalarRecognizer.BIG_DECIMAL));
@@ -48,6 +56,8 @@ public class RecognizerProxy {
     recognizers.put(Number.class, RecognizerFactory.buildFrom(Number.class, SimpleRecognizer.class, () -> ScalarRecognizer.NUMBER));
     recognizers.put(Map.class, RecognizerFactory.buildFrom(Map.class, MapRecognizer.class, null));
     recognizers.put(Collection.class, RecognizerFactory.buildFrom(Collection.class, ListRecognizer.class, null));
+    recognizers.put(Void.class, RecognizerFactory.buildFrom(Void.class, SimpleRecognizer.class, () -> ScalarRecognizer.VOID));
+    recognizers.put(Value.class, RecognizerFactory.buildFrom(Value.class, ValueRecognizer.class, ValueRecognizer::new));
 
     loadFromClassPath(recognizers);
 
@@ -119,6 +129,10 @@ public class RecognizerProxy {
   @SuppressWarnings("unchecked")
   private <T> Recognizer<T> lookupUntyped(Class<T> clazz) {
     RecognizerFactory<T> recognizerSupplier = (RecognizerFactory<T>) this.recognizers.get(clazz);
+
+    if (Value.class.isAssignableFrom(clazz)) {
+      return (Recognizer<T>) new ValueRecognizer();
+    }
 
     if (recognizerSupplier == null) {
       throw new RecognizerException("No recognizer found for class: " + clazz);

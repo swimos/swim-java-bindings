@@ -20,6 +20,7 @@ import ai.swim.structure.value.Item;
 import ai.swim.structure.value.Record;
 import ai.swim.structure.value.Text;
 import ai.swim.structure.value.Value;
+import ai.swim.structure.writer.value.ValueStructuralWritable;
 import org.junit.jupiter.api.Test;
 
 import java.io.StringWriter;

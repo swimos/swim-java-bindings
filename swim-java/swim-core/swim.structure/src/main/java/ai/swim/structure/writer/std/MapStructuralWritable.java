@@ -33,12 +33,6 @@ public class MapStructuralWritable<K, V> implements StructuralWritable<Map<K, V>
     this.vWriter = vWriter;
   }
 
-  @AutoForm.TypedConstructor
-  public MapStructuralWritable(TypeParameter<Writable<K>> kWriter, TypeParameter<Writable<V>> vWriter) {
-    this.kWriter = kWriter.build();
-    this.vWriter = vWriter.build();
-  }
-
   public MapStructuralWritable() {
 
   }

@@ -20,7 +20,7 @@ import java.util.Objects;
 
 public abstract class ReadNumberValue<N> extends ReadEvent {
 
-  private final N value;
+  protected final N value;
 
   public ReadNumberValue(N value) {
     this.value = value;
@@ -56,4 +56,10 @@ public abstract class ReadNumberValue<N> extends ReadEvent {
   public int hashCode() {
     return Objects.hash(value);
   }
+
+  @Override
+  public boolean isPrimitive() {
+    return true;
+  }
+
 }

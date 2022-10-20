@@ -12,68 +12,57 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.writer.value;
+package ai.swim.structure.recognizer.value;
 
+import ai.swim.recon.event.ReadEventVisitor;
 import ai.swim.structure.value.Value;
-import ai.swim.structure.writer.HeaderWriter;
-import ai.swim.structure.writer.StructuralWriter;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-public final class ValueStructuralWriter implements StructuralWriter<Value> {
+public class PrimitiveReadEventVisitor implements ReadEventVisitor<Value> {
   @Override
-  public Value writeExtant() {
-    return Value.extant();
-  }
-
-  @Override
-  public Value writeInt(int value) {
+  public Value visitBigDecimal(BigDecimal value) {
     return Value.of(value);
   }
 
   @Override
-  public Value writeLong(long value) {
+  public Value visitBigInt(BigInteger value) {
     return Value.of(value);
   }
 
   @Override
-  public Value writeFloat(float value) {
+  public Value visitDouble(double value) {
     return Value.of(value);
   }
 
   @Override
-  public Value writeDouble(double value) {
+  public Value visitFloat(float value) {
     return Value.of(value);
   }
 
   @Override
-  public Value writeBool(boolean value) {
+  public Value visitInt(int value) {
     return Value.of(value);
   }
 
   @Override
-  public Value writeBigInt(BigInteger value) {
+  public Value visitLong(long value) {
     return Value.of(value);
   }
 
   @Override
-  public Value writeBigDecimal(BigDecimal value) {
+  public Value visitBlob(byte[] value) {
     return Value.of(value);
   }
 
   @Override
-  public Value writeText(String value) {
+  public Value visitBoolean(boolean value) {
     return Value.of(value);
   }
 
   @Override
-  public Value writeBlob(byte[] value) {
+  public Value visitText(String value) {
     return Value.of(value);
-  }
-
-  @Override
-  public HeaderWriter<Value> record(int numAttrs) {
-    return new ValueInterpreter(this, numAttrs);
   }
 }

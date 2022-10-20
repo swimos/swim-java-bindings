@@ -56,4 +56,14 @@ public class ReadTextValue extends ReadEvent {
   public int hashCode() {
     return Objects.hash(value);
   }
+
+  @Override
+  public boolean isPrimitive() {
+    return true;
+  }
+
+  @Override
+  public <O> O visit(ReadEventVisitor<O> visitor) {
+    return visitor.visitText(value());
+  }
 }

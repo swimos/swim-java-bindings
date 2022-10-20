@@ -35,10 +35,6 @@ public class NameFactory {
     return from;
   }
 
-  public String getName() {
-    return name;
-  }
-
   public String builderClassName() {
     return String.format("%sBuilder", this.name);
   }

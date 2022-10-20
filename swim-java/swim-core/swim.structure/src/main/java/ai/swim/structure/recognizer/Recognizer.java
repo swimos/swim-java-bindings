@@ -1,14 +1,15 @@
 package ai.swim.structure.recognizer;
 
 import ai.swim.recon.event.ReadEvent;
+import ai.swim.structure.recognizer.bridge.RecognizerBridge;
+import ai.swim.structure.writer.Writable;
+import ai.swim.structure.writer.proxy.WriterProxy;
 
 import java.util.function.Function;
 
 
 /**
- * Todo: docs
- *
- * <h2>Loading</h2>>
+ * <h2>Registration</h2>>
  * It is preferred for recognizers to be manually registered with the recognizer proxy so that no reflection has to be
  * used each time it is used. Alternatively, a recognizer can be annotated with @Autoloaded(targetClass.class) and it
  * will be automatically registered with the recognizer proxy when it is initialised.
@@ -78,6 +79,18 @@ public abstract class Recognizer<T> {
 
   public Recognizer<T> asBodyRecognizer() {
     return new SimpleRecBodyRecognizer<>(this);
+  }
+
+  public <W> T transform(W value, Writable<W> writable) {
+    return writable.writeInto(value, new RecognizerBridge<>(this));
+  }
+
+  public <W> T transform(W value) {
+    return transform(value, WriterProxy.getProxy().lookupObject(value));
+  }
+
+  public T flush() {
+    return null;
   }
 }
 

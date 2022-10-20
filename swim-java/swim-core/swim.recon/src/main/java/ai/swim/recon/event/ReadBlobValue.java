@@ -52,4 +52,14 @@ public class ReadBlobValue extends ReadEvent {
   public int hashCode() {
     return Arrays.hashCode(value);
   }
+
+  @Override
+  public boolean isPrimitive() {
+    return true;
+  }
+
+  @Override
+  public <O> O visit(ReadEventVisitor<O> visitor) {
+    return visitor.visitBlob(value());
+  }
 }

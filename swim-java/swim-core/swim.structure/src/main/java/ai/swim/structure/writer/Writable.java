@@ -14,7 +14,80 @@
 
 package ai.swim.structure.writer;
 
+import ai.swim.structure.Recon;
+import ai.swim.structure.value.Value;
+import ai.swim.structure.writer.print.strategy.PrettyPrintStrategy;
+import ai.swim.structure.writer.print.strategy.PrintStrategy;
+import ai.swim.structure.writer.value.ValueStructuralWriter;
+
+import java.io.StringWriter;
+
+/**
+ * An interface for transforming objects into another representation using a {@link StructuralWriter}; such as
+ * converting an object into a Recon string or a {@link Value}. This interface defines an abstract transformation from
+ * {@code F} to {@code T}.
+ * <p>
+ * {@link Writable} implementations should be stateless, threadsafe, reusable and automatically resolve any type
+ * parameters incrementally.
+ *
+ * <h2>Annotation processing</h2>>
+ * Generally, a manual implementation of {@link Writable} should not be required unless an object has a complex
+ * definition. This interface can be automatically derived using the {@link ai.swim.structure.annotations.AutoForm}
+ * annotation.
+ * <p>
+ * The annotation processor will derive an implementation of {@link Writable} for abstract and concrete classes and
+ * interfaces. Any type parameters found will be lazily resolved when required and stored for further invocations of
+ * the instance.
+ * <p>
+ * Like a derived {@link ai.swim.structure.recognizer.Recognizer} implementation, any wildcard types are unrolled such
+ * that the bound replaces the wildcard but there is no untyped {@link Writable} for a wildcard with no bound.
+ *
+ * @param <F> the type this {@link Writable} transforms.
+ */
 public interface Writable<F> {
+
+  /**
+   * Transform's {@code from} into a new representation.
+   *
+   * @param from             the value to transform.
+   * @param structuralWriter the interpreter to use in the transformation.
+   * @param <T>              the type of the new representation.
+   * @return the object's new representation.
+   */
   <T> T writeInto(F from, StructuralWriter<T> structuralWriter);
+
+  /**
+   * Transforms {@code value} into a {@link Value} representation.
+   */
+  default Value asValue(F value) {
+    return writeInto(value, new ValueStructuralWriter());
+  }
+
+  /**
+   * Returns an inline Recon representation of {@code value}.
+   */
+  default String asReconString(F value) {
+    return print(this, value, PrintStrategy.STANDARD);
+  }
+
+  /**
+   * Returns a Recon representation of {@code value}.
+   */
+  default String asCompactReconString(F value) {
+    return print(this, value, PrintStrategy.COMPACT);
+  }
+
+  /**
+   * Returns a pretty Recon representation of {@code value}.
+   */
+  default String asPrettyReconString(F value) {
+    return print(this, value, new PrettyPrintStrategy());
+  }
+
+  private static <F> String print(Writable<F> writable, F value, PrintStrategy printStrategy) {
+    StringWriter stringWriter = new StringWriter();
+    Recon.print(stringWriter, writable, value, printStrategy);
+    return stringWriter.toString();
+  }
 
 }
