@@ -17,7 +17,7 @@ package ai.swim.structure.writer.proxy;
 import ai.swim.structure.annotations.AutoloadedWriter;
 import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.StructuralWritable;
-import ai.swim.structure.writer.ValueStructuralWritable;
+import ai.swim.structure.writer.value.ValueStructuralWritable;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.WriterException;
 import ai.swim.structure.writer.std.ArrayStructuralWritable;
@@ -169,7 +169,7 @@ public class WriterProxy {
     WriterFactory<T> factory = (WriterFactory<T>) this.writers.get(clazz);
 
     if (factory == null) {
-      return fromStdClassUntyped(clazz);
+      return fromKnownClassUntyped(clazz);
     }
 
     return factory.newInstance();
@@ -208,7 +208,7 @@ public class WriterProxy {
   }
 
   @SuppressWarnings("unchecked")
-  private <T> Writable<T> fromStdClassUntyped(Class<T> clazz) {
+  private <T> Writable<T> fromKnownClassUntyped(Class<T> clazz) {
     if (Map.class.isAssignableFrom(clazz)) {
       return (Writable<T>) lookupUntyped(Map.class);
     }
@@ -219,6 +219,10 @@ public class WriterProxy {
 
     if (clazz.isArray()) {
       return (Writable<T>) arrayType(clazz.getComponentType());
+    }
+
+    if (Value.class.isAssignableFrom(clazz)){
+      return (Writable<T>) new ValueStructuralWritable();
     }
 
     throw new WriterException("No writer found for class: " + clazz);

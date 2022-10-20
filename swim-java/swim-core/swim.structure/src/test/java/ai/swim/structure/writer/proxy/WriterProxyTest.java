@@ -15,7 +15,7 @@
 package ai.swim.structure.writer.proxy;
 
 import ai.swim.structure.value.Value;
-import ai.swim.structure.writer.ValueStructuralWritable;
+import ai.swim.structure.writer.value.ValueStructuralWritable;
 import ai.swim.structure.writer.std.ListStructuralWritable;
 import ai.swim.structure.writer.std.MapStructuralWritable;
 import ai.swim.structure.writer.std.ScalarWriters;
@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class WriterProxyTest {
 
   @Test
-  void resolvesPrimitives() {
+  void resolvesCoreTypes() {
     assertEquals(WriterProxy.getProxy().lookup(Integer.class), ScalarWriters.INTEGER);
     assertEquals(WriterProxy.getProxy().lookup(Integer.TYPE), ScalarWriters.INTEGER);
     assertEquals(WriterProxy.getProxy().lookup(String.class), ScalarWriters.STRING);

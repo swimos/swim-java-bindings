@@ -53,6 +53,11 @@ public class ReadStartAttribute extends ReadEvent {
   }
 
   @Override
+  public <O> O visit(ReadEventVisitor<O> visitor) {
+    return visitor.visitStartAttribute();
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(value);
   }

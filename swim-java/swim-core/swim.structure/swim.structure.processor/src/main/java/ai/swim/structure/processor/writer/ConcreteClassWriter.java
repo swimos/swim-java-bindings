@@ -134,14 +134,14 @@ public class ConcreteClassWriter extends ClassWriter {
     if (headerSet.headerFields.isEmpty()) {
       FieldModel tagBody = headerSet.tagBody;
       if (tagBody == null) {
-        body.addStatement("__recWriter = __recWriter.writeExtantAttr($S)", nameFactory.getName());
+        body.addStatement("__recWriter = __recWriter.writeExtantAttr($S)", classSchema.getTag());
       } else {
         CodeBlock.Builder getter = CodeBlock.builder();
         tagBody.getAccessor().writeGet(getter, "from");
-        body.addStatement("__recWriter = __recWriter.writeAttr($S, $L, $L)", nameFactory.getName(), tagBody.initializer(context, false, false), getter.build());
+        body.addStatement("__recWriter = __recWriter.writeAttr($S, $L, $L)", classSchema.getTag(), tagBody.initializer(context, false, false), getter.build());
       }
     } else {
-      body.addStatement("__recWriter = __recWriter.writeAttr($S, $L\n)", nameFactory.getName(), makeHeader());
+      body.addStatement("__recWriter = __recWriter.writeAttr($S, $L\n)", classSchema.getTag(), makeHeader());
     }
 
     headerSet.attributes.forEach(attr -> {

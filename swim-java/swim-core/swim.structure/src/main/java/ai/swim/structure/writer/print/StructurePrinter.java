@@ -35,7 +35,6 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
   private boolean braceWritten;
   private boolean singleItem;
   private boolean first;
-  private boolean delegated;
 
   public StructurePrinter(java.io.Writer writer, PrintStrategy printStrategy) {
     this.writer = new SuppressingWriter(writer);
@@ -44,7 +43,6 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
     this.braceWritten = false;
     this.singleItem = false;
     this.first = true;
-    this.delegated = false;
   }
 
   public static StructurePrinter stdOut(PrintStrategy printStrategy) {

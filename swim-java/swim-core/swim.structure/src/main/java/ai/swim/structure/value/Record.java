@@ -220,6 +220,11 @@ public class Record extends Value {
     private ArrayList<Attr> attrs;
     private ArrayList<Item> items;
 
+    public Builder() {
+      this.attrs = new ArrayList<>();
+      this.items = new ArrayList<>();
+    }
+
     public Builder(int attrCount, int itemCount) {
       this.attrs = new ArrayList<>(attrCount);
       this.items = new ArrayList<>(itemCount);
@@ -239,6 +244,22 @@ public class Record extends Value {
 
     public void pushItem(Item value) {
       items.add(value);
+    }
+
+    public Attr popAttr() {
+      if (attrs.isEmpty()) {
+        return null;
+      } else {
+        return attrs.remove(attrs.size() - 1);
+      }
+    }
+
+    public Item popItem() {
+      if (items.isEmpty()) {
+        return null;
+      } else {
+        return items.remove(items.size() - 1);
+      }
     }
 
     public void pushItem(Value key, Value value) {
@@ -289,6 +310,10 @@ public class Record extends Value {
       this.items = new ArrayList<>(0);
 
       return record;
+    }
+
+    public boolean isEmpty() {
+      return attrs.isEmpty() && items.isEmpty();
     }
 
     @Override

@@ -16,7 +16,7 @@ package ai.swim.structure.writer.print.strategy;
 
 import ai.swim.structure.writer.print.Padding;
 
-public class CompactPrintStrategy implements PrintStrategy {
+class CompactPrintStrategy implements PrintStrategy {
   @Override
   public Padding attrPadding() {
     return Padding.Simple.NO_SPACE;

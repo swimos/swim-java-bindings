@@ -17,6 +17,9 @@ package ai.swim.structure.writer.print.strategy;
 import ai.swim.structure.writer.print.Padding;
 
 public interface PrintStrategy {
+  PrintStrategy COMPACT = new CompactPrintStrategy();
+  PrintStrategy STANDARD = new StandardPrintStrategy();
+
   Padding attrPadding();
 
   Padding attrBodyPadding();

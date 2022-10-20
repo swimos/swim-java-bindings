@@ -16,27 +16,25 @@ package ai.swim.structure;
 
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.print.StructurePrinter;
-import ai.swim.structure.writer.print.strategy.CompactPrintStrategy;
 import ai.swim.structure.writer.print.strategy.PrettyPrintStrategy;
 import ai.swim.structure.writer.print.strategy.PrintStrategy;
-import ai.swim.structure.writer.print.strategy.StandardPrintStrategy;
 
 import java.io.Writer;
 
 public class Recon {
   public static <V, T extends Writable<V>> void printRecon(Writer writer, T writable, V value) {
-    Recon.print(writer, writable, value, new StandardPrintStrategy());
+    Recon.print(writer, writable, value, PrintStrategy.STANDARD);
   }
 
   public static <V, T extends Writable<V>> void printReconCompact(Writer writer, T writable, V value) {
-    Recon.print(writer, writable, value, new CompactPrintStrategy());
+    Recon.print(writer, writable, value, PrintStrategy.COMPACT);
   }
 
   public static <V, T extends Writable<V>> void printReconPretty(Writer writer, T writable, V value) {
     Recon.print(writer, writable, value, new PrettyPrintStrategy());
   }
 
-  private static <V, T extends Writable<V>> void print(Writer writer, T writable, V value, PrintStrategy strategy) {
+  public static <V, T extends Writable<V>> void print(Writer writer, T writable, V value, PrintStrategy strategy) {
     writable.writeInto(value, new StructurePrinter(writer, strategy));
   }
 }

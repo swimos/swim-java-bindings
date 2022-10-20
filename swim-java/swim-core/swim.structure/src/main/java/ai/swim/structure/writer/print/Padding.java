@@ -30,7 +30,7 @@ public abstract class Padding {
     public static final Padding NO_SPACE = new Simple("");
     private final String padding;
 
-    public Simple(String s) {
+    Simple(String s) {
       this.padding = s;
     }
 

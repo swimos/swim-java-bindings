@@ -23,4 +23,9 @@ class ReadStartBody extends ReadEvent {
     return true;
   }
 
+  @Override
+  public <O> O visit(ReadEventVisitor<O> visitor) {
+    return visitor.visitStartBody();
+  }
+
 }

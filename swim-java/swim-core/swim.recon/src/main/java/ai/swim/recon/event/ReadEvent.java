@@ -184,4 +184,10 @@ public abstract class ReadEvent {
 
     return o != null && getClass() == o.getClass();
   }
+
+  public boolean isPrimitive() {
+    return false;
+  }
+
+  public abstract <O> O visit(ReadEventVisitor<O> visitor);
 }

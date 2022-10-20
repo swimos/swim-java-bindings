@@ -17,4 +17,8 @@ public class RecognizerException extends RuntimeException {
   public RecognizerException(Throwable cause) {
     super(cause);
   }
+
+  public static RecognizerException incomplete() {
+    return new RecognizerException("Incomplete record");
+  }
 }
