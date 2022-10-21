@@ -89,8 +89,7 @@ public class AutoStructuralGenericTest {
         "@gen{generic:1,a:@Typed{a:\"\",t:1},c:true}"
     );
 
-    assertThrows(RecognizerException.class, () -> new ClazzRecognizer<>(RecognizerTypeParameter.from(Void.class), RecognizerTypeParameter.from(Integer.class), RecognizerTypeParameter.from(Long.class)));
-    assertThrows(RecognizerException.class, () -> new ClazzRecognizer<>(RecognizerTypeParameter.from(Integer.class), RecognizerTypeParameter.from(Long.class), RecognizerTypeParameter.from(Void.class)));
+    assertThrows(RecognizerException.class, () -> new ClazzRecognizer<>(RecognizerTypeParameter.from(Throwable.class), RecognizerTypeParameter.from(Integer.class), RecognizerTypeParameter.from(Long.class)));
   }
 
   @Test

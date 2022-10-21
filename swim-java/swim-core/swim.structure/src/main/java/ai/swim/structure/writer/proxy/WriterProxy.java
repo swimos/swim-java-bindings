@@ -241,7 +241,7 @@ public class WriterProxy {
       writable = lookupUntyped(elementType);
     }
 
-    return new ArrayStructuralWritable<>(writable);
+    return new ArrayStructuralWritable<>(writable, elementType);
   }
 
   public <E, W extends Writable<E>> void register(Class<E> clazz, Class<W> writableClass, Supplier<Writable<?>> supplier) {

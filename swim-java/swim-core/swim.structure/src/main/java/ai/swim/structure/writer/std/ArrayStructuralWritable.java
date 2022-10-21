@@ -18,12 +18,15 @@ import ai.swim.structure.writer.BodyWriter;
 import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
+import ai.swim.structure.writer.proxy.WriterProxy;
 
 public class ArrayStructuralWritable<E> implements StructuralWritable<E[]> {
-  private final Writable<E> writable;
+  private Writable<E> writable;
+  private Class<E> eClass;
 
-  public ArrayStructuralWritable(Writable<E> writable) {
+  public ArrayStructuralWritable(Writable<E> writable, Class<E> eClass) {
     this.writable = writable;
+    this.eClass = eClass;
   }
 
   public static StructuralWritable<int[]> forInt() {
@@ -54,12 +57,18 @@ public class ArrayStructuralWritable<E> implements StructuralWritable<E[]> {
     return new DoubleArrayStructuralWritable();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public <T> T writeInto(E[] from, StructuralWriter<T> structuralWriter) {
     int len = from.length;
     BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
 
     for (E elem : from) {
+      if (elem.getClass() != eClass) {
+        writable = WriterProxy.getProxy().lookupObject(elem);
+        eClass = (Class<E>) elem.getClass();
+      }
+
       bodyWriter = bodyWriter.writeValue(writable, elem);
     }
 

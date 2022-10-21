@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -50,7 +51,7 @@ class RecognizerBridgeTest {
 
   @Test
   void transformBlob() {
-    assertEquals(proxy.lookup(byte[].class).transform(Value.of(new byte[] {1, 2, 3})), new byte[] {1, 2, 3});
+    assertArrayEquals(proxy.lookup(byte[].class).transform(Value.of(new byte[] {1, 2, 3})), new byte[] {1, 2, 3});
   }
 
   @Test

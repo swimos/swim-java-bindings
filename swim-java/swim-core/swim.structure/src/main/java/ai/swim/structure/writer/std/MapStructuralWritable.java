@@ -14,23 +14,26 @@
 
 package ai.swim.structure.writer.std;
 
-import ai.swim.structure.TypeParameter;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.writer.BodyWriter;
 import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.proxy.WriterProxy;
+import ai.swim.structure.writer.proxy.WriterTypeParameter;
 
 import java.util.Map;
 
 public class MapStructuralWritable<K, V> implements StructuralWritable<Map<K, V>> {
   private Writable<K> kWriter;
   private Writable<V> vWriter;
+  private Class<K> kClass;
+  private Class<V> vClass;
 
-  public MapStructuralWritable(Writable<K> kWriter, Writable<V> vWriter) {
-    this.kWriter = kWriter;
-    this.vWriter = vWriter;
+  @AutoForm.TypedConstructor
+  public MapStructuralWritable(WriterTypeParameter<K> kWriter, WriterTypeParameter<V> vWriter) {
+    this.kWriter = kWriter.build();
+    this.vWriter = vWriter.build();
   }
 
   public MapStructuralWritable() {
@@ -43,18 +46,21 @@ public class MapStructuralWritable<K, V> implements StructuralWritable<Map<K, V>
     int len = from.size();
     BodyWriter<T> bodyWriter = structuralWriter.record(0).completeHeader(len);
 
-    if (len != 0) {
-      Map.Entry<K, V> entry = from.entrySet().iterator().next();
-      if (kWriter == null) {
-        kWriter = (Writable<K>) WriterProxy.getProxy().lookup(entry.getKey().getClass());
-      }
-      if (vWriter == null && entry.getValue() != null) {
-        vWriter = (Writable<V>) WriterProxy.getProxy().lookup(entry.getValue().getClass());
-      }
-    }
-
     for (Map.Entry<K, V> entry : from.entrySet()) {
-      bodyWriter = bodyWriter.writeSlot(kWriter, entry.getKey(), vWriter, entry.getValue());
+      K key = entry.getKey();
+      V value = entry.getValue();
+
+      if (key != null && key.getClass() != kClass) {
+        this.kWriter = WriterProxy.getProxy().lookupObject(key);
+        this.kClass = (Class<K>) key.getClass();
+      }
+
+      if (value != null && value.getClass() != vClass) {
+        this.vWriter = WriterProxy.getProxy().lookupObject(value);
+        this.vClass = (Class<V>) value.getClass();
+      }
+
+      bodyWriter = bodyWriter.writeSlot(kWriter, key, vWriter, value);
     }
 
     return bodyWriter.done();

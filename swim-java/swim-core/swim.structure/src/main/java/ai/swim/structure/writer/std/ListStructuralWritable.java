@@ -14,6 +14,7 @@
 
 package ai.swim.structure.writer.std;
 
+import ai.swim.structure.TypeParameter;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.proxy.WriterTypeParameter;
@@ -21,12 +22,17 @@ import ai.swim.structure.writer.proxy.WriterTypeParameter;
 import java.util.List;
 
 public class ListStructuralWritable<T> extends CollectionStructuralWritable<T, List<T>> {
-  public ListStructuralWritable(Writable<T> listWritable) {
-    super(listWritable);
+  @AutoForm.TypedConstructor
+  public ListStructuralWritable(WriterTypeParameter<T> listWritable) {
+    super(listWritable.build(),null);
+  }
+
+  public ListStructuralWritable(Writable<T> listWritable, Class<T> tClass) {
+    super(listWritable,tClass);
   }
 
   public ListStructuralWritable() {
-    super(null);
+    super(null,null);
   }
 
 }
