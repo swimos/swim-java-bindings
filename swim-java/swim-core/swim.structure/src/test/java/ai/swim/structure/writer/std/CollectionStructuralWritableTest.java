@@ -30,7 +30,7 @@ class CollectionStructuralWritableTest {
   @Test
   void writeList() {
     List<Integer> list = List.of(1, 2, 3, 4, 5);
-    ListStructuralWritable<Integer> listWritable = new ListStructuralWritable<>(ScalarWriters.INTEGER);
+    ListStructuralWritable<Integer> listWritable = new ListStructuralWritable<>();
 
     Value value = listWritable.writeInto(list, new ValueStructuralWriter());
     assertTrue(value.isRecord());

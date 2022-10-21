@@ -69,12 +69,28 @@ public abstract class Value {
     return Record.of(attrs, items);
   }
 
+  public static Record of(Attr attr, Item... items) {
+    return Record.of(List.of(attr), List.of(items));
+  }
+
+  public static Record of(String attr, Item... items) {
+    return Record.of(List.of(Value.ofAttr(attr)), List.of(items));
+  }
+
   public static Record ofAttrs(List<Attr> attrs) {
     return Record.ofAttrs(attrs);
   }
 
+  public static Record ofAttrs(Attr... attrs) {
+    return Record.ofAttrs(List.of(attrs));
+  }
+
   public static Record ofItems(List<Item> items) {
     return Record.ofItems(items);
+  }
+
+  public static Record ofItems(Item... items) {
+    return Record.ofItems(List.of(items));
   }
 
   public static Attr ofAttr(String key) {

@@ -38,7 +38,7 @@ class MapStructuralWritableTest {
     map.put("d", 4);
     map.put("e", 5);
 
-    MapStructuralWritable<String, Integer> mapWritable = new MapStructuralWritable<>(ScalarWriters.STRING, ScalarWriters.INTEGER);
+    MapStructuralWritable<String, Integer> mapWritable = new MapStructuralWritable<>();
 
     Value value = mapWritable.writeInto(map, new ValueStructuralWriter());
     assertTrue(value.isRecord());

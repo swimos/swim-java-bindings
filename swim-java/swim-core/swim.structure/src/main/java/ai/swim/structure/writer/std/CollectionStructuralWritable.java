@@ -23,12 +23,15 @@ import ai.swim.structure.writer.proxy.WriterProxy;
 import java.util.Collection;
 
 public abstract class CollectionStructuralWritable<E, C extends Collection<E>> implements StructuralWritable<C> {
+  private Class<E> eClass;
   private Writable<E> eWritable;
 
-  public CollectionStructuralWritable(Writable<E> eWritable) {
+  public CollectionStructuralWritable(Writable<E> eWritable, Class<E> eClass) {
     this.eWritable = eWritable;
+    this.eClass = eClass;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public <T> T writeInto(C from, StructuralWriter<T> structuralWriter) {
     int len = from.size();
@@ -36,11 +39,15 @@ public abstract class CollectionStructuralWritable<E, C extends Collection<E>> i
 
     if (len != 0 && eWritable == null) {
       E first = from.iterator().next();
-      //noinspection unchecked
-      eWritable = (Writable<E>) WriterProxy.getProxy().lookup(first.getClass());
+      eWritable = WriterProxy.getProxy().lookupObject(first);
     }
 
     for (E e : from) {
+      if (e != null && e.getClass() != eClass) {
+        eWritable = WriterProxy.getProxy().lookupObject(e);
+        eClass = (Class<E>) e.getClass();
+      }
+
       bodyWriter = bodyWriter.writeValue(eWritable, e);
     }
 

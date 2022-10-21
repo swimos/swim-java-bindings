@@ -56,18 +56,29 @@ public class ConcreteClassWriter extends ClassWriter {
     Types typeUtils = processingEnvironment.getTypeUtils();
     Elements elementUtils = processingEnvironment.getElementUtils();
     NameFactory nameFactory = context.getNameFactory();
-    TypeElement typeElement = elementUtils.getTypeElement(Lookups.WRITABLE_CLASS);
+    TypeElement writableElement = elementUtils.getTypeElement(Lookups.WRITABLE_CLASS);
+    TypeElement classElement = elementUtils.getTypeElement(Class.class.getCanonicalName());
 
     List<FieldSpec> fields = new ArrayList<>();
 
     for (FieldModel fieldModel : classSchema.getClassMap().getFieldModels()) {
       if (fieldModel.getModel() instanceof RuntimeLookupModel) {
-        DeclaredType declaredType = typeUtils.getDeclaredType(typeElement, fieldModel.type(processingEnvironment));
-        FieldSpec field = FieldSpec
-            .builder(TypeName.get(declaredType), nameFactory.writableName(fieldModel.propertyName()))
+        String writableName = nameFactory.writableName(fieldModel.propertyName());
+        TypeMirror fieldType = fieldModel.type(processingEnvironment);
+        DeclaredType writableType = typeUtils.getDeclaredType(writableElement, fieldType);
+
+        FieldSpec writerField = FieldSpec
+            .builder(TypeName.get(writableType), writableName)
             .addModifiers(Modifier.PRIVATE)
             .build();
-        fields.add(field);
+        fields.add(writerField);
+
+        DeclaredType classType = typeUtils.getDeclaredType(classElement, fieldType);
+        FieldSpec classField = FieldSpec
+            .builder(TypeName.get(classType), String.format("%sClass", writableName))
+            .addModifiers(Modifier.PRIVATE)
+            .build();
+        fields.add(classField);
       }
     }
 
@@ -76,6 +87,8 @@ public class ConcreteClassWriter extends ClassWriter {
 
   public CodeBlock.Builder buildInit() {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+    Types typeUtils = processingEnvironment.getTypeUtils();
+    Elements elementUtils = processingEnvironment.getElementUtils();
     NameFactory nameFactory = context.getNameFactory();
 
     CodeBlock.Builder body = CodeBlock.builder();
@@ -114,8 +127,12 @@ public class ConcreteClassWriter extends ClassWriter {
           body.addStatement("__numSlots += 1");
         }
 
-        body.beginControlFlow("if ($L == null)", writableName)
+        TypeElement classElement = elementUtils.getTypeElement(Class.class.getCanonicalName());
+        DeclaredType classType = typeUtils.getDeclaredType(classElement, fieldModel.type(processingEnvironment));
+
+        body.beginControlFlow("if ($L == null || $LClass != $L.getClass())", writableName,writableName, fieldName)
             .addStatement("$L = getProxy().lookupObject($L)", writableName, fieldName)
+            .addStatement("$LClass = ($T) $L.getClass()", writableName, TypeName.get(classType), fieldName)
             .endControlFlow()
             .endControlFlow();
       }

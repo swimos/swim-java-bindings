@@ -86,7 +86,7 @@ public interface Writable<F> {
 
   private static <F> String print(Writable<F> writable, F value, PrintStrategy printStrategy) {
     StringWriter stringWriter = new StringWriter();
-    Recon.print(stringWriter, writable, value, printStrategy);
+    Recon.printRecon(stringWriter, writable, value, printStrategy);
     return stringWriter.toString();
   }
 

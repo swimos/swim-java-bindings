@@ -102,7 +102,7 @@ public class AbstractClassWriter extends ClassWriter {
       body.beginControlFlow("if ($L == null)", writableField);
       body.addStatement("$L = getProxy().lookup($T.class)", writableField, erasedType);
       body.endControlFlow();
-      body.addStatement("$L.writeInto(($L) from, structuralWriter)", writableField, erasedType);
+      body.addStatement("return $L.writeInto(($L) from, structuralWriter)", writableField, erasedType);
     };
 
     // the direct indexing is safe as the processor checks that there is at least one subtype in the annotation.
