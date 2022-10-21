@@ -97,6 +97,10 @@ public abstract class Model {
     return false;
   }
 
+  public boolean isEnum() {
+    return false;
+  }
+
   public boolean isInterface() {
     return false;
   }

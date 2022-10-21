@@ -4,6 +4,7 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadStartAttribute;
 import ai.swim.structure.RecognizingBuilder;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.structural.tag.EnumerationTagSpec;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import ai.swim.structure.recognizer.structural.tag.TagSpec;
 
@@ -52,7 +53,16 @@ public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
             return Recognizer.error(e);
           }
         }
-      } else {
+      } else if (this.tagSpec.isEnumeration()) {
+        EnumerationTagSpec enumerationTagSpec = (EnumerationTagSpec) this.tagSpec;
+
+        if (enumerationTagSpec.validate(attributeEvent.value())) {
+          this.transitionFromInit();
+          return this;
+        } else {
+          return Recognizer.error(new RuntimeException("Unexpected attribute: " + attributeEvent.value()));
+        }
+      }else {
         throw new AssertionError();
       }
     }
