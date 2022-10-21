@@ -86,4 +86,12 @@ public class NameFactory {
   public String writableName(String gen) {
     return String.format("%sWritable", replaceBounds(gen).toLowerCase());
   }
+
+  public String getName() {
+    return name;
+  }
+
+  public String enumSpec() {
+    return String.format("%Spec", this.name);
+  }
 }

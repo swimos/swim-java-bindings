@@ -46,7 +46,6 @@ public class PolymorphicRecognizer {
         .addMember("value", "$T.class", typeUtils.erasure(declaredType))
         .build();
 
-
     TypeSpec.Builder classSpec = TypeSpec.classBuilder(context.getNameFactory().recognizerClassName())
         .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
         .addAnnotation(recognizerAnnotationSpec);

@@ -114,7 +114,6 @@ public class DelegateClassRecognizer<T> extends ClassRecognizer<DelegateClassRec
     return new DelegateClassRecognizer<>(this.tagSpec, this.builder.reset(), this.bitSet.size(), this.indexFn);
   }
 
-
   enum State {
     Init,
     Header,

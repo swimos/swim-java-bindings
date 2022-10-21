@@ -10,4 +10,6 @@ public abstract class TagSpec {
     return false;
   }
 
+  public boolean isEnumeration() { return false;}
+
 }

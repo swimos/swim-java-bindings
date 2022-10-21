@@ -29,6 +29,7 @@ public class Lookups {
   public static final String LABELLED_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.labelled.LabelledClassRecognizer";
   public static final String DELEGATE_CLASS_RECOGNIZER = "ai.swim.structure.recognizer.structural.delegate.DelegateClassRecognizer";
   public static final String FIXED_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FixedTagSpec";
+  public static final String ENUM_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.EnumerationTagSpec";
   public static final String FIELD_TAG_SPEC = "ai.swim.structure.recognizer.structural.tag.FieldTagSpec";
   public static final String LABELLED_ITEM_FIELD_KEY = "ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey.ItemFieldKey";
   public static final String LABELLED_ATTR_FIELD_KEY = "ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey.AttrFieldKey";
