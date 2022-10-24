@@ -20,6 +20,7 @@ import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.builder.Builder;
 import ai.swim.structure.processor.recognizer.writer.builder.FieldInitializer;
 import ai.swim.structure.processor.recognizer.writer.builder.header.HeaderIndexFn;
+import ai.swim.structure.processor.recognizer.writer.recognizer.Recognizer;
 import ai.swim.structure.processor.recognizer.writer.recognizer.TypeVarFieldInitializer;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
@@ -46,14 +47,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_BIND;
 import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_CLASS;
 import static ai.swim.structure.processor.recognizer.writer.WriterUtils.typeParametersToTypeVariable;
 import static ai.swim.structure.processor.recognizer.writer.WriterUtils.writeGenericRecognizerConstructor;
 
 public class ClassBuilder extends Builder {
 
-  public ClassBuilder(ClassSchema classSchema, ScopedContext context) {
+  private final Recognizer.Transposition transposition;
+
+  public ClassBuilder(ClassSchema classSchema, ScopedContext context, Recognizer.Transposition transposition) {
     super(classSchema, context);
+    this.transposition = transposition;
   }
 
   @Override
@@ -108,6 +113,11 @@ public class ClassBuilder extends Builder {
         .build()));
   }
 
+  @Override
+  protected MethodSpec buildBind() {
+    return transposition.builderBind(context);
+  }
+
   private CodeBlock initialiseTypeVarField(ScopedContext context, FieldModel fieldModel) {
     NameFactory nameFactory = context.getNameFactory();
     String fieldBuilderName = nameFactory.fieldBuilderName(fieldModel.getName().toString());
@@ -120,11 +130,6 @@ public class ClassBuilder extends Builder {
     String builderName = nameFactory.fieldBuilderName(fieldModel.getName().toString());
 
     return CodeBlock.of("this.$L = $L;\n", builderName, new FieldInitializer(fieldModel, true, false).emit(context));
-  }
-
-  @Override
-  protected Emitter buildBindBlock() {
-    return new BindEmitter(schema);
   }
 
   @Override

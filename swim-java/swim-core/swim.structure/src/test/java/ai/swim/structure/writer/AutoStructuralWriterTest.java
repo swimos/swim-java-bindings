@@ -14,17 +14,8 @@
 
 package ai.swim.structure.writer;
 
-import ai.swim.recon.event.ReadEvent;
-import ai.swim.structure.FieldRecognizingBuilder;
-import ai.swim.structure.RecognizingBuilder;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
-import ai.swim.structure.recognizer.Recognizer;
-import ai.swim.structure.recognizer.RecognizerException;
-import ai.swim.structure.recognizer.std.ScalarRecognizer;
-import ai.swim.structure.recognizer.structural.labelled.LabelledClassRecognizer;
-import ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey;
-import ai.swim.structure.recognizer.structural.tag.EnumerationTagSpec;
 import ai.swim.structure.value.Item;
 import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.proxy.WriterProxy;
@@ -410,6 +401,7 @@ class AutoStructuralWriterTest {
     @Override
     public boolean equals(Object o) {
       if (this == o) {
+        ;
         return true;
       }
       if (o == null || getClass() != o.getClass()) {
@@ -438,7 +430,8 @@ class AutoStructuralWriterTest {
     assertEquals(Value.of(List.of(Value.ofAttr("RenamedField")), List.of(Item.of(Value.of("renamed"), Value.of(1)), Item.of(Value.of("second"), Value.of("second")))), value);
   }
 
-  @AutoForm("SomeOtherName")
+  @AutoForm
+  @AutoForm.Tag("SomeOtherName")
   public static class RenamedClass {
     public int first;
     public String second;
@@ -1225,129 +1218,85 @@ class AutoStructuralWriterTest {
     assertEquals(Value.of(List.of(Value.ofAttr("GenericBody", Value.ofItems(Item.of(Value.of("node"), Value.of("node_uri")), Item.of(Value.of("lane"), Value.of("lane_uri"))))), List.of(Item.valueItem(13))), value);
   }
 
-  enum EnumObj {
-    A(1, 2), B(3, 4);
+  @AutoForm
+  public enum EnumForm {
+    @AutoForm.Tag("tagA")
+    A(1, 2),
+    B(3, 4);
 
-    private int a;
-    private int b;
+    @AutoForm.Name("fieldA")
+    private final int a;
+    private final int b;
 
-    EnumObj(int a, int b) {
+    EnumForm(int a, int b) {
       this.a = a;
       this.b = b;
     }
-  }
 
-  public static class EnumRec extends Recognizer<EnumObj> {
-    private static class EnumSpec {
-      int a;
-      int b;
-
-      public EnumSpec(int a, int b) {
-        this.a = a;
-        this.b = b;
-      }
+    public int getA() {
+      return a;
     }
 
-    private Recognizer<EnumSpec> recognizer;
-    private final EnumerationTagSpec tagSpec = new EnumerationTagSpec(List.of("A", "B"));
-
-    public EnumRec() {
-      recognizer = new LabelledClassRecognizer<>(tagSpec, new EnumBuilder(), 2, (key) -> {
-        if (key.isItem()) {
-          LabelledFieldKey.ItemFieldKey itemFieldKey = (LabelledFieldKey.ItemFieldKey) key;
-          switch (itemFieldKey.getName()) {
-            case "a":
-              return 0;
-            case "b":
-              return 1;
-            default:
-              throw new RuntimeException("Unexpected key: " + key);
-          }
-        }
-        return null;
-      });
-    }
-
-    @Override
-    public Recognizer<EnumObj> feedEvent(ReadEvent event) {
-      this.recognizer = this.recognizer.feedEvent(event);
-      if (this.recognizer.isError()) {
-        return Recognizer.error(this.recognizer.trap());
-      }
-      return this;
-    }
-
-    @Override
-    public Recognizer<EnumObj> reset() {
-      return null;
-    }
-
-    @Override
-    public EnumObj bind() {
-      EnumSpec spec = recognizer.bind();
-      EnumObj obj = EnumObj.valueOf(tagSpec.getEnumVariant());
-
-      if (obj.a != spec.a) {
-        throw new RecognizerException();
-      }
-
-      if (obj.b != spec.b) {
-        throw new RecognizerException();
-      }
-
-      return obj;
-    }
-
-    private static class EnumBuilder implements RecognizingBuilder<EnumSpec> {
-      private RecognizingBuilder<Integer> aBuilder = new FieldRecognizingBuilder<>(ScalarRecognizer.INTEGER);
-      private RecognizingBuilder<Integer> bBuilder = new FieldRecognizingBuilder<>(ScalarRecognizer.INTEGER);
-
-      @Override
-      public boolean feedIndexed(int index, ReadEvent event) {
-        switch (index) {
-          case 0:
-            return this.aBuilder.feed(event);
-          case 1:
-            return this.bBuilder.feed(event);
-          default:
-            throw new RuntimeException("Unknown idx: " + index);
-        }
-      }
-
-      @Override
-      public EnumSpec bind() {
-        return new EnumSpec(aBuilder.bind(), bBuilder.bind());
-      }
-
-      @Override
-      public RecognizingBuilder<EnumSpec> reset() {
-        return null;
-      }
+    public int getB() {
+      return b;
     }
   }
 
   @Test
-  void t() {
-    List<ReadEvent> readEvents = List.of(
-        ReadEvent.startAttribute("A"),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.number(1),
-        ReadEvent.text("b"),
-        ReadEvent.slot(),
-        ReadEvent.number(2),
-        ReadEvent.endRecord()
+  void simpleEnum() {
+    Writable<EnumForm> writable = proxy.lookup(EnumForm.class);
+
+    assertEquals(
+        Value.of("tagA", Item.of(Value.of("fieldA"), Value.of(1)), Item.of(Value.of("b"), Value.of(2))),
+        writable.asValue(EnumForm.A)
     );
+    assertEquals(
+        Value.of("B", Item.of(Value.of("fieldA"), Value.of(3)), Item.of(Value.of("b"), Value.of(4))),
+        writable.asValue(EnumForm.B)
+    );
+  }
 
-    Recognizer<EnumObj> recognizer = new EnumRec();
+  @AutoForm(subTypes = @AutoForm.Type(ChildEnum.class))
+  public interface EnumInterface<T> {
+    T body();
+  }
 
-    for (ReadEvent readEvent : readEvents) {
-      recognizer = recognizer.feedEvent(readEvent);
+  @AutoForm
+  public enum ChildEnum implements EnumInterface<String> {
+    A("aValue") {
+      @Override
+      public String body() {
+        return A.value;
+      }
+    },
+    B("bValue") {
+      @Override
+      public String body() {
+        return B.value;
+      }
+    };
+
+    private final String value;
+
+    ChildEnum(String value) {
+      this.value = value;
     }
 
-    System.out.println(recognizer.bind());
+    public String getValue() {
+      return value;
+    }
+  }
+
+  @Test
+  void enumPolymorphism() {
+    assertEquals(
+        Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
+        proxy.lookup((Class<EnumInterface<String>>) (Class<?>) EnumInterface.class).asValue(ChildEnum.A)
+    );
+    assertEquals(
+        Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
+        proxy.lookup(ChildEnum.class).asValue(ChildEnum.A)
+    );
   }
 
 }

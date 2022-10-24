@@ -93,4 +93,9 @@ public class PartitionedFields {
         ", body=" + body +
         '}';
   }
+
+  public boolean isHeader(FieldModel model) {
+    return headerSet.isHeader(model);
+  }
+
 }

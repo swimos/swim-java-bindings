@@ -38,6 +38,7 @@ public class Lookups {
   public static final String TYPE_PARAMETER = "ai.swim.structure.recognizer.proxy.RecognizerTypeParameter";
   public static final String RECOGNIZER_PROXY = "ai.swim.structure.recognizer.proxy.RecognizerProxy";
   public static final String UNTYPED_RECOGNIZER = "ai.swim.structure.recognizer.untyped.UntypedRecognizer";
+
   private Lookups() {
     throw new AssertionError();
   }

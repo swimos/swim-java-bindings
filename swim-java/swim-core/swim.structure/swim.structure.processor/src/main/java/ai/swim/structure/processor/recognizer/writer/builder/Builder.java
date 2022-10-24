@@ -16,6 +16,7 @@ package ai.swim.structure.processor.recognizer.writer.builder;
 
 import ai.swim.structure.processor.Emitter;
 import ai.swim.structure.processor.context.ScopedContext;
+import ai.swim.structure.processor.recognizer.writer.recognizer.Recognizer;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import com.squareup.javapoet.FieldSpec;
@@ -102,15 +103,7 @@ public abstract class Builder {
     return builder.build();
   }
 
-  protected MethodSpec buildBind() {
-    MethodSpec.Builder builder = MethodSpec.methodBuilder(RECOGNIZING_BUILDER_BIND)
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .returns(TypeName.get(this.context.getRoot().asType()));
-    builder.addCode(buildBindBlock().emit(context));
-
-    return builder.build();
-  }
+  protected abstract MethodSpec buildBind();
 
   private MethodSpec buildFeedIndexed() {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
@@ -129,8 +122,6 @@ public abstract class Builder {
   }
 
   protected abstract TypeSpec.Builder init();
-
-  protected abstract Emitter buildBindBlock();
 
   protected abstract Emitter buildFeedIndexedBlock();
 

@@ -20,6 +20,7 @@ import ai.swim.structure.processor.schema.FieldModel;
 import com.squareup.javapoet.CodeBlock;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
@@ -61,12 +62,12 @@ public abstract class ClassMap extends StructuralModel {
   }
 
   public String getTag() {
-    AutoForm autoForm = this.root.getAnnotation(AutoForm.class);
+    AutoForm.Tag tag = this.root.getAnnotation(AutoForm.Tag.class);
 
-    if (autoForm.value().isBlank()) {
+    if (tag == null || tag.value().isBlank()) {
       return getJavaClassName();
     } else {
-      return autoForm.value();
+      return tag.value();
     }
   }
 
@@ -123,7 +124,17 @@ public abstract class ClassMap extends StructuralModel {
   }
 
   @Override
+  public boolean isClassLike() {
+    return root.getKind().isClass();
+  }
+
+  @Override
   public boolean isClass() {
-    return true;
+    return root.getKind() == ElementKind.CLASS;
+  }
+
+  @Override
+  public boolean isEnum() {
+    return root.getKind() == ElementKind.ENUM;
   }
 }

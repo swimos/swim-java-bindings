@@ -614,7 +614,8 @@ public class AutoStructuralTest {
     }
   }
 
-  @AutoForm("command")
+  @AutoForm
+      @AutoForm.Tag("command")
   public static class CommandMessage extends LaneAddressed {
     public CommandMessage() {
 
@@ -647,7 +648,8 @@ public class AutoStructuralTest {
     }
   }
 
-  @AutoForm("auth")
+  @AutoForm
+  @AutoForm.Tag("auth")
   public static class AuthRequest extends HostAddressed {
     public AuthRequest() {
 
@@ -877,7 +879,8 @@ public class AutoStructuralTest {
 
   }
 
-  @AutoForm("update")
+  @AutoForm
+  @AutoForm.Tag("update")
   public static class MapUpdate extends MapEnvelope {
     @AutoForm.Kind(FieldKind.Header)
     public Object key;
@@ -919,7 +922,8 @@ public class AutoStructuralTest {
     }
   }
 
-  @AutoForm("remove")
+  @AutoForm
+  @AutoForm.Tag("remove")
   public static class MapRemove extends MapEnvelope {
     @AutoForm.Kind(FieldKind.Header)
     public Object key;
@@ -950,7 +954,8 @@ public class AutoStructuralTest {
     }
   }
 
-  @AutoForm("clear")
+  @AutoForm
+  @AutoForm.Tag("clear")
   public static class MapClear extends MapEnvelope {
     @Override
     public boolean equals(Object obj) {
@@ -958,7 +963,8 @@ public class AutoStructuralTest {
     }
   }
 
-  @AutoForm("take")
+  @AutoForm
+  @AutoForm.Tag("take")
   public static class MapTake extends MapEnvelope {
     @AutoForm.Kind(FieldKind.HeaderBody)
     public int count;
@@ -989,7 +995,8 @@ public class AutoStructuralTest {
     }
   }
 
-  @AutoForm("drop")
+  @AutoForm
+  @AutoForm.Tag("drop")
   public static class MapDrop extends MapEnvelope {
     @AutoForm.Kind(FieldKind.HeaderBody)
     public int count;

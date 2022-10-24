@@ -117,7 +117,8 @@ public class AutoStructuralGenericTest {
     assertEquals(new MixedGenerics<>("text", List.of(2, 3.1, 4, 5)), parser.bind());
   }
 
-  @AutoForm("gen")
+  @AutoForm
+  @AutoForm.Tag("gen")
   public static class NestedGenerics<G extends Number, A extends Number, T extends CharSequence> {
     public G generic;
     public Typed<A, T> a;

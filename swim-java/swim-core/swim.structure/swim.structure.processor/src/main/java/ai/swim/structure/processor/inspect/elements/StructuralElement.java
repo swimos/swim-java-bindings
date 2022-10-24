@@ -51,16 +51,6 @@ public abstract class StructuralElement extends JavaElement {
     return this.root.getSimpleName().toString();
   }
 
-  public String getTag() {
-    AutoForm autoForm = this.root.getAnnotation(AutoForm.class);
-
-    if (autoForm.value().isBlank()) {
-      return getJavaClassName();
-    } else {
-      return autoForm.value();
-    }
-  }
-
   public List<ExecutableElement> getMethods() {
     return methods;
   }

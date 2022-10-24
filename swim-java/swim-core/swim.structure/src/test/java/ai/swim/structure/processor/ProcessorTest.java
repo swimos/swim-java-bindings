@@ -634,7 +634,8 @@ public class ProcessorTest {
     }
   }
 
-  @AutoForm(value = "tag")
+  @AutoForm
+  @AutoForm.Tag(value = "tag")
   public static class TagClass {
     private int a;
 

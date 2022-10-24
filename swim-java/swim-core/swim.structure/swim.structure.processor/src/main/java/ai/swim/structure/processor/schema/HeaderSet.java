@@ -100,4 +100,8 @@ public class HeaderSet {
 
     return typeParameters;
   }
+
+  public boolean isHeader(FieldModel model) {
+    return headerFields.contains(model);
+  }
 }

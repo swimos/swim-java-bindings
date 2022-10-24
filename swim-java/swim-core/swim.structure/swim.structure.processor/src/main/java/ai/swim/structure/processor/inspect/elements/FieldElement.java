@@ -50,10 +50,6 @@ public class FieldElement {
     return element.asType();
   }
 
-  public boolean isOptional() {
-    return this.element.getAnnotation(AutoForm.Optional.class) != null;
-  }
-
   public boolean isIgnored() {
     return this.element.getAnnotation(AutoForm.Ignore.class) != null;
   }
