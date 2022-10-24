@@ -20,6 +20,7 @@ import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.Lookups;
 import ai.swim.structure.processor.recognizer.writer.builder.Builder;
 import ai.swim.structure.processor.recognizer.writer.builder.FieldInitializer;
+import ai.swim.structure.processor.recognizer.writer.recognizer.Recognizer;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.FieldModel;
@@ -104,14 +105,9 @@ public class HeaderBuilder extends Builder {
         .addModifiers(Modifier.PUBLIC)
         .addAnnotation(Override.class)
         .returns(classType);
-    builder.addCode(buildBindBlock().emit(context));
+    builder.addCode(new BindEmitter(fields).emit(context));
 
     return builder.build();
-  }
-
-  @Override
-  protected Emitter buildBindBlock() {
-    return new BindEmitter(fields);
   }
 
   @Override

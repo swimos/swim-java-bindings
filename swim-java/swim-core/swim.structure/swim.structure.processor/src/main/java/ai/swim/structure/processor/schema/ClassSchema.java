@@ -14,12 +14,15 @@
 
 package ai.swim.structure.processor.schema;
 
+import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.models.ClassMap;
 
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeParameterElement;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ClassSchema {
   private final ClassMap classMap;
@@ -55,7 +58,32 @@ public class ClassSchema {
   }
 
   public String getTag() {
-    return this.classMap.getTag();
+    if (!classMap.isClass()) {
+      throw new IllegalStateException(String.format("%s is not a class", classMap.getRoot()));
+    } else {
+      return this.classMap.getTag();
+    }
+  }
+
+  public List<String> getVariantTags() {
+    if (!classMap.isEnum()) {
+      throw new IllegalStateException(String.format("%s is not an enum", classMap.getRoot()));
+    } else {
+      return classMap
+          .getRoot()
+          .getEnclosedElements()
+          .stream()
+          .filter(e -> e.getKind().equals(ElementKind.ENUM_CONSTANT))
+          .map(e -> {
+            AutoForm.Tag tag = e.getAnnotation(AutoForm.Tag.class);
+            if (tag != null && !tag.value().isBlank()) {
+              return tag.value();
+            } else {
+              return e.toString();
+            }
+          })
+          .collect(Collectors.toList());
+    }
   }
 
   public ClassMap getClassMap() {

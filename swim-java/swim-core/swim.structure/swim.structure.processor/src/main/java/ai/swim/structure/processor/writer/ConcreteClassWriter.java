@@ -14,6 +14,7 @@
 
 package ai.swim.structure.processor.writer;
 
+import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.context.NameFactory;
 import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.models.RuntimeLookupModel;
@@ -28,6 +29,8 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
@@ -130,7 +133,7 @@ public class ConcreteClassWriter extends ClassWriter {
         TypeElement classElement = elementUtils.getTypeElement(Class.class.getCanonicalName());
         DeclaredType classType = typeUtils.getDeclaredType(classElement, fieldModel.type(processingEnvironment));
 
-        body.beginControlFlow("if ($L == null || $LClass != $L.getClass())", writableName,writableName, fieldName)
+        body.beginControlFlow("if ($L == null || $LClass != $L.getClass())", writableName, writableName, fieldName)
             .addStatement("$L = getProxy().lookupObject($L)", writableName, fieldName)
             .addStatement("$LClass = ($T) $L.getClass()", writableName, TypeName.get(classType), fieldName)
             .endControlFlow()
@@ -144,21 +147,50 @@ public class ConcreteClassWriter extends ClassWriter {
   private CodeBlock writeAttrs() {
     PartitionedFields partitionedFields = classSchema.getPartitionedFields();
     HeaderSet headerSet = partitionedFields.headerSet;
-    NameFactory nameFactory = context.getNameFactory();
-
     CodeBlock.Builder body = CodeBlock.builder();
+
+    if (classSchema.getClassMap().isEnum()) {
+      body.addStatement("String __tag");
+      body.beginControlFlow("switch (from)");
+
+      Element root = context.getRoot();
+      for (Element enclosedElement : root.getEnclosedElements()) {
+        if (enclosedElement.getKind().equals(ElementKind.ENUM_CONSTANT)) {
+          String tagString = enclosedElement.toString();
+          AutoForm.Tag tag = enclosedElement.getAnnotation(AutoForm.Tag.class);
+
+          if (tag != null && !tag.value().isBlank()) {
+            tagString = tag.value();
+          }
+
+          body
+              .add("$> case $L:", enclosedElement.toString())
+              .addStatement("$> __tag = \"$L\"", tagString)
+              .addStatement("break")
+              .add("$<$<");
+        }
+      }
+
+      body
+          .add("$>default:")
+          .addStatement("$> throw new AssertionError(\"Bug: Unhandled enum constant during annotation processing for: $L\")", root)
+          .add("$<$<")
+          .endControlFlow();
+    } else {
+      body.addStatement("String __tag = \"$L\"", classSchema.getTag());
+    }
 
     if (headerSet.headerFields.isEmpty()) {
       FieldModel tagBody = headerSet.tagBody;
       if (tagBody == null) {
-        body.addStatement("__recWriter = __recWriter.writeExtantAttr($S)", classSchema.getTag());
+        body.addStatement("__recWriter = __recWriter.writeExtantAttr(__tag)");
       } else {
         CodeBlock.Builder getter = CodeBlock.builder();
         tagBody.getAccessor().writeGet(getter, "from");
-        body.addStatement("__recWriter = __recWriter.writeAttr($S, $L, $L)", classSchema.getTag(), tagBody.initializer(context, false, false), getter.build());
+        body.addStatement("__recWriter = __recWriter.writeAttr(__tag, $L, $L)", tagBody.initializer(context, false, false), getter.build());
       }
     } else {
-      body.addStatement("__recWriter = __recWriter.writeAttr($S, $L\n)", classSchema.getTag(), makeHeader());
+      body.addStatement("__recWriter = __recWriter.writeAttr(__tag, $L\n)", makeHeader());
     }
 
     headerSet.attributes.forEach(attr -> {

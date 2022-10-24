@@ -92,6 +92,6 @@ public class NameFactory {
   }
 
   public String enumSpec() {
-    return String.format("%Spec", this.name);
+    return String.format("%sSpec", this.name);
   }
 }

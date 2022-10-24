@@ -18,6 +18,7 @@ import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.Lookups;
 import ai.swim.structure.processor.recognizer.writer.builder.classBuilder.ClassBuilder;
 import ai.swim.structure.processor.recognizer.writer.builder.header.HeaderBuilder;
+import ai.swim.structure.processor.recognizer.writer.recognizer.Recognizer;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import ai.swim.structure.processor.schema.HeaderSet;
@@ -33,7 +34,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -45,16 +45,15 @@ import static ai.swim.structure.processor.recognizer.writer.WriterUtils.typePara
 
 public class BuilderWriter {
 
-  public static void write(TypeSpec.Builder parentSpec, ClassSchema schema, ScopedContext context) {
+  public static void write(TypeSpec.Builder parentSpec, ClassSchema schema, ScopedContext context, Recognizer.Transposition transposition) {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
-    Types typeUtils = processingEnvironment.getTypeUtils();
     Elements elementUtils = processingEnvironment.getElementUtils();
 
     TypeElement classRecognizingBuilderElement = elementUtils.getTypeElement(Lookups.RECOGNIZING_BUILDER_CLASS);
-    DeclaredType classRecognizingBuilderType = typeUtils.getDeclaredType(classRecognizingBuilderElement, context.getRoot().asType());
+    ParameterizedTypeName classRecognizingBuilderType = ParameterizedTypeName.get(ClassName.get(classRecognizingBuilderElement), transposition.builderType(context));
 
-    ClassBuilder classBuilder = new ClassBuilder(schema, context);
-    parentSpec.addType(classBuilder.build(TypeName.get(classRecognizingBuilderType)));
+    ClassBuilder classBuilder = new ClassBuilder(schema, context, transposition);
+    parentSpec.addType(classBuilder.build(classRecognizingBuilderType));
 
     HeaderSet headerSet = schema.getPartitionedFields().headerSet;
 

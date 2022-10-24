@@ -142,7 +142,7 @@ public class RecognizerModel {
   }
 
   public static void write(Model model, ScopedContext context) throws IOException {
-    if (model.isClass()) {
+    if (model.isClassLike()) {
       ClassSchema classSchema = ClassSchema.fromMap((ClassMap) model);
       Recognizer.writeRecognizer(classSchema, context);
     } else if (model.isInterface()) {

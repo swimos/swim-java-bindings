@@ -40,6 +40,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import static ai.swim.structure.processor.Utils.accessorFor;
@@ -75,15 +76,63 @@ public abstract class ElementInspector {
 
     ClassElement classElement = new ClassElement(element, declaredPackage);
 
+    if (!inspectTag(element, context)) {
+      return null;
+    }
+
     if (!inspectClass(element, classElement, context)) {
       return null;
     }
 
-    if (!inspectSuperclasses(element, classElement, context)) {
+    if (!element.getKind().equals(ElementKind.ENUM) && !inspectSuperclasses(element, classElement, context)) {
       return null;
     }
 
     return classElement;
+  }
+
+  private static boolean inspectTag(TypeElement element, ScopedContext context) {
+    ScopedMessager messager = context.getMessager();
+
+    if (element.getKind().equals(ElementKind.ENUM)) {
+      if (element.getAnnotation(AutoForm.Tag.class)!=null){
+        messager.error(String.format("%s cannot be used on enumerations, only on constants", AutoForm.Tag.class.getCanonicalName()));
+        return false;
+      }
+
+      List<? extends Element> enclosedElements = element.getEnclosedElements();
+      HashSet<String> tags = new HashSet<>();
+
+      for (Element enclosedElement : enclosedElements) {
+        if (enclosedElement.getKind().equals(ElementKind.ENUM_CONSTANT)) {
+          AutoForm.Tag currentTag = enclosedElement.getAnnotation(AutoForm.Tag.class);
+          String constantTag;
+          if (currentTag != null && !currentTag.value().isBlank()) {
+            if (!currentTag.value().chars().allMatch(Character::isLetterOrDigit)) {
+              messager.error(String.format("invalid characters in tag: '%s'",  currentTag.value()));
+              return false;
+            }
+
+            constantTag = currentTag.value();
+          } else {
+            constantTag = enclosedElement.toString();
+          }
+
+          if (!tags.add(constantTag)) {
+            messager.error(String.format("contains a duplicate tag: '%s'", constantTag));
+            return false;
+          }
+        }
+      }
+    } else {
+      AutoForm.Tag tag = element.getAnnotation(AutoForm.Tag.class);
+
+      if (tag != null && !tag.value().isBlank()) {
+        return tag.value().chars().anyMatch(Character::isLetterOrDigit);
+      }
+    }
+
+    return true;
   }
 
   private static boolean inspectClass(Element rootElement, ClassElement classElement, ScopedContext ctx) {
@@ -128,7 +177,7 @@ public abstract class ElementInspector {
         ExecutableElement setter = accessorFor(classElement.getMethods(), "set", variableName, AutoForm.Setter.class, (anno) -> anno.value().equals(variableName.toString()));
         ExecutableElement getter = accessorFor(classElement.getMethods(), "get", variableName, AutoForm.Getter.class, (anno) -> anno.value().equals(variableName.toString()));
 
-        if (!validateSetter(setter, variableName, variableType, ctx)) {
+        if (rootElement.getKind() != ElementKind.ENUM && !validateSetter(setter, variableName, variableType, ctx)) {
           return false;
         }
 
@@ -340,7 +389,7 @@ public abstract class ElementInspector {
   private static ConstructorElement getConstructor(Element rootElement, ScopedMessager messager) {
     ExecutableElement constructor = getNoArgConstructor(rootElement);
 
-    if (constructor == null) {
+    if (constructor == null && !rootElement.getKind().equals(ElementKind.ENUM)) {
       messager.error("Class must contain a public constructor with no arguments");
       return null;
     }

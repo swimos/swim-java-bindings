@@ -27,9 +27,13 @@ public @interface AutoForm {
 
   boolean recognizer() default true;
 
-  String value() default "";
-
   Type[] subTypes() default {};
+
+  @Target({ElementType.TYPE, ElementType.FIELD})
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface Tag {
+    String value() default "";
+  }
 
   @Target({ElementType.FIELD})
   @Retention(RetentionPolicy.RUNTIME)

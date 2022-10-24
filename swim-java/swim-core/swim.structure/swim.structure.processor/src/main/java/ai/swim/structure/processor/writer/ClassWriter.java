@@ -58,7 +58,7 @@ public abstract class ClassWriter {
     TypeSpec typeSpec;
     String declaredPackage;
 
-    if (model.isClass()) {
+    if (model.isClassLike()) {
       ClassMap classMap = (ClassMap) model;
       declaredPackage = classMap.getDeclaredPackage().getQualifiedName().toString();
       if (classMap.isAbstract()) {

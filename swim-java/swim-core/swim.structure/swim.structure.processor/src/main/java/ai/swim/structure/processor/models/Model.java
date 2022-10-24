@@ -93,6 +93,10 @@ public abstract class Model {
     return type;
   }
 
+  public boolean isClassLike() {
+    return false;
+  }
+
   public boolean isClass() {
     return false;
   }
