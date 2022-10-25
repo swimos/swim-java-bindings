@@ -128,7 +128,12 @@ public abstract class ElementInspector {
       AutoForm.Tag tag = element.getAnnotation(AutoForm.Tag.class);
 
       if (tag != null && !tag.value().isBlank()) {
-        return tag.value().chars().anyMatch(Character::isLetterOrDigit);
+        if(!tag.value().chars().allMatch(Character::isLetterOrDigit)){
+          messager.error(String.format("invalid characters in tag: '%s'",  tag.value()));
+          return false;
+        }else {
+          return true;
+        }
       }
     }
 

@@ -12,6 +12,8 @@ dependencies {
     api project(':swim-util')
 
     implementation 'org.reflections:reflections:0.10.2'
+
+    testImplementation group: 'com.google.testing.compile', name: 'compile-testing', version: '0.19'
 }
 
 repositories {
