@@ -54,10 +54,6 @@ public class FormProcessor extends AbstractProcessor {
         return true;
       }
 
-      if (!element.asType().toString().contains("ai.swim.structure.writer.AutoStructuralWriterTest.EnumForm")) {
-//        continue;
-      }
-
       ScopedContext scopedContext = new ScopedContext(processingEnv, recognizerFactory, writerFactory, element);
 
       try {

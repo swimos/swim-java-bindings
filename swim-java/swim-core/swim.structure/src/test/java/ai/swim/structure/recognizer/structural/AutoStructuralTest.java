@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1051,5 +1052,8 @@ public class AutoStructuralTest {
     public Number m;
   }
 
+  public static class A<L extends List<? extends Number>> {
+    public A a;
+  }
 
 }

@@ -71,171 +71,6 @@ import static ai.swim.structure.processor.recognizer.writer.recognizer.Polymorph
 
 public class Recognizer {
 
-  public interface Transposition {
-    FieldSpec tagSpec(ScopedContext context);
-
-    MethodSpec classBind(ScopedContext context);
-
-    TypeName builderType(ScopedContext context);
-
-    MethodSpec builderBind(ScopedContext context);
-
-    TypeSpec nested(ScopedContext context);
-  }
-
-  private static class ClassTransposition implements Transposition {
-    private final ClassSchema schema;
-
-    ClassTransposition(ClassSchema schema) {
-      this.schema = schema;
-    }
-
-    @Override
-    public FieldSpec tagSpec(ScopedContext context) {
-      String tag = schema.getTag();
-      Elements elementUtils = context.getProcessingEnvironment().getElementUtils();
-      TypeElement fieldTagSpecElement = elementUtils.getTypeElement(tag == null ? FIELD_TAG_SPEC : FIXED_TAG_SPEC);
-      CodeBlock fieldSpec = tag == null ? CodeBlock.of("new $T()", fieldTagSpecElement) : CodeBlock.of("new $T(\"$L\")", fieldTagSpecElement, tag);
-
-      return FieldSpec.builder(TypeName.get(fieldTagSpecElement.asType()), "tagSpec").addModifiers(Modifier.PRIVATE, Modifier.FINAL).initializer(fieldSpec).build();
-    }
-
-    @Override
-    public MethodSpec classBind(ScopedContext context) {
-      return buildPolymorphicMethod(TypeName.get(context.getRoot().asType()), "bind", null, CodeBlock.of("return this.recognizer.bind();"));
-    }
-
-    @Override
-    public TypeName builderType(ScopedContext context) {
-      return ClassName.get(context.getRoot().asType());
-    }
-
-    @Override
-    public MethodSpec builderBind(ScopedContext context) {
-      return MethodSpec.methodBuilder(RECOGNIZING_BUILDER_BIND)
-          .addModifiers(Modifier.PUBLIC)
-          .addAnnotation(Override.class)
-          .returns(TypeName.get(context.getRoot().asType()))
-          .addCode(new BindEmitter(schema).emit(context))
-          .build();
-    }
-
-    @Override
-    public TypeSpec nested(ScopedContext context) {
-      return null;
-    }
-  }
-
-  private static class EnumTransposition implements Transposition {
-    private final ClassSchema schema;
-
-    EnumTransposition(ClassSchema schema) {
-      this.schema = schema;
-    }
-
-    @Override
-    public FieldSpec tagSpec(ScopedContext context) {
-      Elements elementUtils = context.getProcessingEnvironment().getElementUtils();
-      TypeElement fieldTagSpecElement = elementUtils.getTypeElement(ENUM_TAG_SPEC);
-
-      return FieldSpec
-          .builder(TypeName.get(fieldTagSpecElement.asType()), "tagSpec")
-          .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-          .initializer(CodeBlock.of("new $T(java.util.List.of($L))", fieldTagSpecElement, schema.getVariantTags().stream().map(v -> String.format("\"%s\"", v)).collect(Collectors.joining(", "))))
-          .build();
-    }
-
-    @Override
-    public MethodSpec classBind(ScopedContext context) {
-      NameFactory nameFactory = context.getNameFactory();
-      TypeName typeName = TypeName.get(context.getRoot().asType());
-
-      CodeBlock.Builder body = CodeBlock.builder();
-      body.addStatement("$T spec = recognizer.bind()", ClassName.bestGuess(nameFactory.enumSpec()));
-      body.addStatement("$T obj = $T.valueOf(tagSpec.getEnumVariant())", typeName, typeName);
-
-      for (FieldModel fieldModel : schema.getClassMap().getFieldModels()) {
-        if (fieldModel.isIgnored()) {
-          continue;
-        }
-
-        CodeBlock.Builder getter = CodeBlock.builder();
-        fieldModel.getAccessor().writeGet(getter, "obj");
-
-        body
-            .beginControlFlow("if ($L != spec.$L)", getter.build(), fieldModel.getName())
-            .addStatement("throw new ai.swim.structure.recognizer.RecognizerException(String.format(\"Field mismatch. Expected '%s' but got '%s'\", spec.$L, $L))", fieldModel.getName(), getter.build())
-            .endControlFlow();
-      }
-
-      return buildPolymorphicMethod(typeName, "bind", null, body.addStatement("return obj").build());
-    }
-
-    @Override
-    public TypeName builderType(ScopedContext context) {
-      return ClassName.bestGuess(context.getNameFactory().enumSpec());
-    }
-
-    @Override
-    public MethodSpec builderBind(ScopedContext context) {
-      NameFactory nameFactory = context.getNameFactory();
-      PartitionedFields partitionedFields = schema.getPartitionedFields();
-
-      CodeBlock.Builder body = CodeBlock.builder();
-
-      if (partitionedFields.hasHeaderFields()) {
-        body.addStatement("$T __header = $L.bind()", ClassName.bestGuess(nameFactory.headerClassName()), nameFactory.headerBuilderFieldName());
-      }
-
-      ClassName enumTy = ClassName.bestGuess(nameFactory.enumSpec());
-
-      String bindOp = schema
-          .getClassMap()
-          .getFieldModels()
-          .stream()
-          .filter(f -> !f.isIgnored())
-          .map(f -> {
-            if (partitionedFields.isHeader(f)) {
-              return String.format("__header.%s", f.getName());
-            } else {
-              return String.format("%s.bind()", nameFactory.fieldBuilderName(f.getName().toString()));
-            }
-          })
-          .collect(Collectors.joining(", "));
-
-      body.addStatement("return new $T($L)", enumTy, bindOp);
-
-      return buildPolymorphicMethod(
-          ClassName.bestGuess(context.getNameFactory().enumSpec()),
-          "bind",
-          null,
-          body.build()
-      );
-    }
-
-    @Override
-    public TypeSpec nested(ScopedContext context) {
-      ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
-      TypeSpec.Builder builder = TypeSpec.classBuilder(context.getNameFactory().enumSpec()).addModifiers(Modifier.PRIVATE, Modifier.STATIC);
-      MethodSpec.Builder constructor = MethodSpec.constructorBuilder();
-
-      for (FieldModel fieldModel : schema.getClassMap().getFieldModels()) {
-        if (fieldModel.isIgnored()) {
-          continue;
-        }
-
-        TypeName ty = TypeName.get(fieldModel.type(processingEnvironment));
-        String name = fieldModel.getName().toString();
-        builder.addField(FieldSpec.builder(ty, name, Modifier.PRIVATE).build());
-
-        constructor.addParameter(ParameterSpec.builder(ty, name).build());
-        constructor.addStatement(CodeBlock.of("this.$L = $L", name, name));
-      }
-
-      return builder.addMethod(constructor.build()).build();
-    }
-  }
-
   public static void writeRecognizer(ClassSchema schema, ScopedContext context) throws IOException {
     ClassMap classMap = schema.getClassMap();
     List<Model> subTypes = classMap.getSubTypes();
@@ -537,6 +372,171 @@ public class Recognizer {
     body.endControlFlow();
 
     return body.build();
+  }
+
+  public interface Transposition {
+    FieldSpec tagSpec(ScopedContext context);
+
+    MethodSpec classBind(ScopedContext context);
+
+    TypeName builderType(ScopedContext context);
+
+    MethodSpec builderBind(ScopedContext context);
+
+    TypeSpec nested(ScopedContext context);
+  }
+
+  private static class ClassTransposition implements Transposition {
+    private final ClassSchema schema;
+
+    ClassTransposition(ClassSchema schema) {
+      this.schema = schema;
+    }
+
+    @Override
+    public FieldSpec tagSpec(ScopedContext context) {
+      String tag = schema.getTag();
+      Elements elementUtils = context.getProcessingEnvironment().getElementUtils();
+      TypeElement fieldTagSpecElement = elementUtils.getTypeElement(tag == null ? FIELD_TAG_SPEC : FIXED_TAG_SPEC);
+      CodeBlock fieldSpec = tag == null ? CodeBlock.of("new $T()", fieldTagSpecElement) : CodeBlock.of("new $T(\"$L\")", fieldTagSpecElement, tag);
+
+      return FieldSpec.builder(TypeName.get(fieldTagSpecElement.asType()), "tagSpec").addModifiers(Modifier.PRIVATE, Modifier.FINAL).initializer(fieldSpec).build();
+    }
+
+    @Override
+    public MethodSpec classBind(ScopedContext context) {
+      return buildPolymorphicMethod(TypeName.get(context.getRoot().asType()), "bind", null, CodeBlock.of("return this.recognizer.bind();"));
+    }
+
+    @Override
+    public TypeName builderType(ScopedContext context) {
+      return ClassName.get(context.getRoot().asType());
+    }
+
+    @Override
+    public MethodSpec builderBind(ScopedContext context) {
+      return MethodSpec.methodBuilder(RECOGNIZING_BUILDER_BIND)
+          .addModifiers(Modifier.PUBLIC)
+          .addAnnotation(Override.class)
+          .returns(TypeName.get(context.getRoot().asType()))
+          .addCode(new BindEmitter(schema).emit(context))
+          .build();
+    }
+
+    @Override
+    public TypeSpec nested(ScopedContext context) {
+      return null;
+    }
+  }
+
+  private static class EnumTransposition implements Transposition {
+    private final ClassSchema schema;
+
+    EnumTransposition(ClassSchema schema) {
+      this.schema = schema;
+    }
+
+    @Override
+    public FieldSpec tagSpec(ScopedContext context) {
+      Elements elementUtils = context.getProcessingEnvironment().getElementUtils();
+      TypeElement fieldTagSpecElement = elementUtils.getTypeElement(ENUM_TAG_SPEC);
+
+      return FieldSpec
+          .builder(TypeName.get(fieldTagSpecElement.asType()), "tagSpec")
+          .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+          .initializer(CodeBlock.of("new $T(java.util.List.of($L))", fieldTagSpecElement, schema.getVariantTags().stream().map(v -> String.format("\"%s\"", v)).collect(Collectors.joining(", "))))
+          .build();
+    }
+
+    @Override
+    public MethodSpec classBind(ScopedContext context) {
+      NameFactory nameFactory = context.getNameFactory();
+      TypeName typeName = TypeName.get(context.getRoot().asType());
+
+      CodeBlock.Builder body = CodeBlock.builder();
+      body.addStatement("$T spec = recognizer.bind()", ClassName.bestGuess(nameFactory.enumSpec()));
+      body.addStatement("$T obj = $T.valueOf(tagSpec.getEnumVariant())", typeName, typeName);
+
+      for (FieldModel fieldModel : schema.getClassMap().getFieldModels()) {
+        if (fieldModel.isIgnored()) {
+          continue;
+        }
+
+        CodeBlock.Builder getter = CodeBlock.builder();
+        fieldModel.getAccessor().writeGet(getter, "obj");
+
+        body
+            .beginControlFlow("if ($L != spec.$L)", getter.build(), fieldModel.getName())
+            .addStatement("throw new ai.swim.structure.recognizer.RecognizerException(String.format(\"Field mismatch. Expected '%s' but got '%s'\", spec.$L, $L))", fieldModel.getName(), getter.build())
+            .endControlFlow();
+      }
+
+      return buildPolymorphicMethod(typeName, "bind", null, body.addStatement("return obj").build());
+    }
+
+    @Override
+    public TypeName builderType(ScopedContext context) {
+      return ClassName.bestGuess(context.getNameFactory().enumSpec());
+    }
+
+    @Override
+    public MethodSpec builderBind(ScopedContext context) {
+      NameFactory nameFactory = context.getNameFactory();
+      PartitionedFields partitionedFields = schema.getPartitionedFields();
+
+      CodeBlock.Builder body = CodeBlock.builder();
+
+      if (partitionedFields.hasHeaderFields()) {
+        body.addStatement("$T __header = $L.bind()", ClassName.bestGuess(nameFactory.headerClassName()), nameFactory.headerBuilderFieldName());
+      }
+
+      ClassName enumTy = ClassName.bestGuess(nameFactory.enumSpec());
+
+      String bindOp = schema
+          .getClassMap()
+          .getFieldModels()
+          .stream()
+          .filter(f -> !f.isIgnored())
+          .map(f -> {
+            if (partitionedFields.isHeader(f)) {
+              return String.format("__header.%s", f.getName());
+            } else {
+              return String.format("%s.bind()", nameFactory.fieldBuilderName(f.getName().toString()));
+            }
+          })
+          .collect(Collectors.joining(", "));
+
+      body.addStatement("return new $T($L)", enumTy, bindOp);
+
+      return buildPolymorphicMethod(
+          ClassName.bestGuess(context.getNameFactory().enumSpec()),
+          "bind",
+          null,
+          body.build()
+      );
+    }
+
+    @Override
+    public TypeSpec nested(ScopedContext context) {
+      ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
+      TypeSpec.Builder builder = TypeSpec.classBuilder(context.getNameFactory().enumSpec()).addModifiers(Modifier.PRIVATE, Modifier.STATIC);
+      MethodSpec.Builder constructor = MethodSpec.constructorBuilder();
+
+      for (FieldModel fieldModel : schema.getClassMap().getFieldModels()) {
+        if (fieldModel.isIgnored()) {
+          continue;
+        }
+
+        TypeName ty = TypeName.get(fieldModel.type(processingEnvironment));
+        String name = fieldModel.getName().toString();
+        builder.addField(FieldSpec.builder(ty, name, Modifier.PRIVATE).build());
+
+        constructor.addParameter(ParameterSpec.builder(ty, name).build());
+        constructor.addStatement(CodeBlock.of("this.$L = $L", name, name));
+      }
+
+      return builder.addMethod(constructor.build()).build();
+    }
   }
 
 }

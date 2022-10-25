@@ -15,9 +15,28 @@
 package ai.swim.structure.annotations;
 
 public enum FieldKind {
+  /**
+   * The field should be used to form the entire body of the structure, all other fields that are marked as slots will
+   * be promoted to headers. At most one field may be marked with this.
+   */
   Body,
+  /**
+   * The field should be written as a slot in the tag attribute.
+   */
   Header,
+  /**
+   * The field should be moved into the body of the tag attribute (unlabelled). If there are no header fields it will
+   * form the entire body of the tag, otherwise it will be the first item of the tag body. At most one field may be
+   * marked with this.
+   */
   HeaderBody,
+  /**
+   * The field should be written as an attribute in the structure.
+   */
   Attr,
+  /**
+   * The field should be written as a slot in the main body or the header if another field is marked as `body`. A field
+   * marked with no positional attribute will default to being written as a slot in the structure.
+   */
   Slot
 }
