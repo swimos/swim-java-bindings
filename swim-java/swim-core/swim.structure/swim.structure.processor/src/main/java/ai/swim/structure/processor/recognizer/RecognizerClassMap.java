@@ -27,4 +27,5 @@ public class RecognizerClassMap extends ClassMap {
   public String concreteName() {
     return this.getJavaClassName() + "Recognizer";
   }
+
 }
