@@ -16,7 +16,6 @@ package ai.swim.structure.processor.recognizer.writer.builder;
 
 import ai.swim.structure.processor.Emitter;
 import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.recognizer.writer.recognizer.Recognizer;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldModel;
 import com.squareup.javapoet.FieldSpec;
@@ -34,7 +33,6 @@ import javax.lang.model.util.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_BIND;
 import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_CLASS;
 import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_FEED_INDEX;
 import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_RESET;

@@ -20,7 +20,6 @@ import ai.swim.structure.processor.context.ScopedContext;
 import ai.swim.structure.processor.recognizer.writer.Lookups;
 import ai.swim.structure.processor.recognizer.writer.builder.Builder;
 import ai.swim.structure.processor.recognizer.writer.builder.FieldInitializer;
-import ai.swim.structure.processor.recognizer.writer.recognizer.Recognizer;
 import ai.swim.structure.processor.schema.ClassSchema;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.FieldModel;

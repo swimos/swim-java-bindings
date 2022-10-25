@@ -15,7 +15,6 @@
 package ai.swim.structure.recognizer.std.collections;
 
 
-import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.recognizer.FirstOf;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.SimpleAttrBodyRecognizer;
@@ -27,7 +26,6 @@ import java.util.List;
 public class ArrayRecognizer<E> extends CollectionRecognizer<E, List<E>, E[]> {
   private final Class<E> clazz;
 
-  @AutoForm.ArrayTypedConstructor
   public ArrayRecognizer(Class<E> clazz, Recognizer<E> delegate) {
     super(delegate, new ArrayList<>());
     this.clazz = clazz;

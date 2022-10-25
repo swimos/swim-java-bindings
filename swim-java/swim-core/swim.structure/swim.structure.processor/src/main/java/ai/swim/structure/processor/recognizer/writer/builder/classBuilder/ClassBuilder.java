@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_BIND;
 import static ai.swim.structure.processor.recognizer.writer.Lookups.RECOGNIZING_BUILDER_CLASS;
 import static ai.swim.structure.processor.recognizer.writer.WriterUtils.typeParametersToTypeVariable;
 import static ai.swim.structure.processor.recognizer.writer.WriterUtils.writeGenericRecognizerConstructor;
