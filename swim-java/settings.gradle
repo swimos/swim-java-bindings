@@ -16,10 +16,6 @@ include 'swim.structure.annotations'
 project(':swim.structure.annotations').projectDir = file('swim-core/swim.structure/swim.structure.annotations')
 project(':swim.structure.annotations').name = 'swim-structure-annotations'
 
-include 'swim.structure.processor'
-project(':swim.structure.processor').projectDir = file('swim-core/swim.structure/swim.structure.processor')
-project(':swim.structure.processor').name = 'swim-structure-processor'
-
 include 'swim.util'
 project(':swim.util').projectDir = file('swim-core/swim.util')
 project(':swim.util').name = 'swim-util'
