@@ -25,7 +25,6 @@ import ai.swim.structure.value.ValueItem;
 import java.util.List;
 
 class AttrBodyValueRecognizer extends ValueRecognizer {
-  private ValueRecognizer valueRecognizer = new ValueRecognizer();
 
   public AttrBodyValueRecognizer() {
     stack.push(new ValueRecognizer.IncrementalValueBuilder(null, true));
@@ -35,7 +34,7 @@ class AttrBodyValueRecognizer extends ValueRecognizer {
   public Recognizer<Value> feedEvent(ReadEvent event) {
     if (stack.size() == 1) {
       if (event.isEndAttribute()) {
-        ValueRecognizer.IncrementalValueBuilder builder = stack.pollFirst();
+        ValueRecognizer.IncrementalValueBuilder builder = stack.getFirst();
         Record.Builder record = builder.record;
         int itemCount = record.itemCount();
 
