@@ -14,20 +14,10 @@
 
 package ai.swim.structure.value;
 
-import ai.swim.structure.writer.PrimitiveWriter;
-
 public abstract class PrimitiveValue extends Value {
   @Override
   public boolean isPrimitive() {
     return true;
   }
 
-  public <T> T visitPrimitiveWritable(PrimitiveWriter<T> writer) {
-    if (!isPrimitive()) {
-      throw new IllegalStateException("Attempted to visit a non-primitive value type");
-    }
-    return writePrimitive(writer);
-  }
-
-  protected abstract <T> T writePrimitive(PrimitiveWriter<T> writer);
 }

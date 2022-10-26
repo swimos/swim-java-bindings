@@ -62,7 +62,7 @@ public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
         } else {
           return Recognizer.error(new RuntimeException("Unexpected attribute: " + attributeEvent.value()));
         }
-      }else {
+      } else {
         throw new AssertionError();
       }
     }

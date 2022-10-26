@@ -35,26 +35,6 @@ public class ValueRecognizer extends Recognizer<Value> {
   protected final Deque<IncrementalValueBuilder> stack;
   private Value slotKey;
 
-  protected static class IncrementalValueBuilder {
-    protected final Record.Builder record = new Record.Builder();
-    protected final Either<Text, Value> key;
-    protected boolean inBody;
-
-    public IncrementalValueBuilder(Either<Text, Value> key, boolean inBody) {
-      this.key = key;
-      this.inBody = inBody;
-    }
-
-    @Override
-    public String toString() {
-      return "IncrementalValueBuilder{" +
-          "record=" + record +
-          ", key=" + key +
-          ", inBody=" + inBody +
-          '}';
-    }
-  }
-
   public ValueRecognizer() {
     stack = new ArrayDeque<>(2);
   }
@@ -241,5 +221,25 @@ public class ValueRecognizer extends Recognizer<Value> {
         "stack=" + stack +
         ", slotKey=" + slotKey +
         '}';
+  }
+
+  protected static class IncrementalValueBuilder {
+    protected final Record.Builder record = new Record.Builder();
+    protected final Either<Text, Value> key;
+    protected boolean inBody;
+
+    public IncrementalValueBuilder(Either<Text, Value> key, boolean inBody) {
+      this.key = key;
+      this.inBody = inBody;
+    }
+
+    @Override
+    public String toString() {
+      return "IncrementalValueBuilder{" +
+          "record=" + record +
+          ", key=" + key +
+          ", inBody=" + inBody +
+          '}';
+    }
   }
 }

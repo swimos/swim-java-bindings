@@ -14,8 +14,6 @@
 
 package ai.swim.structure.value.num;
 
-import ai.swim.structure.writer.PrimitiveWriter;
-
 import java.util.Objects;
 
 public class NumberI32 extends NumberValue {
@@ -49,8 +47,4 @@ public class NumberI32 extends NumberValue {
     return Objects.hash(value);
   }
 
-  @Override
-  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
-    return writer.writeInt(value);
-  }
 }

@@ -16,7 +16,7 @@ package ai.swim.structure.recognizer.structural.tag;
 
 import java.util.List;
 
-public class EnumerationTagSpec extends TagSpec{
+public class EnumerationTagSpec extends TagSpec {
   private final List<String> tags;
   private String matched;
 
@@ -25,10 +25,10 @@ public class EnumerationTagSpec extends TagSpec{
   }
 
   public boolean validate(String tag) {
-    if (tags.contains(tag) ) {
+    if (tags.contains(tag)) {
       matched = tag;
       return true;
-    }else {
+    } else {
       return false;
     }
   }
