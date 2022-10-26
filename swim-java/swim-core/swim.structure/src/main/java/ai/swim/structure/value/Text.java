@@ -14,8 +14,6 @@
 
 package ai.swim.structure.value;
 
-import ai.swim.structure.writer.PrimitiveWriter;
-
 import java.util.Objects;
 
 public class Text extends PrimitiveValue {
@@ -51,8 +49,4 @@ public class Text extends PrimitiveValue {
     return Objects.hash(value);
   }
 
-  @Override
-  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
-    return writer.writeText(value);
-  }
 }
