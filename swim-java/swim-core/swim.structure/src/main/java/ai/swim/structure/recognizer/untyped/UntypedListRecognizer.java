@@ -44,5 +44,4 @@ class UntypedListRecognizer<T> extends Recognizer<T> {
     return new UntypedRecognizer<>();
   }
 
-
 }
