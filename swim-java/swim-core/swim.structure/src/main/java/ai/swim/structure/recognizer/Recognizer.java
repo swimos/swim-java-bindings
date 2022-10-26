@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 
 /**
- * <h2>Registration</h2>>
+ * <h2>Registration</h2>
  * It is preferred for recognizers to be manually registered with the recognizer proxy so that no reflection has to be
  * used each time it is used. Alternatively, a recognizer can be annotated with @Autoloaded(targetClass.class) and it
  * will be automatically registered with the recognizer proxy when it is initialised.

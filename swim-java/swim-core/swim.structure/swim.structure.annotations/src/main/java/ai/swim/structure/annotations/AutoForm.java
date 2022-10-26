@@ -38,7 +38,7 @@ import java.lang.annotation.Target;
  * entire definition is generated at compile time instead of using runtime reflection. This annotation may be placed on
  * both concrete and abstract classes to generate {@code Recognizer<T>} and {@code Writable<T>} definitions
  * automatically but a field may appear only once in the inheritance tree unless it has a mirror that is ignored; any
- * subtypes of a class must be marked with {@code @AutoForm(subtypes = {...}}.
+ * subtypes of a class must be marked with {@code @AutoForm(subtypes = {...})}.
  * <p>
  * The form annotation processor supports generics, wildcard types with and without inheritance bounds, and the use of
  * polymorphic types as fields. When the processor encounters these types, it will attempt to unroll the type if it has
