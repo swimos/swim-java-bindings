@@ -1,0 +1,18 @@
+[package]
+name = "swim_client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jvm_sys = { path = "../jvm_sys" }
+swim_downlink = { path = "../../swim-rust/swim_downlink" }
+swim_api = { path = "../../swim-rust/api/swim_api" }
+swim_model = { path = "../../swim-rust/api/swim_model" }
+byte_channel = { path = "../../swim-rust/swim_utilities/byte_channel" }
+futures = "0.3.4"
+futures-util = "0.3.4"
+bytes = "1.0"
+jni = "0.20.0"
+
+[dev-dependencies]
+tokio = { version = "1.1.1", features = ["rt-multi-thread"] }

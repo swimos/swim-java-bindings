@@ -1,0 +1,12 @@
+ext.moduleName = 'swim.client'
+
+dependencies {
+    api project(':swim-bridge')
+    api project(':swim-codec')
+    api project(':swim-recon')
+    api project(':swim-structure')
+}
+
+repositories {
+    mavenCentral()
+}

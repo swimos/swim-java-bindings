@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/jvm_sys/jvm_sys_tests/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/jvm_sys/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/swim_client/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/swim_sys/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sys_util/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
