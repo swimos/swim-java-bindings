@@ -32,7 +32,7 @@ public class TestProcessor {
   @Test
   void badTag() {
     assertThat(compile("BadTag.java"))
-        .hadErrorContaining("BadTag: invalid characters in tag: 'badtag!!'");
+        .hadErrorContaining("invalid characters in tag: 'badtag!!'");
   }
 
   @Test
@@ -44,13 +44,13 @@ public class TestProcessor {
   @Test
   void duplicateTag() {
     assertThat(compile("DuplicateTag.java"))
-        .hadErrorContaining("DuplicateTag: contains a duplicate tag: 'A'");
+        .hadErrorContaining("contains a duplicate tag: 'A'");
   }
 
   @Test
   void duplicateTag2() {
     assertThat(compile("DuplicateTag2.java"))
-        .hadErrorContaining("DuplicateTag2: contains a duplicate tag: 'A'");
+        .hadErrorContaining("contains a duplicate tag: 'A'");
   }
 
   @Test
@@ -68,79 +68,79 @@ public class TestProcessor {
   @Test
   void badSetter() {
     assertThat(compile("BadSetter.java"))
-        .hadErrorContaining("BadSetter: setter for field 'a' accepts an incorrect type. Cause: Expected type: 'float', found: 'int'");
+        .hadErrorContaining("setter for field 'a' accepts an incorrect type. Cause: Expected type: 'float', found: 'int'");
   }
 
   @Test
   void badSetter2() {
     assertThat(compile("BadSetter2.java"))
-        .hadErrorContaining("BadSetter2: expected a setter for field 'a' that takes one parameter");
+        .hadErrorContaining("expected a setter for field 'a' that takes one parameter");
   }
 
   @Test
   void badGetter() {
     assertThat(compile("BadGetter.java"))
-        .hadErrorContaining("BadGetter: getter for field 'a' returns an incorrect type");
+        .hadErrorContaining("getter for field 'a' returns an incorrect type");
   }
 
   @Test
   void badGetter2() {
     assertThat(compile("BadGetter2.java"))
-        .hadErrorContaining("BadGetter2: getter for field 'a' should have no parameter");
+        .hadErrorContaining("getter for field 'a' should have no parameter");
   }
 
   @Test
   void noConstructor() {
     assertThat(compile("NoConstructor.java"))
-        .hadErrorContaining("NoConstructor: Class must contain a public constructor with no arguments");
+        .hadErrorContaining("Class must contain a public constructor with no arguments");
   }
 
   @Test
   void badSubType() {
     assertThat(compile("BadSubType.java"))
-        .hadErrorContaining("BadSubType.Parent: BadSubType.Child is not a subtype of BadSubType.Parent");
+        .hadErrorContaining("BadSubType.Child is not a subtype of BadSubType.Parent");
   }
 
   @Test
   void badSubType2() {
     assertThat(compile("BadSubType2.java"))
-        .hadErrorContaining("BadSubType2.Parent: Class missing subtypes");
+        .hadErrorContaining("Class missing subtypes");
   }
 
   @Test
   void badSubType3() {
     assertThat(compile("BadSubType3.java"))
-        .hadErrorContaining("BadSubType3.Parent: Subtype cannot be root type");
+        .hadErrorContaining("Subtype cannot be root type");
   }
 
   @Test
   void badSubType4() {
     assertThat(compile("BadSubType4.java"))
-        .hadErrorContaining("BadSubType4.Child: Class extends from 'BadSubType4.Parent' that is not annotated with @AutoForm. Either annotate it or manually implement a form");
+        .hadErrorContaining("Class extends from 'BadSubType4.Parent' that is not annotated with @AutoForm. Either annotate it or manually implement a form");
   }
 
   @Test
   void duplicateField() {
     assertThat(compile("DuplicateField.java"))
-        .hadErrorContaining("DuplicateField.Child: Class contains a field (field) with the same name as one in its superclass");
+        .hadErrorContaining("Class contains a field (field) with the same name as one in its superclass");
   }
 
   @Test
   void duplicateField2() {
     assertThat(compile("DuplicateField2.java"))
-        .hadErrorContaining("DuplicateField2.Child: Class contains a field (fieldA) with the same name as one in its superclass");
+        .hadErrorContaining("Class contains a field (fieldA) with the same name as one in its superclass");
   }
 
   @Test
   void doubleBody() {
     assertThat(compile("DoubleBody.java"))
-        .hadErrorContaining("DoubleBody: At most one field can replace the body");
+        .hadErrorContaining("At most one field can replace the body");
   }
 
   @Test
   void doubleHeaderBody() {
     assertThat(compile("DoubleHeaderBody.java"))
-        .hadErrorContaining("DoubleHeaderBody: At most one field can replace the tag body.");
+        .hadErrorContaining("At most one field can replace the tag body.");
   }
 
 }
