@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "jvm_sys",
+    "jvm_sys/jvm_sys_tests",
+    "swim_sys",
+    "sys_util"
+]

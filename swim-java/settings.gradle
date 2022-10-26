@@ -23,3 +23,7 @@ project(':swim.structure.processor').name = 'swim-structure-processor'
 include 'swim.util'
 project(':swim.util').projectDir = file('swim-core/swim.util')
 project(':swim.util').name = 'swim-util'
+
+include 'swim.bridge'
+project(':swim.bridge').projectDir = file('swim-ffi/swim.bridge')
+project(':swim.bridge').name = 'swim-bridge'
