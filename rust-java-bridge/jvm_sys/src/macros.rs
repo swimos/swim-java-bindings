@@ -12,25 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
+#[macro_export]
+macro_rules! jni_try {
+    ($env:ident, $class:tt, $msg:tt, $expr:expr $(,)?) => {{
+        let env_ref = $env;
 
-use jni::errors::JniError;
-use jni::{JNIEnv, JavaVM};
-
-use crate::JniResult;
-
-#[inline]
-pub fn get_env(vm: &JavaVM) -> JniResult<JNIEnv> {
-    match vm.get_env() {
-        Ok(env) => Ok(env),
-        Err(jni::errors::Error::JniCall(JniError::ThreadDetached)) => {
-            vm.attach_current_thread_as_daemon()
+        match $expr {
+            Ok(val) => val,
+            Err(e) => {
+                env_ref
+                    .throw_new($class, format!("{}: {:?}", $msg, e))
+                    .expect("Failed to throw exception");
+                return;
+            }
         }
-        Err(e) => Err(e),
-    }
-}
-
-#[inline]
-pub fn get_env_shared(vm: &Arc<JavaVM>) -> JniResult<JNIEnv> {
-    get_env(vm.as_ref())
+    }};
+    ($env:ident, $msg:tt, $expr:expr $(,)?) => {
+        $crate::jni_try!($env, "java/lang/Exception", $msg, $expr)
+    };
 }

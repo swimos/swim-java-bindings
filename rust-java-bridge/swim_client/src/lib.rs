@@ -1,51 +1,123 @@
-use byte_channel::{ByteReader, ByteWriter};
-use futures_util::future::BoxFuture;
-use jni::sys::JavaVM;
-use std::marker::PhantomData;
-use swim_api::downlink::{Downlink, DownlinkConfig, DownlinkKind};
-use swim_api::error::DownlinkTaskError;
-use swim_downlink::lifecycle::ValueDownlinkLifecycle;
-use swim_model::address::Address;
-use swim_model::Text;
+// Copyright 2015-2022 Swim Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-struct FfiValueDownlinkModel<T, LC> {
-    _pd: PhantomData<T>,
-    lifecycle: LC,
-    vm: JavaVM,
-}
+use std::panic;
 
-impl<T, LC> FfiValueDownlinkModel<T, LC> {
-    pub fn new(lifecycle: LC, vm: JavaVM) -> FfiValueDownlinkModel<T, LC> {
-        FfiValueDownlinkModel {
-            _pd: Default::default(),
-            lifecycle,
-            vm,
+use jni::objects::{JClass, JString};
+use jni::sys::jobject;
+use jni::JNIEnv;
+use url::Url;
+
+use jvm_sys::vm::set_panic_hook;
+use jvm_sys::{jni_try, npch};
+use swim_client_core::downlink::value::FfiValueDownlink;
+use swim_client_core::{ClientHandle, SwimClient};
+
+macro_rules! parse_string {
+    ($env:ident, $string:tt) => {{
+        let env_ref = $env;
+        let string = $string;
+        let err = format!("Failed to parse {}", stringify!(name));
+
+        let java_string = jni_try! {
+            env_ref,
+            err,
+            env_ref.get_string(string)
+        };
+        jni_try! {
+            env_ref,
+            err,
+            java_string.to_str()
         }
-    }
+        .to_string()
+    }};
 }
 
-impl<T, LC> Downlink for FfiValueDownlinkModel<T, LC> {
-    fn kind(&self) -> DownlinkKind {
-        DownlinkKind::Value
-    }
+#[no_mangle]
+pub extern "system" fn Java_ai_swim_client_SwimClient_startClient(
+    env: JNIEnv,
+    _class: JClass,
+) -> *mut SwimClient {
+    let client = Box::leak(Box::new(SwimClient::new(
+        env.get_java_vm().expect("Failed to get Java VM"),
+    )));
+    set_panic_hook();
+    client
+}
 
-    fn run(
-        self,
-        path: Address<Text>,
-        config: DownlinkConfig,
-        input: ByteReader,
-        output: ByteWriter,
-    ) -> BoxFuture<'static, Result<(), DownlinkTaskError>> {
-        todo!()
-    }
+#[no_mangle]
+pub extern "system" fn Java_ai_swim_client_SwimClient_shutdownClient(
+    env: JNIEnv,
+    _class: JClass,
+    client: *mut SwimClient,
+) {
+    npch!(env, client);
+    let runtime = unsafe { Box::from_raw(client) };
+    runtime.shutdown();
+    let _hook = panic::take_hook();
+}
 
-    fn run_boxed(
-        self: Box<Self>,
-        path: Address<Text>,
-        config: DownlinkConfig,
-        input: ByteReader,
-        output: ByteWriter,
-    ) -> BoxFuture<'static, Result<(), DownlinkTaskError>> {
-        todo!()
-    }
+#[no_mangle]
+pub extern "system" fn Java_ai_swim_client_SwimClient_handle(
+    env: JNIEnv,
+    _class: JClass,
+    runtime: *mut SwimClient,
+) -> *mut ClientHandle {
+    npch!(env, runtime);
+    let runtime = unsafe { &*runtime };
+    let handle = runtime.handle().clone();
+
+    Box::leak(Box::new(handle))
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkModel_open(
+    env: JNIEnv,
+    _class: JClass,
+    handle: *mut ClientHandle,
+    host: JString,
+    node: JString,
+    lane: JString,
+    on_event: jobject,
+    on_linked: jobject,
+    on_set: jobject,
+    on_synced: jobject,
+    on_unlinked: jobject,
+) {
+    let handle = unsafe { &*handle };
+    let downlink = jni_try! {
+        env,
+        "Failed to create downlink",
+        FfiValueDownlink::create(
+            handle.vm(),
+            on_event,
+            on_linked,
+            on_set,
+            on_synced,
+            on_unlinked,
+            handle.error_mode(),
+        ),
+    };
+
+    let host = jni_try! {
+        env,
+        "Failed to parse host URL",
+        Url::try_from(parse_string!(env, host).as_str())
+    };
+
+    let node = parse_string!(env, node);
+    let lane = parse_string!(env, lane);
+
+    handle.value_downlink(downlink, host, node, lane);
 }

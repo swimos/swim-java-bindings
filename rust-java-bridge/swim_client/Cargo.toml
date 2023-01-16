@@ -3,16 +3,25 @@ name = "swim_client"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
+swim_client_core = { path = "swim_client_core" }
 jvm_sys = { path = "../jvm_sys" }
 swim_downlink = { path = "../../swim-rust/swim_downlink" }
 swim_api = { path = "../../swim-rust/api/swim_api" }
 swim_model = { path = "../../swim-rust/api/swim_model" }
-byte_channel = { path = "../../swim-rust/swim_utilities/byte_channel" }
+swim_utilities = { path = "../../swim-rust/swim_utilities", features = ["byte_channel"] }
+
 futures = "0.3.4"
 futures-util = "0.3.4"
 bytes = "1.0"
-jni = "0.20.0"
+jni = "0.19.0"
+tokio-util = { version = "0.6.8", features = ["codec", "io-util"] }
+thiserror = "1.0"
+tokio = { version = "1.1.1", features = ["io-util"] }
+url = "2.1.1"
 
 [dev-dependencies]
 tokio = { version = "1.1.1", features = ["rt-multi-thread"] }

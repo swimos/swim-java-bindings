@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,6 +12,268 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::borrow::Borrow;
+use std::error::Error;
+use std::fmt::Display;
+use std::mem::transmute;
+use std::panic::{panic_any, Location};
+use std::sync::Arc;
+use std::{fmt, panic};
+
+use crate::vm::utils::get_env_shared;
+use jni::errors::JniError;
+use jni::objects::JString;
+use jni::JNIEnv;
+use jni::{sys, JavaVM};
+use std::io::Write;
+
 pub mod exception;
 pub mod method;
 pub mod utils;
+
+enum ErrorDiscriminate {
+    Exception,
+    Detached,
+    Bug,
+}
+
+impl From<&jni::errors::Error> for ErrorDiscriminate {
+    fn from(d: &jni::errors::Error) -> ErrorDiscriminate {
+        match d {
+            jni::errors::Error::JavaException => ErrorDiscriminate::Exception,
+            jni::errors::Error::JniCall(JniError::ThreadDetached) => ErrorDiscriminate::Detached,
+            _ => ErrorDiscriminate::Bug,
+        }
+    }
+}
+
+#[cfg(windows)]
+const LINE_ENDING: &'static str = "\r\n";
+#[cfg(not(windows))]
+const LINE_SEPARATOR: &'static str = "\n";
+
+#[derive(Debug)]
+struct StringError(String);
+
+impl Error for StringError {
+    fn description(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Display for StringError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
+
+#[derive(Debug)]
+pub struct SpannedError {
+    location: &'static Location<'static>,
+    stack_trace: String,
+    cause: Box<dyn Error + Send>,
+    // todo: add String stacktrace that's built using a helper method in Java
+}
+
+impl SpannedError {
+    pub fn new<C>(
+        location: &'static Location<'static>,
+        stack_trace: String,
+        cause: C,
+    ) -> SpannedError
+    where
+        C: Error + Send + 'static,
+    {
+        SpannedError {
+            location,
+            stack_trace,
+            cause: Box::new(cause),
+        }
+    }
+
+    pub fn location(&self) -> &'_ Location<'static> {
+        self.location
+    }
+
+    pub fn stack_trace(&self) -> &str {
+        &self.stack_trace
+    }
+
+    pub fn stack_trace_header(&self) -> &str {
+        match self.stack_trace.find(LINE_SEPARATOR) {
+            Some(idx) => &self.stack_trace[..idx],
+            None => &self.stack_trace,
+        }
+    }
+
+    pub fn cause(&self) -> &(dyn Error + Send) {
+        self.cause.borrow()
+    }
+
+    #[cold]
+    #[inline(never)]
+    pub fn panic(self) -> ! {
+        panic_any(self)
+    }
+}
+
+#[derive(Debug)]
+pub enum InvocationError {
+    Spanned(SpannedError),
+    Detached,
+}
+
+#[cfg_attr(debug_assertions, track_caller)]
+pub fn jni_call<O, F>(env: &JNIEnv, mut f: F) -> Result<O, InvocationError>
+where
+    F: FnMut() -> Result<O, jni::errors::Error>,
+{
+    match (f)() {
+        Ok(o) => Ok(o),
+        Err(e) => match ErrorDiscriminate::from(&e) {
+            ErrorDiscriminate::Exception => Err(InvocationError::Spanned(handle_exception(
+                Location::caller(),
+                env,
+            ))),
+            ErrorDiscriminate::Bug => {
+                panic!("Failed to execute JNI function. Cause: {:?}", e)
+            }
+            ErrorDiscriminate::Detached => Err(InvocationError::Detached),
+        },
+    }
+}
+
+#[inline(never)]
+fn handle_exception(location: &'static Location, env: &JNIEnv) -> SpannedError {
+    const EXCEPTION_MSG: &'static str = "Failed to get exception message";
+    const STACK_TRACE_MSG: &'static str = "Failed to get stacktrace";
+
+    let throwable = env.exception_occurred().expect(EXCEPTION_MSG);
+
+    // We want to clear the exception here, yield the error to the runtime for it to
+    // determine whether to abort the runtime or close the downlink.
+    env.exception_clear().expect("Failed to clear exception");
+
+    let message = env
+        .call_method(throwable, "getMessage", "()Ljava/lang/String;", &[])
+        .expect(EXCEPTION_MSG);
+
+    let message_string = match message.l() {
+        Ok(obj) => match env.get_string(JString::from(obj)) {
+            Ok(java_str) => java_str.to_str().expect(STACK_TRACE_MSG).to_string(),
+            Err(jni::errors::Error::NullPtr(_)) => "".to_string(),
+            Err(e) => {
+                panic!("{}: {:?}", EXCEPTION_MSG, e)
+            }
+        },
+        Err(_) => "".to_string(),
+    };
+
+    let stack_trace_obj = env
+        .call_static_method(
+            "ai/swim/client/Utils",
+            "stackTraceString",
+            "(Ljava/lang/Throwable;)Ljava/lang/String;",
+            &[throwable.into()],
+        )
+        .expect(STACK_TRACE_MSG);
+    let stack_trace_string = env
+        .get_string(JString::from(stack_trace_obj.l().expect(STACK_TRACE_MSG)))
+        .expect(STACK_TRACE_MSG);
+
+    SpannedError::new(
+        location,
+        stack_trace_string.into(),
+        StringError(message_string),
+    )
+}
+
+/// jni::JniEnv is !Send and !Sync. It's fine for it to be !Sync, but being !Send means that across
+/// every await boundary a new jni::JniEnv instance needs to be acquired using the JavaVM and this
+/// requires an FFI call to be made. The rationale for this (I think) is that every thread that
+/// uses the interface needs to be attached to the VM and across an await call the execution thread
+/// can yield and a different thread resume executing the task and as a result, the JniEnv is
+/// now in a detached state. This struct provides a Send implementation and access to the interface
+/// with a function that accepts a closure that can be run multiple times. Where the first execution
+/// will attempt to use the existing interface and if the closure returns an error that signals that
+/// the thread is detached then it will acquire a new instance and then re-run the closure.
+///
+/// While this does require some unsafe practices, it should lower (at least slightly) the number of
+/// calls that need to be made across the FFI boundary.
+pub struct SendJniEnv {
+    vm: Arc<JavaVM>,
+    internal: *mut sys::JNIEnv,
+}
+
+unsafe impl Send for SendJniEnv {}
+
+impl SendJniEnv {
+    pub fn new(vm: Arc<JavaVM>) -> SendJniEnv {
+        let env = get_env_shared(&vm).expect("Failed to get JNI environment");
+        let env = unsafe { transmute::<_, *mut sys::JNIEnv>(env) };
+        SendJniEnv { vm, internal: env }
+    }
+
+    pub fn with<F, O>(&mut self, mut f: F) -> Result<O, SpannedError>
+    where
+        F: FnMut(&JNIEnv) -> Result<O, InvocationError>,
+    {
+        let SendJniEnv { vm, internal } = self;
+        let env = unsafe { JNIEnv::from_raw(*internal).expect("Failed to build JNI env") };
+        match f(&env) {
+            Ok(o) => Ok(o),
+            Err(InvocationError::Detached) => {
+                let env = get_env_shared(&vm).expect("Failed to get JNI environment");
+                *internal = unsafe { transmute(env) };
+                match f(&env) {
+                    Ok(o) => Ok(o),
+                    Err(InvocationError::Spanned(e)) => Err(e),
+                    Err(InvocationError::Detached) => {
+                        panic!("Failed to attach thread")
+                    }
+                }
+            }
+            Err(InvocationError::Spanned(e)) => Err(e),
+        }
+    }
+}
+
+pub fn set_panic_hook() {
+    let existing_hook = panic::take_hook();
+    panic::set_hook(Box::new(move |info| {
+        let payload = &info.payload();
+        if payload.is::<SpannedError>() {
+            let SpannedError {
+                location,
+                stack_trace,
+                cause,
+            } = payload
+                .downcast_ref::<SpannedError>()
+                .expect("Failed to downcast to SpannedError");
+
+            let thread = std::thread::current();
+            let name = thread.name().unwrap_or("<unnamed>");
+            let mut out = std::io::stderr();
+
+            let cause = format!("{}", cause);
+            let cause_fmt = if cause.is_empty() {
+                "".to_string()
+            } else {
+                format!(" '{}'", cause)
+            };
+
+            let _lock = out.lock();
+
+            if stack_trace.is_empty() {
+                let _r = writeln!(
+                    out,
+                    "thread '{name}' panicked at JNI call{cause_fmt}, {location}"
+                );
+            } else {
+                let _r = writeln!(out, "thread '{name}' panicked at JNI call{cause_fmt}, {location}, stack trace:\n\t{stack_trace}");
+            }
+        } else {
+            existing_hook(info)
+        }
+    }));
+}

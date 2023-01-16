@@ -9,6 +9,9 @@
       <sourceFolder url="file://$MODULE_DIR$/swim_client/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/swim_sys/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sys_util/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/swim_client/swim_client_test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/swim_client/swim_client_core/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/swim_client/swim_client_sys/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

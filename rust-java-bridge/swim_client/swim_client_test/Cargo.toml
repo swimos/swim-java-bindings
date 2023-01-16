@@ -1,0 +1,28 @@
+[package]
+name = "swim_client_test"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+swim_client_core = { path = "../../swim_client/swim_client_core" }
+swim_model = { path = "../../../swim-rust/api/swim_model" }
+swim_form = { path = "../../../swim-rust/api/swim_form" }
+swim_api = { path = "../../../swim-rust/api/swim_api" }
+swim_recon = { path = "../../../swim-rust/api/formats/swim_recon" }
+swim_warp = { path = "../../../swim-rust/swim_warp" }
+swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["byte_channel"] }
+swim_runtime = { path = "../../../swim-rust/runtime/swim_runtime" }
+client_runtime = { package = "runtime", path = "../../../swim-rust/client/runtime" }
+
+jvm_sys = { path = "../../jvm_sys" }
+jvm_sys_tests = { path = "../../jvm_sys/jvm_sys_tests" }
+jni = "0.19.0"
+tokio = { version = "1.1.1", features = ["rt-multi-thread", "io-util"] }
+tokio-util = { version = "0.6.8", features = ["codec", "io-util"] }
+bytes = "1.0"
+futures = "0.3.4"
+futures-util = "0.3.4"
+ratchet = { package = "ratchet_rs", version = "0.2.0", features = ["deflate", "split"] }
