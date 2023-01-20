@@ -13,31 +13,43 @@
 // limitations under the License.
 
 use std::io::ErrorKind;
+use std::net::SocketAddr;
 use std::sync::Arc;
+use url::Url;
 
 use bytes::BytesMut;
-use futures_util::future::try_join3;
+use client_runtime::Transport;
+use fixture::{MockExternalConnections, MockWs, Server, WsAction};
+use futures_util::future::{try_join3, BoxFuture};
 use futures_util::SinkExt;
-use jni::objects::{JClass, JString};
+use jni::errors::Error;
+use jni::objects::{JClass, JObject, JString};
 use jni::sys::jobject;
 use jni::JNIEnv;
+use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
 use jvm_sys::vm::set_panic_hook;
-use swim_api::downlink::{Downlink, DownlinkConfig};
+use jvm_sys::vm::utils::{get_env_shared, new_global_ref};
+use jvm_sys::{jni_try, jvm_tryf, parse_string};
+use swim_api::downlink::{Downlink, DownlinkConfig, DownlinkKind};
+use swim_api::error::DownlinkTaskError;
 use swim_api::protocol::downlink::{DownlinkNotification, DownlinkNotificationEncoder};
 use swim_form::Form;
 use swim_model::address::Address;
 use swim_model::{Blob, Text, Value};
 use swim_recon::parser::{parse_recognize, Span};
 use swim_recon::printer::print_recon_compact;
+use swim_runtime::remote::table::SchemeHostPort;
+use swim_runtime::remote::{Scheme, SchemeSocketAddr};
 use swim_utilities::algebra::non_zero_usize;
-use swim_utilities::io::byte_channel::byte_channel;
-use tokio::io::AsyncReadExt;
+use swim_utilities::io::byte_channel::{byte_channel, ByteReader, ByteWriter};
+use tokio::io::{duplex, AsyncReadExt};
 use tokio::runtime::Runtime;
 use tokio_util::codec::FramedWrite;
 
 use jvm_sys_tests::run_test;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::ErrorHandlingConfig;
+use swim_client_core::SwimClient;
 
 #[derive(Clone, Debug, PartialEq, Form)]
 #[form_root(::swim_form)]
@@ -73,7 +85,7 @@ pub enum Notification {
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_nativeTest(
+pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_lifecycleTest(
     env: JNIEnv,
     _class: JClass,
     lock: jobject,
@@ -188,10 +200,171 @@ pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_drop
     }
 }
 
+fn create_io() -> (Transport<MockExternalConnections, MockWs>, Server) {
+    let peer = SchemeHostPort::new(Scheme::Ws, "127.0.0.1".to_string(), 80);
+    let sock: SocketAddr = "127.0.0.1:9001".parse().unwrap();
+    let (client_stream, server_stream) = duplex(128);
+    let ext = MockExternalConnections::new(
+        [(
+            peer.clone(),
+            SchemeSocketAddr::new(Scheme::Ws, sock.clone()),
+        )],
+        [("127.0.0.1:9001".parse().unwrap(), client_stream)],
+    );
+    let ws = MockWs::new([("127.0.0.1".to_string(), WsAction::Open)]);
+    let transport = Transport::new(ext, ws, non_zero_usize!(128));
+    let server = Server::new(server_stream);
+    (transport, server)
+}
+
 #[no_mangle]
 pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_driveDownlink(
+    env: JNIEnv,
+    _class: JClass,
+    downlink_ref: jobject,
+    stopped_barrier_ref: jobject,
+    barrier: jobject,
+    host: JString,
+    node: JString,
+    lane: JString,
+    on_event: jobject,
+    on_linked: jobject,
+    on_set: jobject,
+    on_synced: jobject,
+    on_unlinked: jobject,
+) -> *mut SwimClient {
+    set_panic_hook();
+
+    let (transport, mut server) = create_io();
+    let client =
+        SwimClient::with_transport(env.get_java_vm().expect("Failed to get Java VM"), transport);
+    let handle = client.handle();
+    let downlink = jni_try! {
+        env,
+        "Failed to create downlink",
+        FfiValueDownlink::create(
+            handle.vm(),
+            on_event,
+            on_linked,
+            on_set,
+            on_synced,
+            on_unlinked,
+            handle.error_mode(),
+        ),
+        std::ptr::null_mut()
+    };
+    let host = jni_try! {
+        env,
+        "Failed to parse host URL",
+        Url::try_from(parse_string!(env, host, std::ptr::null_mut()).as_str()),
+        std::ptr::null_mut()
+    };
+
+    let node = parse_string!(env, node, std::ptr::null_mut());
+    let lane = parse_string!(env, lane, std::ptr::null_mut());
+
+    let make_global_ref = |obj, name| {
+        new_global_ref(&env, obj)
+            .expect(&format!(
+                "Failed to create new global reference for {}",
+                name
+            ))
+            .unwrap()
+    };
+
+    handle.spawn_value_downlink(
+        make_global_ref(downlink_ref, "downlink object reference"),
+        make_global_ref(stopped_barrier_ref, "stopped barrier"),
+        downlink,
+        host.clone(),
+        node.clone(),
+        lane.clone(),
+    );
+
+    let async_runtime = handle.tokio_handle();
+    let barrier_global_ref = env
+        .new_global_ref(unsafe { JObject::from_raw(barrier) })
+        .unwrap();
+    let vm = handle.vm();
+
+    let mut countdown =
+        JavaObjectMethodDef::new("java/util/concurrent/CountDownLatch", "countDown", "()V")
+            .initialise(&env)
+            .unwrap();
+
+    let mut countdown_latch =
+        move |env: &JNIEnv, global_ref| match countdown.invoke(&env, &global_ref, &[]) {
+            Ok(_) => {}
+            Err(Error::JavaException) => {
+                let throwable = env.exception_occurred().unwrap();
+                jvm_tryf!(env, env.throw(throwable));
+            }
+            Err(e) => env.fatal_error(&e.to_string()),
+        };
+
+    let _jh = async_runtime.spawn(async move {
+        let mut lane_peer = server.lane_for(node, lane);
+        lane_peer.await_link().await;
+        lane_peer.await_sync(13).await;
+        lane_peer.send_event(15).await;
+        lane_peer.send_unlinked().await;
+
+        let env = get_env_shared(&vm).unwrap();
+        countdown_latch(&env, barrier_global_ref);
+    });
+
+    Box::leak(Box::new(client))
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_dropSwimClient(
     _env: JNIEnv,
     _class: JClass,
-    ptr: *mut Runtime,
+    ptr: *mut SwimClient,
 ) {
+    unsafe {
+        drop(Box::from_raw(ptr));
+    }
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_driveDownlinkError(
+    env: JNIEnv,
+    _class: JClass,
+    downlink_ref: jobject,
+    stopped_barrier_ref: jobject,
+) -> *mut SwimClient {
+    set_panic_hook();
+
+    let (transport, mut server) = create_io();
+    let client =
+        SwimClient::with_transport(env.get_java_vm().expect("Failed to get Java VM"), transport);
+    let handle = client.handle();
+    let downlink = jni_try! {
+        env,
+        "Failed to create downlink",
+        FfiValueDownlink::create(
+            handle.vm(),
+            on_event,
+            on_linked,
+            on_set,
+            on_synced,
+            on_unlinked,
+            handle.error_mode(),
+        ),
+        std::ptr::null_mut()
+    };
+
+    let make_global_ref = |obj, name| {
+        new_global_ref(&env, obj)
+            .expect(&format!(
+                "Failed to create new global reference for {}",
+                name
+            ))
+            .unwrap()
+    };
+
+    todo!("Failing downlink messages");
+
+    Box::leak(Box::new(client))
 }

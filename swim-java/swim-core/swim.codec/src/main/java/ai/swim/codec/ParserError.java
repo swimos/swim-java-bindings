@@ -28,7 +28,7 @@ public class ParserError<O> extends Parser<O> {
 
   @Override
   public Parser<O> feed(Input input) {
-    throw new IllegalStateException();
+    throw bail();
   }
 
   /**
@@ -55,4 +55,14 @@ public class ParserError<O> extends Parser<O> {
     return false;
   }
 
+  @Override
+  public O bind() {
+    throw bail();
+  }
+
+  private IllegalStateException bail() {
+    return new IllegalStateException(
+        String.format("Parser error caused by %s at: %s", cause, location)
+    );
+  }
 }

@@ -14,9 +14,15 @@
 
 use crate::downlink::value::{FfiValueDownlink, SharedVm};
 use crate::downlink::ErrorHandlingConfig;
-use client_runtime::{start_runtime, RawHandle, Transport};
+use client_runtime::{
+    start_runtime, DownlinkErrorKind, DownlinkRuntimeError, RawHandle, Transport,
+};
+use jni::objects::{GlobalRef, JValue};
+use jni::JNIEnv;
 use jni::JavaVM;
-use jvm_sys::vm::utils::get_env_shared;
+use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
+use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
+use jvm_sys::vm::with_local_frame_null;
 use ratchet::{NoExtProvider, WebSocketConfig, WebSocketStream};
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
@@ -29,6 +35,7 @@ use swim_runtime::remote::ExternalConnections;
 use swim_runtime::ws::ext::RatchetNetworking;
 use swim_runtime::ws::WsConnections;
 use swim_utilities::trigger;
+use swim_utilities::trigger::promise;
 use tokio::runtime::{Builder, Handle, Runtime};
 use url::Url;
 
@@ -49,7 +56,7 @@ impl SwimClient {
     where
         Net: ExternalConnections,
         Net::Socket: WebSocketStream,
-        Ws: WsConnections<Net::Socket> + Sync,
+        Ws: WsConnections<Net::Socket> + Sync + Send + 'static,
     {
         let runtime = Builder::new_multi_thread()
             .enable_all()
@@ -137,8 +144,14 @@ impl ClientHandle {
         self.vm.clone()
     }
 
-    pub fn value_downlink(
+    pub fn tokio_handle(&self) -> Handle {
+        self.tokio_handle.clone()
+    }
+
+    pub fn spawn_value_downlink(
         &self,
+        downlink_ref: GlobalRef,
+        stopped_barrier: GlobalRef,
         downlink: FfiValueDownlink,
         host: Url,
         node: String,
@@ -159,12 +172,14 @@ impl ClientHandle {
             downlink,
         ));
 
+        let vm = vm.clone();
         match result {
-            Ok(_) => {
-                // any errors will have already been logged by the runtime
+            Ok(receiver) => {
+                spawn_monitor(tokio_handle, vm, receiver, downlink_ref, stopped_barrier);
             }
             Err(e) => {
-                let env = get_env_shared(vm).expect("Failed to get JNI environment");
+                // any errors will have already been logged by the runtime
+                let env = get_env_shared(&vm).expect("Failed to get JNI environment");
                 env.throw_new(
                     "java/lang/Exception",
                     format!("Failed to spawn downlink: {:?}", e),
@@ -173,4 +188,56 @@ impl ClientHandle {
             }
         }
     }
+}
+
+fn spawn_monitor(
+    tokio_handle: &Handle,
+    vm: SharedVm,
+    receiver: promise::Receiver<Result<(), DownlinkRuntimeError>>,
+    downlink_ref: GlobalRef,
+    stopped_barrier: GlobalRef,
+) {
+    tokio_handle.spawn(async move {
+        let result = receiver
+            .await
+            .map_err(|_| DownlinkRuntimeError::new(DownlinkErrorKind::Terminated));
+        let env = get_env_shared_expect(&vm);
+
+        match result {
+            Ok(arc_result) => {
+                if let Err(e) = arc_result.as_ref() {
+                    set_exception(&env, downlink_ref, e.to_string())
+                }
+            }
+            Err(e) => set_exception(&env, downlink_ref, e.to_string()),
+        }
+
+        notify_stopped(&env, stopped_barrier);
+    });
+}
+
+fn notify_stopped(env: &JNIEnv, stopped_barrier: GlobalRef) {
+    let mut countdown =
+        JavaObjectMethodDef::new("java/util/concurrent/CountDownLatch", "countDown", "()V")
+            .initialise(&env)
+            .expect("Failed to initialise countdown latch method");
+
+    if let Err(e) = countdown.invoke(&env, &stopped_barrier, &[]) {
+        env.fatal_error(&e.to_string());
+    }
+}
+
+fn set_exception(env: &JNIEnv, downlink_ref: GlobalRef, cause: String) {
+    with_local_frame_null(env, None, || {
+        let cause = env
+            .new_string(cause)
+            .expect("Failed to allocate java string");
+        env.set_field(
+            &downlink_ref,
+            "stoppedWith",
+            "java/lang/String",
+            JValue::Object(cause.into()),
+        )
+        .expect("Failed to report downlink stop error");
+    });
 }

@@ -14,8 +14,6 @@
 
 package ai.swim.structure.processor.inspect.elements;
 
-import ai.swim.structure.annotations.AutoForm;
-
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;

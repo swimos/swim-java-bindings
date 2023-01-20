@@ -17,7 +17,7 @@ use jni::errors::Error;
 use jni::sys::jobject;
 use jni::JNIEnv;
 
-use jvm_sys::vm::{jni_call, InvocationError};
+use jvm_sys::vm::{jni_call, SpannedError};
 
 use crate::downlink::value::vtable::ValueDownlinkVTable;
 
@@ -46,7 +46,7 @@ impl ValueDownlinkLifecycle {
         })
     }
 
-    pub fn on_linked(&mut self, env: &JNIEnv) -> Result<(), InvocationError> {
+    pub fn on_linked(&mut self, env: &JNIEnv) -> Result<(), SpannedError> {
         let ValueDownlinkLifecycle { vtable } = self;
         jni_call(env, || vtable.on_linked(env))
     }
@@ -56,7 +56,7 @@ impl ValueDownlinkLifecycle {
         env: &JNIEnv,
         value: &mut Vec<u8>,
         _ret: &mut BytesMut,
-    ) -> Result<(), InvocationError> {
+    ) -> Result<(), SpannedError> {
         let ValueDownlinkLifecycle { vtable } = self;
         jni_call(env, || vtable.on_synced(env, value))
     }
@@ -66,7 +66,7 @@ impl ValueDownlinkLifecycle {
         env: &JNIEnv,
         value: &mut Vec<u8>,
         _ret: &mut BytesMut,
-    ) -> Result<(), InvocationError> {
+    ) -> Result<(), SpannedError> {
         let ValueDownlinkLifecycle { vtable } = self;
         jni_call(env, || vtable.on_event(env, value))
     }
@@ -76,12 +76,12 @@ impl ValueDownlinkLifecycle {
         env: &JNIEnv,
         value: &mut Vec<u8>,
         _ret: &mut BytesMut,
-    ) -> Result<(), InvocationError> {
+    ) -> Result<(), SpannedError> {
         let ValueDownlinkLifecycle { vtable } = self;
         jni_call(env, || vtable.on_set(env, value))
     }
 
-    pub fn on_unlinked(&mut self, env: &JNIEnv) -> Result<(), InvocationError> {
+    pub fn on_unlinked(&mut self, env: &JNIEnv) -> Result<(), SpannedError> {
         let ValueDownlinkLifecycle { vtable } = self;
         jni_call(env, || vtable.on_unlinked(env))
     }

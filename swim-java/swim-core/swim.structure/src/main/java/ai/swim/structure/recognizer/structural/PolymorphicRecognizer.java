@@ -5,10 +5,11 @@ import ai.swim.structure.recognizer.Recognizer;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class PolymorphicRecognizer<T> extends StructuralRecognizer<T> {
 
-  private final List<Recognizer<? extends T>> recognizers;
+  private  List<Recognizer<? extends T>> recognizers;
   private Recognizer<? extends T> current;
 
   public PolymorphicRecognizer(List<Recognizer<? extends T>> recognizers) {
@@ -47,7 +48,7 @@ public class PolymorphicRecognizer<T> extends StructuralRecognizer<T> {
 
   @Override
   public Recognizer<T> reset() {
-    this.recognizers.replaceAll(Recognizer::reset);
+    this.recognizers = recognizers.stream().map(Recognizer::reset).collect(Collectors.toList());;
     this.current = null;
     return this;
   }

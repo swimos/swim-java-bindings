@@ -60,10 +60,9 @@ impl FfiFailureHandler for AbortingHandler {
 
 struct FailingHandler;
 impl FfiFailureHandler for FailingHandler {
-    fn on_failure(&self, _err: SpannedError) -> Result<(), DownlinkTaskError> {
-        unimplemented!(
-            "Fast forward branch to get user variant on DownlinkTaskError and then return that"
-        )
+    fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError> {
+        let SpannedError { cause, .. } = err;
+        Err(DownlinkTaskError::Custom(cause))
     }
 }
 

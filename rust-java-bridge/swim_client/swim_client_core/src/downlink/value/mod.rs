@@ -29,8 +29,8 @@ use swim_recon::printer::print_recon_compact;
 use swim_utilities::io::byte_channel::{ByteReader, ByteWriter};
 use tokio_util::codec::FramedRead;
 
-use jvm_sys::vm::utils::get_env_shared;
-use jvm_sys::vm::{SendJniEnv, SpannedError};
+use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
+use jvm_sys::vm::SpannedError;
 
 use crate::downlink::value::lifecycle::ValueDownlinkLifecycle;
 use crate::downlink::{ErrorHandlingConfig, FfiFailureHandler};
@@ -156,19 +156,19 @@ async fn run_ffi_value_downlink(
     let mut state = LinkState::Unlinked;
     let mut framed_read = FramedRead::new(input, ValueNotificationDecoder::<Value>::default());
     let mut ffi_buffer = BytesMut::new();
-    let mut env = SendJniEnv::new(vm);
 
     while let Some(result) = framed_read.next().await {
+        let env = get_env_shared_expect(&vm);
         match result? {
             DownlinkNotification::Linked => {
                 if matches!(&state, LinkState::Unlinked) {
-                    env.with(|env| lifecycle.on_linked(&env))?;
+                    lifecycle.on_linked(&env)?;
                     state = LinkState::Linked(None);
                 }
             }
             DownlinkNotification::Synced => match state {
                 LinkState::Linked(Some(mut data)) => {
-                    env.with(|env| lifecycle.on_synced(&env, &mut data, &mut ffi_buffer))?;
+                    lifecycle.on_synced(&env, &mut data, &mut ffi_buffer)?;
                     state = LinkState::Synced;
                 }
                 _ => {
@@ -180,20 +180,20 @@ async fn run_ffi_value_downlink(
                 match &mut state {
                     LinkState::Linked(value) => {
                         if events_when_not_synced {
-                            env.with(|env| lifecycle.on_event(&env, &mut data, &mut ffi_buffer))?;
-                            env.with(|env| lifecycle.on_set(&env, &mut data, &mut ffi_buffer))?;
+                            lifecycle.on_event(&env, &mut data, &mut ffi_buffer)?;
+                            lifecycle.on_set(&env, &mut data, &mut ffi_buffer)?;
                         }
                         *value = Some(data);
                     }
                     LinkState::Synced => {
-                        env.with(|env| lifecycle.on_event(&env, &mut data, &mut ffi_buffer))?;
-                        env.with(|env| lifecycle.on_set(&env, &mut data, &mut ffi_buffer))?;
+                        lifecycle.on_event(&env, &mut data, &mut ffi_buffer)?;
+                        lifecycle.on_set(&env, &mut data, &mut ffi_buffer)?;
                     }
                     LinkState::Unlinked => {}
                 }
             }
             DownlinkNotification::Unlinked => {
-                env.with(|env| lifecycle.on_unlinked(&env))?;
+                lifecycle.on_unlinked(&env)?;
                 if terminate_on_unlinked {
                     break;
                 } else {

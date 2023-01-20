@@ -85,7 +85,7 @@ impl Bytes {
             .get_direct_buffer_capacity(buffer)
             .expect("Failed to get direct byte buffer capacity");
         // safe as get_direct_buffer_address checks for a nullptr
-        let ptr = unsafe { NonNull::new_unchecked(buf.as_mut_ptr()) };
+        let ptr = unsafe { NonNull::new_unchecked(buf.as_mut()) };
 
         if buf.len() < 2 {
             env.fatal_error("Cannot create a buffer with a capacity of less than 2")

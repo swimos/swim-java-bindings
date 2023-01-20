@@ -14,7 +14,9 @@
 
 use std::sync::Arc;
 
-use jni::errors::JniError;
+use jni::errors::{Error, JniError};
+use jni::objects::{GlobalRef, JObject};
+use jni::sys::jobject;
 use jni::{JNIEnv, JavaVM};
 
 use crate::JniResult;
@@ -23,9 +25,7 @@ use crate::JniResult;
 pub fn get_env(vm: &JavaVM) -> JniResult<JNIEnv> {
     match vm.get_env() {
         Ok(env) => Ok(env),
-        Err(jni::errors::Error::JniCall(JniError::ThreadDetached)) => {
-            vm.attach_current_thread_as_daemon()
-        }
+        Err(Error::JniCall(JniError::ThreadDetached)) => vm.attach_current_thread_as_daemon(),
         Err(e) => Err(e),
     }
 }
@@ -33,4 +33,17 @@ pub fn get_env(vm: &JavaVM) -> JniResult<JNIEnv> {
 #[inline]
 pub fn get_env_shared(vm: &Arc<JavaVM>) -> JniResult<JNIEnv> {
     get_env(vm.as_ref())
+}
+
+#[inline]
+pub fn get_env_shared_expect(vm: &Arc<JavaVM>) -> JNIEnv {
+    get_env_shared(vm).expect("Failed to get JNI environment interface")
+}
+
+pub fn new_global_ref(env: &JNIEnv, ptr: jobject) -> Result<Option<GlobalRef>, Error> {
+    if ptr.is_null() {
+        Ok(None)
+    } else {
+        unsafe { env.new_global_ref(JObject::from_raw(ptr)).map(Some) }
+    }
 }

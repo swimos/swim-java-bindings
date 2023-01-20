@@ -20,6 +20,8 @@ use jni::JNIEnv;
 use jvm_sys::vm::method::{
     InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
 };
+use jvm_sys::vm::utils::new_global_ref;
+use jvm_sys::vm::with_local_frame_null;
 
 const ON_LINKED: JavaObjectMethodDef =
     JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnLinked", "onLinked", "()V");
@@ -30,14 +32,6 @@ const FUNCTION_APPLY: JavaObjectMethodDef = JavaObjectMethodDef::new(
     "apply",
     "(Ljava/lang/Object;)Ljava/lang/Object;",
 );
-
-fn new_global_ref(env: &JNIEnv, ptr: jobject) -> Result<Option<GlobalRef>, Error> {
-    if ptr.is_null() {
-        Ok(None)
-    } else {
-        env.new_global_ref(ptr).map(Some)
-    }
-}
 
 struct JavaFunction {
     ptr: Option<GlobalRef>,
@@ -70,11 +64,14 @@ impl JavaFunction {
             Some(ptr) => match def {
                 FunctionDefinition::Unit(inner) => {
                     let mut initialised = inner.initialise(env)?;
-                    let result = f(&mut initialised, ptr.as_obj());
+                    let result =
+                        with_local_frame_null(env, None, || f(&mut initialised, ptr.as_obj()));
                     *def = FunctionDefinition::Init(initialised);
                     result
                 }
-                FunctionDefinition::Init(inner) => f(inner, ptr.as_obj()),
+                FunctionDefinition::Init(inner) => {
+                    with_local_frame_null(env, None, || f(inner, ptr.as_obj()))
+                }
             },
             None => Ok(()),
         }
@@ -105,7 +102,7 @@ impl JavaFunction {
 //    can use the initialised version; but this may require some kind of RwLock or an UnsafeCell or
 //    for the proxy/vtable to initialise it on startup and then for referents to acquire an
 //    initialised reference. This is something that should be implemented once the FFI module is
-//    more flushed out. todo
+//    more flushed out. todo: proxy
 pub struct ValueDownlinkVTable {
     on_linked: JavaFunction,
     on_synced: JavaFunction,
@@ -137,17 +134,17 @@ impl ValueDownlinkVTable {
     }
 
     pub fn on_synced(&mut self, env: &JNIEnv, value: &mut Vec<u8>) -> Result<(), Error> {
-        let buffer = env.new_direct_byte_buffer(value.as_mut())?;
+        let buffer = unsafe { env.new_direct_byte_buffer(value.as_mut_ptr(), value.len()) }?;
         null_fn(env, &mut self.on_synced, &[buffer.into()])
     }
 
     pub fn on_event(&mut self, env: &JNIEnv, value: &mut Vec<u8>) -> Result<(), Error> {
-        let buffer = env.new_direct_byte_buffer(value.as_mut())?;
+        let buffer = unsafe { env.new_direct_byte_buffer(value.as_mut_ptr(), value.len()) }?;
         null_fn(env, &mut self.on_event, &[buffer.into()])
     }
 
     pub fn on_set(&mut self, env: &JNIEnv, value: &mut Vec<u8>) -> Result<(), Error> {
-        let buffer = env.new_direct_byte_buffer(value.as_mut())?;
+        let buffer = unsafe { env.new_direct_byte_buffer(value.as_mut_ptr(), value.len()) }?;
         null_fn(env, &mut self.on_set, &[buffer.into()])
     }
 

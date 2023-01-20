@@ -15,6 +15,7 @@
 use std::future::Future;
 
 use jni::errors::Error;
+use jni::objects::JObject;
 use jni::sys::jobject;
 use jni::JNIEnv;
 use tokio::runtime::{Builder, Runtime};
@@ -35,13 +36,17 @@ where
     npch!(env, barrier);
 
     let vm = env.get_java_vm().unwrap();
-    let global_ref = env.new_global_ref(barrier).unwrap();
+    let global_ref = env
+        .new_global_ref(unsafe { JObject::from_raw(barrier) })
+        .unwrap();
 
     let runtime = Builder::new_multi_thread()
         .build()
         .expect("Failed to build runtime");
 
     let join_handle = runtime.spawn(fut);
+    tokio::task::LocalSet::new();
+
     runtime.spawn(async move {
         let r = join_handle.await;
         let env = get_env(&vm).unwrap();

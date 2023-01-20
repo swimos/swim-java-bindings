@@ -105,7 +105,7 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
   }
 
   @Override
-  public <V> HeaderWriter<String> writeAttr(String key, Writable<V> valueWriter, V value) {
+  public HeaderWriter<String> writeExtantAttr(String key) {
     if (hasAttr) {
       printStrategy.attrPadding().writeInto(writer);
     } else {
@@ -113,6 +113,13 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
     }
 
     writer.writeUnchecked(String.format("@%s", key));
+    return this;
+  }
+
+  @Override
+  public <V> HeaderWriter<String> writeAttr(String key, Writable<V> valueWriter, V value) {
+    writeExtantAttr(key);
+
     AttributePrinter attributePrinter = new AttributePrinter(writer, printStrategy);
     valueWriter.writeInto(value, attributePrinter);
 
@@ -121,14 +128,8 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
 
   @Override
   public HeaderWriter<String> writeAttr(String key, WritableHeader writable) {
-    if (hasAttr) {
-      printStrategy.attrPadding().writeInto(writer);
-    } else {
-      hasAttr = true;
-    }
-
-    writer.writeUnchecked(String.format("@%s", key));
-    writable.writeInto(this);
+    writeExtantAttr(key);
+    writable.writeInto(new AttributePrinter(writer, printStrategy));
 
     return this;
   }
@@ -155,11 +156,6 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
 
     singleItem = numItems == 1;
 
-    return this;
-  }
-
-  @Override
-  public HeaderWriter<String> writeExtantAttr(String key) {
     return this;
   }
 

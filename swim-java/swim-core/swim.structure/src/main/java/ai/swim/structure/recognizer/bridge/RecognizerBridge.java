@@ -27,24 +27,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class RecognizerBridge<T> implements StructuralWriter<T>, BodyWriter<T>, HeaderWriter<T> {
-  private Recognizer<T> recognizer;
   private final Stack stack;
-
-  private static final class Stack {
-    private int stackDepth;
-
-    void enter() {
-      stackDepth += 1;
-    }
-
-    void exit() {
-      stackDepth -= 1;
-    }
-
-    boolean isEmpty() {
-      return stackDepth == 0;
-    }
-  }
+  private Recognizer<T> recognizer;
 
   public RecognizerBridge(Recognizer<T> recognizer) {
     this.recognizer = recognizer;
@@ -204,5 +188,21 @@ public class RecognizerBridge<T> implements StructuralWriter<T>, BodyWriter<T>, 
   public BodyWriter<T> completeHeader(int numItems) {
     feedExpect(ReadEvent.startBody());
     return this;
+  }
+
+  private static final class Stack {
+    private int stackDepth;
+
+    void enter() {
+      stackDepth += 1;
+    }
+
+    void exit() {
+      stackDepth -= 1;
+    }
+
+    boolean isEmpty() {
+      return stackDepth == 0;
+    }
   }
 }

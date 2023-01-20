@@ -17,13 +17,13 @@ package ai.swim.structure.writer.proxy;
 import ai.swim.structure.annotations.AutoloadedWriter;
 import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.StructuralWritable;
-import ai.swim.structure.writer.value.ValueStructuralWritable;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.WriterException;
 import ai.swim.structure.writer.std.ArrayStructuralWritable;
 import ai.swim.structure.writer.std.ListStructuralWritable;
 import ai.swim.structure.writer.std.MapStructuralWritable;
 import ai.swim.structure.writer.std.ScalarWriters;
+import ai.swim.structure.writer.value.ValueStructuralWritable;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
 
@@ -221,7 +221,7 @@ public class WriterProxy {
       return (Writable<T>) arrayType(clazz.getComponentType());
     }
 
-    if (Value.class.isAssignableFrom(clazz)){
+    if (Value.class.isAssignableFrom(clazz)) {
       return (Writable<T>) new ValueStructuralWritable();
     }
 

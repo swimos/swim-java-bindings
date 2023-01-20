@@ -616,7 +616,7 @@ public class AutoStructuralTest {
   }
 
   @AutoForm
-      @AutoForm.Tag("command")
+  @AutoForm.Tag("command")
   public static class CommandMessage extends LaneAddressed {
     public CommandMessage() {
 

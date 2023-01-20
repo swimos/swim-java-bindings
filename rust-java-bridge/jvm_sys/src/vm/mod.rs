@@ -12,19 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::borrow::Borrow;
 use std::error::Error;
 use std::fmt::Display;
-use std::mem::transmute;
 use std::panic::{panic_any, Location};
-use std::sync::Arc;
 use std::{fmt, panic};
 
-use crate::vm::utils::get_env_shared;
 use jni::errors::JniError;
-use jni::objects::JString;
+use jni::objects::{JObject, JString};
 use jni::JNIEnv;
-use jni::{sys, JavaVM};
 use std::io::Write;
 
 pub mod exception;
@@ -69,10 +64,9 @@ impl Display for StringError {
 
 #[derive(Debug)]
 pub struct SpannedError {
-    location: &'static Location<'static>,
-    stack_trace: String,
-    cause: Box<dyn Error + Send>,
-    // todo: add String stacktrace that's built using a helper method in Java
+    pub location: &'static Location<'static>,
+    pub stack_trace: String,
+    pub cause: Box<dyn Error + Send + Sync>,
 }
 
 impl SpannedError {
@@ -82,7 +76,7 @@ impl SpannedError {
         cause: C,
     ) -> SpannedError
     where
-        C: Error + Send + 'static,
+        C: Error + Send + Sync + 'static,
     {
         SpannedError {
             location,
@@ -91,23 +85,11 @@ impl SpannedError {
         }
     }
 
-    pub fn location(&self) -> &'_ Location<'static> {
-        self.location
-    }
-
-    pub fn stack_trace(&self) -> &str {
-        &self.stack_trace
-    }
-
     pub fn stack_trace_header(&self) -> &str {
         match self.stack_trace.find(LINE_SEPARATOR) {
             Some(idx) => &self.stack_trace[..idx],
             None => &self.stack_trace,
         }
-    }
-
-    pub fn cause(&self) -> &(dyn Error + Send) {
-        self.cause.borrow()
     }
 
     #[cold]
@@ -124,21 +106,20 @@ pub enum InvocationError {
 }
 
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn jni_call<O, F>(env: &JNIEnv, mut f: F) -> Result<O, InvocationError>
+pub fn jni_call<O, F>(env: &JNIEnv, mut f: F) -> Result<O, SpannedError>
 where
     F: FnMut() -> Result<O, jni::errors::Error>,
 {
     match (f)() {
         Ok(o) => Ok(o),
         Err(e) => match ErrorDiscriminate::from(&e) {
-            ErrorDiscriminate::Exception => Err(InvocationError::Spanned(handle_exception(
-                Location::caller(),
-                env,
-            ))),
+            ErrorDiscriminate::Exception => Err(handle_exception(Location::caller(), env)),
             ErrorDiscriminate::Bug => {
                 panic!("Failed to execute JNI function. Cause: {:?}", e)
             }
-            ErrorDiscriminate::Detached => Err(InvocationError::Detached),
+            ErrorDiscriminate::Detached => {
+                unreachable!("Attempted to use a detached JNI interface")
+            }
         },
     }
 }
@@ -188,56 +169,6 @@ fn handle_exception(location: &'static Location, env: &JNIEnv) -> SpannedError {
     )
 }
 
-/// jni::JniEnv is !Send and !Sync. It's fine for it to be !Sync, but being !Send means that across
-/// every await boundary a new jni::JniEnv instance needs to be acquired using the JavaVM and this
-/// requires an FFI call to be made. The rationale for this (I think) is that every thread that
-/// uses the interface needs to be attached to the VM and across an await call the execution thread
-/// can yield and a different thread resume executing the task and as a result, the JniEnv is
-/// now in a detached state. This struct provides a Send implementation and access to the interface
-/// with a function that accepts a closure that can be run multiple times. Where the first execution
-/// will attempt to use the existing interface and if the closure returns an error that signals that
-/// the thread is detached then it will acquire a new instance and then re-run the closure.
-///
-/// While this does require some unsafe practices, it should lower (at least slightly) the number of
-/// calls that need to be made across the FFI boundary.
-pub struct SendJniEnv {
-    vm: Arc<JavaVM>,
-    internal: *mut sys::JNIEnv,
-}
-
-unsafe impl Send for SendJniEnv {}
-
-impl SendJniEnv {
-    pub fn new(vm: Arc<JavaVM>) -> SendJniEnv {
-        let env = get_env_shared(&vm).expect("Failed to get JNI environment");
-        let env = unsafe { transmute::<_, *mut sys::JNIEnv>(env) };
-        SendJniEnv { vm, internal: env }
-    }
-
-    pub fn with<F, O>(&mut self, mut f: F) -> Result<O, SpannedError>
-    where
-        F: FnMut(&JNIEnv) -> Result<O, InvocationError>,
-    {
-        let SendJniEnv { vm, internal } = self;
-        let env = unsafe { JNIEnv::from_raw(*internal).expect("Failed to build JNI env") };
-        match f(&env) {
-            Ok(o) => Ok(o),
-            Err(InvocationError::Detached) => {
-                let env = get_env_shared(&vm).expect("Failed to get JNI environment");
-                *internal = unsafe { transmute(env) };
-                match f(&env) {
-                    Ok(o) => Ok(o),
-                    Err(InvocationError::Spanned(e)) => Err(e),
-                    Err(InvocationError::Detached) => {
-                        panic!("Failed to attach thread")
-                    }
-                }
-            }
-            Err(InvocationError::Spanned(e)) => Err(e),
-        }
-    }
-}
-
 pub fn set_panic_hook() {
     let existing_hook = panic::take_hook();
     panic::set_hook(Box::new(move |info| {
@@ -276,4 +207,18 @@ pub fn set_panic_hook() {
             existing_hook(info)
         }
     }));
+}
+
+pub fn with_local_frame_null<F, R>(env: &JNIEnv, capacity: Option<i32>, f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    env.push_local_frame(capacity.unwrap_or(jni::DEFAULT_LOCAL_FRAME_CAPACITY))
+        .expect("Out of memory");
+
+    let output = f();
+    env.pop_local_frame(JObject::null())
+        .expect("Failed to pop local reference frame");
+
+    output
 }

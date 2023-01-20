@@ -122,22 +122,27 @@ public class ConcreteClassWriter extends ClassWriter {
         body.addStatement("$T $L = ($T) $L", type, fieldName, type, getter.build());
       }
 
-      if (fieldModel.getModel() instanceof RuntimeLookupModel) {
-        String writableName = nameFactory.writableName(fieldModel.propertyName());
+      if (!rawType.getKind().isPrimitive()) {
         body.beginControlFlow("if ($L != null)", fieldName);
 
         if (!classSchema.getPartitionedFields().body.isReplaced()) {
           body.addStatement("__numSlots += 1");
         }
 
-        TypeElement classElement = elementUtils.getTypeElement(Class.class.getCanonicalName());
-        DeclaredType classType = typeUtils.getDeclaredType(classElement, fieldModel.type(processingEnvironment));
+        if (fieldModel.getModel() instanceof RuntimeLookupModel) {
+          String writableName = nameFactory.writableName(fieldModel.propertyName());
 
-        body.beginControlFlow("if ($L == null || $LClass != $L.getClass())", writableName, writableName, fieldName)
-            .addStatement("$L = getProxy().lookupObject($L)", writableName, fieldName)
-            .addStatement("$LClass = ($T) $L.getClass()", writableName, TypeName.get(classType), fieldName)
-            .endControlFlow()
-            .endControlFlow();
+
+          TypeElement classElement = elementUtils.getTypeElement(Class.class.getCanonicalName());
+          DeclaredType classType = typeUtils.getDeclaredType(classElement, fieldModel.type(processingEnvironment));
+
+          body.beginControlFlow("if ($L == null || $LClass != $L.getClass())", writableName, writableName, fieldName)
+              .addStatement("$L = getProxy().lookupObject($L)", writableName, fieldName)
+              .addStatement("$LClass = ($T) $L.getClass()", writableName, TypeName.get(classType), fieldName)
+              .endControlFlow();
+        }
+
+        body.endControlFlow();
       }
     }
 

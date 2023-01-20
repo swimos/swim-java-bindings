@@ -15,10 +15,10 @@
 package ai.swim.structure.writer.proxy;
 
 import ai.swim.structure.value.Value;
-import ai.swim.structure.writer.value.ValueStructuralWritable;
 import ai.swim.structure.writer.std.ListStructuralWritable;
 import ai.swim.structure.writer.std.MapStructuralWritable;
 import ai.swim.structure.writer.std.ScalarWriters;
+import ai.swim.structure.writer.value.ValueStructuralWritable;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

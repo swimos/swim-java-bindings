@@ -4,17 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-client_runtime = { package = "runtime", path = "../../../swim-rust/client/runtime" }
-swim_downlink = { path = "../../../swim-rust/swim_downlink" }
+client_runtime = { package = "runtime", path = "../../../../swim-rust/client/runtime" }
+swim_downlink = { path = "../../../../swim-rust/swim_downlink" }
 jvm_sys = { path = "../../jvm_sys" }
-swim_api = { path = "../../../swim-rust/api/swim_api" }
-swim_model = { path = "../../../swim-rust/api/swim_model" }
-swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["byte_channel"] }
-swim_recon = { path = "../../../swim-rust/api/formats/swim_recon" }
+swim_api = { path = "../../../../swim-rust/api/swim_api" }
+swim_model = { path = "../../../../swim-rust/api/swim_model" }
+swim_utilities = { path = "../../../../swim-rust/swim_utilities", features = ["byte_channel"] }
+swim_recon = { path = "../../../../swim-rust/api/formats/swim_recon" }
 ratchet = { package = "ratchet_rs", version = "0.2.0" }
-swim_runtime = { path = "../../../swim-rust/runtime/swim_runtime" }
+swim_runtime = { path = "../../../../swim-rust/runtime/swim_runtime" }
 
-jni = "0.19.0"
+jni = "0.20.0"
 futures = "0.3.4"
 futures-util = "0.3.4"
 bytes = "1.0"

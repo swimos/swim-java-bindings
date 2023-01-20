@@ -14,7 +14,7 @@
 
 #[macro_export]
 macro_rules! jni_try {
-    ($env:ident, $class:tt, $msg:tt, $expr:expr $(,)?) => {{
+    ($env:ident, $class:tt, $msg:tt, $expr:expr, $ret:expr $(,)?) => {{
         let env_ref = $env;
 
         match $expr {
@@ -23,11 +23,49 @@ macro_rules! jni_try {
                 env_ref
                     .throw_new($class, format!("{}: {:?}", $msg, e))
                     .expect("Failed to throw exception");
-                return;
+                return $ret;
             }
         }
     }};
+    ($env:ident, $class:tt, $msg:tt, $expr:expr, $(,)?) => {{
+        $crate::jni_try!($env, $class, $msg, $expr, ())
+    }};
     ($env:ident, $msg:tt, $expr:expr $(,)?) => {
-        $crate::jni_try!($env, "java/lang/Exception", $msg, $expr)
+        $crate::jni_try!($env, "ai/swim/client/SwimClientException", $msg, $expr, ())
     };
+    ($env:ident, $msg:tt, $expr:expr, $ret:expr $(,)?) => {
+        $crate::jni_try!(
+            $env,
+            "ai/swim/client/SwimClientException",
+            $msg,
+            $expr,
+            $ret
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! parse_string {
+    ($env:ident, $string:tt, $ret:expr) => {{
+        let env_ref = $env;
+        let string = $string;
+        let err = format!("Failed to parse {}", stringify!(name));
+
+        let java_string = jni_try! {
+            env_ref,
+            err,
+            env_ref.get_string(string),
+            $ret
+        };
+        jni_try! {
+            env_ref,
+            err,
+            java_string.to_str(),
+            $ret
+        }
+        .to_string()
+    }};
+    ($env:ident, $string:tt) => {{
+        $crate::parse_string!($env, $string, ())
+    }};
 }

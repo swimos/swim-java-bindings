@@ -1,7 +1,7 @@
 ext.moduleName = 'swim.structure'
 
 dependencies {
-    implementation project(':swim-structure-annotations')
+    api project(':swim-structure-annotations')
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
 
     annotationProcessor project(':swim-structure-processor')

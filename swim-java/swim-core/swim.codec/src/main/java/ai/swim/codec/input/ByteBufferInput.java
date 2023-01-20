@@ -19,9 +19,9 @@ import ai.swim.codec.location.Location;
 import java.nio.ByteBuffer;
 
 public class ByteBufferInput extends Input {
-  private final ByteBuffer data;
+  private ByteBuffer data;
   private int offset;
-  private final boolean isPartial;
+  private boolean isPartial;
 
   ByteBufferInput(ByteBuffer data, int offset, boolean isPartial) {
     this.data = data;
@@ -110,5 +110,19 @@ public class ByteBufferInput extends Input {
   @Override
   public Input extend(Input from) {
     throw new AssertionError();
+  }
+
+  @Override
+  public void setFrom(Input input) {
+    if (input instanceof ByteBufferInput) {
+      // Strip off any already processed tokens and reset the markers back to zero.
+
+      ByteBufferInput byteInput = (ByteBufferInput) input;
+      this.isPartial = byteInput.isPartial;
+      this.data = byteInput.data.position(byteInput.offset);
+      this.offset = byteInput.offset;
+    } else {
+      throw new UnsupportedOperationException("Cannot extend a StringInput from a: " + input.getClass().getCanonicalName());
+    }
   }
 }

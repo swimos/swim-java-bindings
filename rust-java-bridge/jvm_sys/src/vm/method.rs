@@ -16,7 +16,6 @@ use jni::errors::Error as JError;
 use jni::errors::Error::WrongJValueType;
 use jni::objects::{JMethodID, JObject, JString, JValue};
 use jni::signature::TypeSignature;
-use jni::sys::jmethodID;
 use jni::JNIEnv;
 
 /// An initialised Java Object Method mirror that contains a parsed type signature and a method
@@ -24,22 +23,18 @@ use jni::JNIEnv;
 ///
 /// It is expected that the method ID remains consistent for the lifetime of the application; as
 /// in the case in HotSpot VM's.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InitialisedJavaObjectMethod {
     signature: TypeSignature,
-    method_id: jmethodID,
+    method_id: JMethodID,
 }
-
-unsafe impl Send for InitialisedJavaObjectMethod {}
-
-unsafe impl Sync for InitialisedJavaObjectMethod {}
 
 impl InitialisedJavaObjectMethod {
     pub fn signature(&self) -> &TypeSignature {
         &self.signature
     }
 
-    pub fn method_id(&self) -> jmethodID {
+    pub fn method_id(&self) -> JMethodID {
         self.method_id
     }
 }
@@ -66,11 +61,12 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
             return Err(JError::InvalidArgList(signature.clone()));
         }
 
+        let args = args.iter().map(|v| v.to_jni()).collect::<Vec<_>>();
         env.call_method_unchecked(
             object,
             JMethodID::from(*method_id),
             signature.ret.clone(),
-            args,
+            &args,
         )
     }
 }
@@ -95,15 +91,15 @@ impl JavaObjectMethodDef {
         }
     }
 
-    pub const fn class(&self) -> &'_ str {
+    pub const fn class(&self) -> &str {
         self.class
     }
 
-    pub const fn name(&self) -> &'_ str {
+    pub const fn name(&self) -> &str {
         self.name
     }
 
-    pub const fn signature(&self) -> &'_ str {
+    pub const fn signature(&self) -> &str {
         self.signature
     }
 
@@ -114,8 +110,7 @@ impl JavaObjectMethodDef {
             signature,
         } = self;
 
-        let method_id = env.get_method_id(class, name, signature)?.into_inner();
-
+        let method_id = env.get_method_id(class, name, signature)?;
         let signature = TypeSignature::from_str(signature)?;
 
         Ok(InitialisedJavaObjectMethod {

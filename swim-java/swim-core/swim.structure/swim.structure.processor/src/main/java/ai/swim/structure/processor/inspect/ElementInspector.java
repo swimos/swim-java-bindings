@@ -95,7 +95,7 @@ public abstract class ElementInspector {
     ScopedMessager messager = context.getMessager();
 
     if (element.getKind().equals(ElementKind.ENUM)) {
-      if (element.getAnnotation(AutoForm.Tag.class)!=null){
+      if (element.getAnnotation(AutoForm.Tag.class) != null) {
         messager.error(String.format("%s cannot be used on enumerations, only on constants", AutoForm.Tag.class.getCanonicalName()));
         return false;
       }
@@ -109,7 +109,7 @@ public abstract class ElementInspector {
           String constantTag;
           if (currentTag != null && !currentTag.value().isBlank()) {
             if (!currentTag.value().chars().allMatch(Character::isLetterOrDigit)) {
-              messager.error(String.format("invalid characters in tag: '%s'",  currentTag.value()));
+              messager.error(String.format("invalid characters in tag: '%s'", currentTag.value()));
               return false;
             }
 
@@ -128,10 +128,10 @@ public abstract class ElementInspector {
       AutoForm.Tag tag = element.getAnnotation(AutoForm.Tag.class);
 
       if (tag != null && !tag.value().isBlank()) {
-        if(!tag.value().chars().allMatch(Character::isLetterOrDigit)){
-          messager.error(String.format("invalid characters in tag: '%s'",  tag.value()));
+        if (!tag.value().chars().allMatch(Character::isLetterOrDigit)) {
+          messager.error(String.format("invalid characters in tag: '%s'", tag.value()));
           return false;
-        }else {
+        } else {
           return true;
         }
       }

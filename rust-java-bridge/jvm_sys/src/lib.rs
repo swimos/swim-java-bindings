@@ -16,7 +16,7 @@ extern crate core;
 
 use jni::errors::Result as JniResult;
 
-pub mod bytes;
+// pub mod bytes;
 pub mod channel;
 mod macros;
 pub mod util;

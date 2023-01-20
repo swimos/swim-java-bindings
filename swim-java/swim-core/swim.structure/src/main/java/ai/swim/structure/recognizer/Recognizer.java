@@ -5,7 +5,6 @@ import ai.swim.structure.recognizer.bridge.RecognizerBridge;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.proxy.WriterProxy;
 
-import java.util.Collection;
 import java.util.function.Function;
 
 

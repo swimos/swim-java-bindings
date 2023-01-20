@@ -27,6 +27,7 @@ public class Lookups {
   public static final String HEADER_WRITER = "ai.swim.structure.writer.HeaderWriter";
   public static final String BODY_WRITER = "ai.swim.structure.writer.BodyWriter";
   public static final String HEADER_NO_SLOTS = "ai.swim.structure.writer.header.Header.NoSlots";
+
   private Lookups() {
     throw new AssertionError();
   }

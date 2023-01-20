@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use jni::JNIEnv;
+use std::panic::Location;
 
 /// Performs a null pointer check on all the pointers provided and if any is null then the JVM
 /// aborts.
@@ -43,9 +44,12 @@ macro_rules! npcs {
 }
 
 #[cold]
+#[track_caller]
 #[inline(never)]
 pub fn abort_npe(env: &JNIEnv) -> ! {
-    env.fatal_error("Null pointer")
+    let caller = Location::caller();
+    let message = format!("Null pointer: {}", caller);
+    env.fatal_error(message)
 }
 
 /// Executes an expression that returns Result<O,E> and if in the error variant then the JVM is

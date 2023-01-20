@@ -21,14 +21,6 @@ public abstract class Either<L, R> {
 
   }
 
-  public abstract boolean isLeft();
-
-  public abstract boolean isRight();
-
-  public abstract <O> O accept(Either.Visitor<L, R, O> visitor);
-
-  public abstract void peek(Either.Peek<L, R> peekable);
-
   public static <L, R> Either<L, R> left(L value) {
     return new Left<>(value);
   }
@@ -36,6 +28,14 @@ public abstract class Either<L, R> {
   public static <L, R> Either<L, R> right(R value) {
     return new Right<>(value);
   }
+
+  public abstract boolean isLeft();
+
+  public abstract boolean isRight();
+
+  public abstract <O> O accept(Either.Visitor<L, R, O> visitor);
+
+  public abstract void peek(Either.Peek<L, R> peekable);
 
   public L unwrapLeft() {
     if (isLeft()) {
@@ -51,6 +51,18 @@ public abstract class Either<L, R> {
     } else {
       throw new IllegalStateException("Attempted to unwrap a right value on: " + this);
     }
+  }
+
+  public interface Visitor<L, R, O> {
+    O visitLeft(L value);
+
+    O visitRight(R value);
+  }
+
+  public interface Peek<L, R> {
+    void peekLeft(L value);
+
+    void peekRight(R value);
   }
 
   private static class Left<L, R> extends Either<L, R> {
@@ -163,17 +175,5 @@ public abstract class Either<L, R> {
           "value=" + value +
           '}';
     }
-  }
-
-  public interface Visitor<L, R, O> {
-    O visitLeft(L value);
-
-    O visitRight(R value);
-  }
-
-  public interface Peek<L, R> {
-    void peekLeft(L value);
-
-    void peekRight(R value);
   }
 }

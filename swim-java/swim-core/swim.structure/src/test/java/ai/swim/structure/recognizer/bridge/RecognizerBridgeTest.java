@@ -59,45 +59,6 @@ class RecognizerBridgeTest {
     assertNull(proxy.lookup(Void.class).transform(Value.extant()));
   }
 
-  @AutoForm
-  public static class Clazz<A, B> {
-    public A first;
-    public B second;
-
-    public Clazz() {
-    }
-
-    public Clazz(A first, B second) {
-      this.first = first;
-      this.second = second;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      Clazz<?, ?> clazz = (Clazz<?, ?>) o;
-      return Objects.equals(first, clazz.first) && Objects.equals(second, clazz.second);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(first, second);
-    }
-
-    @Override
-    public String toString() {
-      return "Clazz{" +
-          "first=" + first +
-          ", second=" + second +
-          '}';
-    }
-  }
-
   @Test
   void optFields() {
     Recognizer<Clazz<Integer, Integer>> rec = proxy.lookup((Class<Clazz<Integer, Integer>>) (Class<?>) Clazz.class);
@@ -197,6 +158,45 @@ class RecognizerBridgeTest {
   @Test
   void primitives() {
     System.out.println(proxy.lookup(Value.class).transform(1));
+  }
+
+  @AutoForm
+  public static class Clazz<A, B> {
+    public A first;
+    public B second;
+
+    public Clazz() {
+    }
+
+    public Clazz(A first, B second) {
+      this.first = first;
+      this.second = second;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      Clazz<?, ?> clazz = (Clazz<?, ?>) o;
+      return Objects.equals(first, clazz.first) && Objects.equals(second, clazz.second);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(first, second);
+    }
+
+    @Override
+    public String toString() {
+      return "Clazz{" +
+          "first=" + first +
+          ", second=" + second +
+          '}';
+    }
   }
 
 }
