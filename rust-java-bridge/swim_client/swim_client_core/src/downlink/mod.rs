@@ -21,14 +21,14 @@ pub mod value;
 #[derive(Copy, Clone, Debug)]
 pub enum ErrorHandlingConfig {
     Ignore,
-    CloseDownlink,
+    Report,
     Abort,
 }
 
 impl ErrorHandlingConfig {
     pub fn as_handler(&self) -> Box<dyn FfiFailureHandler> {
         match self {
-            ErrorHandlingConfig::CloseDownlink => Box::new(FailingHandler),
+            ErrorHandlingConfig::Report => Box::new(ReportingHandler),
             ErrorHandlingConfig::Abort => Box::new(AbortingHandler),
             ErrorHandlingConfig::Ignore => Box::new(SinkingHandler),
         }
@@ -58,8 +58,8 @@ impl FfiFailureHandler for AbortingHandler {
     }
 }
 
-struct FailingHandler;
-impl FfiFailureHandler for FailingHandler {
+struct ReportingHandler;
+impl FfiFailureHandler for ReportingHandler {
     fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError> {
         let SpannedError { cause, .. } = err;
         Err(DownlinkTaskError::Custom(cause))

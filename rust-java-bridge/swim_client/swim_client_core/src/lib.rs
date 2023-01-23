@@ -70,7 +70,7 @@ impl SwimClient {
 
         SwimClient {
             // todo: error mode constructor argument
-            error_mode: ErrorHandlingConfig::Abort,
+            error_mode: ErrorHandlingConfig::Report,
             vm: Arc::new(vm),
             runtime,
             stop_tx,
@@ -102,7 +102,7 @@ impl SwimClient {
 
         SwimClient {
             // todo: error mode constructor argument
-            error_mode: ErrorHandlingConfig::Abort,
+            error_mode: ErrorHandlingConfig::Report,
             vm: Arc::new(vm),
             runtime,
             stop_tx,
@@ -235,7 +235,7 @@ fn set_exception(env: &JNIEnv, downlink_ref: GlobalRef, cause: String) {
         env.set_field(
             &downlink_ref,
             "stoppedWith",
-            "java/lang/String",
+            "Ljava/lang/String;",
             JValue::Object(cause.into()),
         )
         .expect("Failed to report downlink stop error");

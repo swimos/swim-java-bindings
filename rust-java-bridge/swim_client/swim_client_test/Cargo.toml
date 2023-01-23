@@ -8,15 +8,15 @@ crate-type = ["cdylib"]
 
 [dependencies]
 swim_client_core = { path = "../../swim_client/swim_client_core" }
-fixture = { path = "../../../../swim-rust/client/fixture" }
-swim_model = { path = "../../../../swim-rust/api/swim_model" }
-swim_form = { path = "../../../../swim-rust/api/swim_form" }
-swim_api = { path = "../../../../swim-rust/api/swim_api" }
-swim_recon = { path = "../../../../swim-rust/api/formats/swim_recon" }
-swim_warp = { path = "../../../../swim-rust/swim_warp" }
-swim_utilities = { path = "../../../../swim-rust/swim_utilities", features = ["byte_channel"] }
-swim_runtime = { path = "../../../../swim-rust/runtime/swim_runtime" }
-client_runtime = { package = "runtime", path = "../../../../swim-rust/client/runtime" }
+fixture = { path = "../../../swim-rust/client/fixture" }
+swim_model = { path = "../../../swim-rust/api/swim_model" }
+swim_form = { path = "../../../swim-rust/api/swim_form" }
+swim_api = { path = "../../../swim-rust/api/swim_api" }
+swim_recon = { path = "../../../swim-rust/api/formats/swim_recon" }
+swim_warp = { path = "../../../swim-rust/swim_warp" }
+swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["byte_channel"] }
+swim_runtime = { path = "../../../swim-rust/runtime/swim_runtime" }
+client_runtime = { package = "runtime", path = "../../../swim-rust/client/runtime" }
 
 jvm_sys = { path = "../../jvm_sys" }
 jvm_sys_tests = { path = "../../jvm_sys/jvm_sys_tests" }

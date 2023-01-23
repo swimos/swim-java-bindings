@@ -47,7 +47,6 @@ pub extern "system" fn Java_ai_swim_client_SwimClient_shutdownClient(
     client: *mut SwimClient,
 ) {
     npch!(env, client);
-    println!("Java_ai_swim_client_SwimClient_shutdownClient");
     let runtime = unsafe { Box::from_raw(client) };
     runtime.shutdown();
 

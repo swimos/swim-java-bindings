@@ -440,13 +440,8 @@ class ValueDownlinkTest {
     CountDownLatch barrier = new CountDownLatch(1);
     assertThrows(SwimClientException.class, () -> {
       ValueDownlink<Object> downlink = new ValueDownlink<>(null, null) {
-        @Override
-        public void awaitStopped() throws SwimClientException {
-          super.awaitStopped();
-        }
       };
 
-      // in the Rust side, the client is unboxed and automatically freed once this exception is thrown
       driveDownlink(
           downlink,
           new CountDownLatch(1),
@@ -499,29 +494,33 @@ class ValueDownlinkTest {
   private static native <T> long driveDownlinkError(
       ValueDownlink<T> downlinkRef,
       CountDownLatch stoppedBarrier,
-      CountDownLatch testBarrier
+      CountDownLatch testBarrier,
+      Function<ByteBuffer, ByteBuffer> onEvent
   );
 
   @Test
-  void testAwaitClosedError() throws SwimClientException {
+  void testAwaitClosedError() {
     CountDownLatch ffiBarrier = new CountDownLatch(1);
     TestValueDownlink<Integer> testDownlink = (TestValueDownlink<Integer>) new TestValueDownlinkBuilder<>(Integer.class, "ws://127.0.0.1", "node", "lane", (build) -> {
       ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(build.formType));
       CountDownLatch stoppedBarrier = new CountDownLatch(1);
       TestValueDownlink<Integer> downlink = new TestValueDownlink<>(stoppedBarrier, state);
+      ValueDownlinkLifecycle<Integer> lifecycle = build.lifecycle;
 
-      long ptr = driveDownlinkError(downlink, stoppedBarrier, ffiBarrier);
+      long ptr = driveDownlinkError(downlink, stoppedBarrier, ffiBarrier, state.wrapOnEvent(lifecycle.getOnEvent()));
       downlink.setClose(() -> dropSwimClient(ptr));
       return downlink;
+    }).setOnEvent((i) -> {
     }).open();
 
     try {
       testDownlink.awaitStopped();
-    } catch (Throwable e) {
+      fail("Expected await stopped to throw a SwimClientException");
+    } catch (SwimClientException e) {
+      assertEquals(e.getMessage(), "Terminated: caused by: StringError(\"java.lang.RuntimeException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}\")");
+    } finally {
       testDownlink.close();
-      throw new SwimClientException(e);
     }
-
-    testDownlink.close();
   }
+
 }
