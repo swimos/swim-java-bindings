@@ -91,7 +91,7 @@ class ValueDownlinkTest {
     awaitLatch(lock, 5, "downlink");
   }
 
-  <I> void runTestOk(Class<I> clazz, ConcurrentLinkedDeque<I> syncEvents, ConcurrentLinkedDeque<I> events) throws InterruptedException {
+  <I> void runTestOk(Class<I> clazz, ConcurrentLinkedDeque<I> syncEvents, ConcurrentLinkedDeque<I> events) throws InterruptedException, SwimClientException {
     StringBuilder input = new StringBuilder();
     input.append("@linked(node:node,lane:lane)\n");
 
@@ -223,12 +223,12 @@ class ValueDownlinkTest {
   }
 
   @Test
-  void testLifecyclesCalled() throws InterruptedException {
+  void testLifecyclesCalled() throws InterruptedException, SwimClientException {
     runTestOk(Integer.class, new ConcurrentLinkedDeque<>(List.of(13)), new ConcurrentLinkedDeque<>(List.of(14, 15)));
   }
 
   @Test
-  void recordType() throws InterruptedException {
+  void recordType() throws InterruptedException, SwimClientException {
     runTestOk(
         Envelope.class,
         new ConcurrentLinkedDeque<>(List.of(new Envelope("node0", "node1"))),
@@ -368,7 +368,7 @@ class ValueDownlinkTest {
   private static native void dropSwimClient(long ptr);
 
   @Test
-  void testWithServer() throws InterruptedException {
+  void testWithServer() throws InterruptedException, SwimClientException {
     CountDownLatch linkedLatch = new CountDownLatch(1);
     CountDownLatch syncedLatch = new CountDownLatch(1);
     CountDownLatch eventLatch = new CountDownLatch(1);
@@ -499,7 +499,7 @@ class ValueDownlinkTest {
   );
 
   @Test
-  void testAwaitClosedError() {
+  void testAwaitClosedError() throws SwimClientException {
     CountDownLatch ffiBarrier = new CountDownLatch(1);
     TestValueDownlink<Integer> testDownlink = (TestValueDownlink<Integer>) new TestValueDownlinkBuilder<>(Integer.class, "ws://127.0.0.1", "node", "lane", (build) -> {
       ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(build.formType));

@@ -15,6 +15,7 @@
 package ai.swim.client.downlink.value;
 
 import ai.swim.client.Handle;
+import ai.swim.client.SwimClientException;
 
 public final class ValueDownlinkBuilder<T> extends ValueDownlinkBuilderModel<T> {
   private final Handle handle;
@@ -25,7 +26,7 @@ public final class ValueDownlinkBuilder<T> extends ValueDownlinkBuilderModel<T> 
   }
 
   @Override
-  public ValueDownlink<T> open() {
+  public ValueDownlink<T> open() throws SwimClientException {
     return ValueDownlinkModel.open(handle, host, node, lane, formType, lifecycle);
   }
 }

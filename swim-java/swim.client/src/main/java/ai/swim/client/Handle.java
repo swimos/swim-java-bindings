@@ -14,14 +14,39 @@
 
 package ai.swim.client;
 
+/**
+ * A Rust SwimClient handle pointer.
+ * <p>
+ * Created through swim_client/src/lib.rs#Java_ai_swim_client_SwimClient_handle
+ */
 public class Handle {
-  private final long ptr;
+  private final long handlePtr;
+  private boolean dropped;
 
-  public Handle(long ptr) {
-    this.ptr = ptr;
+  public Handle(long handlePtr) {
+    this.handlePtr = handlePtr;
+    this.dropped = false;
   }
 
-   public long get() {
-    return ptr;
+  public static Handle create(long runtimePtr) {
+    return new Handle(createHandle(runtimePtr));
   }
+
+  public void drop() {
+    if (dropped) {
+      throw new IllegalStateException("Attempted to drop an already dropped SwimClient handle");
+    } else {
+      dropHandle(handlePtr);
+      dropped = true;
+    }
+  }
+
+  public long get() {
+    return handlePtr;
+  }
+
+  private static native long createHandle(long runtimePtr);
+
+  private static native long dropHandle(long handlePtr);
+
 }

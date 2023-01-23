@@ -15,6 +15,7 @@
 package ai.swim.client.downlink.value;
 
 import ai.swim.client.Handle;
+import ai.swim.client.SwimClientException;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.structure.Form;
@@ -28,36 +29,70 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
     super(stoppedBarrier, state);
   }
 
+  /**
+   * Opens a ValueDownlink to host/node/lane
+   *
+   * @param handle    a single-use SwimClient native handle that is dropped after the downlink has been opened.
+   * @param host      The URl of the host to open the connection to.
+   * @param node      The node URI to downlink to.
+   * @param lane      The lane URI to downlink to.
+   * @param formType  A form class representing the structure of the downlink's value.
+   * @param lifecycle Downlink lifecycle event callbacks.
+   * @return An established ValueDownlink.
+   * @throws SwimClientException if there is an error opening the downlink or by a malformed address.
+   */
+  @SuppressWarnings("RedundantThrows") // Thrown natively.
   static <T> ValueDownlink<T> open(Handle handle,
                                    String host,
                                    String node,
                                    String lane,
                                    Class<T> formType,
                                    ValueDownlinkLifecycle<T> lifecycle
-  ) {
+  ) throws SwimClientException {
     ValueDownlinkState<T> state = new ValueDownlinkState<>(Form.forClass(formType));
     CountDownLatch stoppedBarrier = new CountDownLatch(1);
     ValueDownlinkModel<T> downlink = new ValueDownlinkModel<>(stoppedBarrier, state);
 
-    open(
-        handle.get(),
-        downlink,
-        stoppedBarrier,
-        host,
-        node,
-        lane,
-        state.wrapOnEvent(lifecycle.getOnEvent()),
-        lifecycle.getOnLinked(),
-        state.wrapOnSet(lifecycle.getOnSet()),
-        state.wrapOnSynced(lifecycle.getOnSynced()),
-        lifecycle.getOnUnlinked()
-    );
+    try {
+      open(
+          handle.get(),
+          downlink,
+          stoppedBarrier,
+          host,
+          node,
+          lane,
+          state.wrapOnEvent(lifecycle.getOnEvent()),
+          lifecycle.getOnLinked(),
+          state.wrapOnSet(lifecycle.getOnSet()),
+          state.wrapOnSynced(lifecycle.getOnSynced()),
+          lifecycle.getOnUnlinked()
+      );
+    } finally {
+      handle.drop();
+    }
 
     return downlink;
   }
 
+  /**
+   * Attempts to open a new value downlink; starting a new Value Downlink Runtime as required and attaching a new native
+   * value downlink to it.
+   *
+   * @param handlePtr      A SwimHandle pointer.
+   * @param downlink       Downlink model reference for reporting any exceptions that are thrown to.
+   * @param stoppedBarrier An owned stop barrier for Java threads to block on until the downlink has terminated.
+   * @param host           The URl of the host to open the connection to.
+   * @param node           The node URI to downlink to.
+   * @param lane           The lane URI to downlink to.
+   * @param onEvent        onEvent callback. If this is null, then it will not be invoked.
+   * @param onLinked       onLinked callback. If this is null, then it will not be invoked.
+   * @param onSet          onSet callback. If this is null, then it will not be invoked.
+   * @param onSynced       onSynced callback. If this is null, then it will not be invoked.
+   * @param onUnlinked     onUnlinked callback. If this is null, then it will not be invoked.
+   * @param <T>            The type of the value.
+   */
   private static native <T> void open(
-      long runtime,
+      long handlePtr,
       ValueDownlinkModel<T> downlink,
       CountDownLatch stoppedBarrier,
       String host,

@@ -18,6 +18,14 @@ import ai.swim.client.SwimClientException;
 
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * A Swim Value Downlink representation. A ValueDownlink synchronizes a shared real-time value with a remote value lane
+ * and provides lifecycle callbacks that may be registered to be notified of certain events.
+ * <p>
+ * This class is thread safe.
+ *
+ * @param <T> the type of the value.
+ */
 public abstract class ValueDownlink<T> {
   private final CountDownLatch stoppedBarrier;
   /// Referenced through FFI and *possibly* set to an error that occurred while the downlink was running. Iff this is
@@ -36,6 +44,11 @@ public abstract class ValueDownlink<T> {
     this.state = state;
   }
 
+  /**
+   * Blocks the current thread until the downlink has been terminated.
+   *
+   * @throws SwimClientException if the downlink terminated with an error.
+   */
   public void awaitStopped() throws SwimClientException {
     try {
       stoppedBarrier.await();

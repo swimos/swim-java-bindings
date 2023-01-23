@@ -14,6 +14,7 @@
 
 package ai.swim.client.downlink.value;
 
+import ai.swim.client.SwimClientException;
 import ai.swim.client.lifecycle.OnEvent;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnSet;
@@ -35,31 +36,52 @@ public abstract class ValueDownlinkBuilderModel<T> {
     this.lifecycle = new ValueDownlinkLifecycle<>();
   }
 
+  /**
+   * Registers a callback that will be invoked when the downlink receives an event.
+   */
   public ValueDownlinkBuilderModel<T> setOnEvent(OnEvent<T> onEvent) {
     lifecycle.setOnEvent(onEvent);
     return this;
   }
 
+  /**
+   * Registers a callback that will be invoked when the downlink links to the remote lane.
+   */
   public ValueDownlinkBuilderModel<T> setOnLinked(OnLinked onLinked) {
     lifecycle.setOnLinked(onLinked);
     return this;
   }
 
+  /**
+   * Registers a callback that will be invoked when the downlink links to the remote lane.
+   */
   public ValueDownlinkBuilderModel<T> setOnSynced(OnSynced<T> onSynced) {
     lifecycle.setOnSynced(onSynced);
     return this;
   }
 
+  /**
+   * Registers a callback that will be invoked when the downlink sets a new value
+   */
   public ValueDownlinkBuilderModel<T> setOnSet(OnSet<T> onSet) {
     lifecycle.setOnSet(onSet);
     return this;
   }
 
+  /**
+   * Registers a callback that will be invoked when the downlink unlinks from the remote lane.
+   */
   public ValueDownlinkBuilderModel<T> setOnUnlinked(OnUnlinked onUnlinked) {
     lifecycle.setOnUnlinked(onUnlinked);
     return this;
   }
 
-  public abstract ValueDownlink<T> open();
+  /**
+   * Attempts to open the downlink.
+   *
+   * @return an established ValueDownlink.
+   * @throws SwimClientException if there was an error opening the downlink.
+   */
+  public abstract ValueDownlink<T> open() throws SwimClientException;
 
 }

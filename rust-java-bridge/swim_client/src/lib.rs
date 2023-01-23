@@ -54,7 +54,7 @@ pub extern "system" fn Java_ai_swim_client_SwimClient_shutdownClient(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ai_swim_client_SwimClient_handle(
+pub extern "system" fn Java_ai_swim_client_Handle_createHandle(
     env: JNIEnv,
     _class: JClass,
     runtime: *mut SwimClient,
@@ -64,6 +64,18 @@ pub extern "system" fn Java_ai_swim_client_SwimClient_handle(
     let handle = runtime.handle();
 
     Box::leak(Box::new(handle))
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_swim_client_Handle_dropHandle(
+    env: JNIEnv,
+    _class: JClass,
+    handle: *mut ClientHandle,
+) {
+    npch!(env, handle);
+    unsafe {
+        drop(Box::from_raw(handle));
+    }
 }
 
 // If the number of arguments for this grows any further then it might be worth implementing an FFI
