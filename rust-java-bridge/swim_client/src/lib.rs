@@ -14,8 +14,9 @@
 
 extern crate core;
 
+use bytes::BytesMut;
 use jni::objects::{JClass, JString};
-use jni::sys::jobject;
+use jni::sys::{jbyteArray, jobject};
 use jni::JNIEnv;
 use std::panic;
 use url::Url;
@@ -24,6 +25,7 @@ use jvm_sys::vm::set_panic_hook;
 use jvm_sys::vm::utils::new_global_ref;
 use jvm_sys::{jni_try, npch, parse_string};
 use swim_client_core::downlink::value::FfiValueDownlink;
+use swim_client_core::downlink::DownlinkConfigurations;
 use swim_client_core::{ClientHandle, SwimClient};
 
 #[no_mangle]
@@ -86,6 +88,7 @@ pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkModel_ope
     _class: JClass,
     handle: *mut ClientHandle,
     downlink_ref: jobject,
+    config: jbyteArray,
     stopped_barrier: jobject,
     host: JString,
     node: JString,
@@ -96,7 +99,20 @@ pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkModel_ope
     on_synced: jobject,
     on_unlinked: jobject,
 ) {
-    npch!(env, handle, stopped_barrier, downlink_ref);
+    npch!(env, handle, stopped_barrier, downlink_ref, config);
+
+    let mut config_bytes = jni_try! {
+        env,
+        "Failed to parse configuration array",
+        env.convert_byte_array(config).map(BytesMut::from_iter)
+    };
+
+    let config = jni_try! {
+        env,
+        "Invalid config",
+        DownlinkConfigurations::try_from_bytes(&mut config_bytes,&env)
+    };
+
     let handle = unsafe { &*handle };
     let downlink = jni_try! {
         env,
@@ -131,6 +147,7 @@ pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkModel_ope
     let lane = parse_string!(env, lane);
 
     handle.spawn_value_downlink(
+        config,
         make_global_ref(downlink_ref, "downlink object"),
         make_global_ref(stopped_barrier, "stopped barrier"),
         downlink,

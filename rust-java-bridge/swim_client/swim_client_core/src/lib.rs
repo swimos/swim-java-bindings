@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use crate::downlink::value::{FfiValueDownlink, SharedVm};
-use crate::downlink::ErrorHandlingConfig;
+use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
 use client_runtime::{
     start_runtime, DownlinkErrorKind, DownlinkRuntimeError, RawHandle, Transport,
 };
@@ -28,7 +28,6 @@ use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::Arc;
 use swim_model::path::AbsolutePath;
-use swim_runtime::downlink::DownlinkOptions;
 use swim_runtime::remote::net::dns::Resolver;
 use swim_runtime::remote::net::tls::TokioTlsNetworking;
 use swim_runtime::remote::ExternalConnections;
@@ -150,6 +149,7 @@ impl ClientHandle {
 
     pub fn spawn_value_downlink(
         &self,
+        config: DownlinkConfigurations,
         downlink_ref: GlobalRef,
         stopped_barrier: GlobalRef,
         downlink: FfiValueDownlink,
@@ -164,11 +164,16 @@ impl ClientHandle {
             ..
         } = self;
 
+        let DownlinkConfigurations {
+            runtime: runtime_config,
+            downlink: downlink_config,
+            options,
+        } = config;
         let result = tokio_handle.block_on(downlinks_handle.run_downlink(
             AbsolutePath::new(host, node.as_str(), lane.as_str()),
-            Default::default(),
-            Default::default(),
-            DownlinkOptions::SYNC,
+            runtime_config,
+            downlink_config,
+            options,
             downlink,
         ));
 

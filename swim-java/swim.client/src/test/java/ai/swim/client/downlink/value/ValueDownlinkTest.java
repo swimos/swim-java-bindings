@@ -15,6 +15,7 @@
 package ai.swim.client.downlink.value;
 
 import ai.swim.client.SwimClientException;
+import ai.swim.client.downlink.DownlinkConfig;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.structure.Form;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -522,5 +524,13 @@ class ValueDownlinkTest {
       testDownlink.close();
     }
   }
+
+  @Test
+  void parsesConfig() {
+    byte[] downlinkConfig = new DownlinkConfig().toArray();
+    parsesConfig(downlinkConfig);
+  }
+
+  private static native void parsesConfig(byte[] downlinkConfig);
 
 }

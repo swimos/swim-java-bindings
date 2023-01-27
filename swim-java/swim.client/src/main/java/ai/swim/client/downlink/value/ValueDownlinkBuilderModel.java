@@ -15,11 +15,14 @@
 package ai.swim.client.downlink.value;
 
 import ai.swim.client.SwimClientException;
+import ai.swim.client.downlink.DownlinkConfig;
 import ai.swim.client.lifecycle.OnEvent;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnSet;
 import ai.swim.client.lifecycle.OnSynced;
 import ai.swim.client.lifecycle.OnUnlinked;
+
+import java.util.Objects;
 
 public abstract class ValueDownlinkBuilderModel<T> {
   protected final String host;
@@ -27,6 +30,7 @@ public abstract class ValueDownlinkBuilderModel<T> {
   protected final Class<T> formType;
   protected final String node;
   protected final ValueDownlinkLifecycle<T> lifecycle;
+  protected DownlinkConfig downlinkConfig;
 
   protected ValueDownlinkBuilderModel(Class<T> formType, String host, String node, String lane) {
     this.formType = formType;
@@ -34,6 +38,7 @@ public abstract class ValueDownlinkBuilderModel<T> {
     this.node = node;
     this.lane = lane;
     this.lifecycle = new ValueDownlinkLifecycle<>();
+    this.downlinkConfig = new DownlinkConfig();
   }
 
   /**
@@ -84,4 +89,14 @@ public abstract class ValueDownlinkBuilderModel<T> {
    */
   public abstract ValueDownlink<T> open() throws SwimClientException;
 
+  /**
+   * Sets the downlink and runtime configuration.
+   *
+   * @throws NullPointerException if the configuration is null.
+   */
+  public ValueDownlinkBuilderModel<T> setDownlinkConfig(DownlinkConfig downlinkConfig) {
+    Objects.requireNonNull(downlinkConfig);
+    this.downlinkConfig = downlinkConfig;
+    return this;
+  }
 }

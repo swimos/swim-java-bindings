@@ -25,8 +25,10 @@ public final class ValueDownlinkBuilder<T> extends ValueDownlinkBuilderModel<T> 
     this.handle = handle;
   }
 
+
+
   @Override
   public ValueDownlink<T> open() throws SwimClientException {
-    return ValueDownlinkModel.open(handle, host, node, lane, formType, lifecycle);
+    return ValueDownlinkModel.open(handle, host, node, lane, formType, lifecycle,downlinkConfig);
   }
 }

@@ -24,7 +24,7 @@ use futures_util::future::try_join3;
 use futures_util::SinkExt;
 use jni::errors::Error;
 use jni::objects::{GlobalRef, JClass, JObject, JString};
-use jni::sys::jobject;
+use jni::sys::{jbyteArray, jobject};
 use jni::JNIEnv;
 use swim_api::downlink::{Downlink, DownlinkConfig};
 use swim_api::protocol::downlink::{DownlinkNotification, DownlinkNotificationEncoder};
@@ -48,6 +48,7 @@ use jvm_sys::vm::utils::{get_env_shared, new_global_ref};
 use jvm_sys::{jni_try, jvm_tryf, parse_string};
 use jvm_sys_tests::run_test;
 use swim_client_core::downlink::value::FfiValueDownlink;
+use swim_client_core::downlink::DownlinkConfigurations;
 use swim_client_core::downlink::ErrorHandlingConfig;
 use swim_client_core::SwimClient;
 
@@ -264,6 +265,7 @@ pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_driv
     let lane = parse_string!(env, lane, std::ptr::null_mut());
 
     handle.spawn_value_downlink(
+        Default::default(),
         make_global_ref(&env, downlink_ref, "downlink object reference"),
         make_global_ref(&env, stopped_barrier_ref, "stopped barrier"),
         downlink,
@@ -358,6 +360,7 @@ pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_driv
     };
 
     handle.spawn_value_downlink(
+        Default::default(),
         make_global_ref(&env, downlink_ref, "downlink object reference"),
         make_global_ref(&env, stopped_barrier_ref, "stopped barrier"),
         downlink,
@@ -395,4 +398,23 @@ pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_driv
     });
 
     Box::leak(Box::new(client))
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_parsesConfig(
+    env: JNIEnv,
+    _class: JClass,
+    config: jbyteArray,
+) {
+    let mut config_bytes = jni_try! {
+        env,
+        "Failed to parse configuration array",
+        env.convert_byte_array(config).map(BytesMut::from_iter)
+    };
+
+    jni_try! {
+        env,
+        "Invalid config",
+        DownlinkConfigurations::try_from_bytes(&mut config_bytes, &env)
+    };
 }
