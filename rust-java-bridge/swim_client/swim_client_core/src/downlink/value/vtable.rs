@@ -27,31 +27,31 @@ const ON_LINKED: JavaObjectMethodDef =
     JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnLinked", "onLinked", "()V");
 const ON_UNLINKED: JavaObjectMethodDef =
     JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnUnlinked", "onUnlinked", "()V");
-const FUNCTION_APPLY: JavaObjectMethodDef = JavaObjectMethodDef::new(
-    "java/util/function/Function",
-    "apply",
-    "(Ljava/lang/Object;)Ljava/lang/Object;",
+const CONSUMER_ACCEPT: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "java/util/function/Consumer",
+    "accept",
+    "(Ljava/lang/Object;)V",
 );
 
-struct JavaFunction {
+struct JavaMethod {
     ptr: Option<GlobalRef>,
-    def: FunctionDefinition,
+    def: MethodDefinition,
 }
 
-enum FunctionDefinition {
+enum MethodDefinition {
     Unit(JavaObjectMethodDef),
     Init(InitialisedJavaObjectMethod),
 }
 
-impl JavaFunction {
+impl JavaMethod {
     pub fn for_method(
         env: &JNIEnv,
         ptr: jobject,
         method: JavaObjectMethodDef,
-    ) -> Result<JavaFunction, Error> {
-        Ok(JavaFunction {
+    ) -> Result<JavaMethod, Error> {
+        Ok(JavaMethod {
             ptr: new_global_ref(&env, ptr)?,
-            def: FunctionDefinition::Unit(method),
+            def: MethodDefinition::Unit(method),
         })
     }
 
@@ -59,17 +59,17 @@ impl JavaFunction {
     where
         F: FnOnce(&mut InitialisedJavaObjectMethod, JObject) -> Result<(), Error>,
     {
-        let JavaFunction { ptr, def } = self;
+        let JavaMethod { ptr, def } = self;
         match ptr {
             Some(ptr) => match def {
-                FunctionDefinition::Unit(inner) => {
+                MethodDefinition::Unit(inner) => {
                     let mut initialised = inner.initialise(env)?;
                     let result =
                         with_local_frame_null(env, None, || f(&mut initialised, ptr.as_obj()));
-                    *def = FunctionDefinition::Init(initialised);
+                    *def = MethodDefinition::Init(initialised);
                     result
                 }
-                FunctionDefinition::Init(inner) => {
+                MethodDefinition::Init(inner) => {
                     with_local_frame_null(env, None, || f(inner, ptr.as_obj()))
                 }
             },
@@ -104,11 +104,11 @@ impl JavaFunction {
 //    initialised reference. This is something that should be implemented once the FFI module is
 //    more flushed out. todo: proxy
 pub struct ValueDownlinkVTable {
-    on_linked: JavaFunction,
-    on_synced: JavaFunction,
-    on_event: JavaFunction,
-    on_set: JavaFunction,
-    on_unlinked: JavaFunction,
+    on_linked: JavaMethod,
+    on_synced: JavaMethod,
+    on_event: JavaMethod,
+    on_set: JavaMethod,
+    on_unlinked: JavaMethod,
 }
 
 impl ValueDownlinkVTable {
@@ -121,11 +121,11 @@ impl ValueDownlinkVTable {
         on_unlinked: jobject,
     ) -> Result<ValueDownlinkVTable, Error> {
         Ok(ValueDownlinkVTable {
-            on_linked: JavaFunction::for_method(&env, on_linked, ON_LINKED)?,
-            on_synced: JavaFunction::for_method(&env, on_synced, FUNCTION_APPLY)?,
-            on_event: JavaFunction::for_method(&env, on_event, FUNCTION_APPLY)?,
-            on_set: JavaFunction::for_method(&env, on_set, FUNCTION_APPLY)?,
-            on_unlinked: JavaFunction::for_method(&env, on_unlinked, ON_UNLINKED)?,
+            on_linked: JavaMethod::for_method(&env, on_linked, ON_LINKED)?,
+            on_synced: JavaMethod::for_method(&env, on_synced, CONSUMER_ACCEPT)?,
+            on_event: JavaMethod::for_method(&env, on_event, CONSUMER_ACCEPT)?,
+            on_set: JavaMethod::for_method(&env, on_set, CONSUMER_ACCEPT)?,
+            on_unlinked: JavaMethod::for_method(&env, on_unlinked, ON_UNLINKED)?,
         })
     }
 
@@ -135,17 +135,17 @@ impl ValueDownlinkVTable {
 
     pub fn on_synced(&mut self, env: &JNIEnv, value: &mut Vec<u8>) -> Result<(), Error> {
         let buffer = unsafe { env.new_direct_byte_buffer(value.as_mut_ptr(), value.len()) }?;
-        null_fn(env, &mut self.on_synced, &[buffer.into()])
+        void_fn(env, &mut self.on_synced, &[buffer.into()])
     }
 
     pub fn on_event(&mut self, env: &JNIEnv, value: &mut Vec<u8>) -> Result<(), Error> {
         let buffer = unsafe { env.new_direct_byte_buffer(value.as_mut_ptr(), value.len()) }?;
-        null_fn(env, &mut self.on_event, &[buffer.into()])
+        void_fn(env, &mut self.on_event, &[buffer.into()])
     }
 
     pub fn on_set(&mut self, env: &JNIEnv, value: &mut Vec<u8>) -> Result<(), Error> {
         let buffer = unsafe { env.new_direct_byte_buffer(value.as_mut_ptr(), value.len()) }?;
-        null_fn(env, &mut self.on_set, &[buffer.into()])
+        void_fn(env, &mut self.on_set, &[buffer.into()])
     }
 
     pub fn on_unlinked(&mut self, env: &JNIEnv) -> Result<(), Error> {
@@ -153,10 +153,6 @@ impl ValueDownlinkVTable {
     }
 }
 
-fn void_fn(env: &JNIEnv, ptr: &mut JavaFunction, args: &[JValue<'_>]) -> Result<(), Error> {
+fn void_fn(env: &JNIEnv, ptr: &mut JavaMethod, args: &[JValue<'_>]) -> Result<(), Error> {
     ptr.execute(env, |init, obj| init.void().invoke(env, obj, args))
-}
-
-fn null_fn(env: &JNIEnv, ptr: &mut JavaFunction, args: &[JValue<'_>]) -> Result<(), Error> {
-    ptr.execute(env, |init, obj| init.null().invoke(env, obj, args))
 }

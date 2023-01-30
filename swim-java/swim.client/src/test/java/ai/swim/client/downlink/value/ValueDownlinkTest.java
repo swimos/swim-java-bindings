@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,10 +52,10 @@ class ValueDownlinkTest {
       String host,
       String node,
       String lane,
-      Function<ByteBuffer, ByteBuffer> onEvent,
+      Consumer<ByteBuffer> onEvent,
       OnLinked onLinked,
-      Function<ByteBuffer, ByteBuffer> onSet,
-      Function<ByteBuffer, ByteBuffer> onSynced,
+      Consumer<ByteBuffer> onSet,
+      Consumer<ByteBuffer> onSynced,
       OnUnlinked onUnlinked
   );
 
@@ -360,10 +361,10 @@ class ValueDownlinkTest {
       String host,
       String node,
       String lane,
-      Function<ByteBuffer, ByteBuffer> onEvent,
+      Consumer<ByteBuffer> onEvent,
       OnLinked onLinked,
-      Function<ByteBuffer, ByteBuffer> onSet,
-      Function<ByteBuffer, ByteBuffer> onSynced,
+      Consumer<ByteBuffer> onSet,
+      Consumer<ByteBuffer> onSynced,
       OnUnlinked onUnlinked
   );
 
@@ -497,7 +498,7 @@ class ValueDownlinkTest {
       ValueDownlink<T> downlinkRef,
       CountDownLatch stoppedBarrier,
       CountDownLatch testBarrier,
-      Function<ByteBuffer, ByteBuffer> onEvent
+      Consumer<ByteBuffer> onEvent
   );
 
   @Test

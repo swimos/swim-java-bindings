@@ -23,6 +23,7 @@ import ai.swim.structure.Form;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
@@ -103,10 +104,10 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
       String host,
       String node,
       String lane,
-      Function<ByteBuffer, ByteBuffer> onEvent,
+      Consumer<ByteBuffer> onEvent,
       OnLinked onLinked,
-      Function<ByteBuffer, ByteBuffer> onSet,
-      Function<ByteBuffer, ByteBuffer> onSynced,
+      Consumer<ByteBuffer> onSet,
+      Consumer<ByteBuffer> onSynced,
       OnUnlinked onUnlinked
   );
 

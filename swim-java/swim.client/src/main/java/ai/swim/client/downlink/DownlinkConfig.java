@@ -16,6 +16,9 @@ package ai.swim.client.downlink;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Swim downlink runtime configuration, downlink configuration and downlink link options.
+ */
 public class DownlinkConfig {
   private int emptyTimeout = 30;
   private int attachmentQueueSize = 16;
@@ -28,6 +31,13 @@ public class DownlinkConfig {
   private boolean keepLinked = true;
   private boolean keepSynced = true;
 
+  /**
+   * Sets the duration that the runtime may be inactive for before it shuts down; a runtime is considered inactive if
+   * it has no consumers.
+   *
+   * @param emptyTimeout the timeout duration in seconds.
+   * @throws IllegalArgumentException it the timeout is less than 1 second.
+   */
   public DownlinkConfig setEmptyTimeout(int emptyTimeout) {
     nonZero(emptyTimeout);
 
@@ -36,11 +46,17 @@ public class DownlinkConfig {
   }
 
   private void nonZero(int emptyTimeout) {
-    if (emptyTimeout<=0){
+    if (emptyTimeout <= 0) {
       throw new IllegalArgumentException("Argument must be non-zero");
     }
   }
 
+  /**
+   * Sets the queue size for attaching new subscribers to the runtime.
+   *
+   * @param attachmentQueueSize the queue size.
+   * @throws IllegalArgumentException if the queue size is less than 1.
+   */
   public DownlinkConfig setAttachmentQueueSize(int attachmentQueueSize) {
     nonZero(emptyTimeout);
 
@@ -48,11 +64,20 @@ public class DownlinkConfig {
     return this;
   }
 
+  /**
+   * Sets whether the runtime should shut down if it receives an invalid WARP frame.
+   */
   public DownlinkConfig setAbortOnBadFrames(boolean abortOnBadFrames) {
     this.abortOnBadFrames = abortOnBadFrames;
     return this;
   }
 
+  /**
+   * Sets the size of the buffer for communicating with the socket.
+   *
+   * @param remoteBufferSize the size of the buffer to the socket.
+   * @throws IllegalArgumentException if the buffer size is less than 1.
+   */
   public DownlinkConfig setRemoteBufferSize(int remoteBufferSize) {
     nonZero(emptyTimeout);
 
@@ -60,6 +85,12 @@ public class DownlinkConfig {
     return this;
   }
 
+  /**
+   * Sets the size of the buffer between the runtime and the downlink implementation
+   *
+   * @param downlinkBufferSize the size of the buffer.
+   * @throws IllegalArgumentException if the buffer size is less than 1.
+   */
   public DownlinkConfig setDownlinkBufferSize(int downlinkBufferSize) {
     nonZero(emptyTimeout);
 
@@ -67,43 +98,59 @@ public class DownlinkConfig {
     return this;
   }
 
+  /**
+   * Sets whether the downlink should invoke event callbacks before it has synced.
+   *
+   * @param eventsWhenNotSynced whether to invoke the event callbacks before it has synced.
+   */
   public DownlinkConfig setEventsWhenNotSynced(boolean eventsWhenNotSynced) {
     this.eventsWhenNotSynced = eventsWhenNotSynced;
     return this;
   }
 
+  /**
+   * Sets whether the downlink should terminate on an unlinked message.
+   *
+   * @param terminateOnUnlinked whether to terminate on an unlinked message.
+   */
   public DownlinkConfig setTerminateOnUnlinked(boolean terminateOnUnlinked) {
     this.terminateOnUnlinked = terminateOnUnlinked;
     return this;
   }
 
-  public DownlinkConfig setChannelSize(int channelSize) {
-    nonZero(emptyTimeout);
-
-    this.channelSize = channelSize;
-    return this;
-  }
-
+  /**
+   * Sets whether the downlink should attempt to keep linked.
+   */
   public DownlinkConfig setKeepLinked(boolean keepLinked) {
     this.keepLinked = keepLinked;
     return this;
   }
 
+  /**
+   * Sets whether the downlink should be synced.
+   */
   public DownlinkConfig setKeepSynced(boolean keepSynced) {
     this.keepSynced = keepSynced;
     return this;
   }
 
+  private static byte booleanToByte(boolean b) {
+    return (byte) (b ? 1 : 0);
+  }
+
+  /**
+   * Returns a byte array representation of the current configuration.
+   */
   public byte[] toArray() {
     ByteBuffer buffer = ByteBuffer.allocate(44);
 
     buffer.putLong(emptyTimeout);
     buffer.putLong(attachmentQueueSize);
-    buffer.put((byte) (abortOnBadFrames ? 1 : 0));
+    buffer.put(booleanToByte(abortOnBadFrames));
     buffer.putLong(remoteBufferSize);
     buffer.putLong(downlinkBufferSize);
-    buffer.put((byte) (eventsWhenNotSynced ? 1 : 0));
-    buffer.put((byte) (terminateOnUnlinked ? 1 : 0));
+    buffer.put(booleanToByte(eventsWhenNotSynced));
+    buffer.put(booleanToByte(terminateOnUnlinked));
     buffer.putLong(channelSize);
     buffer.put((byte) ((keepLinked ? 1 : 0) << 1 | (keepSynced ? 1 : 0)));
 

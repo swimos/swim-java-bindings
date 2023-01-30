@@ -25,6 +25,7 @@ import ai.swim.structure.FormParser;
 import ai.swim.structure.recognizer.RecognizerException;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 class ValueDownlinkState<T> {
@@ -35,38 +36,35 @@ class ValueDownlinkState<T> {
     this.form = form;
   }
 
-  Function<ByteBuffer, ByteBuffer> wrapOnEvent(OnEvent<T> onEvent) {
+  Consumer<ByteBuffer> wrapOnEvent(OnEvent<T> onEvent) {
     if (onEvent != null) {
       return buffer -> {
         T value = parse(buffer);
         onEvent.onEvent(value);
-        return null;
       };
     } else {
       return null;
     }
   }
 
-  Function<ByteBuffer, ByteBuffer> wrapOnSynced(OnSynced<T> onSynced) {
+  Consumer<ByteBuffer> wrapOnSynced(OnSynced<T> onSynced) {
     if (onSynced != null) {
       return buffer -> {
         T value = parse(buffer);
         this.state = value;
         onSynced.onSynced(value);
-        return null;
       };
     } else {
       return null;
     }
   }
 
-  Function<ByteBuffer, ByteBuffer> wrapOnSet(OnSet<T> onSet) {
+  Consumer<ByteBuffer> wrapOnSet(OnSet<T> onSet) {
     if (onSet != null) {
       return buffer -> {
         T value = parse(buffer);
         onSet.onSet(state, value);
         this.state = value;
-        return null;
       };
     } else {
       return null;
