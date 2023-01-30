@@ -533,12 +533,20 @@ class ValueDownlinkTest {
     }
   }
 
+  private static native void parsesConfig(byte[] downlinkConfig);
+
   @Test
-  void parsesConfig() {
+  void parsesValidConfig() {
     byte[] downlinkConfig = new DownlinkConfig().toArray();
     parsesConfig(downlinkConfig);
   }
 
-  private static native void parsesConfig(byte[] downlinkConfig);
+  @Test
+  void throwsOnInvalidConfig() {
+    assertThrows(SwimClientException.class, () -> {
+      byte[] downlinkConfig = new byte[] {1, 2, 3, 4, 5};
+      parsesConfig(downlinkConfig);
+    }, "Failed to parse downlink configuration: \"Invalid buffer length\"");
+  }
 
 }

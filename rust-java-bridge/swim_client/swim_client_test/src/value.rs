@@ -412,9 +412,5 @@ pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_pars
         env.convert_byte_array(config).map(BytesMut::from_iter)
     };
 
-    jni_try! {
-        env,
-        "Invalid config",
-        DownlinkConfigurations::try_from_bytes(&mut config_bytes, &env)
-    };
+    let _r = DownlinkConfigurations::try_from_bytes(&mut config_bytes, &env);
 }
