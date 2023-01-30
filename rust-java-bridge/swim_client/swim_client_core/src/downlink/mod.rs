@@ -71,8 +71,7 @@ impl FfiFailureHandler for AbortingHandler {
 struct ReportingHandler;
 impl FfiFailureHandler for ReportingHandler {
     fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError> {
-        let SpannedError { cause, .. } = err;
-        Err(DownlinkTaskError::Custom(cause))
+        Err(DownlinkTaskError::Custom(Box::new(err)))
     }
 }
 

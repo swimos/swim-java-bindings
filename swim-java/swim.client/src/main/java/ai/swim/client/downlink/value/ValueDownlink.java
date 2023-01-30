@@ -34,7 +34,9 @@ public abstract class ValueDownlink<T> {
   ///
   /// This is implemented this way to avoid a long-running FFI call and so that the 'awaitStopped' method has an
   /// exception to throw when it is called - otherwise, the exception would be lost.
-  protected String stoppedWith;
+  protected String message;
+  protected Throwable cause;
+
   // Referenced through FFI. Do not remove.
   @SuppressWarnings({"FieldCanBeLocal", "unused"})
   private final ValueDownlinkState<T> state;
@@ -56,8 +58,8 @@ public abstract class ValueDownlink<T> {
       throw new SwimClientException(e);
     }
 
-    if (stoppedWith != null) {
-      throw new SwimClientException(stoppedWith);
+    if (cause != null || message != null) {
+      throw new SwimClientException(message, cause);
     }
   }
 

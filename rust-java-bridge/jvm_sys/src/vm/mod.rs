@@ -13,14 +13,14 @@
 // limitations under the License.
 
 use std::error::Error;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
+use std::io::Write;
 use std::panic::{panic_any, Location};
 use std::{fmt, panic};
 
 use jni::errors::JniError;
-use jni::objects::{JObject, JString};
+use jni::objects::{GlobalRef, JObject, JString};
 use jni::JNIEnv;
-use std::io::Write;
 
 pub mod exception;
 pub mod method;
@@ -62,11 +62,19 @@ impl Display for StringError {
     }
 }
 
+/// A tracked Rust error that was caused by a Java method invocation that threw an exception. This
+/// struct contains the callstack that led to the exception being thrown as well as a global
+/// reference to the exception itself (which is freed when dropped).
 #[derive(Debug)]
 pub struct SpannedError {
+    /// The Rust call site location that triggered the exception to be thrown.
     pub location: &'static Location<'static>,
+    /// The Java exception stack trace converted to a string.
     pub stack_trace: String,
+    /// The cause of the exception (typically, a String representation of the message).
     pub cause: Box<dyn Error + Send + Sync>,
+    /// A global reference to the Java throwable.
+    pub throwable: GlobalRef,
 }
 
 impl SpannedError {
@@ -74,6 +82,7 @@ impl SpannedError {
         location: &'static Location<'static>,
         stack_trace: String,
         cause: C,
+        throwable: GlobalRef,
     ) -> SpannedError
     where
         C: Error + Send + Sync + 'static,
@@ -82,6 +91,7 @@ impl SpannedError {
             location,
             stack_trace,
             cause: Box::new(cause),
+            throwable,
         }
     }
 
@@ -99,13 +109,21 @@ impl SpannedError {
     }
 }
 
+impl Display for SpannedError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for SpannedError {}
+
 #[derive(Debug)]
 pub enum InvocationError {
     Spanned(SpannedError),
     Detached,
 }
 
-#[cfg_attr(debug_assertions, track_caller)]
+#[track_caller]
 pub fn jni_call<O, F>(env: &JNIEnv, mut f: F) -> Result<O, SpannedError>
 where
     F: FnMut() -> Result<O, jni::errors::Error>,
@@ -130,11 +148,13 @@ fn handle_exception(location: &'static Location, env: &JNIEnv) -> SpannedError {
     const STACK_TRACE_MSG: &'static str = "Failed to get stacktrace";
 
     let throwable = env.exception_occurred().expect(EXCEPTION_MSG);
+    let exception_gr = env.new_global_ref(throwable).expect(EXCEPTION_MSG);
 
     // We want to clear the exception here, yield the error to the runtime for it to
     // determine whether to abort the runtime or close the downlink.
     env.exception_clear().expect("Failed to clear exception");
 
+    // Fetch message in case the error handler wants to use it as part of a panic message.
     let message = env
         .call_method(throwable, "getMessage", "()Ljava/lang/String;", &[])
         .expect(EXCEPTION_MSG);
@@ -150,6 +170,8 @@ fn handle_exception(location: &'static Location, env: &JNIEnv) -> SpannedError {
         Err(_) => "".to_string(),
     };
 
+    // Get the first few lines of the stack trace in case the panic handler wants to use it as part
+    // of a panic message.
     let stack_trace_obj = env
         .call_static_method(
             "ai/swim/client/Utils",
@@ -166,6 +188,7 @@ fn handle_exception(location: &'static Location, env: &JNIEnv) -> SpannedError {
         location,
         stack_trace_string.into(),
         StringError(message_string),
+        exception_gr,
     )
 }
 
@@ -178,6 +201,7 @@ pub fn set_panic_hook() {
                 location,
                 stack_trace,
                 cause,
+                ..
             } = payload
                 .downcast_ref::<SpannedError>()
                 .expect("Failed to downcast to SpannedError");
@@ -209,6 +233,8 @@ pub fn set_panic_hook() {
     }));
 }
 
+/// Executes a function inside while managing local references created during the execution. Once
+/// the function has been executed, the popped local frame's return value is set to null.
 pub fn with_local_frame_null<F, R>(env: &JNIEnv, capacity: Option<i32>, f: F) -> R
 where
     F: FnOnce() -> R,

@@ -22,11 +22,13 @@ use jni::JNIEnv;
 use jni::JavaVM;
 use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
 use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
-use jvm_sys::vm::with_local_frame_null;
+use jvm_sys::vm::{with_local_frame_null, SpannedError};
 use ratchet::{NoExtProvider, WebSocketConfig, WebSocketStream};
+use std::error::Error;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::Arc;
+use swim_api::error::DownlinkTaskError;
 use swim_model::path::AbsolutePath;
 use swim_runtime::remote::net::dns::Resolver;
 use swim_runtime::remote::net::tls::TokioTlsNetworking;
@@ -211,10 +213,10 @@ fn spawn_monitor(
         match result {
             Ok(arc_result) => {
                 if let Err(e) = arc_result.as_ref() {
-                    set_exception(&env, downlink_ref, e.to_string())
+                    set_exception(&env, downlink_ref, e)
                 }
             }
-            Err(e) => set_exception(&env, downlink_ref, e.to_string()),
+            Err(e) => set_exception(&env, downlink_ref, &e),
         }
 
         notify_stopped(&env, stopped_barrier);
@@ -232,17 +234,35 @@ fn notify_stopped(env: &JNIEnv, stopped_barrier: GlobalRef) {
     }
 }
 
-fn set_exception(env: &JNIEnv, downlink_ref: GlobalRef, cause: String) {
+fn set_exception(env: &JNIEnv, downlink_ref: GlobalRef, cause: &DownlinkRuntimeError) {
     with_local_frame_null(env, None, || {
+        let cause_message = match cause.downcast_ref::<DownlinkTaskError>() {
+            Some(DownlinkTaskError::Custom(cause)) => match cause.downcast_ref::<SpannedError>() {
+                Some(spanned) => {
+                    env.set_field(
+                        &downlink_ref,
+                        "cause",
+                        "Ljava/lang/Throwable;",
+                        JValue::Object(spanned.throwable.as_obj()),
+                    )
+                    .expect("Failed to report downlink exception cause");
+
+                    spanned.cause.to_string()
+                }
+                None => cause.to_string(),
+            },
+            _ => cause.to_string(),
+        };
+
         let cause = env
-            .new_string(cause)
+            .new_string(cause_message)
             .expect("Failed to allocate java string");
         env.set_field(
             &downlink_ref,
-            "stoppedWith",
+            "message",
             "Ljava/lang/String;",
             JValue::Object(cause.into()),
         )
-        .expect("Failed to report downlink stop error");
+        .expect("Failed to report downlink exception message");
     });
 }

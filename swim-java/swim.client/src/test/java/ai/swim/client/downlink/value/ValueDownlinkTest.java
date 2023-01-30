@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -37,7 +36,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class ValueDownlinkTest {
@@ -518,9 +519,15 @@ class ValueDownlinkTest {
 
     try {
       testDownlink.awaitStopped();
-      fail("Expected await stopped to throw a SwimClientException");
+      fail("Expected awaitStopped to throw a SwimClientException");
     } catch (SwimClientException e) {
-      assertEquals(e.getMessage(), "Terminated: caused by: StringError(\"java.lang.RuntimeException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}\")");
+      assertEquals("java.lang.RuntimeException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}", e.getMessage());
+
+      Throwable cause = e.getCause();
+
+      assertNotNull(cause);
+      assertTrue(cause instanceof RuntimeException);
+      assertEquals("java.lang.RuntimeException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}", cause.getMessage());
     } finally {
       testDownlink.close();
     }
