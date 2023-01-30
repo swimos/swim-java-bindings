@@ -30,6 +30,7 @@ use std::sync::Arc;
 use swim_api::error::DownlinkTaskError;
 use swim_model::path::AbsolutePath;
 use swim_runtime::remote::net::dns::Resolver;
+use swim_runtime::remote::net::plain::TokioPlainTextNetworking;
 use swim_runtime::remote::net::tls::TokioTlsNetworking;
 use swim_runtime::remote::ExternalConnections;
 use swim_runtime::ws::ext::RatchetNetworking;
@@ -90,10 +91,7 @@ impl SwimClient {
                 provider: NoExtProvider,
                 subprotocols: Default::default(),
             };
-            let networking = TokioTlsNetworking::new::<_, Box<PathBuf>>(
-                std::iter::empty(),
-                Arc::new(Resolver::new().await),
-            );
+            let networking = TokioPlainTextNetworking::new(Arc::new(Resolver::new().await));
             let (handle, stop_tx) =
                 start_runtime(Transport::new(networking, websockets, REMOTE_BUFFER_SIZE));
 

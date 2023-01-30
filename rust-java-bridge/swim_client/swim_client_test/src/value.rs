@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::io::ErrorKind;
+use std::io::{ErrorKind, Write};
 use std::net::SocketAddr;
 use std::ptr::null_mut;
 use std::sync::Arc;
@@ -202,17 +202,15 @@ pub extern "system" fn Java_ai_swim_client_downlink_value_ValueDownlinkTest_drop
 }
 
 fn create_io() -> (Transport<MockExternalConnections, MockWs>, Server) {
-    let peer = SchemeHostPort::new(Scheme::Ws, "127.0.0.1".to_string(), 80);
-    let sock: SocketAddr = "127.0.0.1:9001".parse().unwrap();
     let (client_stream, server_stream) = duplex(128);
     let ext = MockExternalConnections::new(
         [(
-            peer.clone(),
-            SchemeSocketAddr::new(Scheme::Ws, sock.clone()),
+            SchemeHostPort::new(Scheme::Ws, "127.0.0.1".to_string(), 80),
+            SchemeSocketAddr::new(Scheme::Ws, "127.0.0.1:80".parse().unwrap()),
         )],
-        [("127.0.0.1:9001".parse().unwrap(), client_stream)],
+        [("127.0.0.1:80".parse().unwrap(), client_stream)],
     );
-    let ws = MockWs::new([("127.0.0.1".to_string(), WsAction::Open)]);
+    let ws = MockWs::new([("ws://127.0.0.1/".to_string(), WsAction::Open)]);
     let transport = Transport::new(ext, ws, non_zero_usize!(128));
     let server = Server::new(server_stream);
     (transport, server)
