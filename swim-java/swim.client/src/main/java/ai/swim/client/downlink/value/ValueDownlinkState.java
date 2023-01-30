@@ -14,6 +14,7 @@
 
 package ai.swim.client.downlink.value;
 
+import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.lifecycle.OnEvent;
 import ai.swim.client.lifecycle.OnSet;
 import ai.swim.client.lifecycle.OnSynced;
@@ -26,7 +27,6 @@ import ai.swim.structure.recognizer.RecognizerException;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 class ValueDownlinkState<T> {
   private final Form<T> form;
@@ -39,8 +39,18 @@ class ValueDownlinkState<T> {
   Consumer<ByteBuffer> wrapOnEvent(OnEvent<T> onEvent) {
     if (onEvent != null) {
       return buffer -> {
-        T value = parse(buffer);
-        onEvent.onEvent(value);
+        T value;
+        try {
+          value = parse(buffer);
+        } catch (RuntimeException e) {
+          throw new DownlinkException("Invalid frame body", e);
+        }
+
+        try {
+          onEvent.onEvent(value);
+        } catch (Throwable e) {
+          throw new DownlinkException(e);
+        }
       };
     } else {
       return null;
@@ -50,9 +60,19 @@ class ValueDownlinkState<T> {
   Consumer<ByteBuffer> wrapOnSynced(OnSynced<T> onSynced) {
     if (onSynced != null) {
       return buffer -> {
-        T value = parse(buffer);
-        this.state = value;
-        onSynced.onSynced(value);
+        T value;
+        try {
+          value = parse(buffer);
+        } catch (RuntimeException e) {
+          throw new DownlinkException("Invalid frame body", e);
+        }
+
+        try {
+          this.state = value;
+          onSynced.onSynced(value);
+        } catch (Throwable e) {
+          throw new DownlinkException(e);
+        }
       };
     } else {
       return null;
@@ -62,9 +82,19 @@ class ValueDownlinkState<T> {
   Consumer<ByteBuffer> wrapOnSet(OnSet<T> onSet) {
     if (onSet != null) {
       return buffer -> {
-        T value = parse(buffer);
-        onSet.onSet(state, value);
-        this.state = value;
+        T value;
+        try {
+          value = parse(buffer);
+        } catch (RuntimeException e) {
+          throw new DownlinkException("Invalid frame body", e);
+        }
+
+        try {
+          onSet.onSet(state, value);
+          this.state = value;
+        } catch (Throwable e) {
+          throw new DownlinkException(e);
+        }
       };
     } else {
       return null;

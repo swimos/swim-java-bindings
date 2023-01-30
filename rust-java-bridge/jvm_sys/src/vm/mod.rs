@@ -19,7 +19,7 @@ use std::panic::{panic_any, Location};
 use std::{fmt, panic};
 
 use jni::errors::JniError;
-use jni::objects::{GlobalRef, JObject, JString};
+use jni::objects::{GlobalRef, JObject, JString, JValue};
 use jni::JNIEnv;
 
 pub mod exception;
@@ -71,27 +71,24 @@ pub struct SpannedError {
     pub location: &'static Location<'static>,
     /// The Java exception stack trace converted to a string.
     pub stack_trace: String,
-    /// The cause of the exception (typically, a String representation of the message).
-    pub cause: Box<dyn Error + Send + Sync>,
-    /// A global reference to the Java throwable.
-    pub throwable: GlobalRef,
+    /// The cause of the exception.
+    pub cause: String,
+    /// A global reference to the cause of the Java exception.
+    pub cause_throwable: GlobalRef,
 }
 
 impl SpannedError {
-    pub fn new<C>(
+    pub fn new(
         location: &'static Location<'static>,
         stack_trace: String,
-        cause: C,
-        throwable: GlobalRef,
-    ) -> SpannedError
-    where
-        C: Error + Send + Sync + 'static,
-    {
+        cause: String,
+        cause_throwable: GlobalRef,
+    ) -> SpannedError {
         SpannedError {
             location,
             stack_trace,
-            cause: Box::new(cause),
-            throwable,
+            cause,
+            cause_throwable,
         }
     }
 
@@ -145,51 +142,67 @@ where
 #[inline(never)]
 fn handle_exception(location: &'static Location, env: &JNIEnv) -> SpannedError {
     const EXCEPTION_MSG: &'static str = "Failed to get exception message";
+    const CAUSE_MSG: &'static str = "Failed to get exception cause";
     const STACK_TRACE_MSG: &'static str = "Failed to get stacktrace";
 
-    let throwable = env.exception_occurred().expect(EXCEPTION_MSG);
-    let exception_gr = env.new_global_ref(throwable).expect(EXCEPTION_MSG);
+    // Unpack the exception's cause and message so that they can be returned to the callee to be
+    // re-thrown as a SwimClientException.
+    with_local_frame_null(env, None, || {
+        let throwable = env.exception_occurred().expect(EXCEPTION_MSG);
+        env.exception_clear().expect("Failed to clear exception");
 
-    // We want to clear the exception here, yield the error to the runtime for it to
-    // determine whether to abort the runtime or close the downlink.
-    env.exception_clear().expect("Failed to clear exception");
+        let cause = env
+            .call_method(throwable, "getCause", "()Ljava/lang/Throwable;", &[])
+            .expect(CAUSE_MSG);
+        let cause_gr = match cause {
+            JValue::Object(obj) if !obj.is_null() => env.new_global_ref(obj).expect(CAUSE_MSG),
+            _ => env.new_global_ref(throwable).expect(CAUSE_MSG),
+        };
 
-    // Fetch message in case the error handler wants to use it as part of a panic message.
-    let message = env
-        .call_method(throwable, "getMessage", "()Ljava/lang/String;", &[])
-        .expect(EXCEPTION_MSG);
+        // We want to clear the exception here, yield the error to the runtime for it to
+        // determine whether to abort the runtime or close the downlink.
+        env.exception_clear().expect("Failed to clear exception");
 
-    let message_string = match message.l() {
-        Ok(obj) => match env.get_string(JString::from(obj)) {
-            Ok(java_str) => java_str.to_str().expect(STACK_TRACE_MSG).to_string(),
-            Err(jni::errors::Error::NullPtr(_)) => "".to_string(),
-            Err(e) => {
-                panic!("{}: {:?}", EXCEPTION_MSG, e)
-            }
-        },
-        Err(_) => "".to_string(),
-    };
+        // Fetch message in case the error handler wants to use it as part of a panic message.
+        let message = env
+            .call_method(throwable, "getMessage", "()Ljava/lang/String;", &[])
+            .expect(EXCEPTION_MSG);
 
-    // Get the first few lines of the stack trace in case the panic handler wants to use it as part
-    // of a panic message.
-    let stack_trace_obj = env
-        .call_static_method(
-            "ai/swim/client/Utils",
-            "stackTraceString",
-            "(Ljava/lang/Throwable;)Ljava/lang/String;",
-            &[throwable.into()],
+        let message_string = match message.l() {
+            Ok(obj) => match env.get_string(JString::from(obj)) {
+                Ok(java_str) => java_str.to_str().expect(STACK_TRACE_MSG).to_string(),
+                Err(jni::errors::Error::NullPtr(_)) => "".to_string(),
+                Err(e) => {
+                    panic!("{}: {:?}", EXCEPTION_MSG, e)
+                }
+            },
+            Err(_) => unreachable!(
+                "getMessage returned an incorrect type. Expected an object, got: {}",
+                message.type_name()
+            ),
+        };
+
+        // Get the first few lines of the stack trace in case the panic handler wants to use it as part
+        // of a panic message.
+        let stack_trace_obj = env
+            .call_static_method(
+                "ai/swim/client/Utils",
+                "stackTraceString",
+                "(Ljava/lang/Throwable;)Ljava/lang/String;",
+                &[throwable.into()],
+            )
+            .expect(STACK_TRACE_MSG);
+        let stack_trace_string = env
+            .get_string(JString::from(stack_trace_obj.l().expect(STACK_TRACE_MSG)))
+            .expect(STACK_TRACE_MSG);
+
+        SpannedError::new(
+            location,
+            stack_trace_string.into(),
+            message_string,
+            cause_gr,
         )
-        .expect(STACK_TRACE_MSG);
-    let stack_trace_string = env
-        .get_string(JString::from(stack_trace_obj.l().expect(STACK_TRACE_MSG)))
-        .expect(STACK_TRACE_MSG);
-
-    SpannedError::new(
-        location,
-        stack_trace_string.into(),
-        StringError(message_string),
-        exception_gr,
-    )
+    })
 }
 
 pub fn set_panic_hook() {

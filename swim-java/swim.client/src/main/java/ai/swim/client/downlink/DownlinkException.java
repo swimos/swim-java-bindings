@@ -12,21 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.client.downlink.value;
+package ai.swim.client.downlink;
 
-import ai.swim.client.Handle;
-import ai.swim.client.SwimClientException;
+public class DownlinkException extends RuntimeException {
 
-public final class ValueDownlinkBuilder<T> extends ValueDownlinkBuilderModel<T> {
-  private final Handle handle;
-
-  public ValueDownlinkBuilder(Handle handle, Class<T> formType, String host, String node, String lane) {
-    super(formType, host, node, lane);
-    this.handle = handle;
+  public DownlinkException(String message) {
+    super(message);
   }
 
-  @Override
-  public ValueDownlink<T> open() throws SwimClientException {
-    return ValueDownlinkModel.open(handle, host, node, lane, formType, lifecycle,downlinkConfig);
+  public DownlinkException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  public DownlinkException(Throwable cause) {
+    super(cause);
   }
 }

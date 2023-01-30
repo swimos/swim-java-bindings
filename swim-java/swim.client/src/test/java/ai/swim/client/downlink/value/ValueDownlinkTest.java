@@ -521,7 +521,7 @@ class ValueDownlinkTest {
       testDownlink.awaitStopped();
       fail("Expected awaitStopped to throw a SwimClientException");
     } catch (SwimClientException e) {
-      assertEquals("java.lang.RuntimeException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}", e.getMessage());
+      assertEquals("Invalid frame body", e.getMessage());
 
       Throwable cause = e.getCause();
 

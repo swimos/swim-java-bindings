@@ -24,7 +24,6 @@ use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
 use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
 use jvm_sys::vm::{with_local_frame_null, SpannedError};
 use ratchet::{NoExtProvider, WebSocketConfig, WebSocketStream};
-use std::error::Error;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -243,11 +242,10 @@ fn set_exception(env: &JNIEnv, downlink_ref: GlobalRef, cause: &DownlinkRuntimeE
                         &downlink_ref,
                         "cause",
                         "Ljava/lang/Throwable;",
-                        JValue::Object(spanned.throwable.as_obj()),
+                        JValue::Object(spanned.cause_throwable.as_obj()),
                     )
                     .expect("Failed to report downlink exception cause");
-
-                    spanned.cause.to_string()
+                    spanned.cause.clone()
                 }
                 None => cause.to_string(),
             },
