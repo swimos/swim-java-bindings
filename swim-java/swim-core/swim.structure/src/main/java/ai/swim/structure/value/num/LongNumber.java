@@ -16,16 +16,16 @@ package ai.swim.structure.value.num;
 
 import java.util.Objects;
 
-public class NumberF32 extends NumberValue {
-  private final float value;
+public class LongNumber extends NumberValue {
+  private final long value;
 
-  public NumberF32(float value) {
+  public LongNumber(long value) {
     this.value = value;
   }
 
   @Override
   public String toString() {
-    return "NumberF32{" +
+    return "NumberI64{" +
         "value=" + value +
         '}';
   }
@@ -38,8 +38,8 @@ public class NumberF32 extends NumberValue {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NumberF32 numberF32 = (NumberF32) o;
-    return Float.compare(numberF32.value, value) == 0;
+    LongNumber longNumber = (LongNumber) o;
+    return value == longNumber.value;
   }
 
   @Override
