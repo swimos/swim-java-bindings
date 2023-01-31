@@ -91,16 +91,16 @@ public abstract class ReconParserParts {
       @Override
       public Parser<ParserTransition> feed(Input input) {
         if (input.isDone()) {
-          return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
+          return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).getValue()),
               ReadEvent.endAttribute(), new ChangeState(ParseState.AfterAttr)));
         } else if (input.isContinuation()) {
           Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
           if (parseResult.isDone()) {
             if (parseResult.bind().isPresent()) {
-              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
+              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).getValue()),
                   StateChange.pushAttr()));
             } else {
-              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
+              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).getValue()),
                   ReadEvent.endAttribute(), new ChangeState(ParseState.AfterAttr)));
             }
           } else if (parseResult.isError()) {
@@ -124,16 +124,16 @@ public abstract class ReconParserParts {
       @Override
       public Parser<ParserTransition> feed(Input input) {
         if (input.isDone()) {
-          return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endRecord(),
+          return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).getValue()), ReadEvent.endRecord(),
               new PushAttrNewRec(false)));
         } else if (input.isContinuation()) {
           Parser<Optional<Character>> parseResult = opt(eqChar('(')).feed(input);
           if (parseResult.isDone()) {
             if (parseResult.bind().isPresent()) {
-              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()),
+              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).getValue()),
                   new PushAttrNewRec(true)));
             } else {
-              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).value()), ReadEvent.endAttribute(),
+              return Parser.done(new ParserTransition(ReadEvent.startAttribute(((ReadTextValue) event).getValue()), ReadEvent.endAttribute(),
                   new PushAttrNewRec(false)));
             }
           } else if (parseResult.isError()) {
