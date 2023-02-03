@@ -68,7 +68,7 @@ public abstract class StateChange {
     return false;
   }
 
-  public boolean isChangeState() {
+  public boolean isModify() {
     return false;
   }
 

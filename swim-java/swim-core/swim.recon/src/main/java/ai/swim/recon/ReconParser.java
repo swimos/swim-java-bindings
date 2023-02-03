@@ -7,7 +7,7 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParseState;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.items.ItemsKind;
-import ai.swim.recon.models.state.ChangeState;
+import ai.swim.recon.models.state.ModifyState;
 import ai.swim.recon.models.state.PushAttrNewRec;
 import ai.swim.recon.models.state.StateChange;
 import ai.swim.recon.result.ParseResult;
@@ -397,10 +397,10 @@ public final class ReconParser {
             throw new IllegalStateException("Invalid state transition from: " + parseState + ", to: " + stateChange);
         }
       }
-    } else if (stateChange.isChangeState()) {
+    } else if (stateChange.isModify()) {
       ParseState last = this.state.pollLast();
       if (last != null) {
-        this.state.addLast(((ChangeState) stateChange).getState());
+        this.state.addLast(((ModifyState) stateChange).getState());
       }
     } else if (stateChange.isPushAttr()) {
       this.state.addLast(ParseState.AttrBodyStartOrNl);

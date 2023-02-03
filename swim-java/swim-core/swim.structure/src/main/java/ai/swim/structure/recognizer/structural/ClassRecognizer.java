@@ -8,6 +8,8 @@ import ai.swim.structure.recognizer.structural.tag.EnumerationTagSpec;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import ai.swim.structure.recognizer.structural.tag.TagSpec;
 
+import java.util.BitSet;
+
 public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
   protected final RecognizingBuilder<T> builder;
   protected final BitSet bitSet;
@@ -62,7 +64,7 @@ public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
         } else {
           return Recognizer.error(new RuntimeException("Unexpected attribute: " + attributeEvent.value()));
         }
-      }else {
+      } else {
         throw new AssertionError();
       }
     }

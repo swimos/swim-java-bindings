@@ -18,9 +18,9 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.proxy.RecognizerProxy;
 import ai.swim.structure.value.Value;
-import ai.swim.structure.write.StructuralWriter;
-import ai.swim.structure.write.Writable;
-import ai.swim.structure.write.proxy.WriterProxy;
+import ai.swim.structure.writer.StructuralWriter;
+import ai.swim.structure.writer.Writable;
+import ai.swim.structure.writer.proxy.WriterProxy;
 
 import java.util.function.Function;
 

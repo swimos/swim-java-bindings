@@ -17,11 +17,11 @@ package ai.swim.structure.recognizer.bridge;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerException;
-import ai.swim.structure.write.BodyWriter;
-import ai.swim.structure.write.HeaderWriter;
-import ai.swim.structure.write.StructuralWriter;
-import ai.swim.structure.write.Writable;
-import ai.swim.structure.write.header.WritableHeader;
+import ai.swim.structure.writer.BodyWriter;
+import ai.swim.structure.writer.HeaderWriter;
+import ai.swim.structure.writer.StructuralWriter;
+import ai.swim.structure.writer.Writable;
+import ai.swim.structure.writer.header.WritableHeader;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
