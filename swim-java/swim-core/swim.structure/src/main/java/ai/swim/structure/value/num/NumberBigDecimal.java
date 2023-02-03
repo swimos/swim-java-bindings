@@ -14,7 +14,7 @@
 
 package ai.swim.structure.value.num;
 
-import ai.swim.structure.writer.PrimitiveWriter;
+import ai.swim.structure.write.PrimitiveWriter;
 
 import java.math.BigDecimal;
 import java.util.Objects;

@@ -12,22 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.value;
+package ai.swim.structure.write;
 
-import ai.swim.structure.write.PrimitiveWriter;
+import ai.swim.structure.write.header.WritableHeader;
+import ai.swim.structure.write.proxy.WriterProxy;
 
-public abstract class PrimitiveValue extends Value {
-  @Override
-  public boolean isPrimitive() {
-    return true;
+public interface HeaderWriter<T> {
+
+  HeaderWriter<T> writeExtantAttr(String key);
+
+  <V> HeaderWriter<T> writeAttr(String key, Writable<V> valueWriter, V value);
+
+  HeaderWriter<T> writeAttr(String key, WritableHeader writable);
+
+  <V> T delegate(Writable<V> valueWriter, V value);
+
+  default <V> T delegate(V value) {
+    return delegate(WriterProxy.getProxy().lookupObject(value), value);
   }
 
-  public <T> T visitPrimitiveWritable(PrimitiveWriter<T> writer) {
-    if (!isPrimitive()) {
-      throw new IllegalStateException("Attempted to visit a non-primitive value type");
-    }
-    return writePrimitive(writer);
-  }
+  BodyWriter<T> completeHeader(int numItems);
 
-  protected abstract <T> T writePrimitive(PrimitiveWriter<T> writer);
 }

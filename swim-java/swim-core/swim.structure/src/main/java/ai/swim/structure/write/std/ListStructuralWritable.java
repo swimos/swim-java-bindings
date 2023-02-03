@@ -12,37 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.value;
+package ai.swim.structure.write.std;
 
-import ai.swim.structure.write.PrimitiveWriter;
+import ai.swim.structure.annotations.AutoForm;
+import ai.swim.structure.write.Writable;
+import ai.swim.structure.write.proxy.WriterTypeParameter;
 
-public class Extant extends PrimitiveValue {
-  private static final Extant VALUE = new Extant();
+import java.util.List;
 
-  public static Value extant() {
-    return Extant.VALUE;
+public class ListStructuralWritable<T> extends CollectionStructuralWritable<T, List<T>> {
+  @AutoForm.TypedConstructor
+  public ListStructuralWritable(WriterTypeParameter<T> listWritable) {
+    super(listWritable.build(),null);
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return o != null && getClass() == o.getClass();
+  public ListStructuralWritable(Writable<T> listWritable, Class<T> tClass) {
+    super(listWritable,tClass);
   }
 
-  @Override
-  public String toString() {
-    return "";
+  public ListStructuralWritable() {
+    super(null,null);
   }
 
-  @Override
-  public boolean isExtant() {
-    return true;
-  }
-
-  @Override
-  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
-    return writer.writeExtant();
-  }
 }

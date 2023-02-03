@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.value;
+package ai.swim.structure.write.print.strategy;
 
-import ai.swim.structure.write.PrimitiveWriter;
+import ai.swim.structure.write.print.Padding;
 
-public abstract class PrimitiveValue extends Value {
-  @Override
-  public boolean isPrimitive() {
-    return true;
-  }
+public interface PrintStrategy {
+  PrintStrategy COMPACT = new CompactPrintStrategy();
+  PrintStrategy STANDARD = new StandardPrintStrategy();
 
-  public <T> T visitPrimitiveWritable(PrimitiveWriter<T> writer) {
-    if (!isPrimitive()) {
-      throw new IllegalStateException("Attempted to visit a non-primitive value type");
-    }
-    return writePrimitive(writer);
-  }
+  Padding attrPadding();
 
-  protected abstract <T> T writePrimitive(PrimitiveWriter<T> writer);
+  Padding attrBodyPadding();
+
+  Padding startBlock(int items);
+
+  Padding endBlock();
+
+  Padding itemPadding(boolean inRecord);
+
+  Padding slotPadding();
 }

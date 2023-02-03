@@ -12,22 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.value;
+package ai.swim.structure.write;
 
-import ai.swim.structure.write.PrimitiveWriter;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
-public abstract class PrimitiveValue extends Value {
-  @Override
-  public boolean isPrimitive() {
-    return true;
-  }
+public interface PrimitiveWriter<V> {
+  V writeExtant();
 
-  public <T> T visitPrimitiveWritable(PrimitiveWriter<T> writer) {
-    if (!isPrimitive()) {
-      throw new IllegalStateException("Attempted to visit a non-primitive value type");
-    }
-    return writePrimitive(writer);
-  }
+  V writeInt(int value);
 
-  protected abstract <T> T writePrimitive(PrimitiveWriter<T> writer);
+  V writeLong(long value);
+
+  V writeFloat(float value);
+
+  V writeDouble(double value);
+
+  V writeBool(boolean value);
+
+  V writeBigInt(BigInteger value);
+
+  V writeBigDecimal(BigDecimal value);
+
+  V writeText(String value);
+
+  V writeBlob(byte[] value);
+
 }

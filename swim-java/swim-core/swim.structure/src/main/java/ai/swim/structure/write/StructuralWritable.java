@@ -12,22 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.value;
+package ai.swim.structure.write;
 
-import ai.swim.structure.write.PrimitiveWriter;
-
-public abstract class PrimitiveValue extends Value {
-  @Override
-  public boolean isPrimitive() {
-    return true;
-  }
-
-  public <T> T visitPrimitiveWritable(PrimitiveWriter<T> writer) {
-    if (!isPrimitive()) {
-      throw new IllegalStateException("Attempted to visit a non-primitive value type");
-    }
-    return writePrimitive(writer);
-  }
-
-  protected abstract <T> T writePrimitive(PrimitiveWriter<T> writer);
+public interface StructuralWritable<T> extends Writable<T> {
 }

@@ -2,10 +2,9 @@ package ai.swim.structure.recognizer;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.bridge.RecognizerBridge;
-import ai.swim.structure.writer.Writable;
-import ai.swim.structure.writer.proxy.WriterProxy;
+import ai.swim.structure.write.Writable;
+import ai.swim.structure.write.proxy.WriterProxy;
 
-import java.util.Collection;
 import java.util.function.Function;
 
 

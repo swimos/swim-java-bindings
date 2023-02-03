@@ -12,37 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.value;
+package ai.swim.structure.write;
 
-import ai.swim.structure.write.PrimitiveWriter;
-
-public class Extant extends PrimitiveValue {
-  private static final Extant VALUE = new Extant();
-
-  public static Value extant() {
-    return Extant.VALUE;
+public class WriterException extends RuntimeException {
+  public WriterException() {
+    super();
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return o != null && getClass() == o.getClass();
+  public WriterException(String message) {
+    super(message);
   }
 
-  @Override
-  public String toString() {
-    return "";
+  public WriterException(String message, Throwable cause) {
+    super(message, cause);
   }
 
-  @Override
-  public boolean isExtant() {
-    return true;
+  public WriterException(Throwable cause) {
+    super(cause);
   }
 
-  @Override
-  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
-    return writer.writeExtant();
+  protected WriterException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    super(message, cause, enableSuppression, writableStackTrace);
   }
 }

@@ -14,11 +14,11 @@
 
 package ai.swim.structure;
 
-import ai.swim.structure.writer.Writable;
-import ai.swim.structure.writer.print.StructurePrinter;
-import ai.swim.structure.writer.print.strategy.PrettyPrintStrategy;
-import ai.swim.structure.writer.print.strategy.PrintStrategy;
-import ai.swim.structure.writer.proxy.WriterProxy;
+import ai.swim.structure.write.Writable;
+import ai.swim.structure.write.print.StructurePrinter;
+import ai.swim.structure.write.print.strategy.PrettyPrintStrategy;
+import ai.swim.structure.write.print.strategy.PrintStrategy;
+import ai.swim.structure.write.proxy.WriterProxy;
 
 import java.io.StringWriter;
 import java.io.Writer;
