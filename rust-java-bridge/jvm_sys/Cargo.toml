@@ -7,3 +7,4 @@ edition = "2021"
 jni = "0.20.0"
 tokio = { version = "1.1.1", features = ["io-util"] }
 bytes = "*"
+paste = "1.0.11"

@@ -112,7 +112,7 @@ macro_rules! ffi_fn {
         }
     };
     ($exception_class:tt, $prefix:tt, $name:tt ($env:ident, $class:ident $(,)? $($arg:ident: $ty:ty $(,)?)*) $(-> $ret:tt)? $body:block) => {
-        paste::item! {
+        $crate::paste::item! {
             #[no_mangle]
             pub extern "system" fn [< $prefix _ $name >](
                 $env:jni::JNIEnv,

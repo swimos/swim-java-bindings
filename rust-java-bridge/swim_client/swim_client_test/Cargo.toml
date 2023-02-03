@@ -27,4 +27,3 @@ futures = { workspace = true }
 futures-util = { workspace = true }
 ratchet = { workspace = true, features = ["deflate", "split"] }
 url = { workspace = true }
-paste = "1.0.11"

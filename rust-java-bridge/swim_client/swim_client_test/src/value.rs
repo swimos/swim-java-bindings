@@ -43,7 +43,7 @@ use url::Url;
 use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
 use jvm_sys::vm::set_panic_hook;
 use jvm_sys::vm::utils::{get_env_shared, new_global_ref};
-use jvm_sys::{ffi_fn, jni_try, jvm_tryf, parse_string};
+use jvm_sys::{jni_try, jvm_tryf, parse_string};
 use jvm_sys_tests::run_test;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;

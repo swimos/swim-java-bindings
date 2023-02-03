@@ -21,3 +21,4 @@ mod macros;
 pub mod util;
 pub mod vm;
 pub use macros::*;
+pub use paste;

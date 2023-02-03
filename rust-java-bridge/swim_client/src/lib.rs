@@ -22,14 +22,13 @@ use url::Url;
 
 use jvm_sys::vm::set_panic_hook;
 use jvm_sys::vm::utils::new_global_ref;
-use jvm_sys::{ffi_fn, jni_try, npch, parse_string};
+use jvm_sys::{jni_try, npch, parse_string};
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
-use swim_client_core::{ClientHandle, SwimClient};
+use swim_client_core::{client_fn, ClientHandle, SwimClient};
 
-ffi_fn! {
-    "ai/swim/client/SwimClientException",
-    Java_ai_swim_client_SwimClient_startClient(
+client_fn! {
+    SwimClient_startClient(
         env,
         _class,
     ) -> SwimClient {
@@ -43,9 +42,8 @@ ffi_fn! {
     }
 }
 
-ffi_fn! {
-    "ai/swim/client/SwimClientException",
-    Java_ai_swim_client_SwimClient_shutdownClient(
+client_fn! {
+    SwimClient_shutdownClient(
         env,
         _class,
         client: *mut SwimClient,
@@ -58,9 +56,8 @@ ffi_fn! {
     }
 }
 
-ffi_fn! {
-    "ai/swim/client/SwimClientException",
-    Java_ai_swim_client_Handle_createHandle(
+client_fn! {
+    Handle_createHandle(
         env,
         _class,
         runtime: *mut SwimClient,
@@ -73,9 +70,8 @@ ffi_fn! {
     }
 }
 
-ffi_fn! {
-    "ai/swim/client/SwimClientException",
-    Java_ai_swim_client_Handle_dropHandle(
+client_fn! {
+    Handle_dropHandle(
         env,
         _class,
         handle: *mut ClientHandle,
@@ -87,12 +83,11 @@ ffi_fn! {
     }
 }
 
-ffi_fn! {
+client_fn! {
     // If the number of arguments for this grows any further then it might be worth implementing an
     // FFI builder pattern that finalises with an 'open' call which this accepts and takes ownership
     // of.
-    "ai/swim/client/SwimClientException",
-    Java_ai_swim_client_downlink_value_ValueDownlinkModel_open(
+    downlink_value_ValueDownlinkModel_open(
         env,
         _class,
         handle: *mut ClientHandle,
