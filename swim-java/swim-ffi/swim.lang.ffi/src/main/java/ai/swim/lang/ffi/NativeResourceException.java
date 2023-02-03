@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.client.lifecycle;
+package ai.swim.lang.ffi;
 
-import ai.swim.lang.ffi.FfiIntrinsic;
-
-@FunctionalInterface
-public interface OnLinked {
-  @FfiIntrinsic
-  void onLinked();
+public class NativeResourceException extends RuntimeException {
+  public NativeResourceException(Exception e) {
+    super(e);
+  }
 }

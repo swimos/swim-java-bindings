@@ -2,3 +2,6 @@ rootProject.name = 'swim-ffi'
 
 include 'swim.bridge'
 project(':swim.bridge').name = 'swim-bridge'
+
+include 'swim.lang.ffi'
+project(':swim.lang.ffi').name = 'swim-lang-ffi'

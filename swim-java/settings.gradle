@@ -31,3 +31,7 @@ project(':swim.bridge').name = 'swim-bridge'
 include 'swim.client'
 project(':swim.client').projectDir = file('swim.client')
 project(':swim.client').name = 'swim-client'
+
+include 'swim.lang.ffi'
+project(':swim.lang.ffi').projectDir = file('swim-ffi/swim.lang.ffi')
+project(':swim.lang.ffi').name = 'swim-lang-ffi'

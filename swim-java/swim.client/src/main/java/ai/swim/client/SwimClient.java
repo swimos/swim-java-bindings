@@ -15,6 +15,10 @@
 package ai.swim.client;
 
 import ai.swim.client.downlink.value.ValueDownlinkBuilder;
+import ai.swim.lang.ffi.NativeResource;
+import ai.swim.lang.ffi.Pointer;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A SwimClient class used for opening downlinks.
@@ -22,7 +26,7 @@ import ai.swim.client.downlink.value.ValueDownlinkBuilder;
  * This class is **not** thread safe. If shared access is required then synchronization must be performed, or it must be
  * placed behind a lock.
  */
-public class SwimClient {
+public class SwimClient implements NativeResource {
   static {
     System.loadLibrary("swim_client");
   }
@@ -34,11 +38,20 @@ public class SwimClient {
   /**
    * Flag indicating whether this SwimClient has already initiated a shutdown. Used to prevent a double free.
    */
-  private boolean running;
+  private final AtomicBoolean running;
+
+  @SuppressWarnings({"FieldCanBeLocal", "unused"})
+  private final Pointer.Destructor destructor;
 
   private SwimClient(long ptr) {
+    AtomicBoolean running = new AtomicBoolean(true);
     this.runtime = ptr;
-    this.running = true;
+    this.running = running;
+    this.destructor = Pointer.newDestructor(this, ()-> {
+      if (running.get()) {
+        SwimClient.shutdownClient(ptr);
+      }
+    });
   }
 
   /**
@@ -56,11 +69,11 @@ public class SwimClient {
    * Signals to the runtime that it should initiate a shutdown.
    */
   public void close() {
-    if (!running) {
+    if (!running.get()) {
       throw new IllegalStateException("Already closed");
     } else {
       shutdownClient(runtime);
-      running = false;
+      running.set(false);
     }
   }
 

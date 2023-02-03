@@ -14,9 +14,12 @@
 
 package ai.swim.client;
 
+import ai.swim.lang.ffi.FfiIntrinsic;
+
 import java.util.Arrays;
 
 public class Utils {
+  @FfiIntrinsic
   public static String stackTraceString(Throwable exception) {
     if (exception == null) {
       return "";

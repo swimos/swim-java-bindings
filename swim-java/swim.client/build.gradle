@@ -98,6 +98,7 @@ dependencies {
     api project(':swim-bridge')
     api project(':swim-codec')
     api project(':swim-recon')
+    api project(':swim-lang-ffi')
 
     implementation project(':swim-structure')
     annotationProcessor project(':swim-structure-processor')
