@@ -29,7 +29,7 @@ public class ReadBlobValue extends ReadEvent {
     return true;
   }
 
-  public byte[] value() {
+  public byte[] getValue() {
     return this.value;
   }
 
@@ -51,5 +51,15 @@ public class ReadBlobValue extends ReadEvent {
   @Override
   public int hashCode() {
     return Arrays.hashCode(value);
+  }
+
+  @Override
+  public boolean isPrimitive() {
+    return true;
+  }
+
+  @Override
+  public <O> O visit(ReadEventVisitor<O> visitor) {
+    return visitor.visitBlob(getValue());
   }
 }

@@ -1,0 +1,17 @@
+ext.moduleName = 'swim.structure'
+
+dependencies {
+    implementation project(':swim-structure-annotations')
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+
+    api project(':swim-recon')
+    api project(':swim-codec')
+    api project(':swim-util')
+
+    implementation 'org.reflections:reflections:0.10.2'
+}
+
+repositories {
+    mavenCentral()
+}
+

@@ -12,6 +12,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TypedNumberTest {
 
+  private static TypedNumber from(Number number) {
+    if (number instanceof Integer) {
+      return TypedNumber.intNumber(number.intValue());
+    } else if (number instanceof Float) {
+      return TypedNumber.floatNumber(number.floatValue());
+    } else if (number instanceof Long) {
+      return TypedNumber.longNumber(number.longValue());
+    } else if (number instanceof Double) {
+      return TypedNumber.doubleNumber(number.doubleValue());
+    } else if (number instanceof BigInteger) {
+      return TypedNumber.bigIntNumber((BigInteger) number);
+    } else {
+      throw new AssertionError("Unimplemented typed number from number conversion: " + number.getClass().getSimpleName());
+    }
+  }
+
   @Test
   void types() {
     assertTrue(TypedNumber.intNumber(Integer.MAX_VALUE).isInt());
@@ -31,22 +47,6 @@ class TypedNumberTest {
 
     assertTrue(TypedNumber.bigDecimalNumber(BigDecimal.TEN).isBigDecimal());
     assertEquals(TypedNumber.bigDecimalNumber(BigDecimal.TEN).bigDecimalValue(), BigDecimal.TEN);
-  }
-
-  private static TypedNumber from(Number number) {
-    if (number instanceof Integer) {
-      return TypedNumber.intNumber(number.intValue());
-    } else if (number instanceof Float) {
-      return TypedNumber.floatNumber(number.floatValue());
-    } else if (number instanceof Long) {
-      return TypedNumber.longNumber(number.longValue());
-    } else if (number instanceof Double) {
-      return TypedNumber.doubleNumber(number.doubleValue());
-    } else if (number instanceof BigInteger) {
-      return TypedNumber.bigIntNumber((BigInteger) number);
-    } else {
-      throw new AssertionError("Unimplemented typed number from number conversion: " + number.getClass().getSimpleName());
-    }
   }
 
   void numberTestOk(String input, Number expected) {

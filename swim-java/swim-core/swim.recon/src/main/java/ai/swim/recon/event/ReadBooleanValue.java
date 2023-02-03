@@ -29,7 +29,7 @@ public class ReadBooleanValue extends ReadEvent {
     return true;
   }
 
-  public Boolean value() {
+  public Boolean getValue() {
     return this.value;
   }
 
@@ -55,5 +55,15 @@ public class ReadBooleanValue extends ReadEvent {
   @Override
   public int hashCode() {
     return Objects.hash(value);
+  }
+
+  @Override
+  public boolean isPrimitive() {
+    return true;
+  }
+
+  @Override
+  public <O> O visit(ReadEventVisitor<O> visitor) {
+    return visitor.visitBoolean(getValue());
   }
 }

@@ -29,7 +29,7 @@ public class ReadTextValue extends ReadEvent {
     return true;
   }
 
-  public String value() {
+  public String getValue() {
     return this.value;
   }
 
@@ -55,5 +55,15 @@ public class ReadTextValue extends ReadEvent {
   @Override
   public int hashCode() {
     return Objects.hash(value);
+  }
+
+  @Override
+  public boolean isPrimitive() {
+    return true;
+  }
+
+  @Override
+  public <O> O visit(ReadEventVisitor<O> visitor) {
+    return visitor.visitText(getValue());
   }
 }

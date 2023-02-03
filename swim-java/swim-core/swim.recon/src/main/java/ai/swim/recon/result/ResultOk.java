@@ -34,8 +34,12 @@ public class ResultOk<O> extends ParseResult<O> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     ResultOk<?> resultOk = (ResultOk<?>) o;
     return Objects.equals(item, resultOk.item);
   }

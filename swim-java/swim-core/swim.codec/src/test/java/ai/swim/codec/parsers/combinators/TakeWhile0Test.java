@@ -12,6 +12,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TakeWhile0Test {
 
+  @Test
+  void takeWhile0Test() {
+    Parser<String> parser = new LambdaTakeWhile(Character::isDigit);
+    Input input = Input.string("12345abcde");
+
+    parser = parser.feed(input);
+    assertTrue(parser.isDone());
+    assertEquals(parser.bind(), "12345");
+
+    assertEquals(StringInput.codePointsToString(input.bind()), "abcde");
+  }
+
   private static class LambdaTakeWhile extends TakeWhile0<StringBuilder, String> {
 
     private final Predicate<Character> predicate;
@@ -35,17 +47,5 @@ class TakeWhile0Test {
     protected String onDone(StringBuilder state) {
       return state.toString();
     }
-  }
-
-  @Test
-  void takeWhile0Test() {
-    Parser<String> parser = new LambdaTakeWhile(Character::isDigit);
-    Input input = Input.string("12345abcde");
-
-    parser = parser.feed(input);
-    assertTrue(parser.isDone());
-    assertEquals(parser.bind(), "12345");
-
-    assertEquals(StringInput.codePointsToString(input.bind()), "abcde");
   }
 }

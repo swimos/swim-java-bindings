@@ -7,3 +7,15 @@ project(':swim.codec').name = 'swim-codec'
 include 'swim.recon'
 project(':swim.recon').projectDir = file('swim-core/swim.recon')
 project(':swim.recon').name = 'swim-recon'
+
+include 'swim.structure'
+project(':swim.structure').projectDir = file('swim-core/swim.structure')
+project(':swim.structure').name = 'swim-structure'
+
+include 'swim.structure.annotations'
+project(':swim.structure.annotations').projectDir = file('swim-core/swim.structure/swim.structure.annotations')
+project(':swim.structure.annotations').name = 'swim-structure-annotations'
+
+include 'swim.util'
+project(':swim.util').projectDir = file('swim-core/swim.util')
+project(':swim.util').name = 'swim-util'

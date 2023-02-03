@@ -15,7 +15,12 @@
 package ai.swim.recon.event;
 
 import ai.swim.codec.parsers.number.TypedNumber;
-import ai.swim.recon.event.number.*;
+import ai.swim.recon.event.number.ReadBigDecimalValue;
+import ai.swim.recon.event.number.ReadBigIntValue;
+import ai.swim.recon.event.number.ReadDoubleValue;
+import ai.swim.recon.event.number.ReadFloatValue;
+import ai.swim.recon.event.number.ReadIntValue;
+import ai.swim.recon.event.number.ReadLongValue;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.state.StateChange;
 
@@ -179,4 +184,10 @@ public abstract class ReadEvent {
 
     return o != null && getClass() == o.getClass();
   }
+
+  public boolean isPrimitive() {
+    return false;
+  }
+
+  public abstract <O> O visit(ReadEventVisitor<O> visitor);
 }
