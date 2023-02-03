@@ -14,11 +14,11 @@ swim_recon = { path = "../../../swim-rust/api/formats/swim_recon" }
 ratchet = { package = "ratchet_rs", version = "0.2.0" }
 swim_runtime = { path = "../../../swim-rust/runtime/swim_runtime" }
 
-jni = "0.20.0"
-futures = "0.3.4"
-futures-util = "0.3.4"
-bytes = "1.0"
-tokio = { version = "1.1.1", features = ["io-util"] }
-tokio-util = { version = "0.6.8", features = ["codec", "io-util"] }
-parking_lot = "0.11.0"
-url = "2.1.1"
+jni = { workspace = true }
+futures = { workspace = true }
+futures-util = { workspace = true }
+bytes = { workspace = true }
+tokio = { workspace = true, features = ["io-util"] }
+tokio-util = { workspace = true, features = ["codec", "io-util"] }
+parking_lot = { workspace = true }
+url = { workspace = true }

@@ -14,6 +14,7 @@
 
 use crate::downlink::value::{FfiValueDownlink, SharedVm};
 use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
+use client_runtime::RemotePath;
 use client_runtime::{
     start_runtime, DownlinkErrorKind, DownlinkRuntimeError, RawHandle, Transport,
 };
@@ -25,14 +26,11 @@ use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
 use jvm_sys::vm::{with_local_frame_null, SpannedError};
 use ratchet::{NoExtProvider, WebSocketConfig, WebSocketStream};
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
 use std::sync::Arc;
 use swim_api::error::DownlinkTaskError;
-use swim_model::path::AbsolutePath;
-use swim_runtime::remote::net::dns::Resolver;
-use swim_runtime::remote::net::plain::TokioPlainTextNetworking;
-use swim_runtime::remote::net::tls::TokioTlsNetworking;
-use swim_runtime::remote::ExternalConnections;
+use swim_runtime::net::dns::Resolver;
+use swim_runtime::net::plain::TokioPlainTextNetworking;
+use swim_runtime::net::ExternalConnections;
 use swim_runtime::ws::ext::RatchetNetworking;
 use swim_runtime::ws::WsConnections;
 use swim_utilities::trigger;
@@ -41,6 +39,8 @@ use tokio::runtime::{Builder, Handle, Runtime};
 use url::Url;
 
 pub mod downlink;
+mod macros;
+pub use macros::*;
 
 const REMOTE_BUFFER_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(64) };
 
@@ -155,7 +155,7 @@ impl ClientHandle {
         host: Url,
         node: String,
         lane: String,
-    ) {
+    ) -> Result<(), ()> {
         let ClientHandle {
             vm,
             tokio_handle,
@@ -169,7 +169,7 @@ impl ClientHandle {
             options,
         } = config;
         let result = tokio_handle.block_on(downlinks_handle.run_downlink(
-            AbsolutePath::new(host, node.as_str(), lane.as_str()),
+            RemotePath::new(host.to_string(), node.as_str(), lane.as_str()),
             runtime_config,
             downlink_config,
             options,
@@ -180,6 +180,7 @@ impl ClientHandle {
         match result {
             Ok(receiver) => {
                 spawn_monitor(tokio_handle, vm, receiver, downlink_ref, stopped_barrier);
+                Ok(())
             }
             Err(e) => {
                 // any errors will have already been logged by the runtime
@@ -189,6 +190,7 @@ impl ClientHandle {
                     format!("Failed to spawn downlink: {:?}", e),
                 )
                 .expect("Failed to throw exception");
+                Err(())
             }
         }
     }

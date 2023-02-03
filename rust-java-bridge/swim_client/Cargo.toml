@@ -14,14 +14,14 @@ swim_api = { path = "../../swim-rust/api/swim_api" }
 swim_model = { path = "../../swim-rust/api/swim_model" }
 swim_utilities = { path = "../../swim-rust/swim_utilities", features = ["byte_channel"] }
 
-futures = "0.3.4"
-futures-util = "0.3.4"
-bytes = "1.0"
-jni = "0.20.0"
-tokio-util = { version = "0.6.8", features = ["codec", "io-util"] }
-thiserror = "1.0"
-tokio = { version = "1.1.1", features = ["io-util"] }
-url = "2.1.1"
+futures = { workspace = true }
+futures-util = { workspace = true }
+bytes = { workspace = true }
+jni = { workspace = true }
+tokio-util = { workspace = true, features = ["codec", "io-util"] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["io-util"] }
+url = { workspace = true }
 
 [dev-dependencies]
-tokio = { version = "1.1.1", features = ["rt-multi-thread"] }
+tokio = { workspace = true, features = ["rt-multi-thread"] }

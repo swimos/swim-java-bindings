@@ -6,3 +6,18 @@ members = [
     "swim_client/swim_client_core",
     "swim_client/swim_client_test",
 ]
+
+[workspace.dependencies]
+jni = "0.20.0"
+tokio = "1.1.1"
+tokio-util = "0.7.4"
+bytes = "1.0"
+futures = "0.3.4"
+futures-util = "0.3.4"
+url = "2.1.1"
+thiserror = "1.0"
+parking_lot = "0.11.0"
+
+[workspace.dependencies.ratchet]
+package = "ratchet_rs"
+version = "0.2.0"

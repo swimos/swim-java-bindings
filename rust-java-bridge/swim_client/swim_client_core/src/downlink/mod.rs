@@ -179,7 +179,7 @@ mod test {
     use std::time::Duration;
     use swim_api::downlink::DownlinkConfig;
     use swim_runtime::downlink::{DownlinkOptions, DownlinkRuntimeConfig};
-    use swim_utilities::algebra::non_zero_usize;
+    use swim_utilities::non_zero_usize;
 
     #[test]
     fn parse_valid_config() {
