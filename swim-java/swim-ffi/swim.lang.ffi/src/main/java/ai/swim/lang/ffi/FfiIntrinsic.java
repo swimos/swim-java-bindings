@@ -23,8 +23,8 @@ import java.lang.annotation.Target;
  * Marker annotation to mark objects as only accessed through the JNI.
  * <p>
  * Any constructor or method marked with this annotation will automatically be registered during Graal's native image
- * build analysis phase, so they are accessible via the JNI at image runtime. Anything not annotated will not be
- * accessible through the JNI and will cause a segmentation fault.
+ * build analysis phase, so they are accessible via the JNI at image runtime. Anything not annotated with this
+ * annotation or manually registered will not be accessible through the JNI and will cause a segmentation fault.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.CONSTRUCTOR})

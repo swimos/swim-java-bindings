@@ -14,7 +14,7 @@
 
 package ai.swim.client.downlink.map;
 
-import ai.swim.client.SwimClientException;
+import ai.swim.client.downlink.Downlink;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -27,40 +27,8 @@ import java.util.concurrent.CountDownLatch;
  * @param <K> the type of the map's key.
  * @param <V> the type of the map's key.
  */
-public abstract class MapDownlink<K, V> {
-  private final CountDownLatch stoppedBarrier;
-  // Referenced through FFI. Do not remove.
-  @SuppressWarnings({"FieldCanBeLocal", "unused"})
-  private final MapDownlinkState<K, V> state;
-  /// Referenced through FFI and *possibly* set to an error that occurred while the downlink was running. Iff this is
-  /// non-null *after* calling 'awaitStopped' then the downlink terminated with an error and it *must* be thrown from
-  /// that method. Iff it is null then the downlink terminated successfully.
-  ///
-  /// This is implemented this way to avoid a long-running FFI call and so that the 'awaitStopped' method has an
-  /// exception to throw when it is called - otherwise, the exception would be lost.
-  protected String message;
-  protected Throwable cause;
-
+public abstract class MapDownlink<K, V> extends Downlink<MapDownlinkState<K, V>> {
   protected MapDownlink(CountDownLatch stoppedBarrier, MapDownlinkState<K, V> state) {
-    this.stoppedBarrier = stoppedBarrier;
-    this.state = state;
+    super(stoppedBarrier, state);
   }
-
-  /**
-   * Blocks the current thread until the downlink has been terminated.
-   *
-   * @throws SwimClientException if the downlink terminated with an error.
-   */
-  public void awaitStopped() throws SwimClientException {
-    try {
-      stoppedBarrier.await();
-    } catch (InterruptedException e) {
-      throw new SwimClientException(e);
-    }
-
-    if (cause != null || message != null) {
-      throw new SwimClientException(message, cause);
-    }
-  }
-
 }

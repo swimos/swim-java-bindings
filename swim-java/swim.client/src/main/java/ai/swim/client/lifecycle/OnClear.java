@@ -14,9 +14,12 @@
 
 package ai.swim.client.lifecycle;
 
+import ai.swim.lang.ffi.FfiIntrinsic;
+
 import java.util.Map;
 
 @FunctionalInterface
 public interface OnClear<K, V> {
+  @FfiIntrinsic
   void onClear(Map<K, V> map);
 }

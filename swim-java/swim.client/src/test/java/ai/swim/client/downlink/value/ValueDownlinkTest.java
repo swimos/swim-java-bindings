@@ -15,7 +15,6 @@
 package ai.swim.client.downlink.value;
 
 import ai.swim.client.SwimClientException;
-import ai.swim.client.downlink.DownlinkConfig;
 import ai.swim.client.downlink.FfiTest;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
@@ -53,6 +52,27 @@ class ValueDownlinkTest extends FfiTest {
       Consumer<ByteBuffer> onSet,
       Consumer<ByteBuffer> onSynced,
       OnUnlinked onUnlinked
+  );
+
+  private static native <T> long driveDownlink(
+      ValueDownlink<T> downlinkRef,
+      CountDownLatch stoppedBarrier,
+      CountDownLatch testBarrier,
+      String host,
+      String node,
+      String lane,
+      Consumer<ByteBuffer> onEvent,
+      OnLinked onLinked,
+      Consumer<ByteBuffer> onSet,
+      Consumer<ByteBuffer> onSynced,
+      OnUnlinked onUnlinked
+  );
+
+  private static native <T> long driveDownlinkError(
+      ValueDownlink<T> downlinkRef,
+      CountDownLatch stoppedBarrier,
+      CountDownLatch testBarrier,
+      Consumer<ByteBuffer> onEvent
   );
 
   /**
@@ -219,93 +239,6 @@ class ValueDownlinkTest extends FfiTest {
     );
   }
 
-  @AutoForm
-  @AutoForm.Tag("event")
-  public static class Event {
-    public String node;
-    public String lane;
-    @AutoForm.Kind(FieldKind.Body)
-    public BigInteger value;
-
-    @Override
-    public String toString() {
-      return "Event{" +
-          "node='" + node + '\'' +
-          ", lane='" + lane + '\'' +
-          ", value=" + value +
-          '}';
-    }
-  }
-
-  private static class TestValueDownlink<T> extends ValueDownlink<T> {
-    TestValueDownlink(CountDownLatch stoppedBarrier, ValueDownlinkState<T> state) {
-      super(stoppedBarrier, state);
-    }
-  }
-
-  @AutoForm(subTypes = {
-      @AutoForm.Type(LaneAddressed.class)
-  })
-  public static class Envelope {
-    public String node;
-    public String lane;
-
-    public Envelope() {
-
-    }
-
-    public Envelope(String node, String lane) {
-      this.node = node;
-      this.lane = lane;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      Envelope envelope = (Envelope) o;
-      return Objects.equals(node, envelope.node) && Objects.equals(lane, envelope.lane);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(node, lane);
-    }
-  }
-
-  @AutoForm
-  public static class LaneAddressed extends Envelope {
-    @AutoForm.Kind(FieldKind.Body)
-    public int body;
-
-    public LaneAddressed() {
-
-    }
-
-    public LaneAddressed(String node, String lane, int body) {
-      super(node, lane);
-      this.body = body;
-    }
-  }
-
-  private static native <T> long driveDownlink(
-      ValueDownlink<T> downlinkRef,
-      CountDownLatch stoppedBarrier,
-      CountDownLatch testBarrier,
-      String host,
-      String node,
-      String lane,
-      Consumer<ByteBuffer> onEvent,
-      OnLinked onLinked,
-      Consumer<ByteBuffer> onSet,
-      Consumer<ByteBuffer> onSynced,
-      OnUnlinked onUnlinked
-  );
-
   @Test
   void testWithServer() throws InterruptedException {
     CountDownLatch linkedLatch = new CountDownLatch(1);
@@ -414,13 +347,6 @@ class ValueDownlinkTest extends FfiTest {
     }
   }
 
-  private static native <T> long driveDownlinkError(
-      ValueDownlink<T> downlinkRef,
-      CountDownLatch stoppedBarrier,
-      CountDownLatch testBarrier,
-      Consumer<ByteBuffer> onEvent
-  );
-
   @Test
   void testAwaitClosedError() {
     ValueDownlinkLifecycle<Integer> lifecycle = new ValueDownlinkLifecycle<>();
@@ -447,6 +373,79 @@ class ValueDownlinkTest extends FfiTest {
       assertEquals("java.lang.RuntimeException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}", cause.getMessage());
     } finally {
       dropSwimClient(ptr);
+    }
+  }
+
+  @AutoForm
+  @AutoForm.Tag("event")
+  public static class Event {
+    public String node;
+    public String lane;
+    @AutoForm.Kind(FieldKind.Body)
+    public BigInteger value;
+
+    @Override
+    public String toString() {
+      return "Event{" +
+          "node='" + node + '\'' +
+          ", lane='" + lane + '\'' +
+          ", value=" + value +
+          '}';
+    }
+  }
+
+  private static class TestValueDownlink<T> extends ValueDownlink<T> {
+    TestValueDownlink(CountDownLatch stoppedBarrier, ValueDownlinkState<T> state) {
+      super(stoppedBarrier, state);
+    }
+  }
+
+  @AutoForm(subTypes = {
+      @AutoForm.Type(LaneAddressed.class)
+  })
+  public static class Envelope {
+    public String node;
+    public String lane;
+
+    public Envelope() {
+
+    }
+
+    public Envelope(String node, String lane) {
+      this.node = node;
+      this.lane = lane;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      Envelope envelope = (Envelope) o;
+      return Objects.equals(node, envelope.node) && Objects.equals(lane, envelope.lane);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(node, lane);
+    }
+  }
+
+  @AutoForm
+  public static class LaneAddressed extends Envelope {
+    @AutoForm.Kind(FieldKind.Body)
+    public int body;
+
+    public LaneAddressed() {
+
+    }
+
+    public LaneAddressed(String node, String lane, int body) {
+      super(node, lane);
+      this.body = body;
     }
   }
 

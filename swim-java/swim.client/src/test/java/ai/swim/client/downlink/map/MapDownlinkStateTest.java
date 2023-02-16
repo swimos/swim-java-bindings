@@ -33,7 +33,7 @@ class MapDownlinkStateTest {
       removed.put(key, value);
     }, init);
 
-    state.drop().accept(2,true);
+    state.drop().accept(2, true);
     assertEquals(2, removed.size());
 
     state.wrapOnClear(removed::putAll).accept(true);
@@ -50,7 +50,7 @@ class MapDownlinkStateTest {
       removed.put(key, value);
     }, init);
 
-    state.take().accept(2,true);
+    state.take().accept(2, true);
     assertEquals(3, removed.size());
 
     state.wrapOnClear(removed::putAll).accept(true);

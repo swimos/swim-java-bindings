@@ -14,7 +14,10 @@
 
 package ai.swim.client.downlink;
 
+import ai.swim.lang.ffi.FfiIntrinsic;
+
 @FunctionalInterface
 public interface TriConsumer<A, B, C> {
+  @FfiIntrinsic
   void accept(A a, B b, C c);
 }

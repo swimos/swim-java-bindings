@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class PolymorphicRecognizer<T> extends StructuralRecognizer<T> {
 
-  private  List<Recognizer<? extends T>> recognizers;
+  private List<Recognizer<? extends T>> recognizers;
   private Recognizer<? extends T> current;
 
   public PolymorphicRecognizer(List<Recognizer<? extends T>> recognizers) {
@@ -48,7 +48,8 @@ public class PolymorphicRecognizer<T> extends StructuralRecognizer<T> {
 
   @Override
   public Recognizer<T> reset() {
-    this.recognizers = recognizers.stream().map(Recognizer::reset).collect(Collectors.toList());;
+    this.recognizers = recognizers.stream().map(Recognizer::reset).collect(Collectors.toList());
+    ;
     this.current = null;
     return this;
   }

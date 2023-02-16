@@ -14,10 +14,8 @@
 
 package ai.swim.client;
 
+import ai.swim.lang.ffi.AtomicDestructor;
 import ai.swim.lang.ffi.NativeResource;
-import ai.swim.lang.ffi.Pointer;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A Rust SwimClient handle pointer.
@@ -26,19 +24,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class Handle implements NativeResource {
   private final long handlePtr;
-  @SuppressWarnings({"FieldCanBeLocal", "unused"})
-  private final Pointer.Destructor destructor;
-  private final AtomicBoolean dropped;
+  private final AtomicDestructor destructor;
 
   public Handle(long handlePtr) {
-    AtomicBoolean dropped = new AtomicBoolean(false);
     this.handlePtr = handlePtr;
-    this.dropped = dropped;
-    this.destructor = Pointer.newDestructor(this, () -> {
-      if (!dropped.get()) {
-        Handle.dropHandle(this.handlePtr);
-      }
-    });
+    this.destructor = new AtomicDestructor(this, () -> dropHandle(handlePtr));
   }
 
   public static Handle create(long runtimePtr) {
@@ -50,11 +40,8 @@ public class Handle implements NativeResource {
   private static native long dropHandle(long handlePtr);
 
   public void drop() {
-    if (dropped.get()) {
+    if (!destructor.drop()) {
       throw new IllegalStateException("Attempted to drop an already dropped SwimClient handle");
-    } else {
-      dropHandle(handlePtr);
-      dropped.set(true);
     }
   }
 

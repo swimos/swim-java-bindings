@@ -27,7 +27,7 @@ import java.util.Objects;
     @AutoForm.Type(Drop.class),
 })
 public abstract class MapMessage {
-  public static <K, V> Update<K,V> update(K key, V value) {
+  public static <K, V> Update<K, V> update(K key, V value) {
     return new Update<>(key, value);
   }
 

@@ -24,14 +24,6 @@ public abstract class FfiTest {
     System.loadLibrary("swim_client_test");
   }
 
-  public enum LinkState {
-    Init,
-    Linked,
-    Synced,
-    Unlinked
-  }
-
-
   public static native void dropSwimClient(long ptr);
 
   public static native void dropRuntime(long ptr);
@@ -40,5 +32,12 @@ public abstract class FfiTest {
     if (!latch.await(time, TimeUnit.SECONDS)) {
       fail(String.format("%s latch elapsed before countdown reached", latchName));
     }
+  }
+
+  public enum LinkState {
+    Init,
+    Linked,
+    Synced,
+    Unlinked
   }
 }

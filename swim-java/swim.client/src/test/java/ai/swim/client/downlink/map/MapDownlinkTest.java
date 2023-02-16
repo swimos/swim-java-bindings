@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,6 +47,22 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class MapDownlinkTest extends FfiTest {
 
   private static native void callbackTest(
+      OnLinked onLinked,
+      Routine onSynced,
+      TriConsumer<ByteBuffer, ByteBuffer, Boolean> onUpdate,
+      BiConsumer<ByteBuffer, Boolean> onRemove,
+      Consumer<Boolean> onClear,
+      OnUnlinked onUnlinked,
+      BiConsumer<Integer, Boolean> take,
+      BiConsumer<Integer, Boolean> drop
+  ) throws SwimClientException;
+
+  private static native long lifecycleTest(
+      CountDownLatch lock,
+      String input,
+      String host,
+      String node,
+      String lane,
       OnLinked onLinked,
       Routine onSynced,
       TriConsumer<ByteBuffer, ByteBuffer, Boolean> onUpdate,
@@ -122,22 +137,6 @@ public class MapDownlinkTest extends FfiTest {
     assertEquals(1, dropInvoked.get());
     assertTrue(view.isEmpty());
   }
-
-  private static native long lifecycleTest(
-      CountDownLatch lock,
-      String input,
-      String host,
-      String node,
-      String lane,
-      OnLinked onLinked,
-      Routine onSynced,
-      TriConsumer<ByteBuffer, ByteBuffer, Boolean> onUpdate,
-      BiConsumer<ByteBuffer, Boolean> onRemove,
-      Consumer<Boolean> onClear,
-      OnUnlinked onUnlinked,
-      BiConsumer<Integer, Boolean> take,
-      BiConsumer<Integer, Boolean> drop
-  ) throws SwimClientException;
 
   @Test
   void simpleOpen() throws InterruptedException, SwimClientException {
@@ -513,6 +512,36 @@ public class MapDownlinkTest extends FfiTest {
     );
   }
 
+  @Test
+  void structuralStateTest() throws SwimClientException, InterruptedException {
+    runTestOk(
+        Integer.class,
+        SuperClass.class,
+        4,
+        new ConcurrentLinkedDeque<>(List.of(
+            MapMessage.update(1, new SubClassA(1, "a")),
+            MapMessage.update(2, new SubClassA(2, "b")),
+            MapMessage.update(3, new SubClassA(3, "c")),
+            MapMessage.update(4, new SubClassA(4, "d")),
+            MapMessage.update(5, new SubClassA(5, "e"))
+        )),
+        new ConcurrentLinkedDeque<>(List.of(
+            MapMessage.remove(5),
+            MapMessage.remove(4),
+            MapMessage.update(6, new SubClassA(6, "f")),
+            MapMessage.update(7, new SubClassA(7, "g")),
+            MapMessage.take(4),
+            MapMessage.drop(1),
+            MapMessage.clear()
+        )),
+        Map.of(
+            2, new SubClassA(2, "b"),
+            3, new SubClassA(3, "c"),
+            6, new SubClassA(6, "f")
+        )
+    );
+  }
+
   @AutoForm(subTypes = {
       @AutoForm.Type(SubClassA.class),
       @AutoForm.Type(SubClassB.class),
@@ -615,36 +644,6 @@ public class MapDownlinkTest extends FfiTest {
     public int hashCode() {
       return Objects.hash(super.hashCode(), fieldB);
     }
-  }
-
-  @Test
-  void structuralStateTest() throws SwimClientException, InterruptedException {
-    runTestOk(
-        Integer.class,
-        SuperClass.class,
-        4,
-        new ConcurrentLinkedDeque<>(List.of(
-            MapMessage.update(1, new SubClassA(1, "a")),
-            MapMessage.update(2, new SubClassA(2, "b")),
-            MapMessage.update(3, new SubClassA(3, "c")),
-            MapMessage.update(4, new SubClassA(4, "d")),
-            MapMessage.update(5, new SubClassA(5, "e"))
-        )),
-        new ConcurrentLinkedDeque<>(List.of(
-            MapMessage.remove(5),
-            MapMessage.remove(4),
-            MapMessage.update(6, new SubClassA(6, "f")),
-            MapMessage.update(7, new SubClassA(7, "g")),
-            MapMessage.take(4),
-            MapMessage.drop(1),
-            MapMessage.clear()
-        )),
-        Map.of(
-            2, new SubClassA(2, "b"),
-            3, new SubClassA(3, "c"),
-            6, new SubClassA(6, "f")
-        )
-    );
   }
 
 }
