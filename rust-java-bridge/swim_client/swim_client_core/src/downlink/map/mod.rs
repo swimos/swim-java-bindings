@@ -1,3 +1,5 @@
+mod lifecycle;
+
 // Copyright 2015-2022 Swim Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use bytes::BytesMut;
+use bytes::Bytes;
 use futures_util::future::BoxFuture;
 use futures_util::StreamExt;
 use jni::errors::Error;
-use jni::sys::jobject;
+use jni::sys::{jint, jobject};
+use jni::JNIEnv;
 use swim_api::downlink::{Downlink, DownlinkConfig, DownlinkKind};
 use swim_api::error::{DownlinkTaskError, FrameIoError};
 use swim_api::protocol::downlink::DownlinkNotification;
+use swim_api::protocol::map::MapMessage;
 use swim_model::address::Address;
 use swim_model::Text;
 use swim_utilities::io::byte_channel::{ByteReader, ByteWriter};
@@ -28,39 +32,43 @@ use tokio_util::codec::FramedRead;
 use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
 use jvm_sys::vm::SpannedError;
 
-use crate::downlink::decoder::ValueDlNotDecoder;
-use crate::downlink::value::lifecycle::ValueDownlinkLifecycle;
+use crate::downlink::decoder::MapDlNotDecoder;
+pub use crate::downlink::map::lifecycle::MapDownlinkLifecycle;
 use crate::downlink::{ErrorHandlingConfig, FfiFailureHandler};
 use crate::SharedVm;
 
-mod lifecycle;
-
-pub struct FfiValueDownlink {
+pub struct FfiMapDownlink {
     vm: SharedVm,
-    lifecycle: ValueDownlinkLifecycle,
+    lifecycle: MapDownlinkLifecycle,
     handler: Box<dyn FfiFailureHandler>,
 }
 
-impl FfiValueDownlink {
+impl FfiMapDownlink {
     pub fn create(
         vm: SharedVm,
-        on_event: jobject,
         on_linked: jobject,
-        on_set: jobject,
         on_synced: jobject,
+        on_update: jobject,
+        on_remove: jobject,
+        on_clear: jobject,
         on_unlinked: jobject,
+        take: jobject,
+        drop: jobject,
         error_mode: ErrorHandlingConfig,
-    ) -> Result<FfiValueDownlink, Error> {
+    ) -> Result<FfiMapDownlink, Error> {
         let env = get_env_shared(&vm)?;
-        let lifecycle = ValueDownlinkLifecycle::from_parts(
+        let lifecycle = MapDownlinkLifecycle::from_parts(
             &env,
-            on_event,
             on_linked,
-            on_set,
             on_synced,
+            on_update,
+            on_remove,
+            on_clear,
             on_unlinked,
+            take,
+            drop,
         )?;
-        Ok(FfiValueDownlink {
+        Ok(FfiMapDownlink {
             vm,
             lifecycle,
             handler: error_mode.as_handler(),
@@ -68,9 +76,9 @@ impl FfiValueDownlink {
     }
 }
 
-impl Downlink for FfiValueDownlink {
+impl Downlink for FfiMapDownlink {
     fn kind(&self) -> DownlinkKind {
-        DownlinkKind::Value
+        DownlinkKind::Map
     }
 
     fn run(
@@ -81,12 +89,12 @@ impl Downlink for FfiValueDownlink {
         output: ByteWriter,
     ) -> BoxFuture<'static, Result<(), DownlinkTaskError>> {
         Box::pin(async move {
-            let FfiValueDownlink {
+            let FfiMapDownlink {
                 vm,
                 lifecycle,
                 handler,
             } = self;
-            match run_ffi_value_downlink(vm, lifecycle, path, config, input, output).await {
+            match run_ffi_map_downlink(vm, lifecycle, path, config, input, output).await {
                 Ok(()) => Ok(()),
                 Err(RuntimeError::Downlink(err)) => Err(err),
                 Err(RuntimeError::Ffi(err)) => handler.on_failure(err),
@@ -103,12 +111,6 @@ impl Downlink for FfiValueDownlink {
     ) -> BoxFuture<'static, Result<(), DownlinkTaskError>> {
         (*self).run(path, config, input, output)
     }
-}
-
-enum LinkState {
-    Unlinked,
-    Linked(Option<Vec<u8>>),
-    Synced,
 }
 
 enum RuntimeError {
@@ -134,9 +136,16 @@ impl From<SpannedError> for RuntimeError {
     }
 }
 
-async fn run_ffi_value_downlink(
+/// The current state of the downlink.
+enum State {
+    Unlinked,
+    Linked,
+    Synced,
+}
+
+async fn run_ffi_map_downlink(
     vm: SharedVm,
-    mut lifecycle: ValueDownlinkLifecycle,
+    mut lifecycle: MapDownlinkLifecycle,
     _path: Address<Text>,
     config: DownlinkConfig,
     input: ByteReader,
@@ -148,56 +157,58 @@ async fn run_ffi_value_downlink(
         ..
     } = config;
 
-    let mut state = LinkState::Unlinked;
-    let mut framed_read = FramedRead::new(input, ValueDlNotDecoder::default());
-    let mut ffi_buffer = BytesMut::new();
+    let mut state = State::Unlinked;
+    let mut framed_read = FramedRead::new(input, MapDlNotDecoder::default());
 
     while let Some(result) = framed_read.next().await {
         let env = get_env_shared_expect(&vm);
 
         match result? {
             DownlinkNotification::Linked => {
-                if matches!(&state, LinkState::Unlinked) {
+                if matches!(&state, State::Unlinked) {
                     lifecycle.on_linked(&env)?;
-                    state = LinkState::Linked(None);
+                    state = State::Linked;
                 }
             }
             DownlinkNotification::Synced => match state {
-                LinkState::Linked(Some(mut data)) => {
-                    lifecycle.on_synced(&env, &mut data, &mut ffi_buffer)?;
-                    state = LinkState::Synced;
+                State::Linked => {
+                    lifecycle.on_synced(&env)?;
+                    state = State::Synced;
                 }
-                _ => {
-                    return Err(DownlinkTaskError::SyncedWithNoValue.into());
-                }
+                _ => {}
             },
-            DownlinkNotification::Event { body } => {
-                let mut data = body.to_vec();
-                match &mut state {
-                    LinkState::Linked(value) => {
-                        if events_when_not_synced {
-                            lifecycle.on_event(&env, &mut data, &mut ffi_buffer)?;
-                            lifecycle.on_set(&env, &mut data, &mut ffi_buffer)?;
-                        }
-                        *value = Some(data);
-                    }
-                    LinkState::Synced => {
-                        lifecycle.on_event(&env, &mut data, &mut ffi_buffer)?;
-                        lifecycle.on_set(&env, &mut data, &mut ffi_buffer)?;
-                    }
-                    LinkState::Unlinked => {}
-                }
-            }
+            DownlinkNotification::Event { body } => match &mut state {
+                State::Unlinked => {}
+                State::Linked => on_event(&env, &mut lifecycle, body, events_when_not_synced)?,
+                State::Synced => on_event(&env, &mut lifecycle, body, true)?,
+            },
             DownlinkNotification::Unlinked => {
                 lifecycle.on_unlinked(&env)?;
                 if terminate_on_unlinked {
                     break;
                 } else {
-                    state = LinkState::Unlinked;
+                    state = State::Unlinked;
                 }
             }
         }
     }
 
     Ok(())
+}
+
+fn on_event(
+    env: &JNIEnv,
+    lifecycle: &mut MapDownlinkLifecycle,
+    event: MapMessage<Bytes, Bytes>,
+    dispatch: bool,
+) -> Result<(), SpannedError> {
+    match event {
+        MapMessage::Update { key, value } => {
+            lifecycle.on_update(env, key.to_vec(), value.to_vec(), dispatch)
+        }
+        MapMessage::Remove { key } => lifecycle.on_remove(env, key.to_vec(), dispatch),
+        MapMessage::Clear => lifecycle.on_clear(env, dispatch),
+        MapMessage::Take(cnt) => lifecycle.take(env, cnt as jint, dispatch),
+        MapMessage::Drop(cnt) => lifecycle.drop(env, cnt as jint, dispatch),
+    }
 }

@@ -77,6 +77,26 @@ pub struct SpannedError {
     pub cause_throwable: GlobalRef,
 }
 
+impl Display for SpannedError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let SpannedError {
+            location,
+            stack_trace,
+            cause,
+            ..
+        } = self;
+        writeln!(f, "Native exception thrown at call site: {location}")?;
+        writeln!(f, "\tCaused by: {cause}")?;
+
+        let stack_trace = stack_trace
+            .lines()
+            .map(|l| format!("\n\t\t{l}"))
+            .collect::<String>();
+
+        writeln!(f, "\tStack trace:{stack_trace}")
+    }
+}
+
 impl SpannedError {
     pub fn new(
         location: &'static Location<'static>,
@@ -103,12 +123,6 @@ impl SpannedError {
     #[inline(never)]
     pub fn panic(self) -> ! {
         panic_any(self)
-    }
-}
-
-impl Display for SpannedError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 

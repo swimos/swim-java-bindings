@@ -12,41 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::io::ErrorKind;
 use std::ptr::null_mut;
 use std::sync::Arc;
 
-use bytes::BytesMut;
 use client_runtime::Transport;
 use fixture::{MockExternalConnections, MockWs, Server, WsAction};
-use futures_util::future::try_join3;
-use futures_util::SinkExt;
 use jni::errors::Error;
 use jni::objects::{GlobalRef, JObject, JString};
-use jni::sys::{jbyteArray, jobject};
+use jni::sys::jobject;
 use jni::JNIEnv;
-use swim_api::downlink::{Downlink, DownlinkConfig};
-use swim_api::protocol::downlink::{DownlinkNotification, DownlinkNotificationEncoder};
+use parking_lot::Mutex;
 use swim_form::Form;
-use swim_model::address::Address;
 use swim_model::{Blob, Text, Value};
-use swim_recon::parser::{parse_recognize, Span};
-use swim_recon::printer::print_recon_compact;
 use swim_runtime::net::{Scheme, SchemeHostPort, SchemeSocketAddr};
-use swim_utilities::io::byte_channel::byte_channel;
 use swim_utilities::non_zero_usize;
-use tokio::io::{duplex, AsyncReadExt};
+use tokio::io::duplex;
 use tokio::runtime::Runtime;
-use tokio_util::codec::FramedWrite;
 use url::Url;
 
+use crate::lifecycle_test;
 use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
 use jvm_sys::vm::set_panic_hook;
 use jvm_sys::vm::utils::{get_env_shared, new_global_ref};
 use jvm_sys::{jni_try, jvm_tryf, parse_string};
-use jvm_sys_tests::run_test;
 use swim_client_core::downlink::value::FfiValueDownlink;
-use swim_client_core::downlink::DownlinkConfigurations;
 use swim_client_core::downlink::ErrorHandlingConfig;
 use swim_client_core::{client_fn, SwimClient};
 
@@ -111,94 +100,7 @@ client_fn! {
             ErrorHandlingConfig::Abort,
         )
         .expect("Failed to build downlink");
-
-        let host = env.get_string(host).unwrap();
-        let node = env.get_string(node).unwrap();
-        let lane = env.get_string(lane).unwrap();
-
-        let (input_tx, input_rx) = byte_channel(non_zero_usize!(128));
-        let (output_tx, mut output_rx) = byte_channel(non_zero_usize!(128));
-        let input = env.get_string(input).unwrap().to_str().unwrap().to_string();
-
-        let write_task = async move {
-            let mut framed = FramedWrite::new(input_tx, DownlinkNotificationEncoder);
-            for notif in input.lines() {
-                match parse_recognize::<Notification>(Span::new(notif), false).unwrap() {
-                    Notification::Linked { .. } => framed
-                        .send(DownlinkNotification::<Blob>::Linked)
-                        .await
-                        .expect("Failed to encode message"),
-                    Notification::Synced { .. } => framed
-                        .send(DownlinkNotification::<Blob>::Synced)
-                        .await
-                        .expect("Failed to encode message"),
-                    Notification::Unlinked { .. } => framed
-                        .send(DownlinkNotification::<Blob>::Unlinked)
-                        .await
-                        .expect("Failed to encode message"),
-                    Notification::Event { body, .. } => framed
-                        .send(DownlinkNotification::Event {
-                            body: format!("{}", print_recon_compact(&body)).into_bytes(),
-                        })
-                        .await
-                        .expect("Failed to encode message"),
-                }
-            }
-
-            Ok(())
-        };
-
-        let read_task = async move {
-            let mut buf = BytesMut::new();
-            match output_rx.read(&mut buf).await {
-                Ok(0) => {}
-                Ok(_) => {
-                    panic!("Unexpected downlink value read: {:?}", buf.as_ref());
-                }
-                Err(e) => {
-                    if e.kind() != ErrorKind::BrokenPipe {
-                        panic!("Downlink read channel error: {:?}", e);
-                    }
-                }
-            }
-
-            Ok(())
-        };
-
-        let downlink_task = downlink.run(
-            Address::new(
-                Some(host.to_str().unwrap().into()),
-                node.to_str().unwrap().into(),
-                lane.to_str().unwrap().into(),
-            ),
-            DownlinkConfig {
-                events_when_not_synced: true,
-                terminate_on_unlinked: false,
-                buffer_size: non_zero_usize!(1024),
-            },
-            input_rx,
-            output_tx,
-        );
-
-        let task = async move {
-            try_join3(write_task, read_task, downlink_task)
-                .await
-                .expect("Downlink task failure");
-        };
-
-        run_test(env, lock, task)
-    }
-}
-
-client_fn! {
-    downlink_value_ValueDownlinkTest_dropRuntime(
-        _env,
-        _class,
-        ptr: *mut Runtime,
-    ) {
-        unsafe {
-            drop(Box::from_raw(ptr));
-        }
+        lifecycle_test(downlink, vm, lock, input, host, node, lane,true)
     }
 }
 
@@ -235,7 +137,8 @@ client_fn! {
     ) -> SwimClient {
         set_panic_hook();
 
-        let (transport, mut server) = create_io();
+        let (transport,  server) = create_io();
+        let server = Arc::new(Mutex::new(server));
 
         let client =
             SwimClient::with_transport(env.get_java_vm().expect("Failed to get Java VM"), transport);
@@ -265,7 +168,7 @@ client_fn! {
         let lane = parse_string!(env, lane, std::ptr::null_mut());
 
         jni_try! {
-            handle.spawn_value_downlink(
+            handle.spawn_downlink(
                 Default::default(),
                 make_global_ref(&env, downlink_ref, "downlink object reference"),
                 make_global_ref(&env, stopped_barrier_ref, "stopped barrier"),
@@ -298,9 +201,9 @@ client_fn! {
             };
 
         let _jh = async_runtime.spawn(async move {
-            let mut lane_peer = server.lane_for(node, lane);
+            let mut lane_peer = Server::lane_for(server, node, lane);
             lane_peer.await_link().await;
-            lane_peer.await_sync(13).await;
+            lane_peer.await_sync(vec![13]).await;
             lane_peer.send_event(15).await;
             lane_peer.send_unlinked().await;
 
@@ -322,18 +225,6 @@ fn make_global_ref(env: &JNIEnv, obj: jobject, name: &str) -> GlobalRef {
 }
 
 client_fn! {
-    downlink_value_ValueDownlinkTest_dropSwimClient(
-        _env,
-        _class,
-        ptr: *mut SwimClient,
-    ) {
-        unsafe {
-            drop(Box::from_raw(ptr));
-        }
-    }
-}
-
-client_fn! {
     downlink_value_ValueDownlinkTest_driveDownlinkError(
         env,
         _class,
@@ -344,7 +235,9 @@ client_fn! {
     ) -> SwimClient {
         set_panic_hook();
 
-        let (transport, mut server) = create_io();
+        let (transport,  server) = create_io();
+        let server = Arc::new(Mutex::new(server));
+
         let client =
             SwimClient::with_transport(env.get_java_vm().expect("Failed to get Java VM"), transport);
         let handle = client.handle();
@@ -364,7 +257,7 @@ client_fn! {
         };
 
         jni_try! {
-            handle.spawn_value_downlink(
+            handle.spawn_downlink(
                 Default::default(),
                 make_global_ref(&env, downlink_ref, "downlink object reference"),
                 make_global_ref(&env, stopped_barrier_ref, "stopped barrier"),
@@ -387,9 +280,9 @@ client_fn! {
                 .unwrap();
 
         let _jh = async_runtime.spawn(async move {
-            let mut lane_peer = server.lane_for("node", "lane");
+            let mut lane_peer = Server::lane_for(server, "node", "lane");
             lane_peer.await_link().await;
-            lane_peer.await_sync(13).await;
+            lane_peer.await_sync(vec![13]).await;
             lane_peer.send_event(Value::text("blah")).await;
             let env = get_env_shared(&vm).unwrap();
 
@@ -404,21 +297,5 @@ client_fn! {
         });
 
         Box::leak(Box::new(client))
-    }
-}
-
-client_fn! {
-    downlink_value_ValueDownlinkTest_parsesConfig(
-        env,
-        _class,
-        config: jbyteArray,
-    ) {
-        let mut config_bytes = jni_try! {
-            env,
-            "Failed to parse configuration array",
-            env.convert_byte_array(config).map(BytesMut::from_iter)
-        };
-
-        let _r = DownlinkConfigurations::try_from_bytes(&mut config_bytes, &env);
     }
 }

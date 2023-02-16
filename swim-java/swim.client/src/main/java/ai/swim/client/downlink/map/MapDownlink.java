@@ -12,25 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.client.downlink.value;
+package ai.swim.client.downlink.map;
 
 import ai.swim.client.SwimClientException;
 
 import java.util.concurrent.CountDownLatch;
 
 /**
- * A Swim Value Downlink representation. A ValueDownlink synchronizes a shared real-time value with a remote value lane
+ * A Swim Map Downlink representation. A MapDownlink synchronizes a shared real-time value with a remote map lane
  * and provides lifecycle callbacks that may be registered to be notified of certain events.
  * <p>
  * This class is thread safe.
  *
- * @param <T> the type of the value.
+ * @param <K> the type of the map's key.
+ * @param <V> the type of the map's key.
  */
-public abstract class ValueDownlink<T> {
+public abstract class MapDownlink<K, V> {
   private final CountDownLatch stoppedBarrier;
   // Referenced through FFI. Do not remove.
   @SuppressWarnings({"FieldCanBeLocal", "unused"})
-  private final ValueDownlinkState<T> state;
+  private final MapDownlinkState<K, V> state;
   /// Referenced through FFI and *possibly* set to an error that occurred while the downlink was running. Iff this is
   /// non-null *after* calling 'awaitStopped' then the downlink terminated with an error and it *must* be thrown from
   /// that method. Iff it is null then the downlink terminated successfully.
@@ -40,7 +41,7 @@ public abstract class ValueDownlink<T> {
   protected String message;
   protected Throwable cause;
 
-  protected ValueDownlink(CountDownLatch stoppedBarrier, ValueDownlinkState<T> state) {
+  protected MapDownlink(CountDownLatch stoppedBarrier, MapDownlinkState<K, V> state) {
     this.stoppedBarrier = stoppedBarrier;
     this.state = state;
   }

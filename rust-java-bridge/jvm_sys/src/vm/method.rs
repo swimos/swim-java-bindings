@@ -54,7 +54,6 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
         let InitialisedJavaObjectMethod {
             signature,
             method_id,
-            ..
         } = self;
 
         if signature.args.len() != args.len() {

@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::downlink::value::{FfiValueDownlink, SharedVm};
+extern crate core;
+
 use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
 use client_runtime::RemotePath;
 use client_runtime::{
@@ -27,6 +28,7 @@ use jvm_sys::vm::{with_local_frame_null, SpannedError};
 use ratchet::{NoExtProvider, WebSocketConfig, WebSocketStream};
 use std::num::NonZeroUsize;
 use std::sync::Arc;
+use swim_api::downlink::Downlink;
 use swim_api::error::DownlinkTaskError;
 use swim_runtime::net::dns::Resolver;
 use swim_runtime::net::plain::TokioPlainTextNetworking;
@@ -43,6 +45,7 @@ mod macros;
 pub use macros::*;
 
 const REMOTE_BUFFER_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(64) };
+type SharedVm = Arc<JavaVM>;
 
 pub struct SwimClient {
     error_mode: ErrorHandlingConfig,
@@ -146,16 +149,19 @@ impl ClientHandle {
         self.tokio_handle.clone()
     }
 
-    pub fn spawn_value_downlink(
+    pub fn spawn_downlink<D>(
         &self,
         config: DownlinkConfigurations,
         downlink_ref: GlobalRef,
         stopped_barrier: GlobalRef,
-        downlink: FfiValueDownlink,
+        downlink: D,
         host: Url,
         node: String,
         lane: String,
-    ) -> Result<(), ()> {
+    ) -> Result<(), ()>
+    where
+        D: Downlink + Send + Sync + 'static,
+    {
         let ClientHandle {
             vm,
             tokio_handle,

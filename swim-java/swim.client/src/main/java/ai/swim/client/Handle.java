@@ -45,6 +45,10 @@ public class Handle implements NativeResource {
     return new Handle(createHandle(runtimePtr));
   }
 
+  private static native long createHandle(long runtimePtr);
+
+  private static native long dropHandle(long handlePtr);
+
   public void drop() {
     if (dropped.get()) {
       throw new IllegalStateException("Attempted to drop an already dropped SwimClient handle");
@@ -57,9 +61,5 @@ public class Handle implements NativeResource {
   public long get() {
     return handlePtr;
   }
-
-  private static native long createHandle(long runtimePtr);
-
-  private static native long dropHandle(long handlePtr);
 
 }

@@ -12,47 +12,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.client.downlink.value;
+package ai.swim.client.downlink.map;
 
 import ai.swim.client.Handle;
 import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.DownlinkConfig;
+import ai.swim.client.downlink.TriConsumer;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.structure.Form;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
-  private ValueDownlinkModel(CountDownLatch stoppedBarrier, ValueDownlinkState<T> state) {
+public final class MapDownlinkModel<K, V> extends MapDownlink<K, V> {
+  private MapDownlinkModel(CountDownLatch stoppedBarrier, MapDownlinkState<K, V> state) {
     super(stoppedBarrier, state);
   }
 
   /**
-   * Opens a ValueDownlink to host/node/lane
+   * Opens a MapDownlink to host/node/lane
    *
    * @param handle         a single-use SwimClient native handle that is dropped after the downlink has been opened.
    * @param host           The URl of the host to open the connection to.
    * @param node           The node URI to downlink to.
    * @param lane           The lane URI to downlink to.
-   * @param formType       A form class representing the structure of the downlink's value.
+   * @param keyType        A form class representing the structure of the map's key type.
+   * @param valueType      A form class representing the structure of the map's value type.
    * @param lifecycle      Downlink lifecycle event callbacks.
    * @param downlinkConfig Downlink and runtime configuration.
    * @return An established ValueDownlink.
    * @throws SwimClientException if there is an error opening the downlink or by a malformed address.
    */
-  static <T> ValueDownlink<T> open(Handle handle,
-                                   String host,
-                                   String node,
-                                   String lane,
-                                   Class<T> formType,
-                                   ValueDownlinkLifecycle<T> lifecycle,
-                                   DownlinkConfig downlinkConfig) throws SwimClientException {
-    ValueDownlinkState<T> state = new ValueDownlinkState<>(Form.forClass(formType));
+  static <K, V> MapDownlink<K, V> open(Handle handle,
+                                       String host,
+                                       String node,
+                                       String lane,
+                                       Class<K> keyType,
+                                       Class<V> valueType,
+                                       MapDownlinkLifecycle<K, V> lifecycle,
+                                       DownlinkConfig downlinkConfig) throws SwimClientException {
+    MapDownlinkState<K, V> state = new MapDownlinkState<>(Form.forClass(keyType), Form.forClass(valueType), lifecycle.getOnRemove());
     CountDownLatch stoppedBarrier = new CountDownLatch(1);
-    ValueDownlinkModel<T> downlink = new ValueDownlinkModel<>(stoppedBarrier, state);
+    MapDownlinkModel<K, V> downlink = new MapDownlinkModel<>(stoppedBarrier, state);
 
     try {
       open(
@@ -63,11 +67,14 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
           host,
           node,
           lane,
-          state.wrapOnEvent(lifecycle.getOnEvent()),
           lifecycle.getOnLinked(),
-          state.wrapOnSet(lifecycle.getOnSet()),
           state.wrapOnSynced(lifecycle.getOnSynced()),
-          lifecycle.getOnUnlinked()
+          state.wrapOnUpdate(lifecycle.getOnUpdate()),
+          state.wrapOnRemove(lifecycle.getOnRemove()),
+          state.wrapOnClear(lifecycle.getOnClear()),
+          lifecycle.getOnUnlinked(),
+          state.take(),
+          state.drop()
       );
     } finally {
       handle.drop();
@@ -77,9 +84,11 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
   }
 
   /**
-   * Attempts to open a new value downlink; starting a new Value Downlink Runtime as required and attaching a new native
-   * value downlink to it.
+   * Attempts to open a new map downlink; starting a new Map Downlink Runtime as required and attaching a new native
+   * map downlink to it.
    *
+   * @param <K>            The type of the key.
+   * @param <V>            The type of the value.
    * @param handlePtr      A SwimHandle pointer.
    * @param downlink       Downlink model reference for reporting any exceptions that are thrown to.
    * @param config         A byte-representation of the configuration for the downlink and the runtime.
@@ -87,26 +96,31 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
    * @param host           The URl of the host to open the connection to.
    * @param node           The node URI to downlink to.
    * @param lane           The lane URI to downlink to.
-   * @param onEvent        onEvent callback. If this is null, then it will not be invoked.
    * @param onLinked       onLinked callback. If this is null, then it will not be invoked.
-   * @param onSet          onSet callback. If this is null, then it will not be invoked.
    * @param onSynced       onSynced callback. If this is null, then it will not be invoked.
+   * @param onUpdate       onUpdate callback. If this is null, then it will not be invoked.
+   * @param onRemove       onRemove callback. If this is null, then it will not be invoked.
+   * @param onClear        onClear callback. If this is null, then it will not be invoked.
    * @param onUnlinked     onUnlinked callback. If this is null, then it will not be invoked.
-   * @param <T>            The type of the value.
+   * @param take           callback to invoke for a take operation.
+   * @param drop           callback to invoke for a take operation.
    */
-  private static native <T> void open(
+  private static native <K, V> void open(
       long handlePtr,
-      ValueDownlinkModel<T> downlink,
+      MapDownlinkModel<K, V> downlink,
       byte[] config,
       CountDownLatch stoppedBarrier,
       String host,
       String node,
       String lane,
-      Consumer<ByteBuffer> onEvent,
       OnLinked onLinked,
-      Consumer<ByteBuffer> onSet,
-      Consumer<ByteBuffer> onSynced,
-      OnUnlinked onUnlinked
+      Routine onSynced,
+      TriConsumer<ByteBuffer, ByteBuffer, Boolean> onUpdate,
+      BiConsumer<ByteBuffer, Boolean> onRemove,
+      Consumer<Boolean> onClear,
+      OnUnlinked onUnlinked,
+      BiConsumer<Integer, Boolean> take,
+      BiConsumer<Integer, Boolean> drop
   ) throws SwimClientException;
 
 }

@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
  * accessible through the JNI and will cause a segmentation fault.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.CONSTRUCTOR})
 public @interface FfiIntrinsic {
 
 }

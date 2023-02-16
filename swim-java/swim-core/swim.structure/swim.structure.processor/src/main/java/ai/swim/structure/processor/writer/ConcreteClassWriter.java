@@ -122,16 +122,18 @@ public class ConcreteClassWriter extends ClassWriter {
         body.addStatement("$T $L = ($T) $L", type, fieldName, type, getter.build());
       }
 
-      if (!rawType.getKind().isPrimitive()) {
+      boolean isPrimitive = rawType.getKind().isPrimitive();
+      boolean bodyReplaced = classSchema.getPartitionedFields().body.isReplaced();
+
+      if (!isPrimitive) {
         body.beginControlFlow("if ($L != null)", fieldName);
 
-        if (!classSchema.getPartitionedFields().body.isReplaced()) {
+        if (!bodyReplaced) {
           body.addStatement("__numSlots += 1");
         }
 
         if (fieldModel.getModel() instanceof RuntimeLookupModel) {
           String writableName = nameFactory.writableName(fieldModel.propertyName());
-
 
           TypeElement classElement = elementUtils.getTypeElement(Class.class.getCanonicalName());
           DeclaredType classType = typeUtils.getDeclaredType(classElement, fieldModel.type(processingEnvironment));
@@ -143,6 +145,8 @@ public class ConcreteClassWriter extends ClassWriter {
         }
 
         body.endControlFlow();
+      } else if (!bodyReplaced) {
+        body.addStatement("__numSlots += 1");
       }
     }
 
@@ -220,7 +224,15 @@ public class ConcreteClassWriter extends ClassWriter {
       CodeBlock.Builder getter = CodeBlock.builder();
       formBody.getAccessor().writeGet(getter, "from");
 
-      body.addStatement("return __recWriter.delegate($L, $L)", formBody.initializer(context, false, false), getter.build());
+      CodeBlock writer;
+
+      if (formBody.getModel() instanceof RuntimeLookupModel) {
+        writer = CodeBlock.of(nameFactory.writableName(formBody.propertyName()));
+      } else {
+        writer = formBody.initializer(context, false, false);
+      }
+
+      body.addStatement("return __recWriter.delegate($L, $L)", writer, getter.build());
     } else {
       CodeBlock.Builder bodyStatements = CodeBlock.builder();
 

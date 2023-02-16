@@ -12,36 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.client;
+package ai.swim.client.downlink.map;
 
 import ai.swim.lang.ffi.FfiIntrinsic;
 
-public class Utils {
+/**
+ * A functional interface that takes no arguments and returns no value.
+ */
+public interface Routine {
+  /**
+   * Execute the routine.
+   */
   @FfiIntrinsic
-  public static String stackTraceString(Throwable exception) {
-    if (exception == null) {
-      return "";
-    }
-
-    StackTraceElement[] stackTrace = exception.getStackTrace();
-    if (stackTrace == null) {
-      return "";
-    }
-
-    int lim = Math.min(stackTrace.length, 20);
-    StringBuilder builder = new StringBuilder();
-
-    for (int i = 0; i < lim; i++) {
-      StackTraceElement element = stackTrace[i];
-      if (element == null) {
-        break;
-      }
-      builder.append(element);
-      builder.append(System.lineSeparator());
-    }
-
-    return builder.toString();
-  }
-
-
+  void exec();
 }
