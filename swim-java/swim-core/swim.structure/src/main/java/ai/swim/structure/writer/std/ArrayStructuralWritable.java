@@ -20,6 +20,11 @@ import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.proxy.WriterProxy;
 
+/**
+ * A {@code Writable} which writes {@code E[]}.
+ *
+ * @param <E> the type of the array's elements.
+ */
 public class ArrayStructuralWritable<E> implements StructuralWritable<E[]> {
   private Writable<E> writable;
   private Class<E> eClass;

@@ -22,10 +22,20 @@ import ai.swim.structure.writer.HeaderWriter;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.header.WritableHeader;
 
+/**
+ * A {@code Writable} implementation that yields a {@code Value} instance.
+ */
 public class ValueInterpreter implements HeaderWriter<Value>, BodyWriter<Value> {
   private final ValueStructuralWriter valueWriter;
   private final Record.Builder builder;
 
+  /**
+   * Instantiates a new {@code ValueInterpreter} which will write primitive types using {@code ValueStructuralWriter}
+   * and initialises the record builder with an initial attribute capacity of {@code attrCount.}
+   *
+   * @param valueWriter to write primitive types using.
+   * @param attrCount   initial capacity of the internal record builder.
+   */
   public ValueInterpreter(ValueStructuralWriter valueWriter, int attrCount) {
     this.valueWriter = valueWriter;
     this.builder = new Record.Builder(attrCount, 0);

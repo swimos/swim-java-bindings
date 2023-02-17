@@ -38,6 +38,7 @@ public class RecognizerBridge<T> implements StructuralWriter<T>, BodyWriter<T>, 
     }
 
     void exit() {
+      assert stackDepth >= 0;
       stackDepth -= 1;
     }
 

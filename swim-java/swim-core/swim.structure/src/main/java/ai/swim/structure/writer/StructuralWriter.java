@@ -14,7 +14,19 @@
 
 package ai.swim.structure.writer;
 
+/**
+ * Interface for defining how to write {@code T} into another type.
+ *
+ * @param <T> the target type.
+ */
 public interface StructuralWriter<T> extends PrimitiveWriter<T> {
+
+  /**
+   * Returns a header writer.
+   *
+   * @param numAttrs a hint as to the number of attributes the header will contain.
+   * @return a header writer.
+   */
   HeaderWriter<T> record(int numAttrs);
 }
 

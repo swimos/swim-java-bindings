@@ -14,52 +14,50 @@
 
 package ai.swim.structure.writer;
 
-public class StringMeta {
+public class StringUtils {
 
+  /**
+   * Returns whether the string requires escaping.
+   */
   public static boolean needsEscape(String c) {
-    return c.chars().anyMatch(StringMeta::isEscapeChar);
+    return c.chars().anyMatch(StringUtils::isEscapeChar);
   }
 
+  /**
+   * Returns whether the code point is an escape character.
+   */
   public static boolean isEscapeChar(int c) {
     return c == 0x09 || c == 0x20
         || c >= 0x21 && c <= 0x7e
         || c >= 0x80 && c <= 0xff;
   }
 
+  /**
+   * Returns whether the string is a valid Recon identifier.
+   */
   public static boolean isIdentifier(String value) {
     final int n = value.length();
-    if (n == 0 || !StringMeta.isIdentStartChar(value.codePointAt(0))) {
+    if (n == 0 || !StringUtils.isIdentStartChar(value.codePointAt(0))) {
       return false;
     }
     for (int i = value.offsetByCodePoints(0, 1); i < n; i = value.offsetByCodePoints(i, 1)) {
-      if (!StringMeta.isIdentChar(value.codePointAt(i))) {
+      if (!StringUtils.isIdentChar(value.codePointAt(i))) {
         return false;
       }
     }
     return true;
   }
 
+  /**
+   * Returns whether the code point is valid a a Recon identifier.
+   */
   static boolean isIdentChar(int c) {
-    return c == '-'
-        || c >= '0' && c <= '9'
-        || c >= 'A' && c <= 'Z'
-        || c == '_'
-        || c >= 'a' && c <= 'z'
-        || c == 0xb7
-        || c >= 0xc0 && c <= 0xd6
-        || c >= 0xd8 && c <= 0xf6
-        || c >= 0xf8 && c <= 0x37d
-        || c >= 0x37f && c <= 0x1fff
-        || c >= 0x200c && c <= 0x200d
-        || c >= 0x203f && c <= 0x2040
-        || c >= 0x2070 && c <= 0x218f
-        || c >= 0x2c00 && c <= 0x2fef
-        || c >= 0x3001 && c <= 0xd7ff
-        || c >= 0xf900 && c <= 0xfdcf
-        || c >= 0xfdf0 && c <= 0xfffd
-        || c >= 0x10000 && c <= 0xeffff;
+    return isIdentStartChar(c) || c == '-' || c >= '0' && c <= '9';
   }
 
+  /**
+   * Returns whether the code point is valid after the start of an identifier.
+   */
   static boolean isIdentStartChar(int c) {
     return c >= 'A' && c <= 'Z'
         || c == '_'
@@ -78,6 +76,9 @@ public class StringMeta {
         || c >= 0x10000 && c <= 0xeffff;
   }
 
+  /**
+   * Escapes all control characters.
+   */
   public static String escape(String value) {
     StringBuilder output = new StringBuilder(value.length());
     final int n = value.length();
@@ -111,10 +112,10 @@ public class StringMeta {
             output
                 .appendCodePoint('\\')
                 .append('u')
-                .append(StringMeta.encodeHex((c >>> 12) & 0xf))
-                .append(StringMeta.encodeHex((c >>> 8) & 0xf))
-                .append(StringMeta.encodeHex((c >>> 4) & 0xf))
-                .append(StringMeta.encodeHex(c & 0xf));
+                .append(StringUtils.encodeHex((c >>> 12) & 0xf))
+                .append(StringUtils.encodeHex((c >>> 8) & 0xf))
+                .append(StringUtils.encodeHex((c >>> 4) & 0xf))
+                .append(StringUtils.encodeHex(c & 0xf));
           } else {
             output.appendCodePoint(c);
           }

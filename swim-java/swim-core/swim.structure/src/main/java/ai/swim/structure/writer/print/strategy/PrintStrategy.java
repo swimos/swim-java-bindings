@@ -16,9 +16,20 @@ package ai.swim.structure.writer.print.strategy;
 
 import ai.swim.structure.writer.print.Padding;
 
+/**
+ * An interface for defining Recon print strategies.
+ */
 public interface PrintStrategy {
+  /**
+   * A compacted Recon print strategy. Useful for reducing the size of the output.
+   */
   PrintStrategy COMPACT = new CompactPrintStrategy();
+
+  /**
+   * A standard Recon print strategy which writes spaces between attributes, items and slots.
+   */
   PrintStrategy STANDARD = new StandardPrintStrategy();
+
 
   Padding attrPadding();
 

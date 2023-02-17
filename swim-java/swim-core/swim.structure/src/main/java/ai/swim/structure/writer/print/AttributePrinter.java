@@ -16,7 +16,7 @@ package ai.swim.structure.writer.print;
 
 import ai.swim.structure.writer.BodyWriter;
 import ai.swim.structure.writer.HeaderWriter;
-import ai.swim.structure.writer.StringMeta;
+import ai.swim.structure.writer.StringUtils;
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.SuppressingWriter;
 import ai.swim.structure.writer.Writable;
@@ -214,10 +214,10 @@ public class AttributePrinter implements HeaderWriter<String>, BodyWriter<String
       writer.writeUnchecked(String.format("(%s", printStrategy.attrBodyPadding()));
     }
 
-    if (StringMeta.isIdentifier(value)) {
+    if (StringUtils.isIdentifier(value)) {
       writer.writeUnchecked(value);
-    } else if (StringMeta.needsEscape(value)) {
-      value = StringMeta.escape(value);
+    } else if (StringUtils.needsEscape(value)) {
+      value = StringUtils.escape(value);
     }
 
     writer.writeUnchecked(String.format("\"%s\"", value));
