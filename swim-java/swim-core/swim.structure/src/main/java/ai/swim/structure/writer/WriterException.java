@@ -12,22 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.value;
+package ai.swim.structure.writer;
 
-import ai.swim.structure.writer.PrimitiveWriter;
-
-public abstract class PrimitiveValue extends Value {
-  @Override
-  public boolean isPrimitive() {
-    return true;
+public class WriterException extends RuntimeException {
+  public WriterException() {
+    super();
   }
 
-  public <T> T visitPrimitiveWritable(PrimitiveWriter<T> writer) {
-    if (!isPrimitive()) {
-      throw new IllegalStateException("Attempted to visit a non-primitive value type");
-    }
-    return writePrimitive(writer);
+  public WriterException(String message) {
+    super(message);
   }
 
-  protected abstract <T> T writePrimitive(PrimitiveWriter<T> writer);
+  public WriterException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  public WriterException(Throwable cause) {
+    super(cause);
+  }
+
+  protected WriterException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    super(message, cause, enableSuppression, writableStackTrace);
+  }
 }

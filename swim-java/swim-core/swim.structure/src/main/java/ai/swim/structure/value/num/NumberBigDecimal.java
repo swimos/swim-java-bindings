@@ -14,6 +14,7 @@
 
 package ai.swim.structure.value.num;
 
+import ai.swim.structure.writer.PrimitiveWriter;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -49,4 +50,8 @@ public class NumberBigDecimal extends NumberValue {
     return Objects.hash(value);
   }
 
+  @Override
+  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
+    return writer.writeBigDecimal(value);
+  }
 }

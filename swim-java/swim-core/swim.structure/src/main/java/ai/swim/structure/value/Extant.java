@@ -14,6 +14,8 @@
 
 package ai.swim.structure.value;
 
+import ai.swim.structure.writer.PrimitiveWriter;
+
 public class Extant extends PrimitiveValue {
   private static final Extant VALUE = new Extant();
 
@@ -39,4 +41,8 @@ public class Extant extends PrimitiveValue {
     return true;
   }
 
+  @Override
+  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
+    return writer.writeExtant();
+  }
 }

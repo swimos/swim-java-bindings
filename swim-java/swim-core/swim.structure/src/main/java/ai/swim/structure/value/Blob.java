@@ -14,6 +14,8 @@
 
 package ai.swim.structure.value;
 
+import ai.swim.structure.writer.PrimitiveWriter;
+
 import java.util.Arrays;
 import java.util.Base64;
 
@@ -46,4 +48,8 @@ public class Blob extends PrimitiveValue {
     return Arrays.hashCode(value);
   }
 
+  @Override
+  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
+    return writer.writeBlob(value);
+  }
 }

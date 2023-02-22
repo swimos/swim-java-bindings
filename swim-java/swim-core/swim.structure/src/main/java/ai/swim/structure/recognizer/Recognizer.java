@@ -1,6 +1,9 @@
 package ai.swim.structure.recognizer;
 
 import ai.swim.recon.event.ReadEvent;
+import ai.swim.structure.recognizer.bridge.RecognizerBridge;
+import ai.swim.structure.writer.Writable;
+import ai.swim.structure.writer.proxy.WriterProxy;
 
 import java.util.function.Function;
 
@@ -76,6 +79,14 @@ public abstract class Recognizer<T> {
 
   public Recognizer<T> asBodyRecognizer() {
     return new SimpleRecBodyRecognizer<>(this);
+  }
+
+  public <W> T transform(W value, Writable<W> writable) {
+    return writable.writeInto(value, new RecognizerBridge<>(this));
+  }
+
+  public <W> T transform(W value) {
+    return transform(value, WriterProxy.getProxy().lookupObject(value));
   }
 
   public T flush() {
