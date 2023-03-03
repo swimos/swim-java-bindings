@@ -12,40 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.recon.models.events;
+package ai.swim.recon.models.state;
 
-import ai.swim.recon.event.ReadEvent;
+import ai.swim.recon.models.ParseState;
 
 import java.util.Objects;
 
-public class TwoParseEvents extends ParseEvents {
-  private final ReadEvent event1;
-  private final ReadEvent event2;
+public class ModifyState extends StateChange {
 
-  TwoParseEvents(ReadEvent event1, ReadEvent event2) {
-    this.event1 = event1;
-    this.event2 = event2;
-  }
+  private final ParseState state;
 
-  public ReadEvent getEvent1() {
-    return event1;
-  }
-
-  public ReadEvent getEvent2() {
-    return event2;
-  }
-
-  @Override
-  public boolean isTwoEvents() {
-    return true;
-  }
-
-  @Override
-  public String toString() {
-    return "TwoParseEvents{" +
-        "event1=" + event1 +
-        ", event2=" + event2 +
-        '}';
+  public ModifyState(ParseState state) {
+    this.state = state;
   }
 
   @Override
@@ -56,12 +34,28 @@ public class TwoParseEvents extends ParseEvents {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TwoParseEvents that = (TwoParseEvents) o;
-    return Objects.equals(event1, that.event1) && Objects.equals(event2, that.event2);
+    ModifyState that = (ModifyState) o;
+    return state == that.state;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(event1, event2);
+    return Objects.hash(state);
+  }
+
+  public ParseState getState() {
+    return state;
+  }
+
+  @Override
+  public boolean isChangeState() {
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "ChangeState{" +
+        "state=" + state +
+        '}';
   }
 }

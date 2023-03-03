@@ -60,12 +60,6 @@ public class RecognizerFactory {
     recognizers.put(_getOrThrowType(elementUtils, Number.class), primitiveResolver.resolve(processingEnvironment, "NUMBER"));
     recognizers.put(_getOrThrowArrayType(elementUtils, typeUtils, Byte.class), primitiveResolver.resolve(processingEnvironment, "BLOB"));
 
-    // init atomics
-    ModelInstance.Resolver atomicResolver = ModelInstance.resolver("ai.swim.structure.recognizer.std.AtomicRecognizer");
-    recognizers.put(_getOrThrowType(elementUtils, AtomicBoolean.class), atomicResolver.resolve(processingEnvironment, "ATOMIC_BOOLEAN"));
-    recognizers.put(_getOrThrowType(elementUtils, AtomicInteger.class), atomicResolver.resolve(processingEnvironment, "ATOMIC_INTEGER"));
-    recognizers.put(_getOrThrowType(elementUtils, AtomicLong.class), atomicResolver.resolve(processingEnvironment, "ATOMIC_LONG"));
-
     return new RecognizerFactory(recognizers);
   }
 

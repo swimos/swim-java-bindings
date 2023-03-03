@@ -1042,9 +1042,6 @@ public class AutoStructuralTest {
     public boolean e;
     public Boolean eE;
     public String f;
-    public AtomicBoolean g;
-    public AtomicInteger h;
-    public AtomicLong i;
     public char j;
     public Character jJ;
     public BigInteger k;

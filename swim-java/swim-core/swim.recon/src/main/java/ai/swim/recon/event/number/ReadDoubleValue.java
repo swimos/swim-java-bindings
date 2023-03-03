@@ -1,10 +1,15 @@
 package ai.swim.recon.event.number;
 
+import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadEventVisitor;
 
-public class ReadDoubleValue extends ReadNumberValue<Double> {
+import java.util.Objects;
+
+public class ReadDoubleValue extends ReadEvent {
+  private final Double value;
+
   public ReadDoubleValue(Double value) {
-    super(value);
+    this.value = value;
   }
 
   @Override
@@ -13,7 +18,43 @@ public class ReadDoubleValue extends ReadNumberValue<Double> {
   }
 
   @Override
+  public boolean isPrimitive() {
+    return true;
+  }
+
+  @Override
   public <O> O visit(ReadEventVisitor<O> visitor) {
     return visitor.visitDouble(value);
+  }
+
+  public Double getValue() {
+    return value;
+  }
+
+  @Override
+  public String toString() {
+    return "ReadDoubleValue{" +
+        "value=" + value +
+        '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    ReadDoubleValue that = (ReadDoubleValue) o;
+    return Objects.equals(value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
   }
 }

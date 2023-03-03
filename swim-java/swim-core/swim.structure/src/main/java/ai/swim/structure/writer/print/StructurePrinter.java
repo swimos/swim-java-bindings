@@ -16,7 +16,7 @@ package ai.swim.structure.writer.print;
 
 import ai.swim.structure.writer.BodyWriter;
 import ai.swim.structure.writer.HeaderWriter;
-import ai.swim.structure.writer.StringMeta;
+import ai.swim.structure.writer.StringUtils;
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.SuppressingWriter;
 import ai.swim.structure.writer.Writable;
@@ -201,11 +201,11 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
 
   @Override
   public String writeText(String value) {
-    if (StringMeta.isIdentifier(value)) {
+    if (StringUtils.isIdentifier(value)) {
       writer.writeUnchecked(value);
       return "";
-    } else if (StringMeta.needsEscape(value)) {
-      value = StringMeta.escape(value);
+    } else if (StringUtils.needsEscape(value)) {
+      value = StringUtils.escape(value);
     }
 
     return write(String.format("\"%s\"", value));
