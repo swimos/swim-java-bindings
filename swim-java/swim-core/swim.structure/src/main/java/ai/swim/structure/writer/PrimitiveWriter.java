@@ -17,60 +17,25 @@ package ai.swim.structure.writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-/**
- * Base interface for structural writers to define how primitive values are written.
- *
- * @param <V> the type the writer produces.
- */
 public interface PrimitiveWriter<V> {
-  /**
-   * Write an extant value.
-   */
   V writeExtant();
 
-  /**
-   * Write an integer value.
-   */
   V writeInt(int value);
 
-  /**
-   * Write a long value.
-   */
   V writeLong(long value);
 
-  /**
-   * Write a float value.
-   */
   V writeFloat(float value);
 
-  /**
-   * Write a double value.
-   */
   V writeDouble(double value);
 
-  /**
-   * Write a boolean value.
-   */
   V writeBool(boolean value);
 
-  /**
-   * Write a big integer value.
-   */
   V writeBigInt(BigInteger value);
 
-  /**
-   * Write a big decimal value.
-   */
   V writeBigDecimal(BigDecimal value);
 
-  /**
-   * Write a text value.
-   */
   V writeText(String value);
 
-  /**
-   * Write a blob value.
-   */
   V writeBlob(byte[] value);
 
 }

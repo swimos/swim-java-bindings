@@ -29,7 +29,7 @@ public class ReadBlobValue extends ReadEvent {
     return true;
   }
 
-  public byte[] getValue() {
+  public byte[] value() {
     return this.value;
   }
 
@@ -60,6 +60,6 @@ public class ReadBlobValue extends ReadEvent {
 
   @Override
   public <O> O visit(ReadEventVisitor<O> visitor) {
-    return visitor.visitBlob(getValue());
+    return visitor.visitBlob(value());
   }
 }

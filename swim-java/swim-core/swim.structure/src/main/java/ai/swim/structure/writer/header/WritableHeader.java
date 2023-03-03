@@ -16,12 +16,6 @@ package ai.swim.structure.writer.header;
 
 import ai.swim.structure.writer.StructuralWriter;
 
-/**
- * A header which may be written into a structural type.
- */
 public interface WritableHeader {
-  /**
-   * Writes the header definition into the structural writer.
-   */
   <T> T writeInto(StructuralWriter<T> structuralWriter);
 }

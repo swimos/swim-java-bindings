@@ -23,35 +23,17 @@ import java.util.Objects;
 
 public class Header {
 
-  /**
-   * Interface for defining the various structures that a header can have; defined as a HList.
-   */
   public interface AppendHeaders {
-    /**
-     * The number of items that will be written into the attribute's body.
-     */
     int numItems();
 
-    /**
-     * Append a value into the attribute's body.
-     */
     <T, B extends BodyWriter<T>> B append(B writer);
   }
 
-  /**
-   * A header that has no slots.
-   */
   public static class NoSlots implements AppendHeaders {
-    /**
-     * Prepends a slot to the header.
-     */
     public static <V> HeaderSlots<V> prepend(String key, V value) {
       return new HeaderSlots<>(key, null, value, new NoSlots());
     }
 
-    /**
-     * Prepends a slot to the header.
-     */
     public static <V> HeaderSlots<V> prepend(String key, Writable<V> valueWriter, V value) {
       Objects.requireNonNull(valueWriter);
       return new HeaderSlots<>(key, valueWriter, value, new NoSlots());
@@ -68,9 +50,6 @@ public class Header {
     }
   }
 
-  /**
-   * A header that has N slots.
-   */
   public static class HeaderSlots<V> implements AppendHeaders {
     private final String key;
     private final V value;
@@ -89,16 +68,10 @@ public class Header {
       return tail.numItems() + (value == null ? 0 : 1);
     }
 
-    /**
-     * Prepends a slot to the header.
-     */
     public <N> HeaderSlots<N> prepend(String key, N value) {
       return new HeaderSlots<>(key, null, value, this);
     }
 
-    /**
-     * Prepends a slot to the header.
-     */
     public <N> HeaderSlots<N> prepend(String key, Writable<N> nWritable, N value) {
       return new HeaderSlots<>(key, nWritable, value, this);
     }
@@ -127,17 +100,11 @@ public class Header {
       return new HeaderWithBody<>(valueWriter, value, this);
     }
 
-    /**
-     * Completes the header where it only contains slots.
-     */
     public SimpleHeader<V> simple() {
       return new SimpleHeader<>(this);
     }
   }
 
-  /**
-   * A header that only contains slots.
-   */
   public static class SimpleHeader<V> implements WritableHeader {
     private final HeaderSlots<V> headerSlots;
 
@@ -152,9 +119,6 @@ public class Header {
     }
   }
 
-  /**
-   * A header followed by a body.
-   */
   public static class HeaderWithBody<V> implements WritableHeader {
     private final AppendHeaders slots;
     private final V value;

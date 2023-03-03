@@ -14,10 +14,5 @@
 
 package ai.swim.structure.writer;
 
-/**
- * Base interface for class-like writers.
- *
- * @param <T> the type of the class.
- */
 public interface StructuralWritable<T> extends Writable<T> {
 }

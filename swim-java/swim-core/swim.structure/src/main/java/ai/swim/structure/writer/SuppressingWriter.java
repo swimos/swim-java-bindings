@@ -17,9 +17,6 @@ package ai.swim.structure.writer;
 import java.io.IOException;
 import java.io.Writer;
 
-/**
- * A wrapper around a {@code Writer} that suppresses checked exceptions and instead throws runtime exceptions.
- */
 public class SuppressingWriter extends Writer {
   private final Writer delegate;
 

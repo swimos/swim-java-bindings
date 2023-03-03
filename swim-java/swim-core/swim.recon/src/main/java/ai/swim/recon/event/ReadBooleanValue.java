@@ -29,7 +29,7 @@ public class ReadBooleanValue extends ReadEvent {
     return true;
   }
 
-  public Boolean getValue() {
+  public Boolean value() {
     return this.value;
   }
 
@@ -64,6 +64,6 @@ public class ReadBooleanValue extends ReadEvent {
 
   @Override
   public <O> O visit(ReadEventVisitor<O> visitor) {
-    return visitor.visitBoolean(getValue());
+    return visitor.visitBoolean(value());
   }
 }

@@ -16,9 +16,6 @@ package ai.swim.structure.writer.print.strategy;
 
 import ai.swim.structure.writer.print.Padding;
 
-/**
- * A pretty-printing Recon strategy - useful for user-facing printing.
- */
 public class PrettyPrintStrategy implements PrintStrategy {
   private int level;
 

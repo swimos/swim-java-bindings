@@ -23,7 +23,7 @@ public final class ScalarRecognizer<T> {
     @Override
     public Byte feed(ReadEvent event) {
       if (event.isReadInt()) {
-        int intValue = ((ReadIntValue) event).getValue();
+        int intValue = ((ReadIntValue) event).value();
         byte byteValue = Integer.valueOf(intValue).byteValue();
         if ((byte) intValue == byteValue) {
           return byteValue;
@@ -31,7 +31,7 @@ public final class ScalarRecognizer<T> {
           return null;
         }
       } else if (event.isReadLong()) {
-        long longValue = ((ReadLongValue) event).getValue();
+        long longValue = ((ReadLongValue) event).value();
         byte byteValue = Long.valueOf(longValue).byteValue();
         if ((byte) longValue == byteValue) {
           return byteValue;
@@ -39,14 +39,14 @@ public final class ScalarRecognizer<T> {
           return null;
         }
       } else if (event.isReadBigInt()) {
-        BigInteger bigInteger = ((ReadBigIntValue) event).getValue();
+        BigInteger bigInteger = ((ReadBigIntValue) event).value();
         try {
           return bigInteger.byteValueExact();
         } catch (Exception ignored) {
           return null;
         }
       } else if (event.isReadBigDecimal()) {
-        BigDecimal value = ((ReadBigDecimalValue) event).getValue();
+        BigDecimal value = ((ReadBigDecimalValue) event).value();
         try {
           return value.byteValueExact();
         } catch (Exception ignored) {
@@ -63,23 +63,23 @@ public final class ScalarRecognizer<T> {
     public Integer feed(ReadEvent event) {
       if (event.isReadInt()) {
         ReadIntValue readIntValue = (ReadIntValue) event;
-        return readIntValue.getValue();
+        return readIntValue.value();
       } else if (event.isReadLong()) {
-        Long value = ((ReadLongValue) event).getValue();
+        Long value = ((ReadLongValue) event).value();
         try {
           return Math.toIntExact(value);
         } catch (Exception ignored) {
           return null;
         }
       } else if (event.isReadBigInt()) {
-        BigInteger value = ((ReadBigIntValue) event).getValue();
+        BigInteger value = ((ReadBigIntValue) event).value();
         try {
           return value.intValueExact();
         } catch (Exception ignored) {
           return null;
         }
       } else if (event.isReadBigDecimal()) {
-        BigDecimal value = ((ReadBigDecimalValue) event).getValue();
+        BigDecimal value = ((ReadBigDecimalValue) event).value();
         try {
           return value.intValueExact();
         } catch (Exception ignored) {
@@ -95,7 +95,7 @@ public final class ScalarRecognizer<T> {
     @Override
     public Short feed(ReadEvent event) {
       if (event.isReadLong()) {
-        Long value = ((ReadLongValue) event).getValue();
+        Long value = ((ReadLongValue) event).value();
         short shortValue = value.shortValue();
 
         if ((long) shortValue == shortValue) {
@@ -104,7 +104,7 @@ public final class ScalarRecognizer<T> {
           return null;
         }
       } else if (event.isReadInt()) {
-        Integer value = ((ReadIntValue) event).getValue();
+        Integer value = ((ReadIntValue) event).value();
         short shortValue = value.shortValue();
 
         if ((int) shortValue == value) {
@@ -113,14 +113,14 @@ public final class ScalarRecognizer<T> {
           return null;
         }
       } else if (event.isReadBigInt()) {
-        BigInteger value = ((ReadBigIntValue) event).getValue();
+        BigInteger value = ((ReadBigIntValue) event).value();
         try {
           return value.shortValueExact();
         } catch (Exception ignored) {
           return null;
         }
       } else if (event.isReadBigDecimal()) {
-        BigDecimal value = ((ReadBigDecimalValue) event).getValue();
+        BigDecimal value = ((ReadBigDecimalValue) event).value();
         try {
           return value.shortValueExact();
         } catch (Exception ignored) {
@@ -137,19 +137,19 @@ public final class ScalarRecognizer<T> {
     public Long feed(ReadEvent event) {
       if (event.isReadLong()) {
         ReadLongValue readLongValue = (ReadLongValue) event;
-        return readLongValue.getValue();
+        return readLongValue.value();
       } else if (event.isReadInt()) {
         ReadIntValue readIntValue = (ReadIntValue) event;
-        return (long) readIntValue.getValue();
+        return (long) readIntValue.value();
       } else if (event.isReadBigInt()) {
-        BigInteger value = ((ReadBigIntValue) event).getValue();
+        BigInteger value = ((ReadBigIntValue) event).value();
         try {
           return value.longValueExact();
         } catch (Exception ignored) {
           return null;
         }
       } else if (event.isReadBigDecimal()) {
-        BigDecimal value = ((ReadBigDecimalValue) event).getValue();
+        BigDecimal value = ((ReadBigDecimalValue) event).value();
         try {
           return value.longValueExact();
         } catch (Exception ignored) {
@@ -166,7 +166,7 @@ public final class ScalarRecognizer<T> {
     public Boolean feed(ReadEvent event) {
       if (event.isBoolean()) {
         ReadBooleanValue readBooleanValue = (ReadBooleanValue) event;
-        return readBooleanValue.getValue();
+        return readBooleanValue.value();
       } else {
         return null;
       }
@@ -178,9 +178,9 @@ public final class ScalarRecognizer<T> {
     public Float feed(ReadEvent event) {
       if (event.isReadFloat()) {
         ReadFloatValue floatValue = (ReadFloatValue) event;
-        return floatValue.getValue();
+        return floatValue.value();
       } else if (event.isReadDouble()) {
-        Double doubleValue = ((ReadDoubleValue) event).getValue();
+        Double doubleValue = ((ReadDoubleValue) event).value();
         float floatValue = doubleValue.floatValue();
 
         if ((double) floatValue == doubleValue) {
@@ -189,13 +189,13 @@ public final class ScalarRecognizer<T> {
           return null;
         }
       } else if (event.isReadInt()) {
-        Integer value = ((ReadIntValue) event).getValue();
+        Integer value = ((ReadIntValue) event).value();
         return value.floatValue();
       } else if (event.isReadLong()) {
-        Long value = ((ReadLongValue) event).getValue();
+        Long value = ((ReadLongValue) event).value();
         return value.floatValue();
       } else if (event.isReadBigInt()) {
-        BigInteger value = ((ReadBigIntValue) event).getValue();
+        BigInteger value = ((ReadBigIntValue) event).value();
 
         try {
           float floatValue = value.floatValue();
@@ -208,7 +208,7 @@ public final class ScalarRecognizer<T> {
           return null;
         }
       } else if (event.isReadBigDecimal()) {
-        BigDecimal value = ((ReadBigDecimalValue) event).getValue();
+        BigDecimal value = ((ReadBigDecimalValue) event).value();
 
         try {
           float floatValue = value.floatValue();
@@ -231,18 +231,18 @@ public final class ScalarRecognizer<T> {
     public Double feed(ReadEvent event) {
       if (event.isReadDouble()) {
         ReadDoubleValue doubleValue = (ReadDoubleValue) event;
-        return doubleValue.getValue();
+        return doubleValue.value();
       } else if (event.isReadFloat()) {
-        Float floatValue = ((ReadFloatValue) event).getValue();
+        Float floatValue = ((ReadFloatValue) event).value();
         return floatValue.doubleValue();
       } else if (event.isReadInt()) {
-        Integer value = ((ReadIntValue) event).getValue();
+        Integer value = ((ReadIntValue) event).value();
         return value.doubleValue();
       } else if (event.isReadLong()) {
-        Long value = ((ReadLongValue) event).getValue();
+        Long value = ((ReadLongValue) event).value();
         return value.doubleValue();
       } else if (event.isReadBigInt()) {
-        BigInteger value = ((ReadBigIntValue) event).getValue();
+        BigInteger value = ((ReadBigIntValue) event).value();
 
         try {
           double doubleValue = value.doubleValue();
@@ -255,7 +255,7 @@ public final class ScalarRecognizer<T> {
           return null;
         }
       } else if (event.isReadBigDecimal()) {
-        BigDecimal value = ((ReadBigDecimalValue) event).getValue();
+        BigDecimal value = ((ReadBigDecimalValue) event).value();
 
         try {
           double doubleValue = value.doubleValue();
@@ -278,7 +278,7 @@ public final class ScalarRecognizer<T> {
     public byte[] feed(ReadEvent event) {
       if (event.isBlob()) {
         ReadBlobValue readBlobValue = (ReadBlobValue) event;
-        return readBlobValue.getValue();
+        return readBlobValue.value();
       } else {
         return null;
       }
@@ -290,7 +290,7 @@ public final class ScalarRecognizer<T> {
     public String feed(ReadEvent event) {
       if (event.isText()) {
         ReadTextValue readTextValue = (ReadTextValue) event;
-        return readTextValue.getValue();
+        return readTextValue.value();
       } else {
         return null;
       }
@@ -301,7 +301,7 @@ public final class ScalarRecognizer<T> {
     @Override
     public Character feed(ReadEvent event) {
       if (event.isText()) {
-        String readTextValue = ((ReadTextValue) event).getValue();
+        String readTextValue = ((ReadTextValue) event).value();
 
         if (readTextValue.length() == 1) {
           return readTextValue.charAt(0);
@@ -319,20 +319,20 @@ public final class ScalarRecognizer<T> {
     public BigInteger feed(ReadEvent event) {
       if (event.isReadBigInt()) {
         ReadBigIntValue readBigIntValue = (ReadBigIntValue) event;
-        return readBigIntValue.getValue();
+        return readBigIntValue.value();
       } else if (event.isReadBigDecimal()) {
         ReadBigDecimalValue readBigDecimalValue = (ReadBigDecimalValue) event;
         try {
-          return readBigDecimalValue.getValue().toBigIntegerExact();
+          return readBigDecimalValue.value().toBigIntegerExact();
         } catch (Exception ignored) {
           return null;
         }
       } else if (event.isReadLong()) {
         ReadLongValue readLongValue = (ReadLongValue) event;
-        return BigInteger.valueOf(readLongValue.getValue());
+        return BigInteger.valueOf(readLongValue.value());
       } else if (event.isReadInt()) {
         ReadIntValue readIntValue = (ReadIntValue) event;
-        return BigInteger.valueOf((long) readIntValue.getValue());
+        return BigInteger.valueOf((long) readIntValue.value());
       } else {
         return null;
       }
@@ -344,22 +344,22 @@ public final class ScalarRecognizer<T> {
     public BigDecimal feed(ReadEvent event) {
       if (event.isReadBigInt()) {
         ReadBigIntValue readBigIntValue = (ReadBigIntValue) event;
-        return new BigDecimal(readBigIntValue.getValue());
+        return new BigDecimal(readBigIntValue.value());
       } else if (event.isReadBigDecimal()) {
         ReadBigDecimalValue readBigDecimalValue = (ReadBigDecimalValue) event;
-        return readBigDecimalValue.getValue();
+        return readBigDecimalValue.value();
       } else if (event.isReadLong()) {
         ReadLongValue readLongValue = (ReadLongValue) event;
-        return BigDecimal.valueOf(readLongValue.getValue());
+        return BigDecimal.valueOf(readLongValue.value());
       } else if (event.isReadInt()) {
         ReadIntValue readIntValue = (ReadIntValue) event;
-        return BigDecimal.valueOf((long) readIntValue.getValue());
+        return BigDecimal.valueOf((long) readIntValue.value());
       } else if (event.isReadFloat()) {
         ReadFloatValue readFloatValue = (ReadFloatValue) event;
-        return BigDecimal.valueOf(readFloatValue.getValue());
+        return BigDecimal.valueOf(readFloatValue.value());
       } else if (event.isReadDouble()) {
         ReadDoubleValue readDoubleValue = (ReadDoubleValue) event;
-        return BigDecimal.valueOf(readDoubleValue.getValue());
+        return BigDecimal.valueOf(readDoubleValue.value());
       } else {
         return null;
       }
@@ -370,17 +370,17 @@ public final class ScalarRecognizer<T> {
     @Override
     protected Number feed(ReadEvent event) {
       if (event.isReadInt()) {
-        return ((ReadIntValue) event).getValue();
+        return ((ReadIntValue) event).value();
       } else if (event.isReadLong()) {
-        return ((ReadLongValue) event).getValue();
+        return ((ReadLongValue) event).value();
       } else if (event.isReadFloat()) {
-        return ((ReadFloatValue) event).getValue();
+        return ((ReadFloatValue) event).value();
       } else if (event.isReadDouble()) {
-        return ((ReadDoubleValue) event).getValue();
+        return ((ReadDoubleValue) event).value();
       } else if (event.isReadBigInt()) {
-        return ((ReadBigIntValue) event).getValue();
+        return ((ReadBigIntValue) event).value();
       } else if (event.isReadBigDecimal()) {
-        return ((ReadBigDecimalValue) event).getValue();
+        return ((ReadBigDecimalValue) event).value();
       } else {
         return null;
       }

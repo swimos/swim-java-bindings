@@ -2,6 +2,8 @@ package ai.swim.codec.input;
 
 import ai.swim.codec.location.Location;
 
+import java.nio.ByteBuffer;
+
 /**
  * A non-blocking symbol reader that provides single and multiple symbol lookahead.
  * <p>
@@ -22,6 +24,10 @@ public abstract class Input {
    */
   public static Input done(Input input) {
     return new InputDone(input);
+  }
+
+  public static Input byteBuffer(ByteBuffer data) {
+    return new ByteBufferInput(data);
   }
 
   /**

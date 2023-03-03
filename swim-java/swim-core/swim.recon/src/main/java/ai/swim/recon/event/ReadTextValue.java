@@ -29,7 +29,7 @@ public class ReadTextValue extends ReadEvent {
     return true;
   }
 
-  public String getValue() {
+  public String value() {
     return this.value;
   }
 
@@ -64,6 +64,6 @@ public class ReadTextValue extends ReadEvent {
 
   @Override
   public <O> O visit(ReadEventVisitor<O> visitor) {
-    return visitor.visitText(getValue());
+    return visitor.visitText(value());
   }
 }

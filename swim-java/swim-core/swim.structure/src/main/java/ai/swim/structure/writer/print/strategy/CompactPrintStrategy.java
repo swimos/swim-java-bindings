@@ -16,9 +16,6 @@ package ai.swim.structure.writer.print.strategy;
 
 import ai.swim.structure.writer.print.Padding;
 
-/**
- * A compacted Recon printing strategy that adds no spaces or new lines between items, attributes and slots.
- */
 class CompactPrintStrategy implements PrintStrategy {
   @Override
   public Padding attrPadding() {

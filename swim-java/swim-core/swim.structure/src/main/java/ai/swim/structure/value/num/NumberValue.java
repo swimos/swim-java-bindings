@@ -22,19 +22,19 @@ import java.math.BigInteger;
 
 public abstract class NumberValue extends PrimitiveValue {
   public static NumberValue of(int value) {
-    return new IntNumber(value);
+    return new NumberI32(value);
   }
 
   public static NumberValue of(long value) {
-    return new LongNumber(value);
+    return new NumberI64(value);
   }
 
   public static NumberValue of(float value) {
-    return new FloatNumber(value);
+    return new NumberF32(value);
   }
 
   public static NumberValue of(double value) {
-    return new DoubleNumber(value);
+    return new NumberF64(value);
   }
 
   public static NumberValue of(BigInteger value) {

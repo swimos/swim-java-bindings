@@ -20,11 +20,6 @@ import ai.swim.structure.writer.proxy.WriterTypeParameter;
 
 import java.util.List;
 
-/**
- * A {@code Writable} for writing objects that extend {@code List<T>}.
- *
- * @param <T> the type of the {@code List}'s elements.
- */
 public class ListStructuralWritable<T> extends CollectionStructuralWritable<T, List<T>> {
   @AutoForm.TypedConstructor
   public ListStructuralWritable(WriterTypeParameter<T> listWritable) {

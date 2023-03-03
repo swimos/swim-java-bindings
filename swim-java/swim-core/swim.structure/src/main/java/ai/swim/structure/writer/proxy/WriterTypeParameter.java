@@ -19,31 +19,11 @@ import ai.swim.structure.writer.Writable;
 
 import java.util.function.Supplier;
 
-/**
- * A type parameter which can be used to initialise a {@code Writable} that has generic type parameters. Writer type
- * parameters are safe to be reused.
- *
- * @param <T> the type the {@code Writable} produces.
- */
 public abstract class WriterTypeParameter<T> extends TypeParameter<Writable<T>> {
-  /**
-   * Builds a new type parameter that will perform a lookup for {@code T} using the writer proxy.
-   *
-   * @param target class to lookup.
-   * @param <T>    the type the {@code Writable} produces.
-   * @return a new type parameter.
-   */
   public static <T> WriterTypeParameter<T> forClass(Class<T> target) {
     return forSupplier(() -> WriterProxy.getProxy().lookup(target));
   }
 
-  /**
-   * Builds a new type parameter that will invoke the provided supplier when the {@code Writable<T>} is required.
-   *
-   * @param supplier that returns a {@code Writable<T>}
-   * @param <T>      the type the {@code Writable} produces.
-   * @return a new type parameter.
-   */
   private static <T> WriterTypeParameter<T> forSupplier(Supplier<Writable<T>> supplier) {
     return new SupplierParameter<>(supplier);
   }

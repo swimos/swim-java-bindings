@@ -6,9 +6,9 @@ import ai.swim.structure.FieldRecognizingBuilder;
 import ai.swim.structure.RecognizingBuilder;
 import ai.swim.structure.recognizer.FirstOf;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.structural.BitSet;
 import ai.swim.structure.recognizer.structural.IndexFn;
 
-import java.util.BitSet;
 import java.util.function.Supplier;
 
 public class HeaderRecognizer<T> extends Recognizer<T> {
@@ -105,7 +105,7 @@ public class HeaderRecognizer<T> extends Recognizer<T> {
       return this;
     } else if (event.isText()) {
       ReadTextValue textValue = (ReadTextValue) event;
-      Integer idx = this.indexFn.selectIndex(HeaderFieldKey.slot(textValue.getValue()));
+      Integer idx = this.indexFn.selectIndex(HeaderFieldKey.slot(textValue.value()));
 
       if (idx != null) {
         if (!this.bitSet.get(idx)) {
@@ -114,7 +114,7 @@ public class HeaderRecognizer<T> extends Recognizer<T> {
 
           return this;
         } else {
-          return Recognizer.error(new RuntimeException("Duplicate key: " + textValue.getValue()));
+          return Recognizer.error(new RuntimeException("Duplicate key: " + textValue.value()));
         }
       }
     }

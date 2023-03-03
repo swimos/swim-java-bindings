@@ -41,19 +41,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-/**
- * A proxy for creating {@code Writable<T>} instances through a look-up of {@code Class<T>}.
- */
 public class WriterProxy {
 
-  /**
-   * A singleton instance of this proxy.
-   */
   private static final WriterProxy INSTANCE = new WriterProxy();
-
-  /**
-   * A thread-safe map of {@code Class<T> -> Writable<T>}.
-   */
   private final ConcurrentHashMap<Class<?>, WriterFactory<?>> writers;
 
   private WriterProxy() {
@@ -149,21 +139,10 @@ public class WriterProxy {
     }
   }
 
-  /**
-   * Returns the instance of the writer proxy.
-   */
   public static WriterProxy getProxy() {
     return WriterProxy.INSTANCE;
   }
 
-  /**
-   * Attempts to find a {@code Writable<T>} for the provided object.
-   *
-   * @param obj to lookup a {@code Writable<T>} for.
-   * @param <T> the type of the object.
-   * @return a matching writer or {@code null} if one is not registered.
-   * @throws NullPointerException if {@code obj} is null.
-   */
   public <T> Writable<T> lookupObject(T obj) {
     if (obj == null) {
       throw new NullPointerException();
@@ -173,19 +152,6 @@ public class WriterProxy {
     return lookupUntyped(clazz);
   }
 
-  /**
-   * Attempts to find a {@code Writable<T>} for the provided class.
-   * <p>
-   * This method serves as a convenience method between {@code lookupTyped} and {@code lookupUntyped}.
-   *
-   * @param clazz          to lookup.
-   * @param typeParameters optional type parameters to use to initialise the {@code Writable}.
-   * @param <T>            the type of the class.
-   * @return a matching writer.
-   * @throws WriterException          if a writable is not found.
-   * @throws NullPointerException     if {@code obj} is null.
-   * @throws IllegalArgumentException if {@code T} is not a structural writable and type parameters are provided.
-   */
   public <T> Writable<T> lookup(Class<T> clazz, WriterTypeParameter<?>... typeParameters) {
     if (clazz == null) {
       throw new NullPointerException();
@@ -198,16 +164,6 @@ public class WriterProxy {
     }
   }
 
-  /**
-   * Attempts to find an untyped {@code Writable<T>} for the provided class.
-   *
-   * @param clazz to lookup.
-   * @param <T>   the type of the class.
-   * @return a matching writer.
-   * @throws WriterException          if a writable is not found.
-   * @throws NullPointerException     if {@code obj} is null.
-   * @throws IllegalArgumentException if {@code T} is not a structural writable and type parameters are provided.
-   */
   @SuppressWarnings("unchecked")
   private <T> Writable<T> lookupUntyped(Class<T> clazz) {
     WriterFactory<T> factory = (WriterFactory<T>) this.writers.get(clazz);
@@ -219,17 +175,6 @@ public class WriterProxy {
     return factory.newInstance();
   }
 
-  /**
-   * Attempts to find a typed {@code Writable<T>} for the provided class.
-   *
-   * @param clazz          to lookup.
-   * @param typeParameters optional type parameters to use to initialise the {@code Writable}.
-   * @param <T>            the type of the class.
-   * @return a matching writer.
-   * @throws WriterException          if a writable is not found.
-   * @throws NullPointerException     if {@code obj} is null.
-   * @throws IllegalArgumentException if {@code T} is not a structural writable and type parameters are provided.
-   */
   @SuppressWarnings("unchecked")
   public <T> Writable<T> lookupTyped(Class<T> clazz, WriterTypeParameter<?>... typeParameters) {
     WriterFactory<T> factory = (WriterFactory<T>) this.writers.get(clazz);
@@ -283,17 +228,6 @@ public class WriterProxy {
     throw new WriterException("No writer found for class: " + clazz);
   }
 
-  /**
-   * Attempts to build an array {@code Writable} for the provided class.
-   *
-   * @param elementType    the type of the array's contents.
-   * @param typeParameters optional type parameters to use to initialise the {@code Writable}.
-   * @param <E>            the type of the array's contents
-   * @return a matching writer.
-   * @throws WriterException          if a writable is not found.
-   * @throws NullPointerException     if {@code obj} is null.
-   * @throws IllegalArgumentException if {@code T} is not a structural writable and type parameters are provided.
-   */
   public <E> Writable<E[]> arrayType(Class<E> elementType, WriterTypeParameter<?>... typeParameters) {
     if (elementType == null) {
       throw new NullPointerException();
@@ -310,15 +244,6 @@ public class WriterProxy {
     return new ArrayStructuralWritable<>(writable, elementType);
   }
 
-  /**
-   * Registers a new writable, overwriting the previous registration if one existed.
-   *
-   * @param clazz         the type that this {@code Writable} produces.
-   * @param writableClass the type of the {@code Writable} class.
-   * @param supplier      for creating new instances.
-   * @param <E>           the type that the {@code Writable} produces.
-   * @param <W>           the type of the {@code Writable}.
-   */
   public <E, W extends Writable<E>> void register(Class<E> clazz, Class<W> writableClass, Supplier<Writable<?>> supplier) {
     writers.put(clazz, WriterFactory.buildFrom(clazz, writableClass, supplier));
   }
