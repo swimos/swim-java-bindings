@@ -14,8 +14,6 @@
 
 package ai.swim.client.downlink.map;
 
-import ai.swim.lang.ffi.FfiIntrinsic;
-
 /**
  * A functional interface that takes no arguments and returns no value.
  */
@@ -23,6 +21,5 @@ public interface Routine {
   /**
    * Execute the routine.
    */
-  @FfiIntrinsic
   void exec();
 }

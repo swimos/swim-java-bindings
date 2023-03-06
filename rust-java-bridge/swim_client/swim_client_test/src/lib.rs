@@ -48,6 +48,7 @@ client_fn! {
         _class,
         ptr: *mut SwimClient,
     ) {
+        println!("Dropping swim client");
         unsafe {
             drop(Box::from_raw(ptr));
         }

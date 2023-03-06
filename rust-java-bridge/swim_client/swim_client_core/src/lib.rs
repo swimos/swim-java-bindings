@@ -68,7 +68,7 @@ impl SwimClient {
             .expect("Failed to build Tokio runtime");
 
         let (stop_tx, downlinks_handle) = runtime.block_on(async move {
-            let (handle, stop_tx) = start_runtime(transport);
+            let (handle, stop_tx) = start_runtime(transport, false);
             (stop_tx, Arc::new(handle))
         });
 
@@ -95,8 +95,10 @@ impl SwimClient {
                 subprotocols: Default::default(),
             };
             let networking = TokioPlainTextNetworking::new(Arc::new(Resolver::new().await));
-            let (handle, stop_tx) =
-                start_runtime(Transport::new(networking, websockets, REMOTE_BUFFER_SIZE));
+            let (handle, stop_tx) = start_runtime(
+                Transport::new(networking, websockets, REMOTE_BUFFER_SIZE),
+                false,
+            );
 
             (stop_tx, Arc::new(handle))
         });

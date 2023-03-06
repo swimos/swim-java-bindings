@@ -113,7 +113,7 @@ fn create_io() -> (Transport<MockExternalConnections, MockWs>, Server) {
         )],
         [("127.0.0.1:80".parse().unwrap(), client_stream)],
     );
-    let ws = MockWs::new([("127.0.0.1".to_string(), WsAction::Open)]);
+    let ws = MockWs::new([("ws://127.0.0.1/".to_string(), WsAction::Open)]);
     let transport = Transport::new(ext, ws, non_zero_usize!(128));
     let server = Server::new(server_stream);
     (transport, server)

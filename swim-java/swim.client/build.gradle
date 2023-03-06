@@ -3,7 +3,7 @@ ext.moduleName = 'swim.client'
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 ext {
-    ext.moduleName = 'swim.bridge'
+    ext.moduleName = 'swim.client'
 
     bridge_dir = "../../rust-java-bridge"
     target_dir = bridge_dir.concat('/target')
@@ -95,7 +95,6 @@ application {
 }
 
 dependencies {
-    api project(':swim-bridge')
     api project(':swim-codec')
     api project(':swim-recon')
     api project(':swim-lang-ffi')

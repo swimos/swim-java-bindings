@@ -14,10 +14,7 @@
 
 package ai.swim.client.lifecycle;
 
-import ai.swim.lang.ffi.FfiIntrinsic;
-
 @FunctionalInterface
 public interface OnSynced<T> {
-  @FfiIntrinsic
   void onSynced(T value);
 }

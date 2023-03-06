@@ -14,25 +14,19 @@
 
 package ai.swim.client;
 
-import ai.swim.lang.ffi.FfiIntrinsic;
-
 
 public class SwimClientException extends Exception {
-  @FfiIntrinsic
   public SwimClientException() {
   }
 
-  @FfiIntrinsic
   public SwimClientException(String message) {
     super(message);
   }
 
-  @FfiIntrinsic
   public SwimClientException(String message, Throwable cause) {
     super(message, cause);
   }
 
-  @FfiIntrinsic
   public SwimClientException(Throwable cause) {
     super(cause);
   }

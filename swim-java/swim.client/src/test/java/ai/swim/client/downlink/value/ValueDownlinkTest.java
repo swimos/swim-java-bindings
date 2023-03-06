@@ -272,7 +272,7 @@ class ValueDownlinkTest extends FfiTest {
         valueDownlink,
         stoppedBarrier,
         ffiBarrier,
-        "ws://127.0.0.1",
+        "ws://127.0.0.1/",
         "node",
         "lane",
         state.wrapOnEvent(lifecycle.getOnEvent()),

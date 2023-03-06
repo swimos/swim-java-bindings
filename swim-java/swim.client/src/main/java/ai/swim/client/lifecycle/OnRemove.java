@@ -14,12 +14,9 @@
 
 package ai.swim.client.lifecycle;
 
-import ai.swim.lang.ffi.FfiIntrinsic;
-
 import java.util.Map;
 
 @FunctionalInterface
 public interface OnRemove<K, V> {
-  @FfiIntrinsic
   void onRemove(K key, Map<K, V> map, V removed);
 }
