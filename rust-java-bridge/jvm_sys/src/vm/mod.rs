@@ -43,9 +43,9 @@ impl From<&jni::errors::Error> for ErrorDiscriminate {
 }
 
 #[cfg(windows)]
-const LINE_ENDING: &'static str = "\r\n";
+const LINE_ENDING: &str = "\r\n";
 #[cfg(not(windows))]
-const LINE_SEPARATOR: &'static str = "\n";
+const LINE_SEPARATOR: &str = "\n";
 
 #[derive(Debug)]
 struct StringError(String);
@@ -141,9 +141,9 @@ where
 
 #[inline(never)]
 fn handle_exception(location: &'static Location, env: &JNIEnv) -> SpannedError {
-    const EXCEPTION_MSG: &'static str = "Failed to get exception message";
-    const CAUSE_MSG: &'static str = "Failed to get exception cause";
-    const STACK_TRACE_MSG: &'static str = "Failed to get stacktrace";
+    const EXCEPTION_MSG: &str = "Failed to get exception message";
+    const CAUSE_MSG: &str = "Failed to get exception cause";
+    const STACK_TRACE_MSG: &str = "Failed to get stacktrace";
 
     // Unpack the exception's cause and message so that they can be returned to the callee to be
     // re-thrown as a SwimClientException.
@@ -223,7 +223,7 @@ pub fn set_panic_hook() {
             let name = thread.name().unwrap_or("<unnamed>");
             let mut out = std::io::stderr();
 
-            let cause = format!("{}", cause);
+            let cause = cause.to_string();
             let cause_fmt = if cause.is_empty() {
                 "".to_string()
             } else {

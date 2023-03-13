@@ -14,10 +14,12 @@
 
 extern crate core;
 
+use std::panic;
+
 use bytes::BytesMut;
+use client_runtime::RemotePath;
 use jni::objects::JString;
 use jni::sys::{jbyteArray, jobject};
-use std::panic;
 use url::Url;
 
 use jvm_sys::vm::set_panic_hook;
@@ -134,8 +136,10 @@ client_fn! {
         };
 
         let make_global_ref = |obj, name| {
+            // this closure is only called with arguments that have already had a null check
+            // performed, so the unwrap is safe
             new_global_ref(&env, obj)
-                .expect(&format!(
+                .unwrap_or_else(|_| panic!(
                     "Failed to create new global reference for {}",
                     name
                 ))
@@ -157,11 +161,8 @@ client_fn! {
                 make_global_ref(downlink_ref, "downlink object"),
                 make_global_ref(stopped_barrier, "stopped barrier"),
                 downlink,
-                host,
-                node,
-                lane,
+                RemotePath::new(host.to_string(), node, lane)
             ),
-            ()
         };
     }
 }

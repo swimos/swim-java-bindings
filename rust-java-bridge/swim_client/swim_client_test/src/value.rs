@@ -12,8 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::io::ErrorKind;
+use std::net::SocketAddr;
+use std::num::NonZeroUsize;
+use std::ptr::null_mut;
+use std::sync::Arc;
+
 use bytes::BytesMut;
-use client_runtime::Transport;
+use client_runtime::{RemotePath, Transport};
 use fixture::{MockClientConnections, MockWs, Server, WsAction};
 use futures_util::future::try_join3;
 use futures_util::SinkExt;
@@ -21,11 +27,6 @@ use jni::errors::Error;
 use jni::objects::{GlobalRef, JObject, JString};
 use jni::sys::{jbyteArray, jobject};
 use jni::JNIEnv;
-use std::io::ErrorKind;
-use std::net::SocketAddr;
-use std::num::NonZeroUsize;
-use std::ptr::null_mut;
-use std::sync::Arc;
 use swim_api::downlink::{Downlink, DownlinkConfig};
 use swim_api::protocol::downlink::{DownlinkNotification, DownlinkNotificationEncoder};
 use swim_form::Form;
@@ -51,7 +52,7 @@ use swim_client_core::downlink::DownlinkConfigurations;
 use swim_client_core::downlink::ErrorHandlingConfig;
 use swim_client_core::{client_fn, SwimClient};
 
-#[derive(Clone, Debug, PartialEq, Form)]
+#[derive(Clone, Debug, PartialEq, Eq, Form)]
 #[form_root(::swim_form)]
 pub enum Notification {
     #[form(tag = "linked")]
@@ -106,7 +107,7 @@ client_fn! {
 
         let vm = Arc::new(env.get_java_vm().unwrap());
         let downlink = FfiValueDownlink::create(
-            vm.clone(),
+            vm,
             on_event,
             on_linked,
             on_set,
@@ -283,9 +284,7 @@ client_fn! {
                 make_global_ref(&env, downlink_ref, "downlink object reference"),
                 make_global_ref(&env, stopped_barrier_ref, "stopped barrier"),
                 downlink,
-                host.clone(),
-                node.clone(),
-                lane.clone(),
+                RemotePath::new(host.to_string(), node.clone(), lane.clone())
             )
         };
 
@@ -301,7 +300,7 @@ client_fn! {
                 .unwrap();
 
         let mut countdown_latch =
-            move |env: &JNIEnv, global_ref| match countdown.invoke(&env, &global_ref, &[]) {
+            move |env: &JNIEnv, global_ref| match countdown.invoke(env, &global_ref, &[]) {
                 Ok(_) => {}
                 Err(Error::JavaException) => {
                     let throwable = env.exception_occurred().unwrap();
@@ -326,11 +325,8 @@ client_fn! {
 }
 
 fn make_global_ref(env: &JNIEnv, obj: jobject, name: &str) -> GlobalRef {
-    new_global_ref(&env, obj)
-        .expect(&format!(
-            "Failed to create new global reference for {}",
-            name
-        ))
+    new_global_ref(env, obj)
+        .unwrap_or_else(|_| panic!("Failed to create new global reference for {}", name))
         .unwrap()
 }
 
@@ -393,9 +389,7 @@ client_fn! {
                 make_global_ref(&env, downlink_ref, "downlink object reference"),
                 make_global_ref(&env, stopped_barrier_ref, "stopped barrier"),
                 downlink,
-                "ws://127.0.0.1".parse().unwrap(),
-                "node".to_string(),
-                "lane".to_string(),
+                RemotePath::new("ws://127.0.0.1", "node", "lane")
             )
         };
 

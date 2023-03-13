@@ -40,6 +40,7 @@ pub fn get_env_shared_expect(vm: &Arc<JavaVM>) -> JNIEnv {
     get_env_shared(vm).expect("Failed to get JNI environment interface")
 }
 
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn new_global_ref(env: &JNIEnv, ptr: jobject) -> Result<Option<GlobalRef>, Error> {
     if ptr.is_null() {
         Ok(None)

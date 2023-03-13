@@ -43,7 +43,6 @@ use swim_utilities::trigger::promise;
 use tokio::net::TcpStream;
 use tokio::runtime::{Builder, Handle, Runtime};
 use tokio::task::JoinHandle;
-use url::Url;
 
 use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
 use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
@@ -213,15 +212,14 @@ impl ClientHandle {
         self.tokio_handle.clone()
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn spawn_value_downlink(
         &self,
         config: DownlinkConfigurations,
         downlink_ref: GlobalRef,
         stopped_barrier: GlobalRef,
         downlink: FfiValueDownlink,
-        host: Url,
-        node: String,
-        lane: String,
+        path: RemotePath,
     ) -> Result<(), ()> {
         let ClientHandle {
             vm,
@@ -236,7 +234,7 @@ impl ClientHandle {
             options,
         } = config;
         let result = tokio_handle.block_on(downlinks_handle.run_downlink(
-            RemotePath::new(host.to_string(), node.as_str(), lane.as_str()),
+            path,
             runtime_config,
             downlink_config,
             options,
@@ -292,10 +290,10 @@ fn spawn_monitor(
 fn notify_stopped(env: &JNIEnv, stopped_barrier: GlobalRef) {
     let mut countdown =
         JavaObjectMethodDef::new("java/util/concurrent/CountDownLatch", "countDown", "()V")
-            .initialise(&env)
+            .initialise(env)
             .expect("Failed to initialise countdown latch method");
 
-    if let Err(e) = countdown.invoke(&env, &stopped_barrier, &[]) {
+    if let Err(e) = countdown.invoke(env, &stopped_barrier, &[]) {
         env.fatal_error(&e.to_string());
     }
 }

@@ -28,6 +28,7 @@ use jvm_sys::{jvm_tryf, npch};
 /// that waits for 'fut' to complete and then notifies 'barrier' that the task has completed; this
 /// task must be run as its own Tokio task in case 'fut' panics as it is not possible to catch an
 /// unwind due to uses of &mut T by readers and writers.
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn run_test<F>(env: JNIEnv, barrier: jobject, fut: F) -> *mut Runtime
 where
     F: Future + Send + 'static,

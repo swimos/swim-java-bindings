@@ -50,7 +50,7 @@ impl JavaMethod {
         method: JavaObjectMethodDef,
     ) -> Result<JavaMethod, Error> {
         Ok(JavaMethod {
-            ptr: new_global_ref(&env, ptr)?,
+            ptr: new_global_ref(env, ptr)?,
             def: MethodDefinition::Unit(method),
         })
     }
@@ -121,11 +121,11 @@ impl ValueDownlinkVTable {
         on_unlinked: jobject,
     ) -> Result<ValueDownlinkVTable, Error> {
         Ok(ValueDownlinkVTable {
-            on_linked: JavaMethod::for_method(&env, on_linked, ON_LINKED)?,
-            on_synced: JavaMethod::for_method(&env, on_synced, CONSUMER_ACCEPT)?,
-            on_event: JavaMethod::for_method(&env, on_event, CONSUMER_ACCEPT)?,
-            on_set: JavaMethod::for_method(&env, on_set, CONSUMER_ACCEPT)?,
-            on_unlinked: JavaMethod::for_method(&env, on_unlinked, ON_UNLINKED)?,
+            on_linked: JavaMethod::for_method(env, on_linked, ON_LINKED)?,
+            on_synced: JavaMethod::for_method(env, on_synced, CONSUMER_ACCEPT)?,
+            on_event: JavaMethod::for_method(env, on_event, CONSUMER_ACCEPT)?,
+            on_set: JavaMethod::for_method(env, on_set, CONSUMER_ACCEPT)?,
+            on_unlinked: JavaMethod::for_method(env, on_unlinked, ON_UNLINKED)?,
         })
     }
 

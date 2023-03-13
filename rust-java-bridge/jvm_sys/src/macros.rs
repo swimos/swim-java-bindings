@@ -47,11 +47,11 @@ macro_rules! jni_try {
             $ret
         )
     };
-    ($expr:expr, $ret:expr $(,)?) => {
+    ($expr:expr, $($ret:expr)? $(,)?) => {
         match $expr {
             Ok(()) => {}
             Err(()) => {
-                return $ret;
+                return $($ret)?;
             }
         }
     };
@@ -174,9 +174,8 @@ where
     where
         W: Write,
     {
-        if let Err(_) = result {
+        if result.is_err() {
             let _r = write!(writer, "{on_err}");
-            println!("{:?}", _r);
         }
     }
 

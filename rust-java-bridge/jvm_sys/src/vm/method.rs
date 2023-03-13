@@ -64,7 +64,7 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
         let args = args.iter().map(|v| v.to_jni()).collect::<Vec<_>>();
         env.call_method_unchecked(
             object,
-            JMethodID::from(*method_id),
+            *method_id,
             signature.ret.clone(),
             &args,
         )
