@@ -2,8 +2,12 @@ ext.moduleName = 'swim-client'
 
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
+ext.nativeProperties = new Properties();
+ext.nativeProperties.load(file(project.projectDir.absolutePath + "/native.properties").newReader())
+
 ext {
     bridge_dir = "../../rust-java-bridge"
+    client_dir = bridge_dir.concat('/swim_client')
     target_dir = bridge_dir.concat('/target')
 
     if (DefaultNativePlatform.currentOperatingSystem.isMacOsX()) {
@@ -18,14 +22,14 @@ graalvmNative {
     binaries {
         main {
             compileRust(true)
-            def library_path = '-Djava.library.path='.concat(release_dir)
+            def library_path = '-Djava.library.path='.concat(bridge_dir)
             runtimeArgs.add(library_path)
         }
         test {
             compileRust(false)
             buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
 
-            def library_path = '-Djava.library.path='.concat(debug_dir)
+            def library_path = '-Djava.library.path='.concat(bridge_dir)
             runtimeArgs.add(library_path)
         }
     }
@@ -53,6 +57,19 @@ def compileRust(release) {
             args.add('x86_64-apple-darwin')
         }
 
+        def features = []
+        if (ext.nativeProperties.tls.toBoolean()) {
+            features.add('tls')
+        }
+        if (ext.nativeProperties.deflate.toBoolean()) {
+            features.add('deflate')
+        }
+
+        if (!features.isEmpty()) {
+            args.add('--features')
+            args.addAll(features.join(','))
+        }
+
         if (release) {
             args.add('--release')
         }
@@ -77,7 +94,7 @@ task cleanRust {
     doLast {
         exec {
             println "cleaning"
-            workingDir("../../../rust-java-bridge/")
+            workingDir(bridge_dir)
             commandLine 'cargo', 'clean'
         }
     }

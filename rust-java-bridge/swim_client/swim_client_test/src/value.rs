@@ -12,19 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::io::ErrorKind;
-use std::ptr::null_mut;
-use std::sync::Arc;
-
 use bytes::BytesMut;
 use client_runtime::Transport;
-use fixture::{MockExternalConnections, MockWs, Server, WsAction};
+use fixture::{MockClientConnections, MockWs, Server, WsAction};
 use futures_util::future::try_join3;
 use futures_util::SinkExt;
 use jni::errors::Error;
 use jni::objects::{GlobalRef, JObject, JString};
 use jni::sys::{jbyteArray, jobject};
 use jni::JNIEnv;
+use std::io::ErrorKind;
+use std::net::SocketAddr;
+use std::num::NonZeroUsize;
+use std::ptr::null_mut;
+use std::sync::Arc;
 use swim_api::downlink::{Downlink, DownlinkConfig};
 use swim_api::protocol::downlink::{DownlinkNotification, DownlinkNotificationEncoder};
 use swim_form::Form;
@@ -32,10 +33,10 @@ use swim_model::address::Address;
 use swim_model::{Blob, Text, Value};
 use swim_recon::parser::{parse_recognize, Span};
 use swim_recon::printer::print_recon_compact;
-use swim_runtime::net::{Scheme, SchemeHostPort, SchemeSocketAddr};
 use swim_utilities::io::byte_channel::byte_channel;
 use swim_utilities::non_zero_usize;
 use tokio::io::{duplex, AsyncReadExt};
+use tokio::runtime::Builder;
 use tokio::runtime::Runtime;
 use tokio_util::codec::FramedWrite;
 use url::Url;
@@ -82,6 +83,9 @@ pub enum Notification {
         body: Option<Value>,
     },
 }
+
+const DEFAULT_BUFFER_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(64) };
+const DEFAULT_ERROR_MODE: ErrorHandlingConfig = ErrorHandlingConfig::Report;
 
 client_fn! {
     downlink_value_ValueDownlinkTest_lifecycleTest(
@@ -202,14 +206,12 @@ client_fn! {
     }
 }
 
-fn create_io() -> (Transport<MockExternalConnections, MockWs>, Server) {
+fn create_io() -> (Transport<MockClientConnections, MockWs>, Server) {
     let (client_stream, server_stream) = duplex(128);
-    let ext = MockExternalConnections::new(
-        [(
-            SchemeHostPort::new(Scheme::Ws, "127.0.0.1".to_string(), 80),
-            SchemeSocketAddr::new(Scheme::Ws, "127.0.0.1:80".parse().unwrap()),
-        )],
-        [("127.0.0.1:80".parse().unwrap(), client_stream)],
+    let sock_addr: SocketAddr = "127.0.0.1:80".parse().unwrap();
+    let ext = MockClientConnections::new(
+        [(("127.0.0.1".to_string(), 80), sock_addr)],
+        [(sock_addr, client_stream)],
     );
     let ws = MockWs::new([("127.0.0.1".to_string(), WsAction::Open)]);
     let transport = Transport::new(ext, ws, non_zero_usize!(128));
@@ -235,10 +237,21 @@ client_fn! {
     ) -> SwimClient {
         set_panic_hook();
 
+        let runtime = Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to build Tokio runtime");
+
         let (transport, mut server) = create_io();
 
-        let client =
-            SwimClient::with_transport(env.get_java_vm().expect("Failed to get Java VM"), transport);
+        let client = SwimClient::with_transport(
+            runtime,
+            env.get_java_vm().expect("Failed to get Java VM"),
+                transport,
+            DEFAULT_BUFFER_SIZE,
+            DEFAULT_BUFFER_SIZE,
+            DEFAULT_ERROR_MODE
+        );
         let handle = client.handle();
         let downlink = jni_try! {
             env,
@@ -344,9 +357,20 @@ client_fn! {
     ) -> SwimClient {
         set_panic_hook();
 
+        let runtime = Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to build Tokio runtime");
+
         let (transport, mut server) = create_io();
-        let client =
-            SwimClient::with_transport(env.get_java_vm().expect("Failed to get Java VM"), transport);
+        let client = SwimClient::with_transport(
+            runtime,
+            env.get_java_vm().expect("Failed to get Java VM"),
+            transport,
+            DEFAULT_BUFFER_SIZE,
+            DEFAULT_BUFFER_SIZE,
+            DEFAULT_ERROR_MODE
+        );
         let handle = client.handle();
         let downlink = jni_try! {
             env,

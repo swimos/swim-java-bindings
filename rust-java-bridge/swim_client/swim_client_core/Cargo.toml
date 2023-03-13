@@ -3,6 +3,12 @@ name = "swim_client_core"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+tls = ["swim_tls"]
+deflate = ["ratchet/deflate", "client_runtime/deflate"]
+trust_dns = ["swim_runtime/trust_dns"]
+
 [dependencies]
 client_runtime = { package = "runtime", path = "../../../swim-rust/client/runtime" }
 swim_downlink = { path = "../../../swim-rust/swim_downlink" }
@@ -13,6 +19,7 @@ swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["byte
 swim_recon = { path = "../../../swim-rust/api/formats/swim_recon" }
 ratchet = { package = "ratchet_rs", version = "0.2.0" }
 swim_runtime = { path = "../../../swim-rust/runtime/swim_runtime" }
+swim_tls = { path = "../../../swim-rust/runtime/swim_tls", optional = true }
 
 jni = { workspace = true }
 futures = { workspace = true }

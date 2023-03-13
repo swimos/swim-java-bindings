@@ -25,7 +25,7 @@ use jvm_sys::vm::utils::new_global_ref;
 use jvm_sys::{jni_try, npch, parse_string};
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
-use swim_client_core::{client_fn, ClientHandle, SwimClient};
+use swim_client_core::{client_fn, ClientConfig, ClientHandle, SwimClient};
 
 client_fn! {
     SwimClient_startClient(
@@ -34,6 +34,7 @@ client_fn! {
     ) -> SwimClient {
         let client = Box::leak(Box::new(SwimClient::new(
             env.get_java_vm().expect("Failed to get Java VM"),
+            ClientConfig::default()
         )));
 
         set_panic_hook();
