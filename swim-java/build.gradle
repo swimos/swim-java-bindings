@@ -5,14 +5,10 @@ plugins {
     id 'checkstyle'
 }
 
-group 'ai.swim'
-version '1.0-SNAPSHOT'
-
 repositories {
     mavenCentral()
     gradlePluginPortal()
 }
-
 
 repositories {
     mavenCentral()

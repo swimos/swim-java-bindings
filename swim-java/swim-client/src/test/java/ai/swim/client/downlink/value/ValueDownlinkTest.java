@@ -13,7 +13,6 @@
 // limitations under the License.
 
 package ai.swim.client.downlink.value;
-
 import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.DownlinkConfig;
 import ai.swim.client.lifecycle.OnLinked;

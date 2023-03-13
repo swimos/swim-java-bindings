@@ -1,10 +1,10 @@
-ext.moduleName = 'swim.codec'
+ext.moduleName = 'swim-util'
 
 dependencies {
+
 }
 
 repositories {
     mavenCentral()
 }
-
 

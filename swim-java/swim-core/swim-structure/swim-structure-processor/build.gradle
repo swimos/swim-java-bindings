@@ -1,4 +1,4 @@
-ext.moduleName = 'swim.structure.processor'
+ext.moduleName = 'swim-structure-processor'
 
 dependencies {
     implementation project(':swim-structure-annotations')

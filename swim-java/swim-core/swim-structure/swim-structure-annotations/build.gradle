@@ -1,4 +1,4 @@
-ext.moduleName = 'swim.structure.annotations'
+ext.moduleName = 'swim-structure-annotations'
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'

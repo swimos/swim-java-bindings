@@ -1,4 +1,4 @@
-ext.moduleName = 'swim.recon'
+ext.moduleName = 'swim-recon'
 
 dependencies {
     api project(':swim-codec')
