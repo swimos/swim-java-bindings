@@ -5,6 +5,9 @@ members = [
     "swim_client",
     "swim_client/swim_client_core",
     "swim_client/swim_client_test",
+    "bytebridge/bytebridge",
+    "bytebridge/bytebridge_derive",
+    "bytebridge/test/*"
 ]
 
 [workspace.dependencies]

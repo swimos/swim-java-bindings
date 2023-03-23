@@ -1,0 +1,15 @@
+[package]
+name = "bytebridge_derive"
+version = "0.1.0"
+authors = ["Swim Inc. developers info@swim.ai"]
+edition = "2021"
+
+
+[dependencies]
+proc-macro2 = "1.0"
+syn = { version = "1.0", features = ["full", "extra-traits"] }
+quote = "1.0.3"
+thiserror = "1.0"
+swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["errors"] }
+heck = "0.4.1"
+lazy_static = "1.4.0"

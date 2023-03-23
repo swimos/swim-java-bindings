@@ -119,6 +119,14 @@ public class DownlinkConfig {
   }
 
   /**
+   *
+   * @return
+   */
+  public int getAttachmentQueueSize() {
+    return attachmentQueueSize;
+  }
+
+  /**
    * Sets whether the downlink should attempt to keep linked.
    */
   public DownlinkConfig setKeepLinked(boolean keepLinked) {
