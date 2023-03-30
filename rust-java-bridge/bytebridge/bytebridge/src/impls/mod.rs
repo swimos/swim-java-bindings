@@ -11,8 +11,18 @@ mod tests;
 
 /// Returns Ok(()) if the buffer has at least `cnt` bytes available or
 /// Err(FromBytesError::InsufficientData) if it does not.
-fn has(bytes: &BytesMut, cnt: usize) -> Result<(), FromBytesError> {
+pub fn has(bytes: &BytesMut, cnt: usize) -> Result<(), FromBytesError> {
     if bytes.remaining() >= cnt {
+        Ok(())
+    } else {
+        Err(FromBytesError::InsufficientData)
+    }
+}
+
+/// Returns Ok(()) if the buffer has at least `size_of::<T>()` bytes available or
+/// Err(FromBytesError::InsufficientData) if it does not.
+pub fn has_size_of<T>(bytes: &BytesMut) -> Result<(), FromBytesError> {
+    if bytes.remaining() >= size_of::<T>() {
         Ok(())
     } else {
         Err(FromBytesError::InsufficientData)

@@ -3,5 +3,8 @@ name = "simple"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+bytebridge = { path = "../../bytebridge" }
+
 [build-dependencies]
-bytebridge = { path = "../../bytebridge", features = ["derive"] }
+bytebridge = { path = "../../bytebridge", features = ["derive_java"] }

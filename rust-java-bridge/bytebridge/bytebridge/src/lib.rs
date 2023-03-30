@@ -1,11 +1,16 @@
 use std::str::Utf8Error;
 
-use bytes::BytesMut;
+pub use bytes::{BufMut, BytesMut};
 
 mod impls;
 
-#[cfg(feature = "derive")]
+#[cfg(feature = "derive_java")]
+pub use bytebridge_derive_java::*;
+
+#[doc(hidden)]
 pub use bytebridge_derive::*;
+
+pub use impls::has_size_of;
 
 /// Trait for defining a transformation between an object and its byte representation.
 pub trait ByteCodec {

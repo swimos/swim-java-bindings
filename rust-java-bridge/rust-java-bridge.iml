@@ -17,8 +17,10 @@
       <sourceFolder url="file://$MODULE_DIR$/swim_client/swim_client_sys/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/bytebridge/bytebridge/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/bytebridge/bytebridge_derive/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/bytebridge/bytebridge_derive_java/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/bytebridge/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/bytebridge/test/simple/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/bytebridge/bytebridge_derive/internals/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

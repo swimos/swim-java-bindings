@@ -6,13 +6,12 @@ edition = "2021"
 
 [features]
 default = []
-derive = ["bytebridge_derive"]
+derive_java = ["bytebridge_derive_java"]
 
 [dependencies]
-bytebridge_derive = { path = "../bytebridge_derive", optional = true }
+bytebridge_derive_java = { path = "../bytebridge_derive_java", optional = true }
+bytebridge_derive = { path = "../bytebridge_derive" }
 bytes = { workspace = true }
-bincode = "*"
-serde = {version = "*", features = ["derive"]}
-serde_json = "*"
+
 [dev-dependencies]
-paste = "1.0.11"
+paste = { workspace = true }
