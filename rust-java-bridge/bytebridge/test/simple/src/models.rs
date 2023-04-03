@@ -14,6 +14,7 @@
 pub enum EnumVar {
     #[bytebridge(rename = "AVarClass")]
     AVar {
+        #[bytebridge(range)]
         a: i32,
         b: i32,
     },

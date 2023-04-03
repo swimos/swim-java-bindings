@@ -21,6 +21,7 @@
       <sourceFolder url="file://$MODULE_DIR$/bytebridge/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/bytebridge/test/simple/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/bytebridge/bytebridge_derive/internals/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/bytebridge/bytebridge/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

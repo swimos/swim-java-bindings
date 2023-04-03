@@ -2,11 +2,13 @@ use crate::bindings::java::writer::Writer;
 use crate::docs::Documentation;
 use heck::AsUpperCamelCase;
 use lazy_static::lazy_static;
+use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::io;
-use syn::Lit;
+use syn::__private::IntoSpans;
+use syn::{Error, Lit};
 
 pub const BUFFER_SIZE_VAR: &str = "__buf__size";
 pub const BUFFER_VAR: &str = "__buf";
@@ -14,7 +16,7 @@ pub const AS_BYTES_METHOD: &str = "asBytes";
 
 lazy_static! {
     pub static ref JAVA_KEYWORDS: HashSet<&'static str> = {
-        let mut set = HashSet::from([
+        let set = HashSet::from([
             "abstract",
             "assert",
             "boolean",
@@ -166,6 +168,35 @@ impl JavaType {
         }
     }
 
+    pub fn as_non_zero(&self, span: Span) -> Result<Constraint, Error> {
+        match self {
+            JavaType::Primitive(PrimitiveJavaType::Int | PrimitiveJavaType::Long) => {
+                Ok(Constraint::NonZero)
+            }
+            ty => Err(Error::new(
+                span,
+                format!("A non-zero constraint cannot be applied to a {} type", ty),
+            )),
+        }
+    }
+
+    pub fn as_range(
+        &self,
+        span: Span,
+        min: TokenStream,
+        max: TokenStream,
+    ) -> Result<Constraint, Error> {
+        match self {
+            JavaType::Primitive(PrimitiveJavaType::Int | PrimitiveJavaType::Long) => {
+                Ok(Constraint::InRange(min, max))
+            }
+            ty => Err(Error::new(
+                span,
+                format!("A range constraint cannot be applied to a {} type", ty),
+            )),
+        }
+    }
+
     pub fn unpack_default_value(&self, lit: Lit) -> Result<String, syn::Error> {
         let span = lit.span();
         let type_mismatch = |ty, span, lit| {
@@ -230,11 +261,54 @@ pub struct JavaField {
     pub documentation: Documentation,
     pub ty: JavaType,
     pub default_value: String,
+    pub constraint: Constraint,
 }
 
 impl JavaField {
     pub fn default_value(&self) -> String {
         self.default_value.clone()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Constraint {
+    None,
+    NonZero,
+    InRange(TokenStream, TokenStream),
+}
+
+impl Constraint {
+    pub fn apply_to_docs(&self, field_name: &str, documentation: &mut Documentation) {
+        match self {
+            Constraint::None => {}
+            Constraint::NonZero => documentation.add_throws(
+                "IllegalArgumentException",
+                format!("if {} is zero", field_name),
+            ),
+            Constraint::InRange(min, max) => documentation.add_throws(
+                "IllegalArgumentException",
+                format!(
+                    "if {} is not in range {}..{}",
+                    field_name.to_string(),
+                    min,
+                    max.to_string()
+                ),
+            ),
+        }
+    }
+
+    fn as_block(&self, field_name: &str) -> Block {
+        match self {
+            Constraint::None => Block::default(),
+            Constraint::NonZero => Block::from(format!("if ({field_name} == 0) {{"))
+                .add_statement(format!(
+                    "\tthrow new IllegalArgumentException(\"{field_name} must be non-zero\")"
+                ))
+                .add("}}"),
+            Constraint::InRange(_, _) => {
+                unimplemented!()
+            }
+        }
     }
 }
 
@@ -362,7 +436,7 @@ impl Block {
         writer.write_all_indented(self.lines.into_iter(), false)
     }
 
-    pub fn add_line(mut self, line: impl ToString) -> Block {
+    pub fn add(mut self, line: impl ToString) -> Block {
         self.lines.push(line.to_string());
         self
     }
@@ -397,7 +471,7 @@ impl JavaMethod {
     pub fn new(name: impl ToString, return_type: JavaType) -> JavaMethod {
         JavaMethod {
             name: name.to_string(),
-            documentation: Documentation::empty(),
+            documentation: Documentation::empty_documentation(),
             return_type,
             args: vec![],
             body: Block::default(),
@@ -416,7 +490,7 @@ impl JavaMethod {
     }
 
     pub fn add_documentation(mut self, line: impl ToString) -> JavaMethod {
-        self.documentation.push_line(line.to_string());
+        self.documentation.push_header_line(line.to_string());
         self
     }
 
@@ -426,9 +500,7 @@ impl JavaMethod {
     }
 
     pub fn getter_for(field: JavaField) -> JavaMethod {
-        let documentation = Documentation::getter(field.name.clone())
-            .set_default(field.default_value())
-            .build();
+        let documentation = Documentation::for_getter(field.name.clone(), field.default_value());
         let body = Block::from(format!("return this.{}", field.name));
 
         JavaMethod {
@@ -442,9 +514,17 @@ impl JavaMethod {
     }
 
     pub fn setter_for(field: JavaField) -> JavaMethod {
-        let documentation = Documentation::setter(field.name.clone()).build();
-        let body = Block::from(format!("this.{} = {}", field.name, field.name));
+        let mut documentation = Documentation::for_setter(field.name.clone());
+        field
+            .constraint
+            .apply_to_docs(&field.name, &mut documentation);
+
+        let body = field
+            .constraint
+            .as_block(&field.name)
+            .add_statement(format!("this.{} = {}", field.name, field.name));
         let arg = JavaMethodParameter::from_field(&field);
+
         JavaMethod {
             name: format!("set{}", AsUpperCamelCase(field.name)),
             documentation,

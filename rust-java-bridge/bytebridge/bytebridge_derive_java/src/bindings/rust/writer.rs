@@ -3,10 +3,9 @@ use crate::FormatStyle;
 use quote::ToTokens;
 use std::fs::File;
 use std::io;
-use std::io::{BufWriter, ErrorKind, Write};
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use syn::ItemStruct;
 
 pub struct RustSourceWriterBuilder {
     writer: BufWriter<File>,

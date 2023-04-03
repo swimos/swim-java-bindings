@@ -10,6 +10,5 @@ proc-macro2 = { workspace = true }
 syn = { workspace = true, features = ["full", "extra-traits", "visit", "visit-mut"] }
 quote = { workspace = true }
 thiserror = { workspace = true }
-swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["errors"] }
 heck = { workspace = true }
 lazy_static = { workspace = true }

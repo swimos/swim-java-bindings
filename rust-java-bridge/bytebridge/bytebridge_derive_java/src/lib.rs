@@ -1,20 +1,9 @@
-#![allow(warnings)]
-
 mod bindings;
 mod docs;
 mod error;
 
 use std::default::Default;
-use std::fmt::Write;
-use std::fmt::{Display, Formatter};
-use std::fs::File;
-use std::io::{BufReader, BufWriter, Read, Stdout};
-use std::path::{Path, PathBuf};
-use std::rc::Rc;
-use std::{fs, io};
-
-use quote::ToTokens;
-use syn::Lit;
+use std::path::PathBuf;
 
 pub use docs::FormatStyle;
 pub use error::Error;

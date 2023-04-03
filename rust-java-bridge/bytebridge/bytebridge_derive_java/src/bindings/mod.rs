@@ -7,20 +7,15 @@ use crate::docs::Documentation;
 use crate::FormatStyle;
 pub use java::{JavaSourceWriter, JavaSourceWriterBuilder};
 use proc_macro2::Span;
-use quote::ToTokens;
-use quote::__private::ext::RepToTokensExt;
 pub use rust::{RustSourceWriter, RustSourceWriterBuilder};
 use std::fmt::Display;
 use std::path::PathBuf;
 use std::{fs, io};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::token::Comma;
 use syn::visit::Visit;
-use syn::visit_mut::VisitMut;
 use syn::{
-    Attribute, Error, Expr, ExprLit, Fields, Generics, Item, ItemStruct, Lit, Meta, MetaNameValue,
-    Token, Visibility,
+    Attribute, Error, Expr, ExprLit, Fields, Generics, Item, Lit, Meta, MetaNameValue, Token,
 };
 
 const MACRO_PATH: &str = "bytebridge";
@@ -72,7 +67,7 @@ impl DeriveArgsBuilder {
     fn add_doc(&mut self, str: String) {
         match &mut self.result {
             Ok(ctx) => {
-                ctx.root_doc.push_line(str);
+                ctx.root_doc.push_header_line(str);
             }
             Err(_) => {}
         }
@@ -247,6 +242,7 @@ impl Bindings {
         let Bindings { java, rust } = self;
 
         java.write(java_writer)?;
+        unimplemented!();
         rust.write(rust_writer)
     }
 }

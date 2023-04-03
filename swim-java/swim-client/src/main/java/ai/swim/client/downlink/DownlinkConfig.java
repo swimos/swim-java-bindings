@@ -142,6 +142,11 @@ public class DownlinkConfig {
     return this;
   }
 
+  /**
+   *
+   * @param b
+   * @return
+   */
   private static byte booleanToByte(boolean b) {
     return (byte) (b ? 1 : 0);
   }
@@ -151,7 +156,6 @@ public class DownlinkConfig {
    */
   public byte[] toArray() {
     ByteBuffer buffer = ByteBuffer.allocate(44);
-
     buffer.putLong(emptyTimeout);
     buffer.putLong(attachmentQueueSize);
     buffer.put(booleanToByte(abortOnBadFrames));

@@ -5,12 +5,9 @@ use std::fmt::{Debug, Formatter};
 use std::io;
 pub use writer::{RustSourceWriter, RustSourceWriterBuilder};
 
-use crate::bindings::{DeriveArgs, MACRO_PATH};
-use syn::parse::Parser;
+use crate::bindings::MACRO_PATH;
 use syn::visit_mut::VisitMut;
-use syn::{
-    parse, parse_quote, Attribute, DataStruct, Error, Field, Item, ItemEnum, ItemStruct, Variant,
-};
+use syn::{Attribute, Field, Item, ItemEnum, ItemStruct, Variant};
 
 struct RustBindingsBuilder;
 

@@ -1,10 +1,44 @@
-use heck::{AsTitleCase, ToTitleCase};
+use heck::ToTitleCase;
 use std::path::PathBuf;
 use std::{fs, io};
 
+#[derive(Default, Debug, Clone)]
+pub struct StringStack {
+    inner: String,
+}
+
+impl StringStack {
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    pub fn push(&mut self, line: impl ToString) {
+        self.inner.push_str(&line.to_string());
+    }
+
+    pub fn push_line(&mut self, line: impl ToString) {
+        self.inner.push_str(&format!("{}\n", line.to_string()));
+    }
+}
+
+impl From<&str> for StringStack {
+    fn from(s: &str) -> Self {
+        StringStack::from(s.to_string())
+    }
+}
+
+impl From<String> for StringStack {
+    fn from(inner: String) -> Self {
+        StringStack { inner }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Documentation {
-    inner: String,
+    header: StringStack,
+    params: StringStack,
+    throws: StringStack,
+    returns: Option<StringStack>,
     style: FormatStyle,
 }
 
@@ -13,135 +47,123 @@ impl TryFrom<PathBuf> for Documentation {
 
     fn try_from(value: PathBuf) -> Result<Self, Self::Error> {
         Ok(Documentation {
-            inner: fs::read_to_string(value)?,
+            header: StringStack::from(fs::read_to_string(value)?),
+            params: Default::default(),
+            throws: Default::default(),
+            returns: None,
             style: FormatStyle::Documentation,
         })
     }
 }
 
-pub struct GetterDocumentationBuilder {
-    name: String,
-    stack: String,
-    inner: Documentation,
-    default: Option<String>,
-}
-
-impl GetterDocumentationBuilder {
-    pub fn set_default(mut self, to: String) -> GetterDocumentationBuilder {
-        self.default = Some(to);
-        self
-    }
-
-    pub fn push_lines(mut self, line: String) -> GetterDocumentationBuilder {
-        self.stack.push_str(line.as_str());
-        self
-    }
-
-    pub fn build(self) -> Documentation {
-        let GetterDocumentationBuilder {
-            name,
-            stack,
-            mut inner,
-            default,
-        } = self;
-
-        inner.push_line(format!("Gets {}.", name));
-        inner.push_line(stack);
-
-        if let Some(default) = default {
-            inner.push_line(format!("Default value: {}.", default));
-        }
-
-        inner.push_line(format!(
-            "@return the {}",
-            name.to_title_case().to_lowercase()
-        ));
-
-        inner
-    }
-}
-
-pub struct SetterDocumentationBuilder {
-    name: String,
-    stack: String,
-    inner: Documentation,
-}
-
-impl SetterDocumentationBuilder {
-    pub fn build(self) -> Documentation {
-        let SetterDocumentationBuilder {
-            name,
-            stack,
-            mut inner,
-        } = self;
-
-        inner.push_line(format!("Sets the new {}.", name));
-        inner.push_line(stack);
-        inner.push_line(format!("@param {} the new {}", name, name));
-
-        inner
-    }
-}
-
 impl Documentation {
-    pub fn empty() -> Documentation {
+    pub fn new(header: String, style: FormatStyle) -> Documentation {
         Documentation {
-            inner: String::new(),
-            style: FormatStyle::Documentation,
-        }
-    }
-
-    pub fn new(inner: String, style: FormatStyle) -> Documentation {
-        Documentation { inner, style }
-    }
-
-    pub fn from_style(style: FormatStyle) -> Documentation {
-        Documentation {
-            inner: String::default(),
+            header: StringStack::from(header),
+            params: Default::default(),
+            throws: Default::default(),
+            returns: None,
             style,
         }
     }
 
-    pub fn getter(name: impl ToString) -> GetterDocumentationBuilder {
-        GetterDocumentationBuilder {
-            name: name.to_string(),
-            stack: String::new(),
-            inner: Documentation::from_style(FormatStyle::Documentation),
-            default: None,
+    pub fn empty_documentation() -> Documentation {
+        Documentation::from_style(FormatStyle::Documentation)
+    }
+
+    pub fn from_style(style: FormatStyle) -> Documentation {
+        Documentation {
+            header: StringStack::default(),
+            params: StringStack::default(),
+            throws: StringStack::default(),
+            returns: None,
+            style,
         }
     }
 
-    pub fn setter(name: impl ToString) -> SetterDocumentationBuilder {
-        SetterDocumentationBuilder {
-            name: name.to_string(),
-            stack: String::new(),
-            inner: Documentation::from_style(FormatStyle::Documentation),
-        }
+    pub fn for_getter(name: String, default_value: String) -> Documentation {
+        let mut inner = Documentation::from_style(FormatStyle::Documentation);
+
+        inner.push_header_line(format!("Gets {}.", name));
+        inner.push_header_line(format!("\nDefault value: {}.", default_value));
+        inner.set_returns(name.to_title_case().to_lowercase());
+
+        inner
     }
 
-    pub fn set_content(mut self, to: String) -> Documentation {
-        self.inner = to;
-        self
+    pub fn for_setter(name: String) -> Documentation {
+        let mut inner = Documentation::from_style(FormatStyle::Documentation);
+
+        inner.push_header_line(format!("Sets the new {}.", name));
+        inner.add_param(&name, format!("the new {}", name));
+
+        inner
     }
 
     pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
+        let Documentation {
+            header,
+            params,
+            throws,
+            returns,
+            ..
+        } = self;
+        header.is_empty()
+            && params.is_empty()
+            && throws.is_empty()
+            && returns.as_ref().map(StringStack::is_empty).unwrap_or(true)
     }
 
-    pub fn content(&self) -> String {
-        self.inner.clone()
+    pub fn push_header_line(&mut self, line: impl ToString) {
+        self.header.push_line(line)
     }
 
-    pub fn push_line(&mut self, line: String) {
-        if self.inner.is_empty() {
-            self.inner.push_str(line.as_str());
-        } else {
-            self.inner.push_str(&format!("\n{}", line));
+    pub fn add_param(&mut self, name: impl ToString, doc: impl ToString) {
+        self.params
+            .push_line(format!("@param {} {}", name.to_string(), doc.to_string()))
+    }
+
+    pub fn add_throws(&mut self, type_name: impl ToString, explanation: impl ToString) {
+        self.throws.push_line(format!(
+            "@throws {} {}",
+            type_name.to_string(),
+            explanation.to_string()
+        ))
+    }
+
+    pub fn set_returns(&mut self, doc: impl ToString) {
+        match self.returns {
+            Some(_) => {
+                panic!("Bug: attempted to set documentation for a return value twice")
+            }
+            None => self.returns = Some(StringStack::from(format!("@return {}", doc.to_string()))),
         }
     }
 
     pub fn build(self) -> String {
-        let Documentation { inner, style } = self;
+        let Documentation {
+            header,
+            params,
+            throws,
+            returns,
+            style,
+        } = self;
+
+        let mut block = header.inner;
+
+        if !params.inner.is_empty() {
+            block = format!("{}\n{}", block, params.inner);
+        }
+
+        if !throws.inner.is_empty() {
+            block = format!("{}\n{}", block, throws.inner);
+        }
+
+        if let Some(returns) = returns {
+            if !returns.inner.is_empty() {
+                block = format!("{}\n{}", block, returns.inner);
+            }
+        }
 
         fn write_block(start: &'static str, inner: String) -> String {
             if inner.is_empty() {
@@ -159,30 +181,15 @@ impl Documentation {
         }
 
         match style {
-            FormatStyle::Block => write_block("/*", inner),
+            FormatStyle::Block => write_block("/*", block),
             FormatStyle::Line => {
                 let mut buf = String::new();
-                for line in inner.lines() {
+                for line in block.lines() {
                     buf.push_str(&format!("// {}\n", line));
                 }
                 buf
             }
-            FormatStyle::Documentation => write_block("/**", inner),
-        }
-    }
-}
-
-impl From<String> for Documentation {
-    fn from(value: String) -> Self {
-        value.as_str().into()
-    }
-}
-
-impl From<&str> for Documentation {
-    fn from(value: &str) -> Self {
-        Documentation {
-            inner: value.to_string(),
-            style: FormatStyle::Documentation,
+            FormatStyle::Documentation => write_block("/**", block),
         }
     }
 }

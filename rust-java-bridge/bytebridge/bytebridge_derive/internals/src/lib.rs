@@ -1,16 +1,7 @@
-#![allow(warnings)]
-
 use proc_macro2::{Ident, TokenStream};
 use quote::__private::ext::RepToTokensExt;
-use quote::{format_ident, quote, ToTokens, TokenStreamExt};
-use syn::parse::{Parse, ParseStream};
-use syn::punctuated::Punctuated;
-use syn::spanned::Spanned;
-use syn::token::Comma;
-use syn::{
-    parse2, parse_macro_input, Data, DataEnum, DataStruct, DeriveInput, Error, Fields,
-    GenericParam, Type, Visibility,
-};
+use quote::{format_ident, quote, ToTokens};
+use syn::{parse2, Data, DeriveInput, Error, Fields, Type, Visibility};
 
 pub fn derive(input: TokenStream) -> TokenStream {
     proc_macro_derive(input.into()).into()
@@ -99,17 +90,9 @@ struct StructRepr<'a> {
     fields: Vec<Field<'a>>,
 }
 
-impl<'a> ToTokens for StructRepr<'a> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {}
-}
-
 struct EnumRepr<'a> {
     ident: &'a Ident,
     variants: Vec<Variant<'a>>,
-}
-
-impl<'a> ToTokens for EnumRepr<'a> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {}
 }
 
 struct Field<'a> {
@@ -130,7 +113,7 @@ enum ByteRepr<'a> {
 struct TryFromBytes<'v, 'a>(&'v ByteRepr<'a>);
 impl<'v, 'a> TryFromBytes<'v, 'v> {
     fn fold_fields(fields: &[Field<'a>]) -> TokenStream {
-        fields.iter().fold(TokenStream::new(), |mut tokens, field| {
+        fields.iter().fold(TokenStream::new(), |tokens, field| {
             let Field { ty, ident } = field;
             quote! {
                 #tokens
@@ -210,7 +193,7 @@ impl<'v, 'a> ToBytes<'v, 'a> {
     }
 
     fn fold_fields(fields: &[Field<'a>]) -> TokenStream {
-        fields.iter().fold(TokenStream::new(), |mut tokens, field| {
+        fields.iter().fold(TokenStream::new(), |tokens, field| {
             let Field { ident, .. } = field;
             quote! {
                 #tokens

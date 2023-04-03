@@ -2,23 +2,22 @@ mod models;
 mod writer;
 
 use crate::bindings::java::models::{
-    Block, JavaField, JavaMethod, JavaType, PrimitiveJavaType, AS_BYTES_METHOD, BUFFER_SIZE_VAR,
-    BUFFER_VAR, JAVA_KEYWORDS,
+    Block, Constraint, JavaField, JavaMethod, JavaType, PrimitiveJavaType, AS_BYTES_METHOD,
+    BUFFER_SIZE_VAR, BUFFER_VAR, JAVA_KEYWORDS,
 };
-use crate::bindings::{DeriveArgs, MACRO_PATH};
+use crate::bindings::MACRO_PATH;
 use crate::docs::Documentation;
 use crate::FormatStyle;
 use proc_macro2::Span;
-use quote::{format_ident, ToTokens};
-use std::env::var;
+use quote::ToTokens;
 use std::io;
 use std::mem::size_of;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{
-    Attribute, Error, Expr, ExprLit, Field, ItemEnum, ItemStruct, Lit, Meta, MetaNameValue,
-    PathArguments, PathSegment, Token, Type, TypePath, Variant,
+    Attribute, Error, Expr, ExprLit, Field, ItemEnum, Lit, Meta, MetaNameValue, PathArguments,
+    PathSegment, Token, Type, TypePath, Variant,
 };
 
 pub use writer::{JavaSourceWriter, JavaSourceWriterBuilder};
@@ -31,8 +30,17 @@ pub struct ClassBinding {
     methods: Vec<JavaMethod>,
 }
 
+struct InheritanceConfig {
+    ordinal: u8,
+    superclass: String,
+}
+
 impl ClassBinding {
-    fn write(self, java_writer: &mut JavaSourceWriter, ordinal: Option<u8>) -> io::Result<()> {
+    fn write(
+        self,
+        java_writer: &mut JavaSourceWriter,
+        parent: Option<InheritanceConfig>,
+    ) -> io::Result<()> {
         let ClassBinding {
             name,
             root_documentation,
@@ -40,10 +48,17 @@ impl ClassBinding {
             methods,
         } = self;
 
-        let transposition_method = ClassBinding::byte_transposition_method(&fields, ordinal);
+        let transposition_method = ClassBinding::byte_transposition_method(
+            &fields,
+            parent.as_ref().map(|cfg| cfg.ordinal),
+        );
 
         let file_writer = java_writer.for_file(name.clone())?;
-        let mut class_writer = file_writer.begin_class(name, root_documentation)?;
+        let mut class_writer = file_writer.begin_class(
+            name,
+            root_documentation,
+            parent.as_ref().map(|cfg| cfg.superclass.clone()),
+        )?;
 
         for field in fields {
             let JavaField {
@@ -51,10 +66,11 @@ impl ClassBinding {
                 documentation,
                 ty,
                 default_value,
+                ..
             } = field;
             class_writer
                 .field(ty, default_value)
-                .set_documentation(documentation.build())
+                .set_documentation(documentation)
                 .write(name)?;
         }
 
@@ -67,7 +83,7 @@ impl ClassBinding {
     }
 
     fn byte_transposition_method(fields: &[JavaField], ordinal: Option<u8>) -> JavaMethod {
-        let mut method = JavaMethod::new(AS_BYTES_METHOD, JavaType::Array(PrimitiveJavaType::Byte))
+        let method = JavaMethod::new(AS_BYTES_METHOD, JavaType::Array(PrimitiveJavaType::Byte))
             .add_documentation("Returns a byte array representation of the current configuration.")
             .add_documentation(
                 "\nThis method is not intended for public use and is called by the Swim runtime.",
@@ -166,9 +182,9 @@ impl AbstractClassBinding {
         } = self;
 
         let file_writer = java_writer.for_file(name.clone())?;
-        let mut class_writer = file_writer.begin_class(name, documentation)?;
+        let mut class_writer = file_writer.begin_class(name.clone(), documentation, None)?;
 
-        let mut method = JavaMethod::new(AS_BYTES_METHOD, JavaType::Array(PrimitiveJavaType::Byte))
+        let method = JavaMethod::new(AS_BYTES_METHOD, JavaType::Array(PrimitiveJavaType::Byte))
             .add_documentation("Returns a byte array representation of the current configuration.")
             .add_documentation(
                 "\nThis method is not intended for public use and is called by the Swim runtime.",
@@ -178,26 +194,34 @@ impl AbstractClassBinding {
         let mut variant_iter = variants.iter().peekable();
         let first_variant = variant_iter
             .next()
-            .expect("An enum should contain at least one variant");
+            .expect("Bug: An enum should contain at least one variant");
 
-        block = block.add_line(format!("if (this instanceof {}) {{", first_variant.name));
-        block = block.add_line(format!(
-            "\treturn (({}) this).asBytes();\n}}",
+        block = block.add(format!("if (this instanceof {}) {{", first_variant.name));
+        block = block.add(format!(
+            "\treturn (({}) this).asBytes();\n\t}}",
             first_variant.name,
         ));
 
         for variant in variant_iter {
-            block = block.add_line(format!("else if (this instanceof {}) {{", variant.name));
-            block = block.add_line(format!("\treturn (({}) this).asBytes();\n}}", variant.name,));
+            block = block.add(format!("else if (this instanceof {}) {{", variant.name));
+            block = block.add(format!(
+                "\treturn (({}) this).asBytes();\n\t}}",
+                variant.name,
+            ));
         }
 
         class_writer.write_method(method.set_block(block))?;
         class_writer.end_class()?;
 
+        // We defer writing the variants here in case the file writer is writing to STDOUT. We want
+        // to write the abstract base first, then the subclasses.
         for (idx, variant) in variants.into_iter().enumerate() {
             variant.write(
                 java_writer,
-                Some(u8::try_from(idx).expect("Bug: too many variants")),
+                Some(InheritanceConfig {
+                    ordinal: u8::try_from(idx).expect("Bug: too many variants"),
+                    superclass: name.clone(),
+                }),
             )?;
         }
 
@@ -244,7 +268,7 @@ impl ClassBuilder {
         let ClassBuilder { infer_docs, result } = self;
         if let Ok(builder) = result {
             if let Err(e) = f(*infer_docs, builder) {
-                self.result = Err(e);
+                *result = Err(e);
             }
         }
     }
@@ -333,7 +357,7 @@ impl AbstractClassBuilder {
         }
     }
 
-    pub fn push_class(&mut self, class_builder: ClassBuilderInner) {
+    fn push_class(&mut self, class_builder: ClassBuilderInner) {
         if let Ok(variants) = &mut self.inner {
             variants.push(class_builder.build())
         }
@@ -390,8 +414,13 @@ impl<'args, 'ast> Visit<'ast> for AbstractClassBuilder {
                     let mut class_builder = self.class_builder(subclass_name, documentation);
                     class_builder.visit_fields(&i.fields);
 
-                    if let Ok(inner) = class_builder.result {
-                        self.push_class(inner);
+                    match class_builder.result {
+                        Ok(inner) => {
+                            self.push_class(inner);
+                        }
+                        Err(e) => {
+                            self.inner = Err(e);
+                        }
                     }
                 }
                 Err(e) => self.inner = Err(e),
@@ -431,7 +460,7 @@ fn build_variant_properties(
                 Meta::NameValue(meta) if meta.path.is_ident("doc") => match meta.value {
                     Expr::Lit(ExprLit {
                         lit: Lit::Str(str), ..
-                    }) => properties.documentation.push_line(str.value()),
+                    }) => properties.documentation.push_header_line(str.value()),
                     list => return Err(Error::new(list.span(), UNKNOWN_ATTRIBUTE)),
                 },
                 Meta::NameValue(meta) if meta.path.is_ident("rename") => match meta.value {
@@ -484,6 +513,7 @@ impl<'args, 'ast> Visit<'ast> for ClassBuilder {
                 documentation: properties.documentation,
                 ty,
                 default_value,
+                constraint: properties.constraint,
             };
 
             builder.push_method(JavaMethod::getter_for(field.clone()));
@@ -498,6 +528,7 @@ impl<'args, 'ast> Visit<'ast> for ClassBuilder {
 struct FieldProperties {
     documentation: Documentation,
     default_value: Option<String>,
+    constraint: Constraint,
 }
 
 pub fn map_type(ty: &Type) -> Result<JavaType, Error> {
@@ -526,6 +557,7 @@ fn derive_field_properties(
     let mut properties = FieldProperties {
         documentation: Documentation::from_style(FormatStyle::Documentation),
         default_value: None,
+        constraint: Constraint::None,
     };
 
     if !infer_docs {
@@ -545,12 +577,13 @@ fn derive_field_properties(
 
     for attr in attribute_iter {
         let nested = attr.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
+
         for nested in nested {
             match nested {
                 Meta::NameValue(meta) if meta.path.is_ident("doc") => match meta.value {
                     Expr::Lit(ExprLit {
                         lit: Lit::Str(str), ..
-                    }) => properties.documentation.push_line(str.value()),
+                    }) => properties.documentation.push_header_line(str.value()),
                     meta => return unknown_attribute(meta.span()),
                 },
                 Meta::NameValue(MetaNameValue {
@@ -562,6 +595,15 @@ fn derive_field_properties(
                         return Err(Error::new(lit.span(), "Duplicate default value"));
                     }
                     properties.default_value = Some(field_type.unpack_default_value(lit)?);
+                }
+                Meta::Path(path) if path.is_ident("non_zero") => {
+                    properties.constraint = field_type.as_non_zero(path.span())?
+                }
+                Meta::List(list) if list.path.is_ident("range") => {
+                    println!("range: {}", list.to_token_stream().to_string());
+                    unimplemented!();
+
+                    // properties.constraint = field_type.as_non_zero(path.span())?
                 }
                 meta => {
                     return unknown_attribute(meta.span());

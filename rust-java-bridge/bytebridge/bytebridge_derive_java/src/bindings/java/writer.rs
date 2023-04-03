@@ -1,11 +1,9 @@
 use crate::bindings::java::models::{JavaMethod, JavaType};
 use crate::docs::{Documentation, FormatStyle};
-use std::fmt::Arguments;
 use std::fs::File;
 use std::io;
-use std::io::{BufWriter, ErrorKind, Stdout, StdoutLock, Write};
+use std::io::{BufWriter, ErrorKind, Stdout, Write};
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 
 pub enum WriterFactory {
     StdOut,
@@ -18,7 +16,7 @@ impl WriterFactory {
             WriterFactory::StdOut => {
                 let mut out = io::stdout();
                 write!(out, ">>>>> File: {:?}.java\n", file_name)?;
-                let mut writer = Writer::new_std_out(out, 1);
+                let writer = Writer::new_std_out(out, 1);
                 Ok(writer)
             }
             WriterFactory::Dir { path } => {
@@ -72,7 +70,6 @@ impl Writer {
     pub fn exit_block(&mut self) -> io::Result<()> {
         self.depth -= 1;
         self.write_indented("}", true)?;
-        assert!(self.depth >= 0);
         Ok(())
     }
 
@@ -280,6 +277,7 @@ impl JavaFileWriter {
         self,
         name: impl ToString,
         documentation: Documentation,
+        superclass: Option<String>,
     ) -> io::Result<JavaClassWriter> {
         let JavaFileWriter {
             mut writer,
@@ -297,7 +295,13 @@ impl JavaFileWriter {
 
         writer.write_indented(format!("package {};", package), true)?;
 
-        writer.write_indented(format!("public class {}", name.to_string()), false)?;
+        let superclass = superclass
+            .map(|name| format!(" extends {}", name))
+            .unwrap_or_default();
+        writer.write_indented(
+            format!("public class {}{}", name.to_string(), superclass),
+            false,
+        )?;
         writer.enter_block()?;
         writer.new_lines(2)?;
 
@@ -360,8 +364,8 @@ pub struct JavaFieldWriter<'l> {
 }
 
 impl<'l> JavaFieldWriter<'l> {
-    pub fn set_documentation(mut self, documentation: String) -> JavaFieldWriter<'l> {
-        self.documentation = self.documentation.set_content(documentation);
+    pub fn set_documentation(mut self, documentation: Documentation) -> JavaFieldWriter<'l> {
+        self.documentation = documentation;
         self
     }
 
