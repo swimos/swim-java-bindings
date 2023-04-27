@@ -1,7 +1,7 @@
 use std::io;
 use std::mem::size_of;
 
-use crate::bindings::java::writer::INDENTATION;
+use crate::bindings::java::writer::{ClassType, INDENTATION};
 use heck::AsLowerCamelCase;
 use proc_macro2::Span;
 use quote::ToTokens;
@@ -58,11 +58,11 @@ impl ClassBinding {
         );
 
         let file_writer = java_writer.for_file(name.clone())?;
-        let mut class_writer = file_writer.begin_class(
-            name,
-            root_documentation,
-            parent.as_ref().map(|cfg| cfg.superclass.clone()),
-        )?;
+        let class_type = match parent.as_ref() {
+            Some(cfg) => ClassType::Subclass(cfg.superclass.to_string()),
+            None => ClassType::Concrete,
+        };
+        let mut class_writer = file_writer.begin_class(name, root_documentation, class_type)?;
 
         for field in fields {
             let JavaField {
@@ -90,6 +90,7 @@ impl ClassBinding {
         let method = JavaMethod::new(
             AS_BYTES_METHOD,
             JavaType::Array(PrimitiveJavaType::Byte(false)),
+            ordinal.as_ref().map(|_| "@Override".to_string()),
         )
         .add_documentation("Returns a byte array representation of the current configuration.");
 
@@ -104,7 +105,8 @@ impl ClassBinding {
         let mut block = Block::of_statement(format!("int {} = 0", BUFFER_SIZE_VAR));
         let mut size = match ordinal {
             Some(i) => {
-                block = block.add_statement(format!("{}.put({})", BUFFER_VAR, i));
+                transposition =
+                    transposition.add_statement(format!("{}.put((byte) {})", BUFFER_VAR, i));
                 size_of::<u8>()
             }
             None => 0,
@@ -194,35 +196,18 @@ impl AbstractClassBinding {
         } = self;
 
         let file_writer = java_writer.for_file(name.clone())?;
-        let mut class_writer = file_writer.begin_class(name.clone(), documentation, None)?;
+        let mut class_writer =
+            file_writer.begin_class(name.clone(), documentation, ClassType::Abstract)?;
 
         let method = JavaMethod::new(
             AS_BYTES_METHOD,
             JavaType::Array(PrimitiveJavaType::Byte(false)),
+            None,
         )
-        .add_documentation("Returns a byte array representation of the current configuration.");
-        let mut block = Block::default();
+        .add_documentation("Returns a byte array representation of the current configuration.")
+        .set_abstract();
 
-        let mut variant_iter = variants.iter().peekable();
-        let first_variant = variant_iter
-            .next()
-            .expect("Bug: An enum should contain at least one variant");
-
-        block = block.add_line(format!("if (this instanceof {}) {{", first_variant.name));
-        block = block.add_line(format!(
-            "{INDENTATION}return (({}) this).asBytes();\n}}",
-            first_variant.name,
-        ));
-
-        for variant in variant_iter {
-            block = block.add(format!("else if (this instanceof {}) {{", variant.name));
-            block = block.add_line(format!(
-                "{INDENTATION}return (({}) this).asBytes();\n}}",
-                variant.name,
-            ));
-        }
-
-        class_writer.write_method(method.set_block(block))?;
+        class_writer.write_method(method)?;
         class_writer.end_class()?;
 
         // We defer writing the variants here in case the file writer is writing to STDOUT. We want

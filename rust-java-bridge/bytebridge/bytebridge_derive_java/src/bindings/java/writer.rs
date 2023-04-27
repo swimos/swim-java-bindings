@@ -256,12 +256,18 @@ fn write_block(writer: &mut Writer, block: String) -> io::Result<()> {
     Ok(())
 }
 
+pub enum ClassType {
+    Abstract,
+    Concrete,
+    Subclass(String),
+}
+
 impl JavaFileWriter {
     pub fn begin_class(
         self,
         name: impl ToString,
         documentation: Documentation,
-        superclass: Option<String>,
+        class_type: ClassType,
     ) -> io::Result<JavaClassWriter> {
         let JavaFileWriter {
             mut writer,
@@ -279,13 +285,19 @@ impl JavaFileWriter {
 
         writer.write_indented(format!("package {};\n", package), true)?;
 
-        let superclass = superclass
-            .map(|name| format!(" extends {}", name))
-            .unwrap_or_default();
-        writer.write_indented(
-            format!("public class {}{}", name.to_string(), superclass),
-            false,
-        )?;
+        let declaration = match class_type {
+            ClassType::Abstract => {
+                format!("public abstract class {}", name.to_string())
+            }
+            ClassType::Concrete => {
+                format!("public class {}", name.to_string())
+            }
+            ClassType::Subclass(superclass) => {
+                format!("public class {} extends {}", name.to_string(), superclass)
+            }
+        };
+
+        writer.write_indented(declaration, false)?;
         writer.enter_block()?;
         writer.new_lines(2)?;
 
@@ -314,7 +326,9 @@ impl JavaClassWriter {
             documentation,
             return_type,
             args,
+            r#abstract,
             body,
+            annotation,
         } = method;
 
         let args = args
@@ -324,11 +338,25 @@ impl JavaClassWriter {
             .join(", ");
 
         writer.write_all_indented(documentation.build().lines(), false)?;
-        writer.write_indented(format!("public {} {}({})", return_type, name, args), false)?;
-        writer.enter_block()?;
-        writer.new_line()?;
-        body.write(writer)?;
-        writer.exit_block()?;
+        if let Some(annotation) = annotation {
+            writer.write_indented(annotation, true)?;
+        }
+
+        let modifier = if r#abstract { "abstract " } else { "" };
+
+        writer.write_indented(
+            format!("public {}{} {}({})", modifier, return_type, name, args),
+            false,
+        )?;
+
+        if r#abstract && body.is_empty() {
+            writer.write(";", true)?;
+        } else {
+            writer.enter_block()?;
+            writer.new_line()?;
+            body.write(writer)?;
+            writer.exit_block()?;
+        }
         writer.new_line()
     }
 

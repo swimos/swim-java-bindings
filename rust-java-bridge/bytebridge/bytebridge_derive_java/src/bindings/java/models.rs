@@ -572,6 +572,10 @@ pub struct Block {
 }
 
 impl Block {
+    pub fn is_empty(&self) -> bool {
+        self.lines.iter().all(|line| line.is_empty())
+    }
+
     pub fn of(line: impl ToString) -> Block {
         let block = Block::default();
         block.add_line(line)
@@ -634,18 +638,31 @@ pub struct JavaMethod {
     pub documentation: Documentation,
     pub return_type: JavaType,
     pub args: Vec<JavaMethodParameter>,
+    pub r#abstract: bool,
     pub body: Block,
+    pub annotation: Option<String>,
 }
 
 impl JavaMethod {
-    pub fn new(name: impl ToString, return_type: JavaType) -> JavaMethod {
+    pub fn new(
+        name: impl ToString,
+        return_type: JavaType,
+        annotation: Option<String>,
+    ) -> JavaMethod {
         JavaMethod {
             name: name.to_string(),
             documentation: Documentation::empty_documentation(),
             return_type,
             args: vec![],
+            r#abstract: false,
             body: Block::default(),
+            annotation,
         }
+    }
+
+    pub fn set_abstract(mut self) -> JavaMethod {
+        self.r#abstract = true;
+        self
     }
 
     pub fn set_block(mut self, to: Block) -> JavaMethod {
@@ -677,7 +694,9 @@ impl JavaMethod {
             documentation,
             return_type: field.ty,
             args: vec![],
+            r#abstract: false,
             body,
+            annotation: None,
         }
     }
 
@@ -698,7 +717,9 @@ impl JavaMethod {
             documentation,
             return_type: JavaType::Void,
             args: vec![arg],
+            r#abstract: false,
             body,
+            annotation: None,
         }
     }
 }

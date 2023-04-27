@@ -4,7 +4,8 @@ use std::env::current_dir;
 use std::fs::{read_dir, read_to_string, DirEntry, File};
 use std::io::Write;
 use std::path::PathBuf;
-use syn::Item;
+use syn::punctuated::Punctuated;
+use syn::{Attribute, Expr, ExprLit, Item, Lit, Meta, Token};
 
 enum TestCase {
     Class {
@@ -12,7 +13,7 @@ enum TestCase {
         input: String,
     },
     Abstract {
-        name: String,
+        superclass_name: String,
         input: String,
         variants: Vec<String>,
     },
@@ -24,19 +25,23 @@ impl TestCase {
         let input = syn::parse2::<Item>(input.to_token_stream()).expect("Read invalid tokens");
         match input {
             Item::Struct(item) => TestCase::Class {
-                name: item.ident.to_string(),
+                name: unpack_rename(&item.attrs).unwrap_or_else(|| item.ident.to_string()),
                 input: item.to_token_stream().to_string(),
             },
             Item::Enum(item) => {
-                let superclass_name = item.ident.to_string();
-
+                let superclass_name =
+                    unpack_rename(&item.attrs).unwrap_or_else(|| item.ident.to_string());
                 TestCase::Abstract {
-                    name: superclass_name.clone(),
+                    superclass_name: superclass_name.clone(),
                     input: item.to_token_stream().to_string(),
                     variants: item
                         .variants
                         .iter()
-                        .map(|variant| format!("{}{}", superclass_name, variant.ident.to_string()))
+                        .map(|variant| {
+                            unpack_rename(&variant.attrs).unwrap_or_else(|| {
+                                format!("{}{}", superclass_name, variant.ident.to_string())
+                            })
+                        })
                         .collect(),
                 }
             }
@@ -65,10 +70,14 @@ impl TestCase {
                     content: read_to_string(working_dir).expect("Failed to read test file"),
                 }
             }
-            TestCase::Abstract { name, variants, .. } => {
+            TestCase::Abstract {
+                superclass_name,
+                variants,
+                ..
+            } => {
                 let superclass_content = {
                     let mut working_dir = working_dir.clone();
-                    working_dir.push(format!("ai/swim/{}.java", name));
+                    working_dir.push(format!("ai/swim/{}.java", superclass_name));
                     read_to_string(working_dir).expect("Failed to read test file")
                 };
 
@@ -87,6 +96,7 @@ impl TestCase {
                             subclasses
                         });
                 TestOutput::AbstractClass {
+                    superclass_name,
                     superclass_content,
                     subclasses,
                 }
@@ -95,12 +105,44 @@ impl TestCase {
     }
 }
 
+fn unpack_rename(attrs: &[Attribute]) -> Option<String> {
+    for attr in attrs {
+        if !attr.path().is_ident("bytebridge") {
+            continue;
+        } else if attr.meta.require_list().is_err() {
+            continue;
+        }
+
+        println!("{}", attr.to_token_stream().to_string());
+
+        let nested = attr
+            .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+            .expect("Invalid attribute");
+        for nested in nested {
+            match nested {
+                Meta::NameValue(meta) if meta.path.is_ident("rename") => match meta.value {
+                    Expr::Lit(ExprLit {
+                        lit: Lit::Str(str), ..
+                    }) => {
+                        return Some(str.value());
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+    }
+
+    None
+}
+
 #[derive(Debug)]
 enum TestOutput {
     Class {
         content: String,
     },
     AbstractClass {
+        superclass_name: String,
         superclass_content: String,
         subclasses: Vec<(String, String)>,
     },
@@ -206,19 +248,32 @@ fn concrete_classes() {
                 Ok(true) => {
                     let file_content =
                         read_to_string(output_file).expect("Failed to load output file");
-                    match output {
-                        TestOutput::Class { content } => {
-                            assert_eq!(content, file_content.as_str())
-                        }
-                        output @ TestOutput::AbstractClass { .. } => {
-                            panic!("Expected a class. Got: {:?}", output)
-                        }
-                    }
+                    expect_class(output, file_content)
                 }
                 e => panic!("Missing file ({:?}) -> {:?}", e, file),
             }
         });
     });
+}
+
+fn assert_file(mut base: PathBuf, name: String, expected: String) {
+    base.push(name);
+    base.set_extension("java");
+
+    let expected_superclass_content = read_to_string(base).expect("Failed to load output file");
+
+    assert_eq!(expected, expected_superclass_content);
+}
+
+fn expect_class(output: TestOutput, expected_content: String) {
+    match output {
+        TestOutput::Class { content } => {
+            assert_eq!(content, expected_content.as_str())
+        }
+        output @ TestOutput::AbstractClass { .. } => {
+            panic!("Expected a class. Got: {:?}", output)
+        }
+    }
 }
 
 #[test]
@@ -236,43 +291,31 @@ fn abstract_classes() {
             panic!("Invalid file structure. Received a directory: {:?}", entry);
         }
 
-        // entry.file_name();
-
         println!("Running test -> {:?}", entry.path());
 
         let file =
             syn::parse_file(&read_to_string(entry.path()).expect("Failed to read file contents"))
                 .expect("File contains invalid tokens");
 
-        run_test_ok(file, |output| {
-            let mut output_file = outputs.clone();
-            output_file.push(entry.file_name());
+        let entry_file = PathBuf::from(entry.file_name());
+        let file_name = entry_file.file_stem().expect("Invalid file name");
+        let mut outputs = outputs.clone();
+        outputs.push(file_name);
 
-            match output {
-                t @ TestOutput::Class { .. } => {
-                    panic!("Expected an abstract class. Got: {:?}", t)
-                }
-                TestOutput::AbstractClass {
-                    superclass_content,
-                    subclasses,
-                } => {
-                    assert_eq!(content, superclass_content.as_str())
-                }
+        run_test_ok(file, |output| match output {
+            t @ TestOutput::Class { .. } => {
+                panic!("Expected an abstract class. Got: {:?}", t)
             }
+            TestOutput::AbstractClass {
+                superclass_name,
+                superclass_content,
+                subclasses,
+            } => {
+                assert_file(outputs.clone(), superclass_name, superclass_content);
 
-            let file = PathBuf::from(entry.file_name());
-            let file_name = file.file_stem().expect("Invalid file name");
-            let mut output_file = outputs.clone();
-            output_file.push(file_name);
-            output_file.set_extension("java");
-
-            match output_file.try_exists() {
-                Ok(true) => {
-                    let file_content =
-                        read_to_string(output_file).expect("Failed to load output file");
-                    expect_class(output, file_content.as_str());
+                for (name, content) in subclasses {
+                    assert_file(outputs.clone(), name, content);
                 }
-                e => panic!("Missing file ({:?}) -> {:?}", e, file),
             }
         });
     });
