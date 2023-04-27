@@ -1,4 +1,3 @@
-use heck::ToTitleCase;
 use std::path::PathBuf;
 use std::{fs, io};
 
@@ -12,12 +11,17 @@ impl StringStack {
         self.inner.is_empty()
     }
 
-    pub fn push(&mut self, line: impl ToString) {
-        self.inner.push_str(&line.to_string());
-    }
-
     pub fn push_line(&mut self, line: impl ToString) {
-        self.inner.push_str(&format!("{}\n", line.to_string()));
+        let line = line.to_string();
+        let prefix = if self.is_empty() { "" } else { "\n" };
+
+        if !line.starts_with(' ') {
+            self.inner
+                .push_str(&format!("{} {}", prefix, line.to_string()));
+        } else {
+            self.inner
+                .push_str(&format!("{}{}", prefix, line.to_string()));
+        }
     }
 }
 
@@ -85,8 +89,9 @@ impl Documentation {
         let mut inner = Documentation::from_style(FormatStyle::Documentation);
 
         inner.push_header_line(format!("Gets {}.", name));
-        inner.push_header_line(format!("\nDefault value: {}.", default_value));
-        inner.set_returns(name.to_title_case().to_lowercase());
+        inner.push_header_line("<p>");
+        inner.push_header_line(format!(" Default value: {}.", default_value));
+        inner.set_returns(name);
 
         inner
     }
@@ -136,7 +141,11 @@ impl Documentation {
             Some(_) => {
                 panic!("Bug: attempted to set documentation for a return value twice")
             }
-            None => self.returns = Some(StringStack::from(format!("@return {}", doc.to_string()))),
+            None => {
+                let mut stack = StringStack::default();
+                stack.push_line(format!("@return {}", doc.to_string()));
+                self.returns = Some(stack)
+            }
         }
     }
 
@@ -151,17 +160,22 @@ impl Documentation {
 
         let mut block = header.inner;
 
-        if !params.inner.is_empty() {
-            block = format!("{}\n{}", block, params.inner);
+        let term = !params.is_empty() || !throws.is_empty() || returns.is_some();
+        if term {
+            block = format!("{}\n\n", block);
         }
 
-        if !throws.inner.is_empty() {
-            block = format!("{}\n{}", block, throws.inner);
+        if !params.is_empty() {
+            block = format!("{}{}\n", block, params.inner);
+        }
+
+        if !throws.is_empty() {
+            block = format!("{}{}", block, throws.inner);
         }
 
         if let Some(returns) = returns {
-            if !returns.inner.is_empty() {
-                block = format!("{}\n{}", block, returns.inner);
+            if !returns.is_empty() {
+                block = format!("{}{}", block, returns.inner);
             }
         }
 
@@ -174,7 +188,7 @@ impl Documentation {
             buf.push_str(&format!("{}\n", start));
 
             for line in inner.lines() {
-                buf.push_str(&format!(" * {}\n", line));
+                buf.push_str(&format!(" *{}\n", line));
             }
             buf.push_str(&format!(" */"));
             buf

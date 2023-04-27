@@ -1,17 +1,19 @@
 use crate::bindings::java::writer::Writer;
+use crate::bindings::java::writer::INDENTATION;
 use crate::docs::Documentation;
 use heck::AsUpperCamelCase;
 use lazy_static::lazy_static;
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::Span;
 use quote::ToTokens;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::io;
-use syn::__private::IntoSpans;
-use syn::{Error, Lit};
+use std::str::FromStr;
+use syn::{Error, Lit, LitInt, PathArguments};
 
 pub const BUFFER_SIZE_VAR: &str = "__buf__size";
 pub const BUFFER_VAR: &str = "__buf";
+pub const TEMP_VAR: &str = "__elem_";
 pub const AS_BYTES_METHOD: &str = "asBytes";
 
 lazy_static! {
@@ -20,7 +22,7 @@ lazy_static! {
             "abstract",
             "assert",
             "boolean",
-            "break ",
+            "break",
             "byte",
             "case",
             "catch",
@@ -72,6 +74,7 @@ lazy_static! {
             "while",
             BUFFER_SIZE_VAR,
             AS_BYTES_METHOD,
+            TEMP_VAR,
         ]);
         set
     };
@@ -84,6 +87,54 @@ pub enum JavaType {
     String,
     Primitive(PrimitiveJavaType),
     Array(PrimitiveJavaType),
+}
+
+impl JavaType {
+    pub fn try_map(ident: &str, arguments: &PathArguments) -> Result<JavaType, UnsupportedType> {
+        match ident {
+            "i8" => Ok(JavaType::Primitive(PrimitiveJavaType::Byte(false))),
+            "i32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int(false))),
+            "i64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long(false))),
+            "u8" => Ok(JavaType::Primitive(PrimitiveJavaType::Byte(true))),
+            "u32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int(true))),
+            "u64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long(true))),
+            "f32" => Ok(JavaType::Primitive(PrimitiveJavaType::Float)),
+            "f64" => Ok(JavaType::Primitive(PrimitiveJavaType::Double)),
+            "Duration" => Ok(JavaType::Primitive(PrimitiveJavaType::Int(true))),
+            "String" => Ok(JavaType::String),
+            "bool" => Ok(JavaType::Primitive(PrimitiveJavaType::Boolean)),
+            "Vec" => {
+                let err = || {
+                    Err(UnsupportedType(format!(
+                        "Vec{}",
+                        arguments.to_token_stream().to_string()
+                    )))
+                };
+                match arguments {
+                    PathArguments::AngleBracketed(ang) => {
+                        let mut iter = ang.args.pairs();
+                        match (iter.next(), iter.next()) {
+                            (Some(pair), None) => {
+                                let value = pair.value();
+                                match JavaType::try_map(
+                                    value.to_token_stream().to_string().as_str(),
+                                    &PathArguments::None,
+                                ) {
+                                    Ok(JavaType::Primitive(ty)) => Ok(JavaType::Array(ty)),
+                                    _ => err(),
+                                }
+                            }
+                            (Some(_), Some(_)) => err(),
+                            (None, Some(_)) => unreachable!(),
+                            (None, None) => err(),
+                        }
+                    }
+                    _ => err(),
+                }
+            }
+            v => Err(UnsupportedType(v.to_string())),
+        }
+    }
 }
 
 impl Display for JavaType {
@@ -105,20 +156,27 @@ impl Display for JavaType {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum PrimitiveJavaType {
-    Byte,
-    Int,
-    Long,
+    Byte(bool),
+    Int(bool),
+    Long(bool),
     Float,
     Double,
     Boolean,
 }
 
 impl PrimitiveJavaType {
+    pub fn int_like(&self) -> bool {
+        matches!(
+            self,
+            PrimitiveJavaType::Int(_) | PrimitiveJavaType::Long(_) | PrimitiveJavaType::Byte(_)
+        )
+    }
+
     pub fn size_of(&self) -> usize {
         match self {
-            PrimitiveJavaType::Byte => 1,
-            PrimitiveJavaType::Int => 4,
-            PrimitiveJavaType::Long => 8,
+            PrimitiveJavaType::Byte(_) => 1,
+            PrimitiveJavaType::Int(_) => 4,
+            PrimitiveJavaType::Long(_) => 8,
             PrimitiveJavaType::Float => 4,
             PrimitiveJavaType::Double => 8,
             PrimitiveJavaType::Boolean => 1,
@@ -129,13 +187,13 @@ impl PrimitiveJavaType {
 impl Display for PrimitiveJavaType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            PrimitiveJavaType::Byte => {
+            PrimitiveJavaType::Byte(_) => {
                 write!(f, "byte")
             }
-            PrimitiveJavaType::Int => {
+            PrimitiveJavaType::Int(_) => {
                 write!(f, "int")
             }
-            PrimitiveJavaType::Long => {
+            PrimitiveJavaType::Long(_) => {
                 write!(f, "long")
             }
             PrimitiveJavaType::Float => {
@@ -154,9 +212,9 @@ impl Display for PrimitiveJavaType {
 impl JavaType {
     pub fn default_value(&self) -> String {
         match self {
-            JavaType::Primitive(PrimitiveJavaType::Byte) => "0".to_string(),
-            JavaType::Primitive(PrimitiveJavaType::Int) => "0".to_string(),
-            JavaType::Primitive(PrimitiveJavaType::Long) => "0".to_string(),
+            JavaType::Primitive(PrimitiveJavaType::Byte(_)) => "0".to_string(),
+            JavaType::Primitive(PrimitiveJavaType::Int(_)) => "0".to_string(),
+            JavaType::Primitive(PrimitiveJavaType::Long(_)) => "0".to_string(),
             JavaType::Primitive(PrimitiveJavaType::Float) => "0.0".to_string(),
             JavaType::Primitive(PrimitiveJavaType::Double) => "0.0".to_string(),
             JavaType::Primitive(PrimitiveJavaType::Boolean) => "false".to_string(),
@@ -168,10 +226,25 @@ impl JavaType {
         }
     }
 
+    pub fn as_unsigned_array(&self, span: Span) -> Result<Constraint, Error> {
+        match self {
+            JavaType::Array(ty) if ty.int_like() => {
+                Ok(Constraint::new(span, ConstraintKind::UnsignedArray))
+            }
+            ty => Err(Error::new(
+                span,
+                format!(
+                    "An unsigned array constraint cannot be applied to a {} type",
+                    ty
+                ),
+            )),
+        }
+    }
+
     pub fn as_non_zero(&self, span: Span) -> Result<Constraint, Error> {
         match self {
-            JavaType::Primitive(PrimitiveJavaType::Int | PrimitiveJavaType::Long) => {
-                Ok(Constraint::NonZero)
+            JavaType::Primitive(ty) if ty.int_like() => {
+                Ok(Constraint::new(span, ConstraintKind::NonZero))
             }
             ty => Err(Error::new(
                 span,
@@ -180,15 +253,25 @@ impl JavaType {
         }
     }
 
-    pub fn as_range(
-        &self,
-        span: Span,
-        min: TokenStream,
-        max: TokenStream,
-    ) -> Result<Constraint, Error> {
+    pub fn as_natural(&self, span: Span) -> Result<Constraint, Error> {
         match self {
-            JavaType::Primitive(PrimitiveJavaType::Int | PrimitiveJavaType::Long) => {
-                Ok(Constraint::InRange(min, max))
+            JavaType::Primitive(ty) if ty.int_like() => {
+                Ok(Constraint::new(span, ConstraintKind::Natural))
+            }
+            ty => Err(Error::new(
+                span,
+                format!(
+                    "A natural number constraint cannot be applied to a {} type",
+                    ty
+                ),
+            )),
+        }
+    }
+
+    pub fn as_range(&self, span: Span, min: LitInt, max: LitInt) -> Result<Constraint, Error> {
+        match self {
+            JavaType::Primitive(ty) if ty.int_like() => {
+                Ok(Constraint::new(span, ConstraintKind::InRange(min, max)))
             }
             ty => Err(Error::new(
                 span,
@@ -210,9 +293,15 @@ impl JavaType {
         };
         match (self, lit) {
             (JavaType::Primitive(ty), lit) => match (ty, lit) {
-                (PrimitiveJavaType::Byte, Lit::Int(lit)) => Ok(lit.into_token_stream().to_string()),
-                (PrimitiveJavaType::Int, Lit::Int(lit)) => Ok(lit.into_token_stream().to_string()),
-                (PrimitiveJavaType::Long, Lit::Int(lit)) => Ok(lit.into_token_stream().to_string()),
+                (PrimitiveJavaType::Byte(_), Lit::Int(lit)) => {
+                    Ok(lit.into_token_stream().to_string())
+                }
+                (PrimitiveJavaType::Int(_), Lit::Int(lit)) => {
+                    Ok(lit.into_token_stream().to_string())
+                }
+                (PrimitiveJavaType::Long(_), Lit::Int(lit)) => {
+                    Ok(lit.into_token_stream().to_string())
+                }
                 (PrimitiveJavaType::Float, Lit::Float(lit)) => {
                     Ok(lit.into_token_stream().to_string())
                 }
@@ -229,24 +318,6 @@ impl JavaType {
                 lit => type_mismatch(JavaType::String, span, lit),
             },
             (ty, def) => type_mismatch(*ty, span, def),
-        }
-    }
-}
-
-impl TryFrom<&str> for JavaType {
-    type Error = UnsupportedType;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
-            "i8" => Ok(JavaType::Primitive(PrimitiveJavaType::Byte)),
-            "i32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int)),
-            "i64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long)),
-            "f32" => Ok(JavaType::Primitive(PrimitiveJavaType::Float)),
-            "f64" => Ok(JavaType::Primitive(PrimitiveJavaType::Double)),
-            "Duration" => Ok(JavaType::Primitive(PrimitiveJavaType::Int)),
-            "String" => Ok(JavaType::String),
-            "bool" => Ok(JavaType::Primitive(PrimitiveJavaType::Boolean)),
-            v => Err(UnsupportedType(v.to_string())),
         }
     }
 }
@@ -271,42 +342,197 @@ impl JavaField {
 }
 
 #[derive(Debug, Clone)]
-pub enum Constraint {
+pub struct Constraint {
+    span: Span,
+    kind: ConstraintKind,
+}
+
+#[derive(Debug, Clone)]
+pub enum ConstraintKind {
     None,
     NonZero,
-    InRange(TokenStream, TokenStream),
+    Unsigned,
+    UnsignedArray,
+    Natural,
+    InRange(LitInt, LitInt),
+}
+
+trait IntRange: FromStr + Display {
+    fn min() -> Self;
+
+    fn max() -> Self;
+}
+
+impl IntRange for u8 {
+    fn min() -> Self {
+        u8::MIN
+    }
+
+    fn max() -> Self {
+        u8::MIN
+    }
+}
+
+impl IntRange for u32 {
+    fn min() -> Self {
+        u32::MIN
+    }
+
+    fn max() -> Self {
+        u32::MIN
+    }
+}
+
+impl IntRange for u64 {
+    fn min() -> Self {
+        u64::MIN
+    }
+
+    fn max() -> Self {
+        u64::MIN
+    }
 }
 
 impl Constraint {
+    pub fn new(span: Span, kind: ConstraintKind) -> Constraint {
+        Constraint { span, kind }
+    }
+
+    fn validate_unsigned<T>(constraint: &mut Constraint) -> Result<(), Error>
+    where
+        T: IntRange,
+        T::Err: Display,
+    {
+        let Constraint { span, kind } = constraint;
+        match kind {
+            ConstraintKind::None => {
+                *kind = ConstraintKind::Unsigned;
+                Ok(())
+            }
+            ConstraintKind::NonZero => Err(Error::new(
+                span.clone(),
+                "Cannot use a non-zero constraint on an unsigned type",
+            )),
+            ConstraintKind::Unsigned => Ok(()),
+            ConstraintKind::UnsignedArray => {
+                unreachable!()
+            }
+            ConstraintKind::Natural => Ok(()),
+            ConstraintKind::InRange(min, max) => {
+                let min_val = min.base10_parse::<T>();
+                let max_val = max.base10_parse::<T>();
+
+                let err = |span| {
+                    Err(Error::new(
+                        span,
+                        format!(
+                            "Unsigned number must be in range {}..={}",
+                            T::min(),
+                            T::max()
+                        ),
+                    ))
+                };
+
+                match (min_val, max_val) {
+                    (Ok(_), Ok(_)) => Ok(()),
+                    (Err(_), Ok(_)) => err(min.span()),
+                    (Ok(_), Err(_)) => err(max.span()),
+                    (Err(_), Err(_)) => err(min.span()),
+                }
+            }
+        }
+    }
+
+    pub fn implicit(constraint: &mut Constraint, ty: &JavaType) -> Result<(), Error> {
+        match ty {
+            JavaType::Primitive(ty) => match ty {
+                PrimitiveJavaType::Byte(true) => Self::validate_unsigned::<u8>(constraint),
+                PrimitiveJavaType::Int(true) => Self::validate_unsigned::<u32>(constraint),
+                PrimitiveJavaType::Long(true) => Self::validate_unsigned::<u64>(constraint),
+                _ => Ok(()),
+            },
+            JavaType::Array(ty) => match ty {
+                PrimitiveJavaType::Byte(true) => {
+                    constraint.kind = ConstraintKind::UnsignedArray;
+                    Ok(())
+                }
+                PrimitiveJavaType::Int(true) => {
+                    constraint.kind = ConstraintKind::UnsignedArray;
+                    Ok(())
+                }
+                PrimitiveJavaType::Long(true) => {
+                    constraint.kind = ConstraintKind::UnsignedArray;
+                    Ok(())
+                }
+                _ => Ok(()),
+            },
+            _ => Ok(()),
+        }
+    }
+
     pub fn apply_to_docs(&self, field_name: &str, documentation: &mut Documentation) {
-        match self {
-            Constraint::None => {}
-            Constraint::NonZero => documentation.add_throws(
+        let Constraint { kind, .. } = self;
+        match kind {
+            ConstraintKind::None => {}
+            ConstraintKind::NonZero => documentation.add_throws(
                 "IllegalArgumentException",
                 format!("if {} is zero", field_name),
             ),
-            Constraint::InRange(min, max) => documentation.add_throws(
+            ConstraintKind::InRange(min, max) => documentation.add_throws(
                 "IllegalArgumentException",
                 format!(
-                    "if {} is not in range {}..{}",
-                    field_name.to_string(),
+                    "if '{}' is not in range {}..{}.",
+                    field_name,
                     min,
                     max.to_string()
                 ),
+            ),
+            ConstraintKind::Natural => documentation.add_throws(
+                "IllegalArgumentException",
+                format!("If '{}' is not a natural number (< 1).", field_name),
+            ),
+            ConstraintKind::UnsignedArray => documentation.add_throws(
+                "IllegalArgumentException",
+                format!("if {} contains negative elements", field_name),
+            ),
+            ConstraintKind::Unsigned => documentation.add_throws(
+                "IllegalArgumentException",
+                format!("if {} is negative", field_name),
             ),
         }
     }
 
     fn as_block(&self, field_name: &str) -> Block {
-        match self {
-            Constraint::None => Block::default(),
-            Constraint::NonZero => Block::from(format!("if ({field_name} == 0) {{"))
+        let Constraint { kind, .. } = self;
+        match kind {
+            ConstraintKind::None => Block::default(),
+            ConstraintKind::NonZero => Block::of(format!("if ({field_name} == 0) {{"))
                 .add_statement(format!(
-                    "\tthrow new IllegalArgumentException(\"{field_name} must be non-zero\")"
+                    "{INDENTATION}throw new IllegalArgumentException(\"'{field_name}' must be non-zero\")"
                 ))
-                .add("}}"),
-            Constraint::InRange(_, _) => {
-                unimplemented!()
+                .add_line("}"),
+            ConstraintKind::Unsigned => {
+                Block::of(format!("if ({field_name} < 0) {{"))
+                    .add_statement(format!(
+                        "{INDENTATION}throw new IllegalArgumentException(\"'{field_name}' must be positive\")"
+                    ))
+                    .add_line("}")
+            }
+            ConstraintKind::UnsignedArray => {
+                Block::of(format!("for (byte b : {field_name}) {{"))
+                    .add_line(format!("{INDENTATION}if (b < 0) {{"))
+                    .add_statement(format!("{INDENTATION}{INDENTATION}throw new IllegalArgumentException(\"'{field_name}' contains negative numbers\")"))
+                    .add_line(format!("{INDENTATION}}}"))
+                    .add_line("}")
+            }
+            ConstraintKind::InRange(min, max) => {
+                Block::of(format!("if ({field_name} < {min} || {field_name} > {max}) {{"))
+                    .add_statement(format!("{INDENTATION}throw new IllegalArgumentException(\"'{field_name}' must be in range {min}..{max}\")"))
+                    .add_line("}")}
+            ConstraintKind::Natural => {
+                Block::of(format!("if ({field_name} < 1) {{"))
+                    .add_statement(format!("{INDENTATION}throw new IllegalArgumentException(\"'{field_name}' must be a natural number\")"))
+                    .add_line("}")
             }
         }
     }
@@ -340,109 +566,54 @@ impl JavaMethodParameter {
     }
 }
 
-#[derive(Debug)]
-pub struct FieldModifiers {
-    pub r#static: bool,
-    pub protected: bool,
-    pub public: bool,
-    pub r#final: bool,
-}
-
-impl Default for FieldModifiers {
-    fn default() -> Self {
-        FieldModifiers {
-            r#static: false,
-            protected: false,
-            public: true,
-            r#final: false,
-        }
-    }
-}
-
-impl FieldModifiers {
-    fn set_static(mut self, to: bool) -> FieldModifiers {
-        self.r#static = to;
-        self
-    }
-
-    fn set_protected(mut self, to: bool) -> FieldModifiers {
-        if self.public && to {
-            panic!("Attempted to set an illegal combination of protected and public");
-        }
-        self.protected = to;
-        self
-    }
-
-    fn set_public(mut self, to: bool) -> FieldModifiers {
-        if self.protected && to {
-            panic!("Attempted to set an illegal combination of protected and public");
-        }
-        self.public = to;
-        self
-    }
-
-    fn set_final(mut self, to: bool) -> FieldModifiers {
-        self.r#final = to;
-        self
-    }
-
-    pub fn write(self, writer: &mut Writer) -> io::Result<()> {
-        let FieldModifiers {
-            r#static,
-            protected,
-            public,
-            r#final,
-        } = self;
-
-        let mut modifiers = Vec::new();
-
-        if public {
-            modifiers.push("public");
-        }
-        if protected {
-            modifiers.push("protected");
-        }
-        if r#static {
-            modifiers.push("static");
-        }
-        if r#final {
-            modifiers.push("final");
-        }
-
-        writer.write_indented(modifiers.join(" "), false)
-    }
-}
-
 #[derive(Default, Debug)]
 pub struct Block {
     lines: Vec<String>,
 }
 
-impl From<&str> for Block {
-    fn from(s: &str) -> Self {
-        let block = Block { lines: Vec::new() };
-        block.add_statement(s)
-    }
-}
-
-impl From<String> for Block {
-    fn from(s: String) -> Self {
-        Block::from(s.as_str())
-    }
-}
-
 impl Block {
+    pub fn of(line: impl ToString) -> Block {
+        let block = Block::default();
+        block.add_line(line)
+    }
+
+    pub fn of_statement(line: impl ToString) -> Block {
+        let block = Block::default();
+        block.add_statement(line)
+    }
+
     pub fn write(self, writer: &mut Writer) -> io::Result<()> {
-        writer.write_all_indented(self.lines.into_iter(), false)
+        let block = self
+            .lines
+            .into_iter()
+            .map(|line| {
+                if line.starts_with('\n') || line.ends_with('\n') {
+                    line
+                } else {
+                    format!("{line}\n")
+                }
+            })
+            .collect::<String>();
+        writer.write_all_indented(block.lines(), false)
     }
 
     pub fn add(mut self, line: impl ToString) -> Block {
+        match self.lines.last_mut() {
+            Some(last) => {
+                *last = format!("{last} {}", line.to_string());
+                self
+            }
+            None => self.add_line(line),
+        }
+    }
+
+    pub fn add_line(mut self, line: impl ToString) -> Block {
         self.lines.push(line.to_string());
         self
     }
 
     pub fn add_statement(mut self, statement: impl ToString) -> Block {
-        self.lines.push(format!("{};\n", statement.to_string()));
+        self.lines.push(format!("{};", statement.to_string()));
         self
     }
 
@@ -464,7 +635,6 @@ pub struct JavaMethod {
     pub return_type: JavaType,
     pub args: Vec<JavaMethodParameter>,
     pub body: Block,
-    pub modifiers: FieldModifiers,
 }
 
 impl JavaMethod {
@@ -475,7 +645,6 @@ impl JavaMethod {
             return_type,
             args: vec![],
             body: Block::default(),
-            modifiers: FieldModifiers::default(),
         }
     }
 
@@ -501,7 +670,7 @@ impl JavaMethod {
 
     pub fn getter_for(field: JavaField) -> JavaMethod {
         let documentation = Documentation::for_getter(field.name.clone(), field.default_value());
-        let body = Block::from(format!("return this.{}", field.name));
+        let body = Block::of_statement(format!("return this.{}", field.name));
 
         JavaMethod {
             name: format!("get{}", AsUpperCamelCase(field.name)),
@@ -509,7 +678,6 @@ impl JavaMethod {
             return_type: field.ty,
             args: vec![],
             body,
-            modifiers: FieldModifiers::default(),
         }
     }
 
@@ -531,7 +699,6 @@ impl JavaMethod {
             return_type: JavaType::Void,
             args: vec![arg],
             body,
-            modifiers: FieldModifiers::default(),
         }
     }
 }

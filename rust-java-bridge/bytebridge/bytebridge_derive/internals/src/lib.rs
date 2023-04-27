@@ -48,7 +48,7 @@ fn derive_byte_transformations(item: &DeriveInput) -> Result<ByteRepr<'_>, Error
         _ => {
             return Err(Error::new_spanned(
                 item,
-                "ByteBridge does not support generic type parameters, lifetimes or const generic parameter",
+                "ByteBridge does not support generic type parameters, lifetimes or const generic parameters",
             ));
         }
     }

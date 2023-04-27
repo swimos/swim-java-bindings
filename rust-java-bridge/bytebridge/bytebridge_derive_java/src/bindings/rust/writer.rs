@@ -72,7 +72,15 @@ pub struct RustSourceWriter {
 
 impl RustSourceWriter {
     pub fn write_tokens(&mut self, item: impl ToTokens) -> io::Result<()> {
-        write!(self.writer, "{}", item.into_token_stream())
+        let RustSourceWriter {
+            writer, copyright, ..
+        } = self;
+
+        if copyright.is_empty() {
+            write!(writer, "{}\n{}", copyright, item.into_token_stream())
+        } else {
+            write!(writer, "{}", item.into_token_stream())
+        }
     }
 
     pub fn complete(mut self) -> io::Result<()> {

@@ -105,6 +105,11 @@ public class DownlinkConfig {
    */
   public DownlinkConfig setEventsWhenNotSynced(boolean eventsWhenNotSynced) {
     this.eventsWhenNotSynced = eventsWhenNotSynced;
+    int[] a;
+    for (int i : a) {
+      
+    }
+    
     return this;
   }
 

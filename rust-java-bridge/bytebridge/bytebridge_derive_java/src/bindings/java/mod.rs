@@ -1,26 +1,30 @@
-mod models;
-mod writer;
-
-use crate::bindings::java::models::{
-    Block, Constraint, JavaField, JavaMethod, JavaType, PrimitiveJavaType, AS_BYTES_METHOD,
-    BUFFER_SIZE_VAR, BUFFER_VAR, JAVA_KEYWORDS,
-};
-use crate::bindings::MACRO_PATH;
-use crate::docs::Documentation;
-use crate::FormatStyle;
-use proc_macro2::Span;
-use quote::ToTokens;
 use std::io;
 use std::mem::size_of;
+
+use crate::bindings::java::writer::INDENTATION;
+use heck::AsLowerCamelCase;
+use proc_macro2::Span;
+use quote::ToTokens;
+use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{
-    Attribute, Error, Expr, ExprLit, Field, ItemEnum, Lit, Meta, MetaNameValue, PathArguments,
+    Attribute, Error, Expr, ExprLit, Field, ItemEnum, Lit, LitInt, Meta, MetaNameValue,
     PathSegment, Token, Type, TypePath, Variant,
 };
-
 pub use writer::{JavaSourceWriter, JavaSourceWriterBuilder};
+
+use crate::bindings::java::models::{
+    Block, Constraint, ConstraintKind, JavaField, JavaMethod, JavaType, PrimitiveJavaType,
+    AS_BYTES_METHOD, BUFFER_SIZE_VAR, BUFFER_VAR, JAVA_KEYWORDS, TEMP_VAR,
+};
+use crate::bindings::MACRO_PATH;
+use crate::docs::Documentation;
+use crate::FormatStyle;
+
+mod models;
+mod writer;
 
 #[derive(Debug)]
 pub struct ClassBinding {
@@ -83,13 +87,13 @@ impl ClassBinding {
     }
 
     fn byte_transposition_method(fields: &[JavaField], ordinal: Option<u8>) -> JavaMethod {
-        let method = JavaMethod::new(AS_BYTES_METHOD, JavaType::Array(PrimitiveJavaType::Byte))
-            .add_documentation("Returns a byte array representation of the current configuration.")
-            .add_documentation(
-                "\nThis method is not intended for public use and is called by the Swim runtime.",
-            );
+        let method = JavaMethod::new(
+            AS_BYTES_METHOD,
+            JavaType::Array(PrimitiveJavaType::Byte(false)),
+        )
+        .add_documentation("Returns a byte array representation of the current configuration.");
 
-        let mut transposition = Block::from(format!(
+        let mut transposition = Block::of_statement(format!(
             "java.nio.ByteBuffer {} = java.nio.ByteBuffer.allocate({})",
             BUFFER_VAR, BUFFER_SIZE_VAR
         ))
@@ -97,7 +101,7 @@ impl ClassBinding {
             "{}.order(java.nio.ByteOrder.LITTLE_ENDIAN)",
             BUFFER_VAR
         ));
-        let mut block = Block::from(format!("int {} = 0", BUFFER_SIZE_VAR));
+        let mut block = Block::of_statement(format!("int {} = 0", BUFFER_SIZE_VAR));
         let mut size = match ordinal {
             Some(i) => {
                 block = block.add_statement(format!("{}.put({})", BUFFER_VAR, i));
@@ -115,28 +119,8 @@ impl ClassBinding {
                 }
                 JavaType::Primitive(ty) => {
                     size += ty.size_of();
-
-                    let stmt = match ty {
-                        PrimitiveJavaType::Byte => {
-                            format!("{}.put(this.{})", BUFFER_VAR, name)
-                        }
-                        PrimitiveJavaType::Int => {
-                            format!("{}.putInt(this.{})", BUFFER_VAR, name)
-                        }
-                        PrimitiveJavaType::Long => {
-                            format!("{}.putLong(this.{})", BUFFER_VAR, name)
-                        }
-                        PrimitiveJavaType::Float => {
-                            format!("{}.putFloat(this.{})", BUFFER_VAR, name)
-                        }
-                        PrimitiveJavaType::Double => {
-                            format!("{}.putDouble(this.{})", BUFFER_VAR, name)
-                        }
-                        PrimitiveJavaType::Boolean => {
-                            format!("{}.put((byte) this.{} ? 1 : 0))", BUFFER_VAR, name)
-                        }
-                    };
-                    transposition = transposition.add_statement(stmt);
+                    let name = format!("this.{name}");
+                    transposition = transposition.add_statement(put_primitive(ty, &name));
                 }
                 JavaType::String => {
                     block =
@@ -150,11 +134,16 @@ impl ClassBinding {
                 }
                 JavaType::Array(ty) => {
                     block = block.add_statement(format!(
-                        "{} += ({}.length * {}",
+                        "{} += ({}.length * {})",
                         BUFFER_SIZE_VAR,
                         name,
                         ty.size_of()
                     ));
+                    transposition = transposition
+                        .add_statement(format!("{}.putInt(this.{}.length)", BUFFER_VAR, name))
+                        .add_line(format!("for ({} {} : this.{}) {{", ty, TEMP_VAR, name))
+                        .add_statement(format!("{INDENTATION}{}", put_primitive(ty, TEMP_VAR)))
+                        .add_line("}");
                 }
             }
         }
@@ -163,6 +152,29 @@ impl ClassBinding {
             .add_statement(format!("{} += {}", BUFFER_SIZE_VAR, size))
             .extend(transposition.add_statement(format!("return {}.array()", BUFFER_VAR)));
         method.set_block(body)
+    }
+}
+
+fn put_primitive(ty: &PrimitiveJavaType, name: &str) -> String {
+    match ty {
+        PrimitiveJavaType::Byte(_) => {
+            format!("{}.put({})", BUFFER_VAR, name)
+        }
+        PrimitiveJavaType::Int(_) => {
+            format!("{}.putInt({})", BUFFER_VAR, name)
+        }
+        PrimitiveJavaType::Long(_) => {
+            format!("{}.putLong({})", BUFFER_VAR, name)
+        }
+        PrimitiveJavaType::Float => {
+            format!("{}.putFloat({})", BUFFER_VAR, name)
+        }
+        PrimitiveJavaType::Double => {
+            format!("{}.putDouble({})", BUFFER_VAR, name)
+        }
+        PrimitiveJavaType::Boolean => {
+            format!("{}.put((byte) ({} ? 1 : 0)))", BUFFER_VAR, name)
+        }
     }
 }
 
@@ -184,11 +196,11 @@ impl AbstractClassBinding {
         let file_writer = java_writer.for_file(name.clone())?;
         let mut class_writer = file_writer.begin_class(name.clone(), documentation, None)?;
 
-        let method = JavaMethod::new(AS_BYTES_METHOD, JavaType::Array(PrimitiveJavaType::Byte))
-            .add_documentation("Returns a byte array representation of the current configuration.")
-            .add_documentation(
-                "\nThis method is not intended for public use and is called by the Swim runtime.",
-            );
+        let method = JavaMethod::new(
+            AS_BYTES_METHOD,
+            JavaType::Array(PrimitiveJavaType::Byte(false)),
+        )
+        .add_documentation("Returns a byte array representation of the current configuration.");
         let mut block = Block::default();
 
         let mut variant_iter = variants.iter().peekable();
@@ -196,16 +208,16 @@ impl AbstractClassBinding {
             .next()
             .expect("Bug: An enum should contain at least one variant");
 
-        block = block.add(format!("if (this instanceof {}) {{", first_variant.name));
-        block = block.add(format!(
-            "\treturn (({}) this).asBytes();\n\t}}",
+        block = block.add_line(format!("if (this instanceof {}) {{", first_variant.name));
+        block = block.add_line(format!(
+            "{INDENTATION}return (({}) this).asBytes();\n}}",
             first_variant.name,
         ));
 
         for variant in variant_iter {
             block = block.add(format!("else if (this instanceof {}) {{", variant.name));
-            block = block.add(format!(
-                "\treturn (({}) this).asBytes();\n\t}}",
+            block = block.add_line(format!(
+                "{INDENTATION}return (({}) this).asBytes();\n}}",
                 variant.name,
             ));
         }
@@ -495,7 +507,7 @@ impl<'args, 'ast> Visit<'ast> for ClassBuilder {
     fn visit_field(&mut self, field: &'ast Field) {
         self.with(|infer_docs, builder| {
             let ty = map_type(&field.ty)?;
-            let properties = derive_field_properties(infer_docs, ty, &field.attrs)?;
+            let properties = derive_field_properties(field.span(), infer_docs, ty, &field.attrs)?;
             let span = field.span();
             let default_value = match properties.default_value {
                 Some(ty) => ty,
@@ -508,8 +520,9 @@ impl<'args, 'ast> Visit<'ast> for ClassBuilder {
                 .map(|i| i.to_string())?;
             sanitize_name(name.as_str(), span)?;
 
+            let java_name = AsLowerCamelCase(name).to_string();
             let field = JavaField {
-                name,
+                name: java_name,
                 documentation: properties.documentation,
                 ty,
                 default_value,
@@ -535,33 +548,49 @@ pub fn map_type(ty: &Type) -> Result<JavaType, Error> {
     let unsupported_type = |span| Err(Error::new(span, "Unsupported type"));
     match ty {
         Type::Path(TypePath { qself: None, path }) => match path.segments.last() {
-            Some(PathSegment {
-                ident,
-                arguments: PathArguments::None,
-            }) => match JavaType::try_from(ident.to_string().as_str()) {
-                Ok(ty) => Ok(ty),
-                Err(e) => Err(Error::new(path.span(), e)),
-            },
-            Some(meta) => unsupported_type(meta.span()),
+            Some(PathSegment { ident, arguments }) => {
+                match JavaType::try_map(ident.to_string().as_str(), arguments) {
+                    Ok(ty) => Ok(ty),
+                    Err(e) => Err(Error::new(path.span(), e)),
+                }
+            }
             None => unsupported_type(Span::call_site()),
         },
         meta => unsupported_type(meta.span()),
     }
 }
 
+fn infer_docs(attrs: &[Attribute], documentation: &mut Documentation) {
+    let attrs = attrs.iter().filter(|at| at.path().is_ident("doc"));
+    for attr in attrs {
+        match &attr.meta {
+            Meta::NameValue(meta) => match &meta.value {
+                Expr::Lit(ExprLit {
+                    lit: Lit::Str(str), ..
+                }) => documentation.push_header_line(str.value()),
+                v => panic!("Unexpected doc value: {:?}", v.to_token_stream()),
+            },
+            meta => {
+                panic!("Unexpected doc value: {:?}", meta.to_token_stream())
+            }
+        }
+    }
+}
+
 fn derive_field_properties(
-    infer_docs: bool,
+    span: Span,
+    infer_documentation: bool,
     field_type: JavaType,
     attrs: &[Attribute],
 ) -> Result<FieldProperties, Error> {
     let mut properties = FieldProperties {
         documentation: Documentation::from_style(FormatStyle::Documentation),
         default_value: None,
-        constraint: Constraint::None,
+        constraint: Constraint::new(span, ConstraintKind::None),
     };
 
-    if !infer_docs {
-        return Ok(properties);
+    if infer_documentation {
+        infer_docs(&attrs, &mut properties.documentation);
     }
 
     let mut attribute_iter = attrs
@@ -570,21 +599,26 @@ fn derive_field_properties(
         .peekable();
 
     if attribute_iter.peek().is_none() {
+        Constraint::implicit(&mut properties.constraint, &field_type)?;
         return Ok(properties);
     }
 
-    let unknown_attribute = |span| Err(Error::new(span, "Unknown attribute"));
+    let unknown_attribute =
+        |attr, span| Err(Error::new(span, format!("Unknown attribute: {}", attr)));
+
+    let mut documentation_override = Documentation::empty_documentation();
 
     for attr in attribute_iter {
         let nested = attr.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
-
         for nested in nested {
             match nested {
                 Meta::NameValue(meta) if meta.path.is_ident("doc") => match meta.value {
                     Expr::Lit(ExprLit {
                         lit: Lit::Str(str), ..
-                    }) => properties.documentation.push_header_line(str.value()),
-                    meta => return unknown_attribute(meta.span()),
+                    }) => documentation_override.push_header_line(str.value()),
+                    meta => {
+                        return unknown_attribute(meta.to_token_stream().to_string(), meta.span())
+                    }
                 },
                 Meta::NameValue(MetaNameValue {
                     path,
@@ -599,17 +633,43 @@ fn derive_field_properties(
                 Meta::Path(path) if path.is_ident("non_zero") => {
                     properties.constraint = field_type.as_non_zero(path.span())?
                 }
+                Meta::Path(path) if path.is_ident("natural") => {
+                    properties.constraint = field_type.as_natural(path.span())?
+                }
+                Meta::Path(path) if path.is_ident("unsigned_array") => {
+                    properties.constraint = field_type.as_unsigned_array(path.span())?
+                }
                 Meta::List(list) if list.path.is_ident("range") => {
-                    println!("range: {}", list.to_token_stream().to_string());
-                    unimplemented!();
+                    struct RangeArgs {
+                        min: LitInt,
+                        _sep: Token![,],
+                        max: LitInt,
+                    }
 
-                    // properties.constraint = field_type.as_non_zero(path.span())?
+                    impl Parse for RangeArgs {
+                        fn parse(input: ParseStream) -> syn::Result<Self> {
+                            Ok(RangeArgs {
+                                min: input.parse()?,
+                                _sep: input.parse()?,
+                                max: input.parse()?,
+                            })
+                        }
+                    }
+
+                    let args = list.parse_args::<RangeArgs>()?;
+                    properties.constraint = field_type.as_range(list.span(), args.min, args.max)?
                 }
                 meta => {
-                    return unknown_attribute(meta.span());
+                    return unknown_attribute(meta.to_token_stream().to_string(), meta.span());
                 }
             }
         }
+    }
+
+    Constraint::implicit(&mut properties.constraint, &field_type)?;
+
+    if !documentation_override.is_empty() {
+        properties.documentation = documentation_override;
     }
 
     Ok(properties)

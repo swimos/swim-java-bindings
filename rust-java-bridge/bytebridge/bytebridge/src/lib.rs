@@ -32,6 +32,6 @@ pub enum FromBytesError {
     Bool(u8),
     /// There was insufficient data in the buffer.
     InsufficientData,
-    /// Unknown enum variant found
+    /// Unknown enum variant was read.
     UnknownEnumVariant(u8),
 }

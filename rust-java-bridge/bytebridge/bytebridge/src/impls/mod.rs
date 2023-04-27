@@ -22,11 +22,7 @@ pub fn has(bytes: &BytesMut, cnt: usize) -> Result<(), FromBytesError> {
 /// Returns Ok(()) if the buffer has at least `size_of::<T>()` bytes available or
 /// Err(FromBytesError::InsufficientData) if it does not.
 pub fn has_size_of<T>(bytes: &BytesMut) -> Result<(), FromBytesError> {
-    if bytes.remaining() >= size_of::<T>() {
-        Ok(())
-    } else {
-        Err(FromBytesError::InsufficientData)
-    }
+    has(bytes, size_of::<T>())
 }
 
 macro_rules! impl_bytes {
@@ -63,6 +59,7 @@ macro_rules! number_bytes {
 }
 
 number_bytes! {
+    i8 => (put_i8, get_i8),
     i32 => (put_i32_le, get_i32_le),
     i64 => (put_i64_le, get_i64_le),
     u32 => (put_u32_le, get_u32_le),

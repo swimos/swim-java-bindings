@@ -35,7 +35,8 @@ impl VisitMut for RustBindingsBuilder {
     }
 
     fn visit_variant_mut(&mut self, i: &mut Variant) {
-        let Variant { attrs, .. } = i;
+        let Variant { attrs, fields, .. } = i;
+        self.visit_fields_mut(fields);
         strip_attributes(attrs);
     }
 }

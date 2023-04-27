@@ -54,6 +54,7 @@ use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
 
 pub mod downlink;
 mod macros;
+include!(concat!(env!("OUT_DIR"), "/out.rs"));
 
 pub struct SwimClient {
     error_mode: ErrorHandlingConfig,

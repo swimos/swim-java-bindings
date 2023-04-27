@@ -84,7 +84,7 @@ impl<'ast> Visit<'ast> for DeriveArgsBuilder {
 
         if let Meta::Path(_) = &i.meta {
             // Empty arguments in the attribute. This is valid and just means that the item has been
-            // decorated as something like:
+            // decorated as:
             //
             // #[bytebridge]
             // struct S {
@@ -221,6 +221,7 @@ fn derive_bindings(mut item: Item) -> Result<Option<Bindings>, Error> {
 
 fn should_enter(item: &Item) -> bool {
     let predicate = |attrs: &[Attribute]| attrs.iter().any(|attr| attr.path().is_ident(MACRO_PATH));
+
     match item {
         Item::Enum(item) => predicate(&item.attrs),
         Item::Struct(item) => predicate(&item.attrs),
@@ -242,7 +243,6 @@ impl Bindings {
         let Bindings { java, rust } = self;
 
         java.write(java_writer)?;
-        unimplemented!();
         rust.write(rust_writer)
     }
 }

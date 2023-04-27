@@ -9,17 +9,17 @@
 //     pub booleeeeean: bool,
 // }
 
-#[bytebridge]
-#[derive(Debug, Clone, PartialEq)]
-pub enum EnumVar {
-    #[bytebridge(rename = "AVarClass")]
-    AVar {
-        #[bytebridge(range)]
-        a: i32,
-        b: i32,
-    },
-    BVar {
-        c: i32,
-        d: i32,
-    },
-}
+// #[bytebridge]
+// #[derive(Debug, Clone, PartialEq)]
+// pub enum EnumVar {
+//     #[bytebridge(rename = "AVarClass")]
+//     AVar {
+//         #[bytebridge(natural)]
+//         a: i32,
+//         b: i32,
+//     },
+//     BVar {
+//         c: i32,
+//         d: i32,
+//     },
+// }
