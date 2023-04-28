@@ -196,7 +196,7 @@ fn put_primitive(ty: &PrimitiveJavaType, name: &str) -> String {
             format!("{}.putDouble({})", BUFFER_VAR, name)
         }
         PrimitiveJavaType::Boolean => {
-            format!("{}.put((byte) ({} ? 1 : 0)))", BUFFER_VAR, name)
+            format!("{}.put((byte) ({} ? 1 : 0))", BUFFER_VAR, name)
         }
     }
 }

@@ -11,7 +11,7 @@ fn main() {
     build_file.push("out.rs");
 
     let builder = bytebridge::Builder::default();
-    let java_writer = JavaSourceWriterBuilder::std_out("test.package.somewhere").copyright_header(
+    let _java_writer = JavaSourceWriterBuilder::std_out("test.package.somewhere").copyright_header(
         r#"Copyright line 1
 Copyright line 2"#,
         FormatStyle::Line,
@@ -26,5 +26,4 @@ Copyright line 2"#,
         .add_source(models)
         .generate(java_writer, rust_writer)
         .unwrap();
-    // unimplemented!()
 }
