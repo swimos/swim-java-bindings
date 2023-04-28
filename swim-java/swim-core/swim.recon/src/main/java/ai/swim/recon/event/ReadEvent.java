@@ -22,7 +22,7 @@ import ai.swim.recon.event.number.ReadFloatValue;
 import ai.swim.recon.event.number.ReadIntValue;
 import ai.swim.recon.event.number.ReadLongValue;
 import ai.swim.recon.models.ParserTransition;
-import ai.swim.recon.models.state.StateChange;
+import ai.swim.recon.models.state.Action;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -173,7 +173,7 @@ public abstract class ReadEvent {
   }
 
   public ParserTransition transition() {
-    return new ParserTransition(this, StateChange.none());
+    return new ParserTransition(this, Action.none());
   }
 
   @Override

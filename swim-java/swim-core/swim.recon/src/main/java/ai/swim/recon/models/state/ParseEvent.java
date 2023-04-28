@@ -14,19 +14,48 @@
 
 package ai.swim.recon.models.state;
 
-public class NoStateChange extends StateChange {
-  NoStateChange() {
+import ai.swim.recon.models.ParseState;
 
+import java.util.Objects;
+
+public class ParseEvent extends Action {
+
+  private final ParseState state;
+
+  public ParseEvent(ParseState state) {
+    this.state = state;
   }
 
   @Override
-  public boolean isNone() {
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ParseEvent that = (ParseEvent) o;
+    return state == that.state;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(state);
+  }
+
+  public ParseState getState() {
+    return state;
+  }
+
+  @Override
+  public boolean isParseEvent() {
     return true;
   }
 
   @Override
   public String toString() {
-    return "NoStateChange{}";
+    return "ChangeState{" +
+        "state=" + state +
+        '}';
   }
-
 }

@@ -7,9 +7,9 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParseState;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.items.ItemsKind;
-import ai.swim.recon.models.state.ModifyState;
+import ai.swim.recon.models.state.ParseEvent;
 import ai.swim.recon.models.state.PushAttrNewRec;
-import ai.swim.recon.models.state.StateChange;
+import ai.swim.recon.models.state.Action;
 import ai.swim.recon.result.ParseResult;
 import ai.swim.recon.result.ResultError;
 
@@ -254,7 +254,7 @@ public final class ReconParser {
     }
 
     ParserTransition output = this.current.bind();
-    this.transition(output.getChange(), clearIfNone);
+    this.transition(output.getAction(), clearIfNone);
     this.current = null;
     return ParseResult.ok(output.getEvents());
   }
@@ -301,7 +301,7 @@ public final class ReconParser {
               return new ParserTransition();
             }
           } else {
-            this.transition(StateChange.popAfterItem(), false);
+            this.transition(Action.popAfterItem(), false);
             return new ParserTransition(ReadEvent.endRecord());
           }
         }), false);
@@ -312,7 +312,7 @@ public final class ReconParser {
             this.state.addLast(s.get());
             return new ParserTransition();
           } else {
-            this.transition(StateChange.popAfterItem(), false);
+            this.transition(Action.popAfterItem(), false);
             return new ParserTransition(ReadEvent.endRecord());
           }
         }), false);
@@ -323,7 +323,7 @@ public final class ReconParser {
             this.state.addLast(s.get());
             return new ParserTransition();
           } else {
-            this.transition(StateChange.popAfterAttr(), false);
+            this.transition(Action.popAfterAttr(), false);
             return new ParserTransition(ReadEvent.endAttribute());
           }
         }), false);
@@ -340,7 +340,7 @@ public final class ReconParser {
               return new ParserTransition();
             }
           } else {
-            this.transition(StateChange.popAfterAttr(), false);
+            this.transition(Action.popAfterAttr(), false);
             return new ParserTransition(ReadEvent.endAttribute());
           }
         }), false);
@@ -353,25 +353,25 @@ public final class ReconParser {
     }
   }
 
-  private void transition(StateChange stateChange, boolean clearIfNone) {
-    if (stateChange == null) {
+  private void transition(Action action, boolean clearIfNone) {
+    if (action == null) {
       if (clearIfNone) {
         this.state.clear();
       }
       return;
     }
 
-    if (stateChange.isNone()) {
+    if (action.isNone()) {
       if (clearIfNone) {
         this.state.clear();
       }
-    } else if (stateChange.isPopAfterAttr()) {
+    } else if (action.isPopAfterAttr()) {
       this.state.pollLast();
       ParseState last = this.state.pollLast();
       if (last != null) {
         this.state.addLast(ParseState.AfterAttr);
       }
-    } else if (stateChange.isPopAfterItem()) {
+    } else if (action.isPopAfterItem()) {
       this.state.pollLast();
       ParseState parseState = this.state.pollLast();
       if (parseState != null) {
@@ -394,27 +394,27 @@ public final class ReconParser {
             this.state.addLast(ParseState.RecordBodyAfterSlot);
             break;
           default:
-            throw new IllegalStateException("Invalid state transition from: " + parseState + ", to: " + stateChange);
+            throw new IllegalStateException("Invalid state transition from: " + parseState + ", to: " + action);
         }
       }
-    } else if (stateChange.isChangeState()) {
+    } else if (action.isParseEvent()) {
       ParseState last = this.state.pollLast();
       if (last != null) {
-        this.state.addLast(((ModifyState) stateChange).getState());
+        this.state.addLast(((ParseEvent) action).getState());
       }
-    } else if (stateChange.isPushAttr()) {
+    } else if (action.isPushAttr()) {
       this.state.addLast(ParseState.AttrBodyStartOrNl);
-    } else if (stateChange.isPushAttrNewRec()) {
-      PushAttrNewRec pushAttr = (PushAttrNewRec) stateChange;
+    } else if (action.isPushAttrNewRec()) {
+      PushAttrNewRec pushAttr = (PushAttrNewRec) action;
       if (pushAttr.hasBody()) {
         this.state.addLast(ParseState.Init);
         this.state.addLast(ParseState.AttrBodyStartOrNl);
       } else {
         this.state.addLast(ParseState.AfterAttr);
       }
-    } else if (stateChange.isPushAttrNewRec()) {
+    } else if (action.isPushAttrNewRec()) {
       this.state.addLast(ParseState.AttrBodyStartOrNl);
-    } else if (stateChange.isPushBody()) {
+    } else if (action.isPushBody()) {
       this.state.addLast(ParseState.RecordBodyStartOrNl);
     } else {
       throw new AssertionError();

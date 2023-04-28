@@ -17,6 +17,7 @@ package ai.swim.structure.processor;
 import ai.swim.structure.processor.context.ScopedContext;
 import com.squareup.javapoet.CodeBlock;
 
+@FunctionalInterface
 public interface Emitter {
 
   CodeBlock emit(ScopedContext context);

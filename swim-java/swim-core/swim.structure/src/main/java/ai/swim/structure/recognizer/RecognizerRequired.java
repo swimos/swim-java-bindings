@@ -15,7 +15,7 @@ public class RecognizerRequired<T> extends Recognizer<T> {
     if (this.delegate.isDone()) {
       T output = this.delegate.bind();
       if (output == null) {
-        return Recognizer.error(new RuntimeException("Recognizer produced a null output"));
+        return Recognizer.error(new NullPointerException());
       } else {
         return Recognizer.done(output, this);
       }

@@ -15,7 +15,7 @@
 package ai.swim.recon.models;
 
 import ai.swim.recon.event.ReadEvent;
-import ai.swim.recon.models.state.StateChange;
+import ai.swim.recon.models.state.Action;
 
 import java.util.Collections;
 import java.util.List;
@@ -23,39 +23,39 @@ import java.util.Objects;
 
 public class ParserTransition {
   private final List<ReadEvent> events;
-  private final StateChange change;
+  private final Action action;
 
-  public ParserTransition(ReadEvent event, StateChange change) {
+  public ParserTransition(ReadEvent event, Action action) {
     this.events = List.of(event);
-    this.change = Objects.requireNonNullElse(change, StateChange.none());
+    this.action = Objects.requireNonNullElse(action, Action.none());
   }
 
   public ParserTransition() {
     this.events = Collections.emptyList();
-    this.change = StateChange.none();
+    this.action = Action.none();
   }
 
   public ParserTransition(ReadEvent event) {
     this.events = List.of(event);
-    this.change = StateChange.none();
+    this.action = Action.none();
   }
 
-  public ParserTransition(ReadEvent event1, ReadEvent event2, StateChange change) {
+  public ParserTransition(ReadEvent event1, ReadEvent event2, Action action) {
     this.events = List.of(event1, event2);
-    this.change = Objects.requireNonNullElse(change, StateChange.none());
+    this.action = Objects.requireNonNullElse(action, Action.none());
   }
 
-  public ParserTransition(List<ReadEvent> events, StateChange change) {
+  public ParserTransition(List<ReadEvent> events, Action action) {
     this.events = events;
-    this.change = change;
+    this.action = action;
   }
 
   public List<ReadEvent> getEvents() {
     return events;
   }
 
-  public StateChange getChange() {
-    return change;
+  public Action getAction() {
+    return action;
   }
 
   @Override
@@ -67,19 +67,19 @@ public class ParserTransition {
       return false;
     }
     ParserTransition that = (ParserTransition) o;
-    return Objects.equals(events, that.events) && Objects.equals(change, that.change);
+    return Objects.equals(events, that.events) && Objects.equals(action, that.action);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(events, change);
+    return Objects.hash(events, action);
   }
 
   @Override
   public String toString() {
     return "ParserTransition{" +
         "events=" + events +
-        ", change=" + change +
+        ", change=" + action +
         '}';
   }
 }
