@@ -239,7 +239,7 @@ fn derive_bindings(mut item: Item) -> Result<Option<Bindings>, Error> {
     }
 
     let mut args_builder = DeriveArgsBuilder::default();
-    args_builder.visit_item(&mut item);
+    args_builder.visit_item(&item);
 
     let args = match args_builder.into_result()? {
         Some(args) => args,

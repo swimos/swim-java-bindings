@@ -22,13 +22,13 @@ impl WriterFactory {
         match self {
             WriterFactory::StdOut => {
                 let mut out = io::stdout();
-                write!(out, ">>>>> File: {:?}.java\n", file_name)?;
+                writeln!(out, ">>>>> File: {:?}.java", file_name)?;
                 let writer = Writer::std_out(out);
                 Ok(writer)
             }
             WriterFactory::Dir { path } => {
                 let mut file_path = path.clone();
-                file_path.push(package_name.replace(".", "/"));
+                file_path.push(package_name.replace('.', "/"));
                 create_dir_all(&file_path)?;
 
                 file_path.push(file_name);
@@ -226,7 +226,7 @@ impl JavaSourceWriterBuilder {
             writer,
             copyright: copyright
                 .map(Documentation::build)
-                .unwrap_or("".to_string()),
+                .unwrap_or_else(|| "".to_string()),
             package,
         }
     }

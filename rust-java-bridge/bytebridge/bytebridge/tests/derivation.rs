@@ -21,7 +21,7 @@ where
 
 #[test]
 fn struct_round_trip() {
-    #[derive(Debug, ByteCodec, PartialEq)]
+    #[derive(Debug, ByteCodec, PartialEq, Eq)]
     pub struct Prop {
         pub a: i32,
         pub b: i32,
@@ -32,7 +32,7 @@ fn struct_round_trip() {
 
 #[test]
 fn enum_round_trip() {
-    #[derive(Debug, ByteCodec, PartialEq)]
+    #[derive(Debug, ByteCodec, PartialEq, Eq)]
     pub enum Prop {
         VarA { a: i32, b: i32 },
         VarB { c: i32, d: i32 },
@@ -43,14 +43,14 @@ fn enum_round_trip() {
 
 #[test]
 fn unknown_enum_variant() {
-    #[derive(Debug, ByteCodec, PartialEq)]
+    #[derive(Debug, ByteCodec, PartialEq, Eq)]
     pub enum Prop {
         VarA { a: i32, b: i32 },
     }
 
     let variant = 13;
 
-    let mut buf = BytesMut::from_iter(&[variant, 0, 0, 0, 2, 0, 0, 0]);
+    let mut buf = BytesMut::from_iter([variant, 0, 0, 0, 2, 0, 0, 0]);
     match Prop::try_from_bytes(&mut buf) {
         Ok(_) => {
             panic!("Expected a test failure");

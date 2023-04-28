@@ -19,7 +19,8 @@ pub const AS_BYTES_METHOD: &str = "asBytes";
 
 lazy_static! {
     pub static ref JAVA_KEYWORDS: HashSet<&'static str> = {
-        let set = HashSet::from([
+        
+        HashSet::from([
             "abstract",
             "assert",
             "boolean",
@@ -76,13 +77,12 @@ lazy_static! {
             BUFFER_SIZE_VAR,
             AS_BYTES_METHOD,
             TEMP_VAR,
-        ]);
-        set
+        ])
     };
 }
 
 /// Discriminate between primitive Java types and arrays.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum JavaType {
     Void,
     String,
@@ -138,7 +138,7 @@ impl JavaType {
                 let err = || {
                     Err(UnsupportedType(format!(
                         "Vec{}",
-                        arguments.to_token_stream().to_string()
+                        arguments.to_token_stream()
                     )))
                 };
                 match arguments {
@@ -186,7 +186,7 @@ impl Display for JavaType {
 }
 
 /// A primitive unboxed Java type.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum PrimitiveJavaType {
     Byte { unsigned: bool, nonzero: bool },
     Int { unsigned: bool, nonzero: bool },
@@ -515,7 +515,7 @@ impl Constraint {
                 Ok(())
             }
             ConstraintKind::NonZero => Err(Error::new(
-                span.clone(),
+                *span,
                 "Cannot use a non-zero constraint on an unsigned type",
             )),
             ConstraintKind::Unsigned => Ok(()),
@@ -626,7 +626,7 @@ impl Constraint {
                     "if '{}' is not in range {}..{}.",
                     field_name,
                     min,
-                    max.to_string()
+                    max
                 ),
             ),
             ConstraintKind::Natural => documentation.add_throws(
@@ -715,7 +715,7 @@ impl JavaMethodParameter {
     fn from_field(field: &JavaField) -> JavaMethodParameter {
         JavaMethodParameter {
             name: field.name.clone(),
-            ty: field.ty.clone(),
+            ty: field.ty,
         }
     }
 }

@@ -17,10 +17,10 @@ impl StringStack {
 
         if !line.starts_with(' ') {
             self.inner
-                .push_str(&format!("{} {}", prefix, line.to_string()));
+                .push_str(&format!("{} {}", prefix, line));
         } else {
             self.inner
-                .push_str(&format!("{}{}", prefix, line.to_string()));
+                .push_str(&format!("{}{}", prefix, line));
         }
     }
 }
@@ -191,7 +191,7 @@ impl Documentation {
             for line in inner.lines() {
                 buf.push_str(&format!(" *{}\n", line));
             }
-            buf.push_str(&format!(" */"));
+            buf.push_str(" */");
             buf
         }
 

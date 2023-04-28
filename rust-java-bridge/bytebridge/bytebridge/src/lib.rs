@@ -24,7 +24,7 @@ pub trait ByteCodec {
 }
 
 /// Unrecoverable errors produced when attempting to decode an object from its byte representation.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FromBytesError {
     /// An invalid UTF-8 encoding was read.
     Utf8(Utf8Error),

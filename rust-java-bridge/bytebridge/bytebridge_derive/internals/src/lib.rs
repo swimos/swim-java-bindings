@@ -4,7 +4,7 @@ use quote::{format_ident, quote, ToTokens};
 use syn::{parse2, Data, DeriveInput, Error, Fields, Type, Visibility};
 
 pub fn derive(input: TokenStream) -> TokenStream {
-    proc_macro_derive(input.into()).into()
+    proc_macro_derive(input)
 }
 
 fn proc_macro_derive(input: TokenStream) -> TokenStream {
@@ -39,12 +39,12 @@ fn expand(input: DeriveInput) -> Result<TokenStream, Error> {
             }
         };
     };
-    Ok(tokens.into())
+    Ok(tokens)
 }
 
 fn derive_byte_transformations(item: &DeriveInput) -> Result<ByteRepr<'_>, Error> {
     match item.generics.params.next() {
-        Some(item) if item.len() == 0 => {}
+        Some(item) if item.is_empty() => {}
         _ => {
             return Err(Error::new_spanned(
                 item,
@@ -77,10 +77,10 @@ fn derive_byte_transformations(item: &DeriveInput) -> Result<ByteRepr<'_>, Error
             }))
         }
         Data::Union(_) => {
-            return Err(Error::new_spanned(
+            Err(Error::new_spanned(
                 item,
                 "ByteBridge does not support unions",
-            ));
+            ))
         }
     }
 }
@@ -285,7 +285,7 @@ where
 
                 fields.push(Field {
                     ty: &field.ty,
-                    ident: &field.ident.as_ref().expect("Named field missing ident"),
+                    ident: field.ident.as_ref().expect("Named field missing ident"),
                 });
                 Ok(fields)
             }),

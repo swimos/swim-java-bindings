@@ -443,7 +443,7 @@ impl AbstractClassBuilder {
     }
 }
 
-impl<'args, 'ast> Visit<'ast> for AbstractClassBuilder {
+impl<'ast> Visit<'ast> for AbstractClassBuilder {
     fn visit_item_enum(&mut self, i: &'ast ItemEnum) {
         let lim = u8::MAX as usize;
         if i.variants.len() > lim {
@@ -559,11 +559,11 @@ pub fn validate_identifier(meta: MetaNameValue) -> Result<String, Error> {
                 None => err(str.span(), INVALID_PROPERTY_NAME),
             }
         }
-        list => return err(list.span(), INVALID_PROPERTY_NAME),
+        list => err(list.span(), INVALID_PROPERTY_NAME),
     }
 }
 
-impl<'args, 'ast> Visit<'ast> for ClassBuilder {
+impl<'ast> Visit<'ast> for ClassBuilder {
     fn visit_field(&mut self, field: &'ast Field) {
         self.with(|infer_docs, builder| {
             let ty = map_type(&field.ty)?;
@@ -571,7 +571,7 @@ impl<'args, 'ast> Visit<'ast> for ClassBuilder {
             let name = field
                 .ident
                 .as_ref()
-                .ok_or(Error::new(span, "Tuple fields are not supported"))
+                .ok_or_else(|| Error::new(span, "Tuple fields are not supported"))
                 .map(|i| AsLowerCamelCase(i.to_string()).to_string())?;
             let (name, properties) =
                 derive_field_properties(name, field.span(), infer_docs, ty, &field.attrs)?;
@@ -668,7 +668,7 @@ fn derive_field_properties(
     };
 
     if infer_documentation {
-        infer_docs(&attrs, &mut properties.documentation);
+        infer_docs(attrs, &mut properties.documentation);
     }
 
     let mut attribute_iter = attrs

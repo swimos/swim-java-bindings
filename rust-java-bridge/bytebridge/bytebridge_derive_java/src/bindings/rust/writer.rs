@@ -65,9 +65,7 @@ impl RustSourceWriterBuilder {
             writer,
             path,
             format,
-            copyright: copyright
-                .map(Documentation::build)
-                .unwrap_or("".to_string()),
+            copyright: copyright.map(Documentation::build).unwrap_or_default(),
         }
     }
 }

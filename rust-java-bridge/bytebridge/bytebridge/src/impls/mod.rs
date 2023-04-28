@@ -75,7 +75,7 @@ impl_bytes! {
         bytes.put_u64_le(*self as u64);
     },
     decode => |bytes| {
-        has(&bytes, size_of::<u64>())?;
+        has(bytes, size_of::<u64>())?;
         Ok(bytes.get_u64_le() as usize)
     }
 }
@@ -87,7 +87,7 @@ impl_bytes! {
         bytes.put_u64_le(*self as u64);
     },
     decode => |bytes| {
-        has(&bytes, size_of::<i64>())?;
+        has(bytes, size_of::<i64>())?;
         Ok(bytes.get_i64_le() as isize)
     }
 }
@@ -99,7 +99,7 @@ impl_bytes! {
         bytes.put_u64_le(self.as_secs());
     },
     decode => |bytes| {
-        has(&bytes, size_of::<u64>())?;
+        has(bytes, size_of::<u64>())?;
         Ok(Duration::from_secs(bytes.get_u64_le()))
     }
 }
@@ -126,10 +126,10 @@ impl_bytes! {
         bytes.extend_from_slice(data);
     },
     decode => |bytes| {
-        has(&bytes, size_of::<u64>())?;
+        has(bytes, size_of::<u64>())?;
         let len = bytes.get_u64_le() as usize;
 
-        has(&bytes, len)?;
+        has(bytes, len)?;
 
         match std::str::from_utf8(&bytes[0..len]) {
             Ok(str) => {
@@ -149,7 +149,7 @@ impl_bytes! {
         bytes.put_u8(*self);
     },
     decode => |bytes| {
-        has(&bytes, size_of::<u8>())?;
+        has(bytes, size_of::<u8>())?;
         Ok(bytes.get_u8())
     }
 }
@@ -160,7 +160,7 @@ impl_bytes! {
         u8::to_bytes(&(*self as u8), bytes);
     },
     decode => |bytes| {
-        has(&bytes, size_of::<u8>())?;
+        has(bytes, size_of::<u8>())?;
         match u8::try_from_bytes(bytes){
             Ok(1) => Ok(true),
             Ok(0) => Ok(false),
@@ -178,10 +178,10 @@ where
     where
         Self: Sized,
     {
-        has(&bytes, size_of::<u64>())?;
+        has(bytes, size_of::<u64>())?;
 
         let element_count = bytes.get_u64_le();
-        has(&bytes, element_count as usize)?;
+        has(bytes, element_count as usize)?;
 
         let mut collection = Vec::with_capacity(element_count as usize);
 

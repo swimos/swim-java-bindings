@@ -39,7 +39,7 @@ impl TestCase {
                         .iter()
                         .map(|variant| {
                             unpack_rename(&variant.attrs).unwrap_or_else(|| {
-                                format!("{}{}", superclass_name, variant.ident.to_string())
+                                format!("{}{}", superclass_name, variant.ident)
                             })
                         })
                         .collect(),
