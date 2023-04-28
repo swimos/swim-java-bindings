@@ -92,7 +92,10 @@ impl ClassBinding {
     fn byte_transposition_method(fields: &[JavaField], ordinal: Option<u8>) -> JavaMethod {
         let method = JavaMethod::new(
             AS_BYTES_METHOD,
-            JavaType::Array(PrimitiveJavaType::Byte(false)),
+            JavaType::Array(PrimitiveJavaType::Byte {
+                unsigned: false,
+                nonzero: false,
+            }),
             ordinal.as_ref().map(|_| "@Override".to_string()),
         )
         .add_documentation("Returns a byte array representation of the current configuration.");
@@ -162,13 +165,13 @@ impl ClassBinding {
 
 fn put_primitive(ty: &PrimitiveJavaType, name: &str) -> String {
     match ty {
-        PrimitiveJavaType::Byte(_) => {
+        PrimitiveJavaType::Byte { .. } => {
             format!("{}.put({})", BUFFER_VAR, name)
         }
-        PrimitiveJavaType::Int(_) => {
+        PrimitiveJavaType::Int { .. } => {
             format!("{}.putInt({})", BUFFER_VAR, name)
         }
-        PrimitiveJavaType::Long(_) => {
+        PrimitiveJavaType::Long { .. } => {
             format!("{}.putLong({})", BUFFER_VAR, name)
         }
         PrimitiveJavaType::Float => {
@@ -204,7 +207,10 @@ impl AbstractClassBinding {
 
         let method = JavaMethod::new(
             AS_BYTES_METHOD,
-            JavaType::Array(PrimitiveJavaType::Byte(false)),
+            JavaType::Array(PrimitiveJavaType::Byte {
+                unsigned: false,
+                nonzero: false,
+            }),
             None,
         )
         .add_documentation("Returns a byte array representation of the current configuration.")
@@ -481,9 +487,6 @@ pub fn validate_identifier(meta: MetaNameValue) -> Result<String, Error> {
             lit: Lit::Str(str), ..
         }) => {
             let identifier = str.value();
-
-            println!("{}", identifier);
-
             let mut chars = identifier.chars();
             match chars.next() {
                 Some(char) if ident_start_char(char) => {
@@ -632,15 +635,15 @@ fn derive_field_properties(
                     }
                     properties.default_value = Some(field_type.unpack_default_value(lit)?);
                 }
-                Meta::Path(path) if path.is_ident(ATTR_NON_ZERO) => {
-                    properties.constraint = field_type.as_non_zero(path.span())?
-                }
-                Meta::Path(path) if path.is_ident(ATTR_NATURAL) => {
-                    properties.constraint = field_type.as_natural(path.span())?
-                }
-                Meta::Path(path) if path.is_ident(ATTR_UNSIGNED_ARRAY) => {
-                    properties.constraint = field_type.as_unsigned_array(path.span())?
-                }
+                Meta::Path(path) if path.is_ident(ATTR_NON_ZERO) => properties
+                    .constraint
+                    .step(field_type.as_non_zero(path.span())?)?,
+                Meta::Path(path) if path.is_ident(ATTR_NATURAL) => properties
+                    .constraint
+                    .step(field_type.as_natural(path.span())?)?,
+                Meta::Path(path) if path.is_ident(ATTR_UNSIGNED_ARRAY) => properties
+                    .constraint
+                    .step(field_type.as_unsigned_array(path.span())?)?,
                 Meta::List(list) if list.path.is_ident(ATTR_RANGE) => {
                     struct RangeArgs {
                         min: LitInt,
@@ -659,7 +662,11 @@ fn derive_field_properties(
                     }
 
                     let args = list.parse_args::<RangeArgs>()?;
-                    properties.constraint = field_type.as_range(list.span(), args.min, args.max)?
+                    properties.constraint.step(field_type.as_range(
+                        list.span(),
+                        args.min,
+                        args.max,
+                    )?)?
                 }
                 meta => {
                     return unknown_attribute(meta.to_token_stream().to_string(), meta.span());

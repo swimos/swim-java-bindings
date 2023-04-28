@@ -34,4 +34,6 @@ pub enum FromBytesError {
     InsufficientData,
     /// Unknown enum variant was read.
     UnknownEnumVariant(u8),
+    /// Invalid data was read. The String contains the error's cause.
+    Invalid(String),
 }

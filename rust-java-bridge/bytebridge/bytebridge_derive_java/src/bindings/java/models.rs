@@ -9,6 +9,7 @@ use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::str::FromStr;
+use syn::spanned::Spanned;
 use syn::{Error, Lit, LitInt, PathArguments};
 
 pub const BUFFER_SIZE_VAR: &str = "__buf__size";
@@ -92,15 +93,44 @@ pub enum JavaType {
 impl JavaType {
     pub fn try_map(ident: &str, arguments: &PathArguments) -> Result<JavaType, UnsupportedType> {
         match ident {
-            "i8" => Ok(JavaType::Primitive(PrimitiveJavaType::Byte(false))),
-            "i32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int(false))),
-            "i64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long(false))),
-            "u8" => Ok(JavaType::Primitive(PrimitiveJavaType::Byte(true))),
-            "u32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int(true))),
-            "u64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long(true))),
+            "i8" => Ok(JavaType::Primitive(PrimitiveJavaType::Byte {
+                unsigned: false,
+                nonzero: false,
+            })),
+            "i32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int {
+                unsigned: false,
+                nonzero: false,
+            })),
+            "i64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long {
+                unsigned: false,
+                nonzero: false,
+            })),
+            "u8" => Ok(JavaType::Primitive(PrimitiveJavaType::Byte {
+                unsigned: true,
+                nonzero: false,
+            })),
+            "u32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int {
+                unsigned: true,
+                nonzero: false,
+            })),
+            "u64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long {
+                unsigned: true,
+                nonzero: false,
+            })),
             "f32" => Ok(JavaType::Primitive(PrimitiveJavaType::Float)),
             "f64" => Ok(JavaType::Primitive(PrimitiveJavaType::Double)),
-            "Duration" => Ok(JavaType::Primitive(PrimitiveJavaType::Int(true))),
+            "Duration" => Ok(JavaType::Primitive(PrimitiveJavaType::Int {
+                unsigned: true,
+                nonzero: false,
+            })),
+            "NonZeroU32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int {
+                unsigned: true,
+                nonzero: true,
+            })),
+            "NonZeroU64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long {
+                unsigned: true,
+                nonzero: true,
+            })),
             "String" => Ok(JavaType::String),
             "bool" => Ok(JavaType::Primitive(PrimitiveJavaType::Boolean)),
             "Vec" => {
@@ -156,9 +186,9 @@ impl Display for JavaType {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum PrimitiveJavaType {
-    Byte(bool),
-    Int(bool),
-    Long(bool),
+    Byte { unsigned: bool, nonzero: bool },
+    Int { unsigned: bool, nonzero: bool },
+    Long { unsigned: bool, nonzero: bool },
     Float,
     Double,
     Boolean,
@@ -168,15 +198,17 @@ impl PrimitiveJavaType {
     pub fn int_like(&self) -> bool {
         matches!(
             self,
-            PrimitiveJavaType::Int(_) | PrimitiveJavaType::Long(_) | PrimitiveJavaType::Byte(_)
+            PrimitiveJavaType::Int { .. }
+                | PrimitiveJavaType::Long { .. }
+                | PrimitiveJavaType::Byte { .. }
         )
     }
 
     pub fn size_of(&self) -> usize {
         match self {
-            PrimitiveJavaType::Byte(_) => 1,
-            PrimitiveJavaType::Int(_) => 4,
-            PrimitiveJavaType::Long(_) => 8,
+            PrimitiveJavaType::Byte { .. } => 1,
+            PrimitiveJavaType::Int { .. } => 4,
+            PrimitiveJavaType::Long { .. } => 8,
             PrimitiveJavaType::Float => 4,
             PrimitiveJavaType::Double => 8,
             PrimitiveJavaType::Boolean => 1,
@@ -187,13 +219,13 @@ impl PrimitiveJavaType {
 impl Display for PrimitiveJavaType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            PrimitiveJavaType::Byte(_) => {
+            PrimitiveJavaType::Byte { .. } => {
                 write!(f, "byte")
             }
-            PrimitiveJavaType::Int(_) => {
+            PrimitiveJavaType::Int { .. } => {
                 write!(f, "int")
             }
-            PrimitiveJavaType::Long(_) => {
+            PrimitiveJavaType::Long { .. } => {
                 write!(f, "long")
             }
             PrimitiveJavaType::Float => {
@@ -212,9 +244,9 @@ impl Display for PrimitiveJavaType {
 impl JavaType {
     pub fn default_value(&self) -> String {
         match self {
-            JavaType::Primitive(PrimitiveJavaType::Byte(_)) => "0".to_string(),
-            JavaType::Primitive(PrimitiveJavaType::Int(_)) => "0".to_string(),
-            JavaType::Primitive(PrimitiveJavaType::Long(_)) => "0".to_string(),
+            JavaType::Primitive(PrimitiveJavaType::Byte { .. }) => "0".to_string(),
+            JavaType::Primitive(PrimitiveJavaType::Int { .. }) => "0".to_string(),
+            JavaType::Primitive(PrimitiveJavaType::Long { .. }) => "0".to_string(),
             JavaType::Primitive(PrimitiveJavaType::Float) => "0.0".to_string(),
             JavaType::Primitive(PrimitiveJavaType::Double) => "0.0".to_string(),
             JavaType::Primitive(PrimitiveJavaType::Boolean) => "false".to_string(),
@@ -293,13 +325,13 @@ impl JavaType {
         };
         match (self, lit) {
             (JavaType::Primitive(ty), lit) => match (ty, lit) {
-                (PrimitiveJavaType::Byte(_), Lit::Int(lit)) => {
+                (PrimitiveJavaType::Byte { .. }, Lit::Int(lit)) => {
                     Ok(lit.into_token_stream().to_string())
                 }
-                (PrimitiveJavaType::Int(_), Lit::Int(lit)) => {
+                (PrimitiveJavaType::Int { .. }, Lit::Int(lit)) => {
                     Ok(lit.into_token_stream().to_string())
                 }
-                (PrimitiveJavaType::Long(_), Lit::Int(lit)) => {
+                (PrimitiveJavaType::Long { .. }, Lit::Int(lit)) => {
                     Ok(lit.into_token_stream().to_string())
                 }
                 (PrimitiveJavaType::Float, Lit::Float(lit)) => {
@@ -353,43 +385,72 @@ pub enum ConstraintKind {
     NonZero,
     Unsigned,
     UnsignedArray,
+    NonZeroArray,
     Natural,
     InRange(LitInt, LitInt),
 }
 
-trait IntRange: FromStr + Display {
+trait IntRange: FromStr + Display + Copy {
+    fn contains_zero(min: Self, max: Self) -> bool;
+
+    fn one() -> Self;
+
     fn min() -> Self;
 
     fn max() -> Self;
 }
 
 impl IntRange for u8 {
+    fn contains_zero(min: Self, max: Self) -> bool {
+        (min..max).contains(&0)
+    }
+
+    fn one() -> Self {
+        1
+    }
+
     fn min() -> Self {
         u8::MIN
     }
 
     fn max() -> Self {
-        u8::MIN
+        u8::MAX
     }
 }
 
 impl IntRange for u32 {
+    fn contains_zero(min: Self, max: Self) -> bool {
+        (min..max).contains(&0)
+    }
+
+    fn one() -> Self {
+        1
+    }
+
     fn min() -> Self {
         u32::MIN
     }
 
     fn max() -> Self {
-        u32::MIN
+        u32::MAX
     }
 }
 
 impl IntRange for u64 {
+    fn contains_zero(min: Self, max: Self) -> bool {
+        (min..max).contains(&0)
+    }
+
+    fn one() -> Self {
+        1
+    }
+
     fn min() -> Self {
         u64::MIN
     }
 
     fn max() -> Self {
-        u64::MIN
+        u64::MAX
     }
 }
 
@@ -398,7 +459,18 @@ impl Constraint {
         Constraint { span, kind }
     }
 
-    fn validate_unsigned<T>(constraint: &mut Constraint) -> Result<(), Error>
+    pub fn step(&mut self, to: Constraint) -> Result<(), Error> {
+        let Constraint { kind, .. } = self;
+        match kind {
+            ConstraintKind::None => {
+                *self = to;
+                Ok(())
+            }
+            _ => Err(Error::new(to.span, "Constraint has already been applied")),
+        }
+    }
+
+    fn validate_unsigned<T>(constraint: &mut Constraint, nonzero: bool) -> Result<(), Error>
     where
         T: IntRange,
         T::Err: Display,
@@ -414,30 +486,35 @@ impl Constraint {
                 "Cannot use a non-zero constraint on an unsigned type",
             )),
             ConstraintKind::Unsigned => Ok(()),
-            ConstraintKind::UnsignedArray => {
+            ConstraintKind::UnsignedArray | ConstraintKind::NonZeroArray => {
                 unreachable!()
             }
             ConstraintKind::Natural => Ok(()),
             ConstraintKind::InRange(min, max) => {
+                let min_span = min.span();
+                let max_span = max.span();
                 let min_val = min.base10_parse::<T>();
                 let max_val = max.base10_parse::<T>();
 
                 let err = |span| {
+                    let min = if nonzero { T::one() } else { T::min() };
                     Err(Error::new(
                         span,
-                        format!(
-                            "Unsigned number must be in range {}..={}",
-                            T::min(),
-                            T::max()
-                        ),
+                        format!("Number must be in range {}..={}", min, T::max()),
                     ))
                 };
 
                 match (min_val, max_val) {
-                    (Ok(_), Ok(_)) => Ok(()),
-                    (Err(_), Ok(_)) => err(min.span()),
-                    (Ok(_), Err(_)) => err(max.span()),
-                    (Err(_), Err(_)) => err(min.span()),
+                    (Ok(min), Ok(max)) => {
+                        if T::contains_zero(min, max) && nonzero {
+                            err(min_span)
+                        } else {
+                            Ok(())
+                        }
+                    }
+                    (Err(_), Ok(_)) => err(min_span),
+                    (Ok(_), Err(_)) => err(max_span),
+                    (Err(_), Err(_)) => err(min_span),
                 }
             }
         }
@@ -446,22 +523,52 @@ impl Constraint {
     pub fn implicit(constraint: &mut Constraint, ty: &JavaType) -> Result<(), Error> {
         match ty {
             JavaType::Primitive(ty) => match ty {
-                PrimitiveJavaType::Byte(true) => Self::validate_unsigned::<u8>(constraint),
-                PrimitiveJavaType::Int(true) => Self::validate_unsigned::<u32>(constraint),
-                PrimitiveJavaType::Long(true) => Self::validate_unsigned::<u64>(constraint),
+                PrimitiveJavaType::Byte {
+                    unsigned: true,
+                    nonzero,
+                } => Self::validate_unsigned::<u8>(constraint, *nonzero),
+                PrimitiveJavaType::Int {
+                    unsigned: true,
+                    nonzero,
+                } => Self::validate_unsigned::<u32>(constraint, *nonzero),
+                PrimitiveJavaType::Long {
+                    unsigned: true,
+                    nonzero,
+                } => Self::validate_unsigned::<u64>(constraint, *nonzero),
                 _ => Ok(()),
             },
             JavaType::Array(ty) => match ty {
-                PrimitiveJavaType::Byte(true) => {
-                    constraint.kind = ConstraintKind::UnsignedArray;
+                PrimitiveJavaType::Byte {
+                    unsigned: true,
+                    nonzero,
+                } => {
+                    constraint.kind = if *nonzero {
+                        ConstraintKind::NonZeroArray
+                    } else {
+                        ConstraintKind::UnsignedArray
+                    };
                     Ok(())
                 }
-                PrimitiveJavaType::Int(true) => {
-                    constraint.kind = ConstraintKind::UnsignedArray;
+                PrimitiveJavaType::Int {
+                    unsigned: true,
+                    nonzero,
+                } => {
+                    constraint.kind = if *nonzero {
+                        ConstraintKind::NonZeroArray
+                    } else {
+                        ConstraintKind::UnsignedArray
+                    };
                     Ok(())
                 }
-                PrimitiveJavaType::Long(true) => {
-                    constraint.kind = ConstraintKind::UnsignedArray;
+                PrimitiveJavaType::Long {
+                    unsigned: true,
+                    nonzero,
+                } => {
+                    constraint.kind = if *nonzero {
+                        ConstraintKind::NonZeroArray
+                    } else {
+                        ConstraintKind::UnsignedArray
+                    };
                     Ok(())
                 }
                 _ => Ok(()),
@@ -495,6 +602,10 @@ impl Constraint {
                 "IllegalArgumentException",
                 format!("if {} contains negative elements", field_name),
             ),
+            ConstraintKind::NonZeroArray => documentation.add_throws(
+                "IllegalArgumentException",
+                format!("if {} contains elements equal to zero", field_name),
+            ),
             ConstraintKind::Unsigned => documentation.add_throws(
                 "IllegalArgumentException",
                 format!("if {} is negative", field_name),
@@ -522,6 +633,13 @@ impl Constraint {
                 Block::of(format!("for (byte b : {field_name}) {{"))
                     .add_line(format!("{INDENTATION}if (b < 0) {{"))
                     .add_statement(format!("{INDENTATION}{INDENTATION}throw new IllegalArgumentException(\"'{field_name}' contains negative numbers\")"))
+                    .add_line(format!("{INDENTATION}}}"))
+                    .add_line("}")
+            }
+            ConstraintKind::NonZeroArray => {
+                Block::of(format!("for (byte b : {field_name}) {{"))
+                    .add_line(format!("{INDENTATION}if (b == 0) {{"))
+                    .add_statement(format!("{INDENTATION}{INDENTATION}throw new IllegalArgumentException(\"'{field_name}' contains an element equal to zero\")"))
                     .add_line(format!("{INDENTATION}}}"))
                     .add_line("}")
             }

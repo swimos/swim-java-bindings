@@ -111,7 +111,7 @@ impl_bytes! {
     },
     decode => |bytes| {
         NonZeroUsize::new(usize::try_from_bytes(bytes)?).ok_or_else(||{
-            todo!()
+            FromBytesError::Invalid("Number must be greater than zero".to_string())
         })
     }
 }
