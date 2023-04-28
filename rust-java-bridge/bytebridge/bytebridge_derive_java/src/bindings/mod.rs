@@ -33,12 +33,19 @@ const ATTR_NATURAL: &str = "natural";
 const ATTR_UNSIGNED_ARRAY: &str = "unsigned_array";
 const ATTR_RANGE: &str = "range";
 
+/// Arguments derived for either a struct or enum from its attributes.
 pub struct DeriveArgs {
+    /// The name of the item.
     pub name: String,
+    /// Whether to infer documentation from Rust documentation attributes.
     pub infer_docs: bool,
+    /// Any root-level documentation to apply to the class.
     pub root_doc: Documentation,
 }
 
+/// A builder for derivation arguments. If the internal state of the builder is Ok(None) *after* it
+/// has been called, then it did not encounter a #[bytebridge] attribute and progress should be
+/// halted in the derivation.
 pub struct DeriveArgsBuilder {
     args: Result<Option<DeriveArgs>, Error>,
 }
@@ -50,6 +57,7 @@ impl Default for DeriveArgsBuilder {
 }
 
 impl DeriveArgsBuilder {
+    /// Enter derivation for a class of name 'name'.
     fn enter(&mut self, name: String) {
         self.args = Ok(Some(DeriveArgs {
             name,
@@ -58,26 +66,31 @@ impl DeriveArgsBuilder {
         }));
     }
 
+    /// Set the state of the visit to an error.
     fn err(&mut self, span: Span, message: impl Display) {
         self.args = Err(Error::new(span, message))
     }
 
+    /// Consume the state of the builder.
     fn into_result(self) -> Result<Option<DeriveArgs>, Error> {
         self.args
     }
 
+    /// Set that documentation should be inferred.
     fn set_infer_docs(&mut self, to: bool) {
         if let Ok(Some(args)) = &mut self.args {
             args.infer_docs = to;
         }
     }
 
+    /// Rename the item.
     fn set_name(&mut self, to: String) {
         if let Ok(Some(args)) = &mut self.args {
             args.name = to;
         }
     }
 
+    /// Append a line of user-provided documentation.
     fn add_doc(&mut self, str: String) {
         if let Ok(Some(args)) = &mut self.args {
             args.root_doc.push_header_line(str);
@@ -177,6 +190,8 @@ impl<'ast> Visit<'ast> for DeriveArgsBuilder {
     }
 }
 
+/// Attempts to generate bindings for 'sources' and if they are valid them write them using the
+/// provided writers.
 pub fn generate_bindings(
     sources: Vec<PathBuf>,
     mut java_writer: JavaSourceWriter,
@@ -191,6 +206,8 @@ pub fn generate_bindings(
     Ok(())
 }
 
+/// Generate bindings from the provided file at 'path' and if they are valid them write them using
+/// the provided writers.
 fn generate_binding(
     path: PathBuf,
     java_writer: &mut JavaSourceWriter,
@@ -205,6 +222,8 @@ fn generate_binding(
     Ok(())
 }
 
+/// Returns whether derivation should be attempted on an item. This is only valid iff the item is an
+/// enumeration or a struct.
 fn should_enter(item: &Item) -> bool {
     let predicate = |attrs: &[Attribute]| attrs.iter().any(|attr| attr.path().is_ident(MACRO_PATH));
     match item {
@@ -252,6 +271,7 @@ fn derive_bindings(mut item: Item) -> Result<Option<Bindings>, Error> {
     }))
 }
 
+/// Derived bindings for both Java and Rust.
 struct Bindings {
     java: JavaBindings,
     rust: RustBindings,

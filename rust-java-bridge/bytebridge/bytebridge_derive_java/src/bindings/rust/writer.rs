@@ -7,6 +7,8 @@ use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// A Rust source code writer builder. Provides control over where the derived tokens are written
+/// to, whether to invoke rustfmt and control over applying a copyright header.
 pub struct RustSourceWriterBuilder {
     writer: BufWriter<File>,
     path: PathBuf,
@@ -15,6 +17,10 @@ pub struct RustSourceWriterBuilder {
 }
 
 impl RustSourceWriterBuilder {
+    /// Returns a Rust source writer builder that writes to 'file'.
+    ///
+    /// This will fail if it's not possible to create 'file' and will truncate it if it already
+    /// exists.
     pub fn file<P>(file: P) -> io::Result<RustSourceWriterBuilder>
     where
         P: AsRef<Path>,
@@ -28,11 +34,13 @@ impl RustSourceWriterBuilder {
         })
     }
 
+    /// Sets whether to invoke rustfmt on the derived tokens.
     pub fn format(mut self, format: bool) -> RustSourceWriterBuilder {
         self.format = format;
         self
     }
 
+    /// Sets a copyright head that will be prepended to any source files that are written.
     pub fn copyright_header<C>(
         mut self,
         copyright_body: C,
@@ -45,6 +53,7 @@ impl RustSourceWriterBuilder {
         self
     }
 
+    /// Consumes this builder and returns an initialised Rust Source Writer.
     pub fn build(self) -> RustSourceWriter {
         let RustSourceWriterBuilder {
             writer,

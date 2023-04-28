@@ -2,16 +2,16 @@ use std::path::PathBuf;
 use std::{fs, io};
 
 #[derive(Default, Debug, Clone)]
-pub struct StringStack {
+struct StringStack {
     inner: String,
 }
 
 impl StringStack {
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
 
-    pub fn push_line(&mut self, line: impl ToString) {
+    fn push_line(&mut self, line: impl ToString) {
         let line = line.to_string();
         let prefix = if self.is_empty() { "" } else { "\n" };
 
@@ -37,6 +37,7 @@ impl From<String> for StringStack {
     }
 }
 
+/// A Java documentation builder.
 #[derive(Debug, Clone)]
 pub struct Documentation {
     header: StringStack,
@@ -208,9 +209,32 @@ impl Documentation {
     }
 }
 
+/// A format style for documentation.
 #[derive(Debug, Copy, Clone)]
 pub enum FormatStyle {
+    /// Block style. E.g,
+    /// ```
+    /// /*
+    ///  *
+    ///  *
+    ///  */
+    /// ```
     Block,
+    /// Line style. E.g,
+    /// ```
+    /// //
+    /// //
+    /// //
+    /// //
+    /// //
+    /// ```
     Line,
+    /// Documentation style. E.g,
+    /// ```
+    /// /**
+    ///  *
+    ///  *
+    ///  */
+    /// ```
     Documentation,
 }

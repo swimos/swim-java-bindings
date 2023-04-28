@@ -29,20 +29,32 @@ use crate::FormatStyle;
 mod models;
 mod writer;
 
+/// A derived class binding from a Rust struct.
 #[derive(Debug)]
 pub struct ClassBinding {
+    /// The name of the class.
     name: String,
+    /// Class-level documentation to apply.
     root_documentation: Documentation,
+    /// A vector of fields.
     fields: Vec<JavaField>,
+    /// A vector of instance or abstract methods.
     methods: Vec<JavaMethod>,
 }
 
+/// An abstract class configuration.
 struct InheritanceConfig {
+    /// The ordinal in the enumeration constant.
     ordinal: u8,
+    /// The name of the superclass.
     superclass: String,
 }
 
 impl ClassBinding {
+    /// Write this class binding into the provided java writer.
+    /// # Arguments:
+    /// - java_writer: The writer that this binding will be written into.
+    /// - parent: An optional inheritance configuration if this class binding is a subclass.
     fn write(
         self,
         java_writer: &mut JavaSourceWriter,
@@ -89,6 +101,8 @@ impl ClassBinding {
         class_writer.end_class()
     }
 
+    /// Derive a byte-level representation from a slice of java fields and an optional ordinal
+    /// of an enumeration constant.
     fn byte_transposition_method(fields: &[JavaField], ordinal: Option<u8>) -> JavaMethod {
         let method = JavaMethod::new(
             AS_BYTES_METHOD,
@@ -163,6 +177,7 @@ impl ClassBinding {
     }
 }
 
+/// Resolves an instance method call on a Java ByteBuffer that corresponds to a primitive java type.
 fn put_primitive(ty: &PrimitiveJavaType, name: &str) -> String {
     match ty {
         PrimitiveJavaType::Byte { .. } => {
@@ -186,14 +201,21 @@ fn put_primitive(ty: &PrimitiveJavaType, name: &str) -> String {
     }
 }
 
+/// A derived polymorphic class binding from a Rust enumeration.
 #[derive(Debug)]
 pub struct AbstractClassBinding {
+    /// The name of the parent class.
     name: String,
+    /// Class-level documentation to apply.
     documentation: Documentation,
+    /// A vector of subclasses.
     variants: Vec<ClassBinding>,
 }
 
 impl AbstractClassBinding {
+    /// Write this class binding into the provided Java writer.
+    /// # Arguments:
+    /// - java_writer: The writer that this binding will be written into.
     fn write(self, java_writer: &mut JavaSourceWriter) -> io::Result<()> {
         let AbstractClassBinding {
             name,
@@ -250,12 +272,21 @@ impl JavaBindings {
     }
 }
 
+/// A Syn Visitor for deriving a class from a Syn item struct.
 pub struct ClassBuilder {
+    /// Whether to infer Java documentation from Rust documentation attributes (#[doc = "..."]).
     infer_docs: bool,
+    /// The current state of the visit.
     result: Result<ClassBuilderInner, Error>,
 }
 
 impl ClassBuilder {
+    /// Returns a new class builder.
+    /// # Arguments:
+    /// - infer_docs: Whether to infer Java documentation from Rust documentation attributes
+    ///   (#[doc = "..."]).
+    /// - root_documentation: Root-level documentation that will be applied to the class when it is
+    ///   written.
     pub fn new(
         infer_docs: bool,
         root_documentation: Documentation,
@@ -267,6 +298,7 @@ impl ClassBuilder {
         }
     }
 
+    /// Executes 'f' against the current state if it is in a Result::Ok state.
     fn with<F>(&mut self, f: F)
     where
         F: FnOnce(bool, &mut ClassBuilderInner) -> Result<(), Error>,
@@ -326,14 +358,26 @@ impl ClassBuilderInner {
     }
 }
 
+/// A Syn Visitor for deriving a polymorphic class from a Syn item enum.
 pub struct AbstractClassBuilder {
+    /// Whether to infer Java documentation from Rust documentation attributes (#[doc = "..."]).
     infer_docs: bool,
+    /// The name of the parent class.
     name: String,
+    /// Root-level documentation that will be applied to the class when it is written.
     root_documentation: Documentation,
+    /// The current state of the visit.
     inner: Result<Vec<ClassBinding>, Error>,
 }
 
 impl AbstractClassBuilder {
+    /// Returns a new polymorphic class builder.
+    /// # Arguments:
+    /// - infer_docs: Whether to infer Java documentation from Rust documentation attributes
+    ///   (#[doc = "..."]).
+    /// - root_documentation: Root-level documentation that will be applied to the class when it is
+    ///   written.
+    /// - name: The name of the parent class.
     pub fn new(
         infer_docs: bool,
         root_documentation: Documentation,
@@ -347,6 +391,11 @@ impl AbstractClassBuilder {
         }
     }
 
+    /// Returns a subclass builder
+    /// # Arguments:
+    /// - name: The name of the subclass.
+    /// - root_documentation: Root-level documentation that will be applied to the class when it is
+    ///   written.
     pub fn class_builder(
         &mut self,
         name: impl ToString,
@@ -363,6 +412,7 @@ impl AbstractClassBuilder {
         }
     }
 
+    /// Attempts to push a subclass.
     fn push_class(&mut self, class_builder: ClassBuilderInner) {
         if let Ok(variants) = &mut self.inner {
             variants.push(class_builder.build())
@@ -440,6 +490,13 @@ struct VariantProperties {
     subclass_name: String,
 }
 
+/// Attempts to build properties for a variant. This will fail if any attributes are malformed.
+///
+/// # Arguments:
+/// - enum_name: The name of the parent class.
+///   (#[doc = "..."]).
+/// - variant_name: The name of the subclass.
+/// - attrs: A slice of attributes that have been decorated on the variant.
 fn build_variant_properties(
     enum_name: &String,
     variant_name: String,
@@ -479,6 +536,8 @@ fn ident_start_char(c: char) -> bool {
     c.is_alphabetic() || c == '$' || c == '_'
 }
 
+/// Validates a literal that has been applied to a meta name value. This will fail if the literal is
+/// not a string or if the string value is an invalid Java identifier.
 pub fn validate_identifier(meta: MetaNameValue) -> Result<String, Error> {
     let err = |span, msg| Err(Error::new(span, msg));
 
@@ -539,12 +598,18 @@ impl<'args, 'ast> Visit<'ast> for ClassBuilder {
     }
 }
 
+/// Derived field properties from a field's attributes.
 struct FieldProperties {
+    /// Documentation that will either override a field's Rust documentation if 'no_doc' has been
+    /// applied at a container level or documentation that will be extended to it.
     documentation: Documentation,
+    /// The field's default value.
     default_value: Option<String>,
+    /// A constraint that has been applied to the field.
     constraint: Constraint,
 }
 
+/// Attempts to align a Rust type to a Java Type.
 pub fn map_type(ty: &Type) -> Result<JavaType, Error> {
     let unsupported_type = |span| Err(Error::new(span, "Unsupported type"));
     match ty {
@@ -561,6 +626,7 @@ pub fn map_type(ty: &Type) -> Result<JavaType, Error> {
     }
 }
 
+/// Infers documentation from the Rust attribute #[doc = "..."] and writes it into 'documentation'.
 fn infer_docs(attrs: &[Attribute], documentation: &mut Documentation) {
     let attrs = attrs.iter().filter(|at| at.path().is_ident(ATTR_DOC));
     for attr in attrs {
@@ -578,6 +644,16 @@ fn infer_docs(attrs: &[Attribute], documentation: &mut Documentation) {
     }
 }
 
+/// Derives field properties from a slice of attributes. Returns a new name for the field if a valid
+/// rename attribute has been applied, and field properties.
+///
+/// # Arguments:
+/// - name: The default name of the field. If a valid rename attribute has been applied then the new
+///   name will be returned.
+/// - infer_documentation: Whether to infer documentation for the field from Rust documentation
+///   attributes.
+/// - field_type: The Java type of the field.
+/// - attrs: a slice of attributes to validate.
 fn derive_field_properties(
     mut name: String,
     span: Span,
@@ -684,6 +760,7 @@ fn derive_field_properties(
     Ok((name, properties))
 }
 
+/// Sanitizes 'name' to ensure that it is not a reserved Java or bytebridge keyword.
 fn sanitize_name(name: &str, span: Span) -> Result<(), Error> {
     if JAVA_KEYWORDS.contains(name) {
         Err(Error::new(

@@ -7,18 +7,23 @@ use std::path::{Path, PathBuf};
 
 pub const INDENTATION: &str = "  ";
 
+/// A Java method writer factory. This may either write to the standard output stream or yield
+/// file writers.
 pub enum WriterFactory {
+    /// Write to the standard output stream.
     StdOut,
+    /// A writer that will yield file writers into a directory.
     Dir { path: PathBuf },
 }
 
 impl WriterFactory {
+    /// Returns a new writer for 'file_name' and 'package_name'.
     pub fn new_file(&mut self, package_name: String, file_name: &Path) -> io::Result<Writer> {
         match self {
             WriterFactory::StdOut => {
                 let mut out = io::stdout();
                 write!(out, ">>>>> File: {:?}.java\n", file_name)?;
-                let writer = Writer::new_std_out(out, 1);
+                let writer = Writer::std_out(out);
                 Ok(writer)
             }
             WriterFactory::Dir { path } => {
@@ -35,8 +40,11 @@ impl WriterFactory {
     }
 }
 
+/// A Java file writer.
 pub struct Writer {
+    /// The inner writer.
     inner: WriterHandle,
+    /// The block depth.
     depth: usize,
 }
 
@@ -46,43 +54,40 @@ pub enum WriterHandle {
 }
 
 impl Writer {
-    pub fn new_std_out(handle: Stdout, depth: usize) -> Writer {
+    fn std_out(handle: Stdout) -> Writer {
         Writer {
             inner: WriterHandle::StdOut(handle),
-            depth,
+            depth: 1,
         }
     }
 
-    pub fn std_out(handle: Stdout) -> Writer {
-        Writer {
-            inner: WriterHandle::StdOut(handle),
-            depth: 0,
-        }
-    }
-
-    pub fn file(handle: impl Write + 'static) -> Writer {
+    fn file(handle: impl Write + 'static) -> Writer {
         Writer {
             inner: WriterHandle::File(Box::new(handle)),
             depth: 0,
         }
     }
 
+    /// Begins a new block.
     pub fn enter_block(&mut self) -> io::Result<()> {
         self.write(" {", false)?;
         self.depth += 1;
         Ok(())
     }
 
+    /// Exists a block.
     pub fn exit_block(&mut self) -> io::Result<()> {
         self.depth -= 1;
         self.write_indented("}", true)?;
         Ok(())
     }
 
+    /// Writes a new line.
     pub fn new_line(&mut self) -> io::Result<()> {
         self.new_lines(1)
     }
 
+    /// Writes 'count' new lines.
     pub fn new_lines(&mut self, count: usize) -> io::Result<()> {
         for _ in 0..count {
             self.write("\n", false)?
@@ -90,6 +95,7 @@ impl Writer {
         Ok(())
     }
 
+    /// Returns the current level of indentation.
     fn indentation(&self) -> String {
         (0..self.depth).fold(String::new(), |mut acc, _| {
             acc.push_str(INDENTATION);
@@ -97,12 +103,15 @@ impl Writer {
         })
     }
 
+    /// Writes a line and ignores the current indentation depth. Appends a new line if 'new_line' is
+    /// true.
     pub fn write(&mut self, line: impl ToString, new_line: bool) -> io::Result<()> {
         let line_ending = if new_line { "\n" } else { "" };
         self.inner
             .write_all(format!("{}{}", line.to_string(), line_ending).as_bytes())
     }
 
+    /// Writes a line. Appends a new line if 'new_line' is true.
     pub fn write_indented(&mut self, line: impl ToString, new_line: bool) -> io::Result<()> {
         let indentation = self.indentation();
 
@@ -116,6 +125,7 @@ impl Writer {
         Ok(())
     }
 
+    /// Writes all elements in the provided iterator. Appends a new line if 'new_line' is true.
     pub fn write_all_indented<I, S>(&mut self, lines: I, new_line: bool) -> io::Result<()>
     where
         I: Iterator<Item = S>,
@@ -153,6 +163,8 @@ impl Write for WriterHandle {
     }
 }
 
+/// A Java source code writer builder. Provides control over where classes are written to, the
+/// package name of the files and any copyright to apply to the derived classes.
 pub struct JavaSourceWriterBuilder {
     writer: WriterFactory,
     copyright: Option<Documentation>,
@@ -160,6 +172,7 @@ pub struct JavaSourceWriterBuilder {
 }
 
 impl JavaSourceWriterBuilder {
+    /// Returns a Java source writer builder that writes to the standard output stream.
     pub fn std_out(package: impl ToString) -> JavaSourceWriterBuilder {
         JavaSourceWriterBuilder {
             writer: WriterFactory::StdOut,
@@ -168,6 +181,9 @@ impl JavaSourceWriterBuilder {
         }
     }
 
+    /// Returns a Java source writer builder that writes files to 'out_directory'.
+    ///
+    /// This will fail if 'out_directory' is a file or the directory does not exist.
     pub fn dir<P>(out_directory: P, package: impl ToString) -> io::Result<JavaSourceWriterBuilder>
     where
         P: AsRef<Path>,
@@ -186,6 +202,7 @@ impl JavaSourceWriterBuilder {
         })
     }
 
+    /// Sets a copyright head that will be prepended to any source files that are written.
     pub fn copyright_header<C>(
         mut self,
         copyright_body: C,
@@ -198,6 +215,7 @@ impl JavaSourceWriterBuilder {
         self
     }
 
+    /// Consumes this builder and returns an initialised Java Source Writer.
     pub fn build(self) -> JavaSourceWriter {
         let JavaSourceWriterBuilder {
             writer,
@@ -233,12 +251,6 @@ impl JavaSourceWriter {
     }
 }
 
-pub struct JavaFileWriter {
-    writer: Writer,
-    copyright: String,
-    package: String,
-}
-
 fn write_block(writer: &mut Writer, block: String) -> io::Result<()> {
     let indentation = writer.indentation();
     let mut iter = block.lines().peekable();
@@ -260,6 +272,12 @@ pub enum ClassType {
     Abstract,
     Concrete,
     Subclass(String),
+}
+
+pub struct JavaFileWriter {
+    writer: Writer,
+    copyright: String,
+    package: String,
 }
 
 impl JavaFileWriter {

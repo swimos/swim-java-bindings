@@ -91,6 +91,7 @@ pub enum JavaType {
 }
 
 impl JavaType {
+    /// Attempts to align a Rust type to a Java Type.
     pub fn try_map(ident: &str, arguments: &PathArguments) -> Result<JavaType, UnsupportedType> {
         match ident {
             "i8" => Ok(JavaType::Primitive(PrimitiveJavaType::Byte {
@@ -184,6 +185,7 @@ impl Display for JavaType {
     }
 }
 
+/// A primitive unboxed Java type.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum PrimitiveJavaType {
     Byte { unsigned: bool, nonzero: bool },
@@ -242,6 +244,7 @@ impl Display for PrimitiveJavaType {
 }
 
 impl JavaType {
+    /// Returns the default value for this Java type.
     pub fn default_value(&self) -> String {
         match self {
             JavaType::Primitive(PrimitiveJavaType::Byte { .. }) => "0".to_string(),
@@ -258,6 +261,8 @@ impl JavaType {
         }
     }
 
+    /// Attempts to build an unsigned array constraint from this Java type. This will fail if the
+    /// type is not an array.
     pub fn as_unsigned_array(&self, span: Span) -> Result<Constraint, Error> {
         match self {
             JavaType::Array(ty) if ty.int_like() => {
@@ -273,6 +278,8 @@ impl JavaType {
         }
     }
 
+    /// Attempts to build an non-zero constraint from this Java type. This will fail if the type is
+    /// not primitive number type.
     pub fn as_non_zero(&self, span: Span) -> Result<Constraint, Error> {
         match self {
             JavaType::Primitive(ty) if ty.int_like() => {
@@ -285,6 +292,8 @@ impl JavaType {
         }
     }
 
+    /// Attempts to build a natural number constraint from this Java type. This will fail if the
+    /// type is not primitive number type.
     pub fn as_natural(&self, span: Span) -> Result<Constraint, Error> {
         match self {
             JavaType::Primitive(ty) if ty.int_like() => {
@@ -300,6 +309,8 @@ impl JavaType {
         }
     }
 
+    /// Attempts to build a ranged number constraint from this Java type. This will fail if the type
+    /// is not primitive number type.
     pub fn as_range(&self, span: Span, min: LitInt, max: LitInt) -> Result<Constraint, Error> {
         match self {
             JavaType::Primitive(ty) if ty.int_like() => {
@@ -312,10 +323,13 @@ impl JavaType {
         }
     }
 
-    pub fn unpack_default_value(&self, lit: Lit) -> Result<String, syn::Error> {
+    /// Attempts to unpack a default value that has been applied in an attribute against this Java
+    /// type. This will fail, for example, if this Java Type is a string and a numeric literal has
+    /// been supplied.
+    pub fn unpack_default_value(&self, lit: Lit) -> Result<String, Error> {
         let span = lit.span();
         let type_mismatch = |ty, span, lit| {
-            Err(syn::Error::new(
+            Err(Error::new(
                 span,
                 format!(
                     "Attempted to use a default value of '{:?}' on a field of type '{:?}'",
@@ -373,24 +387,37 @@ impl JavaField {
     }
 }
 
+/// A constraint that is applied to a field (this may represent none).
 #[derive(Debug, Clone)]
 pub struct Constraint {
+    /// The source field's span.
     span: Span,
+    /// The type of constraint.
     kind: ConstraintKind,
 }
 
+/// A possible numeric constraint to apply to a field when it is being updated through a setter.
 #[derive(Debug, Clone)]
 pub enum ConstraintKind {
+    /// Nothing will be applied.
     None,
+    /// The supplied value must be non-zero.
     NonZero,
+    /// The supplied value must be positive.
     Unsigned,
+    /// The supplied value must be an array containing positive values.
     UnsignedArray,
+    /// The supplied value must be an array containing non-zero values.
     NonZeroArray,
+    /// The supplied value must be a natural number.
     Natural,
+    /// The supplied value must be in the provided range.
     InRange(LitInt, LitInt),
 }
 
+/// Helper trait for abstracting over non-zero types.
 trait IntRange: FromStr + Display + Copy {
+    /// Returns whether the supplied range contains zero.
     fn contains_zero(min: Self, max: Self) -> bool;
 
     fn one() -> Self;
@@ -459,6 +486,7 @@ impl Constraint {
         Constraint { span, kind }
     }
 
+    /// Attempts to step this constraint from None to a new constraint.
     pub fn step(&mut self, to: Constraint) -> Result<(), Error> {
         let Constraint { kind, .. } = self;
         match kind {
@@ -470,6 +498,11 @@ impl Constraint {
         }
     }
 
+    /// Returns whether the provided constraint is valid against a field type that is unsigned and
+    /// possibly requires a non-zero value.
+    ///
+    /// It is possible for a field to be invalid if it is a non-zero type *and* a user has applied a
+    /// ranged constraint that contains a lower bound that is lower than zero.
     fn validate_unsigned<T>(constraint: &mut Constraint, nonzero: bool) -> Result<(), Error>
     where
         T: IntRange,
@@ -520,6 +553,7 @@ impl Constraint {
         }
     }
 
+    /// Infers an implicit constraint from a field type if it is an unsigned type.
     pub fn implicit(constraint: &mut Constraint, ty: &JavaType) -> Result<(), Error> {
         match ty {
             JavaType::Primitive(ty) => match ty {
@@ -577,6 +611,7 @@ impl Constraint {
         }
     }
 
+    /// Applies this constraint's documentation into 'documentation'.
     pub fn apply_to_docs(&self, field_name: &str, documentation: &mut Documentation) {
         let Constraint { kind, .. } = self;
         match kind {
@@ -613,6 +648,7 @@ impl Constraint {
         }
     }
 
+    /// Builds this constraint into a source code block.
     fn as_block(&self, field_name: &str) -> Block {
         let Constraint { kind, .. } = self;
         match kind {
@@ -684,26 +720,31 @@ impl JavaMethodParameter {
     }
 }
 
+/// A Java source code block builder.
 #[derive(Default, Debug)]
 pub struct Block {
     lines: Vec<String>,
 }
 
 impl Block {
+    /// Returns whether this source code block is empty.
     pub fn is_empty(&self) -> bool {
         self.lines.iter().all(|line| line.is_empty())
     }
 
+    /// Builds a source code from a line.
     pub fn of(line: impl ToString) -> Block {
         let block = Block::default();
         block.add_line(line)
     }
 
+    /// Builds a source code from a statement.
     pub fn of_statement(line: impl ToString) -> Block {
         let block = Block::default();
         block.add_statement(line)
     }
 
+    /// Writes this source code block using 'writer'.
     pub fn write(self, writer: &mut Writer) -> io::Result<()> {
         let block = self
             .lines
@@ -719,6 +760,7 @@ impl Block {
         writer.write_all_indented(block.lines(), false)
     }
 
+    /// Appends 'line' into the last line in this source code block.
     pub fn add(mut self, line: impl ToString) -> Block {
         match self.lines.last_mut() {
             Some(last) => {
@@ -729,23 +771,21 @@ impl Block {
         }
     }
 
+    /// Appends 'line' into this source code block.
     pub fn add_line(mut self, line: impl ToString) -> Block {
         self.lines.push(line.to_string());
         self
     }
 
+    /// Appends 'line' as a statement into this source code block.
     pub fn add_statement(mut self, statement: impl ToString) -> Block {
         self.lines.push(format!("{};", statement.to_string()));
         self
     }
 
+    /// Extends this source code block with the content in 'with'.
     pub fn extend(mut self, with: Block) -> Block {
         self.lines.extend(with.lines);
-        self
-    }
-
-    pub fn push_line(mut self) -> Block {
-        self.lines.push("\n".to_string());
         self
     }
 }
@@ -762,6 +802,12 @@ pub struct JavaMethod {
 }
 
 impl JavaMethod {
+    /// Builds a new Java Method definition.
+    ///
+    /// # Parameters
+    /// - name: the name of the method
+    /// - return_type: the return type of the method
+    /// - annotation: an optional annotation that the method will be decorated by.
     pub fn new(
         name: impl ToString,
         return_type: JavaType,
@@ -778,31 +824,25 @@ impl JavaMethod {
         }
     }
 
+    /// Mark this method as abstract.
     pub fn set_abstract(mut self) -> JavaMethod {
         self.r#abstract = true;
         self
     }
 
+    /// Sets this methods body.
     pub fn set_block(mut self, to: Block) -> JavaMethod {
         self.body = to;
         self
     }
 
-    pub fn add_parameter(mut self, param: JavaMethodParameter) -> JavaMethod {
-        self.args.push(param);
-        self
-    }
-
+    /// Adds a line of documentation to this method.
     pub fn add_documentation(mut self, line: impl ToString) -> JavaMethod {
         self.documentation.push_header_line(line.to_string());
         self
     }
 
-    pub fn add_statement(mut self, statement: impl ToString) -> JavaMethod {
-        self.body = self.body.add_statement(statement);
-        self
-    }
-
+    /// Infers a Java Method getter from the provided field.
     pub fn getter_for(field: JavaField) -> JavaMethod {
         let documentation = Documentation::for_getter(field.name.clone(), field.default_value());
         let body = Block::of_statement(format!("return this.{}", field.name));
@@ -818,6 +858,7 @@ impl JavaMethod {
         }
     }
 
+    /// Infers a Java Method setter from the provided field.
     pub fn setter_for(field: JavaField) -> JavaMethod {
         let mut documentation = Documentation::for_setter(field.name.clone());
         field

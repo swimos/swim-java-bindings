@@ -56,12 +56,15 @@ impl Debug for RustBindings {
 }
 
 impl RustBindings {
+    /// Strips #[bytebridge] annotations from the item.
     pub fn build(mut item: Item) -> RustBindings {
         let mut builder = RustBindingsBuilder;
         builder.visit_item_mut(&mut item);
         RustBindings { source: item }
     }
 
+    /// Writes the Rust bindings for the transformation into 'rust_writer'. This is delegated to the
+    /// bytebridge_derive attribute macro.
     pub fn write(self, rust_writer: &mut RustSourceWriter) -> io::Result<()> {
         let RustBindings { source } = self;
 
