@@ -19,7 +19,10 @@ use crate::bindings::java::models::{
     Block, Constraint, ConstraintKind, JavaField, JavaMethod, JavaType, PrimitiveJavaType,
     AS_BYTES_METHOD, BUFFER_SIZE_VAR, BUFFER_VAR, JAVA_KEYWORDS, TEMP_VAR,
 };
-use crate::bindings::MACRO_PATH;
+use crate::bindings::{
+    ATTR_DEFAULT_VALUE, ATTR_DOC, ATTR_NATURAL, ATTR_NON_ZERO, ATTR_RANGE, ATTR_RENAME,
+    ATTR_UNSIGNED_ARRAY, INVALID_PROPERTY_NAME, MACRO_PATH, UNKNOWN_ATTRIBUTE,
+};
 use crate::docs::Documentation;
 use crate::FormatStyle;
 
@@ -436,11 +439,6 @@ fn build_variant_properties(
     variant_name: String,
     attrs: &Vec<Attribute>,
 ) -> Result<VariantProperties, Error> {
-    const UNKNOWN_ATTRIBUTE: &str = "Unknown attribute";
-    const INVALID_SUBCLASS: &str = "Invalid subclass name";
-
-    let err = |span, msg| Err(Error::new(span, msg));
-
     let mut properties = VariantProperties {
         documentation: Documentation::from_style(FormatStyle::Documentation),
         subclass_name: format!("{}{}", enum_name, variant_name),
@@ -454,32 +452,15 @@ fn build_variant_properties(
         let nested = attr.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
         for nested in nested {
             match nested {
-                Meta::NameValue(meta) if meta.path.is_ident("doc") => match meta.value {
+                Meta::NameValue(meta) if meta.path.is_ident(ATTR_DOC) => match meta.value {
                     Expr::Lit(ExprLit {
                         lit: Lit::Str(str), ..
                     }) => properties.documentation.push_header_line(str.value()),
                     list => return Err(Error::new(list.span(), UNKNOWN_ATTRIBUTE)),
                 },
-                Meta::NameValue(meta) if meta.path.is_ident("rename") => match meta.value {
-                    Expr::Lit(ExprLit {
-                        lit: Lit::Str(str), ..
-                    }) => {
-                        let subclass_name = str.value();
-                        let mut chars = subclass_name.chars();
-                        match chars.next() {
-                            Some(char) if char.is_alphabetic() => {
-                                if chars.all(char::is_alphanumeric) {
-                                    properties.subclass_name = subclass_name;
-                                } else {
-                                    return err(str.span(), INVALID_SUBCLASS);
-                                }
-                            }
-                            Some(_) => return err(str.span(), INVALID_SUBCLASS),
-                            None => return err(str.span(), INVALID_SUBCLASS),
-                        }
-                    }
-                    list => return err(list.span(), INVALID_SUBCLASS),
-                },
+                Meta::NameValue(meta) if meta.path.is_ident(ATTR_RENAME) => {
+                    properties.subclass_name = validate_identifier(meta)?
+                }
                 meta => return Err(Error::new(meta.span(), UNKNOWN_ATTRIBUTE)),
             }
         }
@@ -488,26 +469,58 @@ fn build_variant_properties(
     Ok(properties)
 }
 
+fn ident_start_char(c: char) -> bool {
+    c.is_alphabetic() || c == '$' || c == '_'
+}
+
+pub fn validate_identifier(meta: MetaNameValue) -> Result<String, Error> {
+    let err = |span, msg| Err(Error::new(span, msg));
+
+    match meta.value {
+        Expr::Lit(ExprLit {
+            lit: Lit::Str(str), ..
+        }) => {
+            let identifier = str.value();
+
+            println!("{}", identifier);
+
+            let mut chars = identifier.chars();
+            match chars.next() {
+                Some(char) if ident_start_char(char) => {
+                    if chars.all(|c| c.is_numeric() || ident_start_char(c)) {
+                        Ok(identifier)
+                    } else {
+                        err(str.span(), INVALID_PROPERTY_NAME)
+                    }
+                }
+                Some(_) => err(str.span(), INVALID_PROPERTY_NAME),
+                None => err(str.span(), INVALID_PROPERTY_NAME),
+            }
+        }
+        list => return err(list.span(), INVALID_PROPERTY_NAME),
+    }
+}
+
 impl<'args, 'ast> Visit<'ast> for ClassBuilder {
     fn visit_field(&mut self, field: &'ast Field) {
         self.with(|infer_docs, builder| {
             let ty = map_type(&field.ty)?;
-            let properties = derive_field_properties(field.span(), infer_docs, ty, &field.attrs)?;
             let span = field.span();
-            let default_value = match properties.default_value {
-                Some(ty) => ty,
-                None => ty.default_value(),
-            };
             let name = field
                 .ident
                 .as_ref()
                 .ok_or(Error::new(span, "Tuple fields are not supported"))
-                .map(|i| i.to_string())?;
+                .map(|i| AsLowerCamelCase(i.to_string()).to_string())?;
+            let (name, properties) =
+                derive_field_properties(name, field.span(), infer_docs, ty, &field.attrs)?;
+            let default_value = match properties.default_value {
+                Some(ty) => ty,
+                None => ty.default_value(),
+            };
             sanitize_name(name.as_str(), span)?;
 
-            let java_name = AsLowerCamelCase(name).to_string();
             let field = JavaField {
-                name: java_name,
+                name,
                 documentation: properties.documentation,
                 ty,
                 default_value,
@@ -546,7 +559,7 @@ pub fn map_type(ty: &Type) -> Result<JavaType, Error> {
 }
 
 fn infer_docs(attrs: &[Attribute], documentation: &mut Documentation) {
-    let attrs = attrs.iter().filter(|at| at.path().is_ident("doc"));
+    let attrs = attrs.iter().filter(|at| at.path().is_ident(ATTR_DOC));
     for attr in attrs {
         match &attr.meta {
             Meta::NameValue(meta) => match &meta.value {
@@ -563,11 +576,12 @@ fn infer_docs(attrs: &[Attribute], documentation: &mut Documentation) {
 }
 
 fn derive_field_properties(
+    mut name: String,
     span: Span,
     infer_documentation: bool,
     field_type: JavaType,
     attrs: &[Attribute],
-) -> Result<FieldProperties, Error> {
+) -> Result<(String, FieldProperties), Error> {
     let mut properties = FieldProperties {
         documentation: Documentation::from_style(FormatStyle::Documentation),
         default_value: None,
@@ -585,7 +599,7 @@ fn derive_field_properties(
 
     if attribute_iter.peek().is_none() {
         Constraint::implicit(&mut properties.constraint, &field_type)?;
-        return Ok(properties);
+        return Ok((name, properties));
     }
 
     let unknown_attribute =
@@ -597,7 +611,7 @@ fn derive_field_properties(
         let nested = attr.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
         for nested in nested {
             match nested {
-                Meta::NameValue(meta) if meta.path.is_ident("doc") => match meta.value {
+                Meta::NameValue(meta) if meta.path.is_ident(ATTR_DOC) => match meta.value {
                     Expr::Lit(ExprLit {
                         lit: Lit::Str(str), ..
                     }) => documentation_override.push_header_line(str.value()),
@@ -605,26 +619,29 @@ fn derive_field_properties(
                         return unknown_attribute(meta.to_token_stream().to_string(), meta.span())
                     }
                 },
+                Meta::NameValue(meta) if meta.path.is_ident(ATTR_RENAME) => {
+                    name = validate_identifier(meta)?;
+                }
                 Meta::NameValue(MetaNameValue {
                     path,
                     value: Expr::Lit(ExprLit { lit, .. }),
                     ..
-                }) if path.is_ident("default_value") => {
+                }) if path.is_ident(ATTR_DEFAULT_VALUE) => {
                     if properties.default_value.is_some() {
                         return Err(Error::new(lit.span(), "Duplicate default value"));
                     }
                     properties.default_value = Some(field_type.unpack_default_value(lit)?);
                 }
-                Meta::Path(path) if path.is_ident("non_zero") => {
+                Meta::Path(path) if path.is_ident(ATTR_NON_ZERO) => {
                     properties.constraint = field_type.as_non_zero(path.span())?
                 }
-                Meta::Path(path) if path.is_ident("natural") => {
+                Meta::Path(path) if path.is_ident(ATTR_NATURAL) => {
                     properties.constraint = field_type.as_natural(path.span())?
                 }
-                Meta::Path(path) if path.is_ident("unsigned_array") => {
+                Meta::Path(path) if path.is_ident(ATTR_UNSIGNED_ARRAY) => {
                     properties.constraint = field_type.as_unsigned_array(path.span())?
                 }
-                Meta::List(list) if list.path.is_ident("range") => {
+                Meta::List(list) if list.path.is_ident(ATTR_RANGE) => {
                     struct RangeArgs {
                         min: LitInt,
                         _sep: Token![,],
@@ -657,7 +674,7 @@ fn derive_field_properties(
         properties.documentation = documentation_override;
     }
 
-    Ok(properties)
+    Ok((name, properties))
 }
 
 fn sanitize_name(name: &str, span: Span) -> Result<(), Error> {

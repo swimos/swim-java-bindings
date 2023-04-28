@@ -1,7 +1,9 @@
 mod java;
 mod rust;
 
-use crate::bindings::java::{AbstractClassBuilder, ClassBuilder, JavaBindings};
+use crate::bindings::java::{
+    validate_identifier, AbstractClassBuilder, ClassBuilder, JavaBindings,
+};
 use crate::bindings::rust::RustBindings;
 use crate::docs::Documentation;
 use crate::FormatStyle;
@@ -19,70 +21,77 @@ use syn::{
 };
 
 const MACRO_PATH: &str = "bytebridge";
+const UNKNOWN_ATTRIBUTE: &str = "Unknown attribute";
+const INVALID_PROPERTY_NAME: &str = "Invalid property name";
+
+const ATTR_DOC: &str = "doc";
+const ATTR_NO_DOCS: &str = "no_docs";
+const ATTR_RENAME: &str = "rename";
+const ATTR_DEFAULT_VALUE: &str = "default_value";
+const ATTR_NON_ZERO: &str = "non_zero";
+const ATTR_NATURAL: &str = "natural";
+const ATTR_UNSIGNED_ARRAY: &str = "natural";
+const ATTR_RANGE: &str = "range";
 
 pub struct DeriveArgs {
+    pub name: String,
     pub infer_docs: bool,
     pub root_doc: Documentation,
 }
 
-impl Default for DeriveArgs {
-    fn default() -> Self {
-        DeriveArgs {
-            infer_docs: true,
-            root_doc: Documentation::from_style(FormatStyle::Documentation),
-        }
-    }
-}
-
 pub struct DeriveArgsBuilder {
-    result: Result<DeriveArgs, Error>,
+    args: Result<Option<DeriveArgs>, Error>,
 }
 
 impl Default for DeriveArgsBuilder {
     fn default() -> Self {
-        DeriveArgsBuilder {
-            result: Ok(DeriveArgs::default()),
-        }
+        DeriveArgsBuilder { args: Ok(None) }
     }
 }
 
 impl DeriveArgsBuilder {
-    fn err(&mut self, span: Span, message: impl Display) {
-        self.result = Err(Error::new(span, message))
+    fn enter(&mut self, name: String) {
+        self.args = Ok(Some(DeriveArgs {
+            name,
+            infer_docs: true,
+            root_doc: Documentation::from_style(FormatStyle::Documentation),
+        }));
     }
 
-    fn into_result(self) -> Result<DeriveArgs, Error> {
-        self.result
+    fn err(&mut self, span: Span, message: impl Display) {
+        self.args = Err(Error::new(span, message))
+    }
+
+    fn into_result(self) -> Result<Option<DeriveArgs>, Error> {
+        self.args
     }
 
     fn set_infer_docs(&mut self, to: bool) {
-        match &mut self.result {
-            Ok(ctx) => {
-                ctx.infer_docs = to;
-            }
-            Err(_) => {}
+        if let Ok(Some(args)) = &mut self.args {
+            args.infer_docs = to;
+        }
+    }
+
+    fn set_name(&mut self, to: String) {
+        if let Ok(Some(args)) = &mut self.args {
+            args.name = to;
         }
     }
 
     fn add_doc(&mut self, str: String) {
-        match &mut self.result {
-            Ok(ctx) => {
-                ctx.root_doc.push_header_line(str);
-            }
-            Err(_) => {}
+        if let Ok(Some(args)) = &mut self.args {
+            args.root_doc.push_header_line(str);
         }
     }
 }
 
 impl<'ast> Visit<'ast> for DeriveArgsBuilder {
     fn visit_attribute(&mut self, i: &'ast Attribute) {
-        const UNKNOWN_ATTRIBUTE: &str = "Unknown attribute";
-
         if !i.path().is_ident(MACRO_PATH) {
             return;
         }
 
-        if let Meta::Path(_) = &i.meta {
+        if i.meta.require_list().is_err() {
             // Empty arguments in the attribute. This is valid and just means that the item has been
             // decorated as:
             //
@@ -98,7 +107,9 @@ impl<'ast> Visit<'ast> for DeriveArgsBuilder {
             Ok(nested) => {
                 for nested in nested {
                     match nested {
-                        Meta::Path(path) if path.is_ident("no_docs") => self.set_infer_docs(false),
+                        Meta::Path(path) if path.is_ident(ATTR_NO_DOCS) => {
+                            self.set_infer_docs(false)
+                        }
                         Meta::NameValue(MetaNameValue {
                             path,
                             value:
@@ -106,7 +117,14 @@ impl<'ast> Visit<'ast> for DeriveArgsBuilder {
                                     lit: Lit::Str(str), ..
                                 }),
                             ..
-                        }) if path.is_ident("doc") => self.add_doc(str.value()),
+                        }) if path.is_ident(ATTR_DOC) => self.add_doc(str.value()),
+                        Meta::NameValue(meta) if meta.path.is_ident(ATTR_RENAME) => {
+                            let span = meta.span();
+                            match validate_identifier(meta) {
+                                Ok(name) => self.set_name(name),
+                                Err(_) => self.err(span, INVALID_PROPERTY_NAME),
+                            }
+                        }
                         meta => self.err(meta.span(), UNKNOWN_ATTRIBUTE),
                     }
                 }
@@ -133,6 +151,8 @@ impl<'ast> Visit<'ast> for DeriveArgsBuilder {
     fn visit_item(&mut self, i: &Item) {
         match i {
             Item::Struct(item) => {
+                self.enter(item.ident.to_string());
+
                 self.visit_generics(&item.generics);
                 self.visit_fields(&item.fields);
 
@@ -141,6 +161,7 @@ impl<'ast> Visit<'ast> for DeriveArgsBuilder {
                 }
             }
             Item::Enum(item) => {
+                self.enter(item.ident.to_string());
                 self.visit_generics(&item.generics);
 
                 for attr in &item.attrs {
@@ -184,6 +205,15 @@ fn generate_binding(
     Ok(())
 }
 
+fn should_enter(item: &Item) -> bool {
+    let predicate = |attrs: &[Attribute]| attrs.iter().any(|attr| attr.path().is_ident(MACRO_PATH));
+    match item {
+        Item::Enum(item) => predicate(&item.attrs),
+        Item::Struct(item) => predicate(&item.attrs),
+        _ => false,
+    }
+}
+
 fn derive_bindings(mut item: Item) -> Result<Option<Bindings>, Error> {
     if !should_enter(&item) {
         return Ok(None);
@@ -192,23 +222,26 @@ fn derive_bindings(mut item: Item) -> Result<Option<Bindings>, Error> {
     let mut args_builder = DeriveArgsBuilder::default();
     args_builder.visit_item(&mut item);
 
-    let args = args_builder.into_result()?;
+    let args = match args_builder.into_result()? {
+        Some(args) => args,
+        None => return Ok(None),
+    };
 
     let java = match &mut item {
         Item::Enum(item) => {
             let mut java_binding_builder =
-                AbstractClassBuilder::new(args.infer_docs, args.root_doc, item.ident.to_string());
+                AbstractClassBuilder::new(args.infer_docs, args.root_doc, args.name);
             java_binding_builder.visit_item_enum(item);
             JavaBindings::Abstract(java_binding_builder.into_result()?)
         }
         Item::Struct(item) => {
             let mut java_binding_builder =
-                ClassBuilder::new(args.infer_docs, args.root_doc, item.ident.to_string());
+                ClassBuilder::new(args.infer_docs, args.root_doc, args.name);
             java_binding_builder.visit_item_struct(item);
             JavaBindings::Class(java_binding_builder.into_result()?)
         }
         i => {
-            // Unreachable due to should_enter call above
+            // Unreachable as no args would have been returned above
             unreachable!("{:?}", i);
         }
     };
@@ -217,16 +250,6 @@ fn derive_bindings(mut item: Item) -> Result<Option<Bindings>, Error> {
         java,
         rust: RustBindings::build(item),
     }))
-}
-
-fn should_enter(item: &Item) -> bool {
-    let predicate = |attrs: &[Attribute]| attrs.iter().any(|attr| attr.path().is_ident(MACRO_PATH));
-
-    match item {
-        Item::Enum(item) => predicate(&item.attrs),
-        Item::Struct(item) => predicate(&item.attrs),
-        _ => false,
-    }
 }
 
 struct Bindings {

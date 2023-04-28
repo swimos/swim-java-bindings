@@ -78,6 +78,7 @@ impl TestCase {
                 let superclass_content = {
                     let mut working_dir = working_dir.clone();
                     working_dir.push(format!("ai/swim/{}.java", superclass_name));
+                    println!("{:?}", working_dir);
                     read_to_string(working_dir).expect("Failed to read test file")
                 };
 
@@ -112,8 +113,6 @@ fn unpack_rename(attrs: &[Attribute]) -> Option<String> {
         } else if attr.meta.require_list().is_err() {
             continue;
         }
-
-        println!("{}", attr.to_token_stream().to_string());
 
         let nested = attr
             .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
