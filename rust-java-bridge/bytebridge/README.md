@@ -20,7 +20,7 @@ pub struct Configuration {
 ```
 There are multiple methods that we could use for receiving these properties in Rust. We could implement a FFI builder around the struct, provide each field as a method parameter or derive a byte representation for it. 
 
-Bytebridge will derive a Java class for building the configuration (with optional constraints on the fields) and then copy the Rust input into a new file. To use it, we need to add some attributes to the fields:
+Bytebridge will derive a Java class for building the configuration (with optional constraints on the fields) and then derive a Rust reader for the input. To use it, we need to add some attributes to the fields:
 
 ```rust
 #[bytebridge]
@@ -439,5 +439,5 @@ impl bytebridge::ByteCodec for Configuration {
   - NonZeroU32 -> int > 0
   - NonZeroU64 -> long > 0
   - bool -> boolean
-- Array of primitive types -> Vec
-- std::time::Duration -> int > 0
+- Vec of primitive types -> array
+- std::time::Duration -> int >= 0
