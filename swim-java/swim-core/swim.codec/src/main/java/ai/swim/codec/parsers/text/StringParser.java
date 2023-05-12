@@ -58,8 +58,8 @@ public class StringParser extends Parser<String> {
 
   public static boolean isDigit(int c) {
     return c >= '0' && c <= '9'
-        || c >= 'A' && c <= 'F'
-        || c >= 'a' && c <= 'f';
+            || c >= 'A' && c <= 'F'
+            || c >= 'a' && c <= 'f';
   }
 
   public static int decodeDigit(int c) {

@@ -57,7 +57,7 @@ public final class DecimalLiteralIdentifier extends Identifier {
   @Override
   public String toString() {
     return "DecimalLiteralIdentifier{" +
-        "value=" + value +
-        '}';
+            "value=" + value +
+            '}';
   }
 }

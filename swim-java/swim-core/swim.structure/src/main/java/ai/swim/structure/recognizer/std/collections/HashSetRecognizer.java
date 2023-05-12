@@ -39,8 +39,8 @@ public class HashSetRecognizer<E> extends CollectionRecognizer<E, HashSet<E>, Ha
   @Override
   public Recognizer<HashSet<E>> asAttrRecognizer() {
     return new FirstOf<>(
-        new HashSetRecognizer<>(this.delegate.reset(), true),
-        new SimpleAttrBodyRecognizer<>(new HashSetRecognizer<>(this.delegate.reset(), false))
+            new HashSetRecognizer<>(this.delegate.reset(), true),
+            new SimpleAttrBodyRecognizer<>(new HashSetRecognizer<>(this.delegate.reset(), false))
     );
   }
 

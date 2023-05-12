@@ -13,22 +13,13 @@ import ai.swim.recon.models.state.StateChange;
 import ai.swim.recon.result.ParseResult;
 import ai.swim.recon.result.ResultError;
 
-import java.util.ArrayDeque;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static ai.swim.codec.Parser.preceded;
 import static ai.swim.codec.parsers.combinators.Alt.alt;
 import static ai.swim.codec.parsers.text.Multispace0.multispace0;
 import static ai.swim.codec.parsers.text.StringExt.space0;
-import static ai.swim.recon.ReconParserParts.parseAfterAttr;
-import static ai.swim.recon.ReconParserParts.parseAfterSlot;
-import static ai.swim.recon.ReconParserParts.parseAfterValue;
-import static ai.swim.recon.ReconParserParts.parseInit;
-import static ai.swim.recon.ReconParserParts.parseNotAfterItem;
-import static ai.swim.recon.ReconParserParts.parseSlotValue;
+import static ai.swim.recon.ReconParserParts.*;
 
 /**
  * An incremental recon parser.
@@ -59,17 +50,17 @@ public final class ReconParser {
 
   private static Parser<ParserTransition> initParser() {
     return alt(
-        new Parser<>() {
-          @Override
-          public Parser<ParserTransition> feed(Input input) {
-            if (input.isDone()) {
-              return Parser.done(ReadEvent.extant().transition());
-            } else {
-              return Parser.error(input, "Expected an empty input");
-            }
-          }
-        },
-        preceded(multispace0(), parseInit())
+            new Parser<>() {
+              @Override
+              public Parser<ParserTransition> feed(Input input) {
+                if (input.isDone()) {
+                  return Parser.done(ReadEvent.extant().transition());
+                } else {
+                  return Parser.error(input, "Expected an empty input");
+                }
+              }
+            },
+            preceded(multispace0(), parseInit())
     );
   }
 
@@ -424,13 +415,13 @@ public final class ReconParser {
   @Override
   public String toString() {
     return "ReconParser{" +
-        "input=" + input +
-        ", state=" + state +
-        ", current=" + current +
-        ", pending=" + pending +
-        ", complete=" + complete +
-        ", clearIfNone=" + clearIfNone +
-        '}';
+            "input=" + input +
+            ", state=" + state +
+            ", current=" + current +
+            ", pending=" + pending +
+            ", complete=" + complete +
+            ", clearIfNone=" + clearIfNone +
+            '}';
   }
 
   private static class PendingEvents {

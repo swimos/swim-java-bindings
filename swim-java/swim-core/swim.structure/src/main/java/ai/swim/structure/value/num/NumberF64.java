@@ -28,8 +28,8 @@ public class NumberF64 extends NumberValue {
   @Override
   public String toString() {
     return "NumberF64{" +
-        "value=" + value +
-        '}';
+            "value=" + value +
+            '}';
   }
 
   @Override

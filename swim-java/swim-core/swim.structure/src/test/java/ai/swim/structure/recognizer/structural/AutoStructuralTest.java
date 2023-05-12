@@ -13,9 +13,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -103,8 +100,8 @@ public class AutoStructuralTest {
   }
 
   @AutoForm(subTypes = {
-      @AutoForm.Type(IF2.class),
-      @AutoForm.Type(IFAbs.class)
+          @AutoForm.Type(IF2.class),
+          @AutoForm.Type(IFAbs.class)
   })
   public interface IF1 {
 
@@ -183,10 +180,10 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "PropClass{" +
-          "a=" + a +
-          ", b='" + b + '\'' +
-          ", c='" + c + '\'' +
-          '}';
+              "a=" + a +
+              ", b='" + b + '\'' +
+              ", c='" + c + '\'' +
+              '}';
     }
   }
 
@@ -253,10 +250,10 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "PropClass2{" +
-          "a=" + a +
-          ", b='" + b + '\'' +
-          ", c='" + c + '\'' +
-          '}';
+              "a=" + a +
+              ", b='" + b + '\'' +
+              ", c='" + c + '\'' +
+              '}';
     }
   }
 
@@ -373,9 +370,9 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "Inner{" +
-          "first=" + first +
-          ", second='" + second + '\'' +
-          '}';
+              "first=" + first +
+              ", second='" + second + '\'' +
+              '}';
     }
 
     @Override
@@ -414,9 +411,9 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "Outer{" +
-          "node='" + node + '\'' +
-          ", inner=" + inner +
-          '}';
+              "node='" + node + '\'' +
+              ", inner=" + inner +
+              '}';
     }
 
     public String getNode() {
@@ -511,12 +508,12 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "Prop3{" +
-          "count=" + count +
-          ", node='" + node + '\'' +
-          ", lane='" + lane + '\'' +
-          ", first=" + first +
-          ", second='" + second + '\'' +
-          '}';
+              "count=" + count +
+              ", node='" + node + '\'' +
+              ", lane='" + lane + '\'' +
+              ", first=" + first +
+              ", second='" + second + '\'' +
+              '}';
     }
 
     @Override
@@ -538,8 +535,8 @@ public class AutoStructuralTest {
   }
 
   @AutoForm(subTypes = {
-      @AutoForm.Type(LaneAddressed.class),
-      @AutoForm.Type(HostAddressed.class)
+          @AutoForm.Type(LaneAddressed.class),
+          @AutoForm.Type(HostAddressed.class)
   })
   public static abstract class Envelope {
 
@@ -608,10 +605,10 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "LaneAddressed{" +
-          "nodeUri='" + nodeUri + '\'' +
-          ", laneUri='" + laneUri + '\'' +
-          ", body='" + body + '\'' +
-          '}';
+              "nodeUri='" + nodeUri + '\'' +
+              ", laneUri='" + laneUri + '\'' +
+              ", body='" + body + '\'' +
+              '}';
     }
   }
 
@@ -680,21 +677,21 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "AuthRequest{" +
-          "body='" + body + '\'' +
-          '}';
+              "body='" + body + '\'' +
+              '}';
     }
   }
 
   @AutoForm(subTypes = {
-      @AutoForm.Type(Base2.class),
-      @AutoForm.Type(Con2.class)
+          @AutoForm.Type(Base2.class),
+          @AutoForm.Type(Con2.class)
   })
   public static abstract class Base {
 
   }
 
   @AutoForm(subTypes = {
-      @AutoForm.Type(ImpBase2.class)
+          @AutoForm.Type(ImpBase2.class)
   })
   public static abstract class Base2 extends Base {
 
@@ -723,8 +720,8 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "ImpBase2{" +
-          "a='" + a + '\'' +
-          '}';
+              "a='" + a + '\'' +
+              '}';
     }
 
     @Override
@@ -768,8 +765,8 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "Imp3{" +
-          "c='" + c + '\'' +
-          '}';
+              "c='" + c + '\'' +
+              '}';
     }
 
     @Override
@@ -813,8 +810,8 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "Con2{" +
-          "b='" + b + '\'' +
-          '}';
+              "b='" + b + '\'' +
+              '}';
     }
 
     @Override
@@ -870,11 +867,11 @@ public class AutoStructuralTest {
   }
 
   @AutoForm(subTypes = {
-      @AutoForm.Type(MapUpdate.class),
-      @AutoForm.Type(MapRemove.class),
-      @AutoForm.Type(MapClear.class),
-      @AutoForm.Type(MapTake.class),
-      @AutoForm.Type(MapDrop.class),
+          @AutoForm.Type(MapUpdate.class),
+          @AutoForm.Type(MapRemove.class),
+          @AutoForm.Type(MapClear.class),
+          @AutoForm.Type(MapTake.class),
+          @AutoForm.Type(MapDrop.class),
   })
   public static abstract class MapEnvelope {
 
@@ -917,9 +914,9 @@ public class AutoStructuralTest {
     @Override
     public String toString() {
       return "MapUpdate{" +
-          "key=" + key +
-          ", value=" + value +
-          '}';
+              "key=" + key +
+              ", value=" + value +
+              '}';
     }
   }
 

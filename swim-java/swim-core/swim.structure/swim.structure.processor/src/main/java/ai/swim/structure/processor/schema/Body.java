@@ -1,5 +1,7 @@
 package ai.swim.structure.processor.schema;
 
+import ai.swim.structure.processor.model.FieldModel;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -48,8 +50,8 @@ public class Body {
   @Override
   public String toString() {
     return "Body{" +
-        "isReplaced=" + isReplaced +
-        ", fields=" + fields +
-        '}';
+            "isReplaced=" + isReplaced +
+            ", fields=" + fields +
+            '}';
   }
 }

@@ -34,8 +34,8 @@ public class ReadDoubleValue extends ReadEvent {
   @Override
   public String toString() {
     return "ReadDoubleValue{" +
-        "value=" + value +
-        '}';
+            "value=" + value +
+            '}';
   }
 
   @Override

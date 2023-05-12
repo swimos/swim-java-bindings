@@ -28,8 +28,8 @@ public class IntNumber extends NumberValue {
   @Override
   public String toString() {
     return "IntNumber{" +
-        "value=" + value +
-        '}';
+            "value=" + value +
+            '}';
   }
 
   @Override

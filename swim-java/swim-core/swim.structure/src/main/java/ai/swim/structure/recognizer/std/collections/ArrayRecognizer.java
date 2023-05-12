@@ -50,8 +50,8 @@ public class ArrayRecognizer<E> extends CollectionRecognizer<E, List<E>, E[]> {
   @Override
   public Recognizer<E[]> asAttrRecognizer() {
     return new FirstOf<>(
-        new ArrayRecognizer<>(clazz, super.delegate.reset(), true),
-        new SimpleAttrBodyRecognizer<>(new ArrayRecognizer<>(clazz, super.delegate.reset(), false))
+            new ArrayRecognizer<>(clazz, super.delegate.reset(), true),
+            new SimpleAttrBodyRecognizer<>(new ArrayRecognizer<>(clazz, super.delegate.reset(), false))
     );
   }
 

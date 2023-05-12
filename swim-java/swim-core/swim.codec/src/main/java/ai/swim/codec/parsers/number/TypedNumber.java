@@ -132,8 +132,8 @@ public abstract class TypedNumber {
   @Override
   public String toString() {
     return "TypedNumber{" +
-        "value=" + value +
-        '}';
+            "value=" + value +
+            '}';
   }
 
   @Override

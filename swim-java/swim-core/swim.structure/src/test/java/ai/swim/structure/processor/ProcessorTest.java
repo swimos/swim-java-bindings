@@ -25,17 +25,17 @@ public class ProcessorTest {
   void readSimpleClass() {
     Recognizer<SimpleClass> recognizer = new SimpleClassRecognizer();
     List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("SimpleClass"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.text("valueA"),
-        ReadEvent.text("b"),
-        ReadEvent.slot(),
-        ReadEvent.number(2),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("SimpleClass"),
+            ReadEvent.extant(),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("a"),
+            ReadEvent.slot(),
+            ReadEvent.text("valueA"),
+            ReadEvent.text("b"),
+            ReadEvent.slot(),
+            ReadEvent.number(2),
+            ReadEvent.endRecord()
     );
 
     SimpleClass simpleClass = runTest(recognizer, events);
@@ -48,14 +48,14 @@ public class ProcessorTest {
   void readSimpleClassSkippedFieldOk() {
     Recognizer<SimpleClassSkippedField> recognizer = new SimpleClassSkippedFieldRecognizer();
     List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("SimpleClassSkippedField"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("b"),
-        ReadEvent.slot(),
-        ReadEvent.text("valueA"),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("SimpleClassSkippedField"),
+            ReadEvent.extant(),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("b"),
+            ReadEvent.slot(),
+            ReadEvent.text("valueA"),
+            ReadEvent.endRecord()
     );
 
     SimpleClassSkippedField simpleClass = runTest(recognizer, events);
@@ -68,17 +68,17 @@ public class ProcessorTest {
   void readSimpleClassSkippedFieldErr() {
     Recognizer<SimpleClassSkippedField> recognizer = new SimpleClassSkippedFieldRecognizer();
     List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("SimpleClassSkippedField"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.number(1),
-        ReadEvent.text("b"),
-        ReadEvent.slot(),
-        ReadEvent.text("valueA"),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("SimpleClassSkippedField"),
+            ReadEvent.extant(),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("a"),
+            ReadEvent.slot(),
+            ReadEvent.number(1),
+            ReadEvent.text("b"),
+            ReadEvent.slot(),
+            ReadEvent.text("valueA"),
+            ReadEvent.endRecord()
     );
 
     try {
@@ -92,21 +92,21 @@ public class ProcessorTest {
   void readListClass() {
     Recognizer<ListClass> recognizer = new ListClassRecognizer();
     List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("ListClass"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("list"),
-        ReadEvent.slot(),
-        ReadEvent.startBody(),
-        ReadEvent.number(1),
-        ReadEvent.number(2),
-        ReadEvent.number(3),
-        ReadEvent.endRecord(),
-        ReadEvent.text("number"),
-        ReadEvent.slot(),
-        ReadEvent.number(4),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("ListClass"),
+            ReadEvent.extant(),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("list"),
+            ReadEvent.slot(),
+            ReadEvent.startBody(),
+            ReadEvent.number(1),
+            ReadEvent.number(2),
+            ReadEvent.number(3),
+            ReadEvent.endRecord(),
+            ReadEvent.text("number"),
+            ReadEvent.slot(),
+            ReadEvent.number(4),
+            ReadEvent.endRecord()
     );
 
     ListClass listClass = runTest(recognizer, events);
@@ -124,19 +124,19 @@ public class ProcessorTest {
   void testWrittenDependant() {
     Recognizer<Dependant> recognizer = new DependantRecognizer();
     List<ReadEvent> readEvents = List.of(
-        ReadEvent.startAttribute("Dependant"),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("writtenDependant"),
-        ReadEvent.slot(),
-        ReadEvent.startAttribute("WrittenDependant"),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.text("stringy"),
-        ReadEvent.endRecord(),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("Dependant"),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("writtenDependant"),
+            ReadEvent.slot(),
+            ReadEvent.startAttribute("WrittenDependant"),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("a"),
+            ReadEvent.slot(),
+            ReadEvent.text("stringy"),
+            ReadEvent.endRecord(),
+            ReadEvent.endRecord()
     );
 
     Dependant actual = runTest(recognizer, readEvents);
@@ -148,14 +148,14 @@ public class ProcessorTest {
   void testRenamedField() {
     Recognizer<RenamedFieldClass> recognizer = new RenamedFieldClassRecognizer();
     List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("RenamedFieldClass"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("renamed_field"),
-        ReadEvent.slot(),
-        ReadEvent.number(13),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("RenamedFieldClass"),
+            ReadEvent.extant(),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("renamed_field"),
+            ReadEvent.slot(),
+            ReadEvent.number(13),
+            ReadEvent.endRecord()
     );
 
     RenamedFieldClass obj = runTest(recognizer, events);
@@ -168,14 +168,14 @@ public class ProcessorTest {
   void testTagOk() {
     Recognizer<TagClass> recognizer = new TagClassRecognizer();
     List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("tag"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.number(13),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("tag"),
+            ReadEvent.extant(),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("a"),
+            ReadEvent.slot(),
+            ReadEvent.number(13),
+            ReadEvent.endRecord()
     );
 
     TagClass obj = runTest(recognizer, events);
@@ -188,14 +188,14 @@ public class ProcessorTest {
   void testTagMismatch() {
     Recognizer<TagClass> recognizer = new TagClassRecognizer();
     List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("TagClass"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.number(13),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("TagClass"),
+            ReadEvent.extant(),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("a"),
+            ReadEvent.slot(),
+            ReadEvent.number(13),
+            ReadEvent.endRecord()
     );
 
     try {
@@ -210,14 +210,14 @@ public class ProcessorTest {
     Recognizer<OptionalFieldClass> recognizer = new OptionalFieldClassRecognizer();
 
     List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("OptionalFieldClass"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("b"),
-        ReadEvent.slot(),
-        ReadEvent.text("value"),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("OptionalFieldClass"),
+            ReadEvent.extant(),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("b"),
+            ReadEvent.slot(),
+            ReadEvent.text("value"),
+            ReadEvent.endRecord()
     );
 
     OptionalFieldClass optionalFieldClass = runTest(recognizer, events);
@@ -231,17 +231,17 @@ public class ProcessorTest {
     Recognizer<OptionalFieldClass> recognizer = new OptionalFieldClassRecognizer();
 
     List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("OptionalFieldClass"),
-        ReadEvent.extant(),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.text("a"),
-        ReadEvent.slot(),
-        ReadEvent.number(1),
-        ReadEvent.text("b"),
-        ReadEvent.slot(),
-        ReadEvent.text("value"),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("OptionalFieldClass"),
+            ReadEvent.extant(),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.text("a"),
+            ReadEvent.slot(),
+            ReadEvent.number(1),
+            ReadEvent.text("b"),
+            ReadEvent.slot(),
+            ReadEvent.text("value"),
+            ReadEvent.endRecord()
     );
 
     OptionalFieldClass optionalFieldClass = runTest(recognizer, events);
@@ -296,9 +296,9 @@ public class ProcessorTest {
     @Override
     public String toString() {
       return "SimpleClass{" +
-          "a='" + a + '\'' +
-          ", b=" + b +
-          '}';
+              "a='" + a + '\'' +
+              ", b=" + b +
+              '}';
     }
   }
 
@@ -352,9 +352,9 @@ public class ProcessorTest {
     @Override
     public String toString() {
       return "SimpleClassSkippedField{" +
-          "a=" + a +
-          ", b='" + b + '\'' +
-          '}';
+              "a=" + a +
+              ", b='" + b + '\'' +
+              '}';
     }
   }
 
@@ -407,9 +407,9 @@ public class ProcessorTest {
     @Override
     public String toString() {
       return "ListClass{" +
-          "list=" + list +
-          ", number=" + number +
-          '}';
+              "list=" + list +
+              ", number=" + number +
+              '}';
     }
   }
 
@@ -448,8 +448,8 @@ public class ProcessorTest {
     @Override
     public String toString() {
       return "WrittenDependant{" +
-          "a='" + a + '\'' +
-          '}';
+              "a='" + a + '\'' +
+              '}';
     }
   }
 
@@ -583,8 +583,8 @@ public class ProcessorTest {
     @Override
     public String toString() {
       return "Dependant{" +
-          "writtenDependant=" + writtenDependant +
-          '}';
+              "writtenDependant=" + writtenDependant +
+              '}';
     }
   }
 
@@ -612,8 +612,8 @@ public class ProcessorTest {
     @Override
     public String toString() {
       return "RenamedFieldClass{" +
-          "a=" + a +
-          '}';
+              "a=" + a +
+              '}';
     }
 
     @Override
@@ -658,8 +658,8 @@ public class ProcessorTest {
     @Override
     public String toString() {
       return "TagClass{" +
-          "a=" + a +
-          '}';
+              "a=" + a +
+              '}';
     }
 
     @Override
@@ -714,9 +714,9 @@ public class ProcessorTest {
     @Override
     public String toString() {
       return "OptionalFieldClass{" +
-          "a=" + a +
-          ", b='" + b + '\'' +
-          '}';
+              "a=" + a +
+              ", b='" + b + '\'' +
+              '}';
     }
 
     @Override

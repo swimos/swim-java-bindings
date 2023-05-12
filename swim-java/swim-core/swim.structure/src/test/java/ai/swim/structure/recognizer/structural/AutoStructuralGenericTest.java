@@ -14,9 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AutoStructuralGenericTest {
 
@@ -42,27 +40,27 @@ public class AutoStructuralGenericTest {
   @Test
   void testFromRecognizerTypeParameters() {
     runNestedTestOk(
-        RecognizerTypeParameter.from(Integer.class),
-        RecognizerTypeParameter.from(Integer.class),
-        RecognizerTypeParameter.from(String.class),
-        "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
-        new NestedGenerics<>(1, new Typed<>(2, "text"), true)
+            RecognizerTypeParameter.from(Integer.class),
+            RecognizerTypeParameter.from(Integer.class),
+            RecognizerTypeParameter.from(String.class),
+            "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
+            new NestedGenerics<>(1, new Typed<>(2, "text"), true)
     );
 
     runNestedTestOk(
-        null,
-        null,
-        null,
-        "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
-        new NestedGenerics<>(1, new Typed<>(2, "text"), true)
+            null,
+            null,
+            null,
+            "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
+            new NestedGenerics<>(1, new Typed<>(2, "text"), true)
     );
 
     runNestedTestOk(
-        null,
-        RecognizerTypeParameter.from(() -> ScalarRecognizer.INTEGER),
-        null,
-        "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
-        new NestedGenerics<>(1, new Typed<>(2, "text"), true)
+            null,
+            RecognizerTypeParameter.from(() -> ScalarRecognizer.INTEGER),
+            null,
+            "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
+            new NestedGenerics<>(1, new Typed<>(2, "text"), true)
     );
   }
 
@@ -77,16 +75,16 @@ public class AutoStructuralGenericTest {
   @Test
   void testFromRecognizerTypeParametersErr() {
     runNestedTestErr(
-        RecognizerTypeParameter.from(Integer.class),
-        RecognizerTypeParameter.from(Integer.class),
-        RecognizerTypeParameter.from(String.class),
-        "@gen{generic:1,a:@Typed{a:2,t:1},c:true}"
+            RecognizerTypeParameter.from(Integer.class),
+            RecognizerTypeParameter.from(Integer.class),
+            RecognizerTypeParameter.from(String.class),
+            "@gen{generic:1,a:@Typed{a:2,t:1},c:true}"
     );
     runNestedTestErr(
-        null,
-        null,
-        null,
-        "@gen{generic:1,a:@Typed{a:\"\",t:1},c:true}"
+            null,
+            null,
+            null,
+            "@gen{generic:1,a:@Typed{a:\"\",t:1},c:true}"
     );
 
     assertThrows(RecognizerException.class, () -> new ClazzRecognizer<>(RecognizerTypeParameter.from(Throwable.class), RecognizerTypeParameter.from(Integer.class), RecognizerTypeParameter.from(Long.class)));
@@ -95,9 +93,9 @@ public class AutoStructuralGenericTest {
   @Test
   void untyped() {
     Recognizer<Clazz<Integer, Long, Object>> recognizer = new ClazzRecognizer<>(
-        RecognizerTypeParameter.from(Integer.class),
-        RecognizerTypeParameter.from(Long.class),
-        RecognizerTypeParameter.untyped()
+            RecognizerTypeParameter.from(Integer.class),
+            RecognizerTypeParameter.from(Long.class),
+            RecognizerTypeParameter.untyped()
     );
 
     Parser<Clazz<Integer, Long, Object>> parser = new FormParser<>(recognizer);
@@ -138,10 +136,10 @@ public class AutoStructuralGenericTest {
     @Override
     public String toString() {
       return "SimpleGeneric{" +
-          "generic=" + generic +
-          ", a=" + a +
-          ", c=" + c +
-          '}';
+              "generic=" + generic +
+              ", a=" + a +
+              ", c=" + c +
+              '}';
     }
 
     @Override
@@ -179,9 +177,9 @@ public class AutoStructuralGenericTest {
     @Override
     public String toString() {
       return "Typed{" +
-          "a=" + a +
-          ", t=" + t +
-          '}';
+              "a=" + a +
+              ", t=" + t +
+              '}';
     }
 
     @Override
@@ -220,10 +218,10 @@ public class AutoStructuralGenericTest {
     @Override
     public String toString() {
       return "Clazz{" +
-          "c=" + c +
-          ", a=" + a +
-          ", i=" + i +
-          '}';
+              "c=" + c +
+              ", a=" + a +
+              ", i=" + i +
+              '}';
     }
 
     @Override
@@ -276,8 +274,8 @@ public class AutoStructuralGenericTest {
     @Override
     public String toString() {
       return "I{" +
-          "t=" + t +
-          '}';
+              "t=" + t +
+              '}';
     }
   }
 
@@ -315,9 +313,9 @@ public class AutoStructuralGenericTest {
     @Override
     public String toString() {
       return "MixedGenerics{" +
-          "outer=" + outer +
-          ", wildcard=" + wildcard +
-          '}';
+              "outer=" + outer +
+              ", wildcard=" + wildcard +
+              '}';
     }
   }
 

@@ -14,11 +14,7 @@
 
 package ai.swim.structure.value;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Record extends Value {
   private static final Attr[] EMPTY_ATTR_DATA = {};
@@ -157,11 +153,11 @@ public class Record extends Value {
   @Override
   public String toString() {
     return "Record{" +
-        "attrs=" + Arrays.toString(attrs) +
-        ", items=" + Arrays.toString(items) +
-        ", attrCount=" + attrCount +
-        ", itemCount=" + itemCount +
-        '}';
+            "attrs=" + Arrays.toString(attrs) +
+            ", items=" + Arrays.toString(items) +
+            ", attrCount=" + attrCount +
+            ", itemCount=" + itemCount +
+            '}';
   }
 
   @Override
@@ -175,9 +171,9 @@ public class Record extends Value {
     Record record = (Record) o;
 
     return
-        attrCount == record.attrCount && itemCount == record.itemCount
-            && Arrays.equals(attrs, 0, attrCount, record.attrs, 0, record.attrCount)
-            && Arrays.equals(items, 0, itemCount, record.items, 0, record.itemCount);
+            attrCount == record.attrCount && itemCount == record.itemCount
+                    && Arrays.equals(attrs, 0, attrCount, record.attrs, 0, record.attrCount)
+                    && Arrays.equals(items, 0, itemCount, record.items, 0, record.itemCount);
   }
 
   @Override
@@ -319,9 +315,9 @@ public class Record extends Value {
     @Override
     public String toString() {
       return "Record.Builder{" +
-          "attrs=" + attrs +
-          ", items=" + items +
-          '}';
+              "attrs=" + attrs +
+              ", items=" + items +
+              '}';
     }
 
 

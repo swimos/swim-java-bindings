@@ -152,8 +152,8 @@ public final class NumberParser extends Parser<TypedNumber> {
 
   public static Parser<TypedNumber> numericLiteral() {
     return preceded(
-        peek(oneOf('-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.')),
-        new NumberParser(false, 0, Stage.Sign, null)
+            peek(oneOf('-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.')),
+            new NumberParser(false, 0, Stage.Sign, null)
     );
   }
 

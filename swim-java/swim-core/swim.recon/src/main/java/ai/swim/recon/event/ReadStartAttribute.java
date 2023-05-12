@@ -36,8 +36,8 @@ public class ReadStartAttribute extends ReadEvent {
   @Override
   public String toString() {
     return "ReadStartAttribute{" +
-        "value='" + value + '\'' +
-        '}';
+            "value='" + value + '\'' +
+            '}';
   }
 
   @Override

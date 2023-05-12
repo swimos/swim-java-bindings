@@ -15,15 +15,11 @@
 package ai.swim.structure.processor;
 
 import ai.swim.structure.annotations.AutoForm;
-import ai.swim.structure.processor.context.ScopedContext;
-import ai.swim.structure.processor.inspect.ElementInspector;
-import ai.swim.structure.processor.inspect.elements.StructuralElement;
-import ai.swim.structure.processor.recognizer.RecognizerFactory;
-import ai.swim.structure.processor.recognizer.RecognizerModel;
-import ai.swim.structure.processor.recognizer.RecognizerVisitor;
-import ai.swim.structure.processor.writer.ClassWriter;
-import ai.swim.structure.processor.writer.WriterFactory;
-import ai.swim.structure.processor.writer.WriterVisitor;
+import ai.swim.structure.processor.model.Model;
+import ai.swim.structure.processor.model.ModelInspector;
+import ai.swim.structure.processor.model.StructuralModel;
+import ai.swim.structure.processor.writer.recognizerForm.RecognizerFormWriter;
+import ai.swim.structure.processor.writer.writerForm.WriterFormWriter;
 import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -40,9 +36,7 @@ import java.util.Set;
 
 @AutoService(Processor.class)
 public class FormProcessor extends AbstractProcessor {
-
-  private RecognizerFactory recognizerFactory;
-  private WriterFactory writerFactory;
+  private ModelInspector models;
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -50,29 +44,27 @@ public class FormProcessor extends AbstractProcessor {
       AutoForm autoForm = element.getAnnotation(AutoForm.class);
 
       if (!element.getKind().isClass() && !element.getKind().isInterface()) {
-        this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, element + " cannot be annotated with @" + AutoForm.class.getSimpleName() + ". It may only be used on classes and interfaces");
+        this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, element + " cannot be annotated with @" + AutoForm.class.getSimpleName() + ". It may only be used on classes, enums and interfaces");
         return true;
       }
 
-      ScopedContext scopedContext = new ScopedContext(processingEnv, recognizerFactory, writerFactory, element);
-
       try {
-        StructuralElement model = ElementInspector.inspect((TypeElement) element, scopedContext);
+        Model model = this.models.getOrInspect((TypeElement) element, processingEnv);
 
-        if (model == null) {
-          return true;
-        }
-
-        if (autoForm.recognizer()) {
-          RecognizerModel.write(model.accept(new RecognizerVisitor(scopedContext)), scopedContext);
-        }
-
-        if (autoForm.writer()) {
-          ClassWriter.writeClass(model.accept(new WriterVisitor(scopedContext)), scopedContext);
+        if (model instanceof StructuralModel) {
+          StructuralModel structuralModel = (StructuralModel) model;
+          if (autoForm.recognizer()) {
+            structuralModel.write(new RecognizerFormWriter(processingEnv, models));
+          }
+          if (autoForm.writer()) {
+            structuralModel.write(new WriterFormWriter(processingEnv));
+          }
+        } else {
+          throw new AssertionError("Invalid type returned by inspector: " + model);
         }
       } catch (Throwable e) {
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString(), element);
         e.printStackTrace();
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
       }
     }
 
@@ -82,8 +74,7 @@ public class FormProcessor extends AbstractProcessor {
   @Override
   public synchronized void init(ProcessingEnvironment processingEnv) {
     super.init(processingEnv);
-    this.recognizerFactory = RecognizerFactory.initFrom(processingEnv);
-    this.writerFactory = WriterFactory.initFrom(processingEnv);
+    this.models = new ModelInspector();
   }
 
   @Override

@@ -28,8 +28,8 @@ public class NumberF32 extends NumberValue {
   @Override
   public String toString() {
     return "NumberF32{" +
-        "value=" + value +
-        '}';
+            "value=" + value +
+            '}';
   }
 
   @Override

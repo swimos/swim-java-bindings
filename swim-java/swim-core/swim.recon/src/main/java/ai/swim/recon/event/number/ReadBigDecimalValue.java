@@ -51,8 +51,8 @@ public class ReadBigDecimalValue extends ReadEvent {
   @Override
   public String toString() {
     return "ReadBigDecimalValue{" +
-        "value=" + value +
-        '}';
+            "value=" + value +
+            '}';
   }
 
   public BigDecimal getValue() {

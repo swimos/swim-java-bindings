@@ -1,5 +1,7 @@
 package ai.swim.structure.processor.schema;
 
+import ai.swim.structure.processor.model.FieldModel;
+
 import java.util.List;
 
 public abstract class FieldDiscriminate {
@@ -20,11 +22,6 @@ public abstract class FieldDiscriminate {
   public static FieldDiscriminate attribute(FieldModel field) {
     return new SingleField(field) {
       @Override
-      public boolean isAttribute() {
-        return true;
-      }
-
-      @Override
       public FieldModel getSingleField() {
         return getField();
       }
@@ -33,11 +30,6 @@ public abstract class FieldDiscriminate {
 
   public static FieldDiscriminate item(FieldModel field) {
     return new SingleField(field) {
-      @Override
-      public boolean isItem() {
-        return true;
-      }
-
       @Override
       public FieldModel getSingleField() {
         return getField();
@@ -59,14 +51,6 @@ public abstract class FieldDiscriminate {
   }
 
   public boolean isHeader() {
-    return false;
-  }
-
-  public boolean isAttribute() {
-    return false;
-  }
-
-  public boolean isItem() {
     return false;
   }
 
@@ -92,8 +76,8 @@ public abstract class FieldDiscriminate {
     @Override
     public String toString() {
       return "SingleField{" +
-          "field=" + field +
-          '}';
+              "field=" + field +
+              '}';
     }
 
     @Override
@@ -127,9 +111,9 @@ public abstract class FieldDiscriminate {
     @Override
     public String toString() {
       return "HeaderFields{" +
-          "tagBody=" + tagBody +
-          "fields=" + fields +
-          '}';
+              "tagBody=" + tagBody +
+              "fields=" + fields +
+              '}';
     }
   }
 

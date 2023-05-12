@@ -23,12 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -190,7 +185,7 @@ class AutoStructuralWriterTest {
   @Test
   void genericArrayClass() {
     Writable<GenericArrayClass<?>> arrayClass = proxy.lookup((Class<GenericArrayClass<?>>) (Class<?>) GenericArrayClass.class);
-    Value actual = arrayClass.asValue(new GenericArrayClass<>(new Number[] {1L, 1.1, 3.3, 4.4d}));
+    Value actual = arrayClass.asValue(new GenericArrayClass<>(new Number[]{1L, 1.1, 3.3, 4.4d}));
 
     assertEquals(Value.of(Value.ofAttr("GenericArrayClass"), Item.of(Value.of("numbers"), Value.ofItems(Item.valueItem(1L), Item.valueItem(1.1), Item.valueItem(3.3), Item.valueItem(4.4d)))), actual);
   }
@@ -207,7 +202,7 @@ class AutoStructuralWriterTest {
     assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(true))), writable.asValue(new ValueFieldClass(Value.of(true))));
     assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(BigInteger.TEN))), writable.asValue(new ValueFieldClass(Value.of(BigInteger.TEN))));
     assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(BigDecimal.TEN))), writable.asValue(new ValueFieldClass(Value.of(BigDecimal.TEN))));
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(new byte[] {1, 2, 3}))), writable.asValue(new ValueFieldClass(Value.of(new byte[] {1, 2, 3}))));
+    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(new byte[]{1, 2, 3}))), writable.asValue(new ValueFieldClass(Value.of(new byte[]{1, 2, 3}))));
     assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of("hello", Item.valueItem(1), Item.valueItem(2), Item.valueItem(3)))), writable.asValue(new ValueFieldClass(Value.of("hello", Item.valueItem(1), Item.valueItem(2), Item.valueItem(3)))));
   }
 
@@ -248,24 +243,24 @@ class AutoStructuralWriterTest {
     Writable<EnumForm> writable = proxy.lookup(EnumForm.class);
 
     assertEquals(
-        Value.of("tagA", Item.of(Value.of("fieldA"), Value.of(1)), Item.of(Value.of("b"), Value.of(2))),
-        writable.asValue(EnumForm.A)
+            Value.of("tagA", Item.of(Value.of("fieldA"), Value.of(1)), Item.of(Value.of("b"), Value.of(2))),
+            writable.asValue(EnumForm.A)
     );
     assertEquals(
-        Value.of("B", Item.of(Value.of("fieldA"), Value.of(3)), Item.of(Value.of("b"), Value.of(4))),
-        writable.asValue(EnumForm.B)
+            Value.of("B", Item.of(Value.of("fieldA"), Value.of(3)), Item.of(Value.of("b"), Value.of(4))),
+            writable.asValue(EnumForm.B)
     );
   }
 
   @Test
   void enumPolymorphism() {
     assertEquals(
-        Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
-        proxy.lookup((Class<EnumInterface<String>>) (Class<?>) EnumInterface.class).asValue(ChildEnum.A)
+            Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
+            proxy.lookup((Class<EnumInterface<String>>) (Class<?>) EnumInterface.class).asValue(ChildEnum.A)
     );
     assertEquals(
-        Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
-        proxy.lookup(ChildEnum.class).asValue(ChildEnum.A)
+            Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
+            proxy.lookup(ChildEnum.class).asValue(ChildEnum.A)
     );
   }
 
@@ -319,7 +314,7 @@ class AutoStructuralWriterTest {
     }
   }
 
-  @AutoForm(subTypes = {@AutoForm.Type(AbsNodeClass.class), @AutoForm.Type(AbsLaneClass.class), @AutoForm.Type(ValueClass.class)})
+  @AutoForm(subTypes = {@AutoForm.Type(AbsNodeClass.class)})
   public interface HostIFace {
     String host();
   }
@@ -871,7 +866,7 @@ class AutoStructuralWriterTest {
     }
   }
 
-  @AutoForm(subTypes = {@AutoForm.Type(AbsLaneClass.class), @AutoForm.Type(ValueClass.class)})
+  @AutoForm(subTypes = {@AutoForm.Type(AbsLaneClass.class)})
   public static abstract class AbsNodeClass implements HostIFace {
     public String node;
 

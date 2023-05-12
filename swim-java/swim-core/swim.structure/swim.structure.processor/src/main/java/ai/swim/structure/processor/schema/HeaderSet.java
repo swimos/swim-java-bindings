@@ -1,5 +1,7 @@
 package ai.swim.structure.processor.schema;
 
+import ai.swim.structure.processor.model.FieldModel;
+
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
@@ -41,20 +43,8 @@ public class HeaderSet {
     return headerFields.size() + attributes.size();
   }
 
-  public FieldModel getTagBody() {
-    return tagBody;
-  }
-
   public void setTagBody(FieldModel tagBody) {
     this.tagBody = tagBody;
-  }
-
-  public List<FieldModel> getHeaderFields() {
-    return headerFields;
-  }
-
-  public List<FieldModel> getAttributes() {
-    return attributes;
   }
 
   public List<FieldModel> flatten() {
@@ -70,11 +60,11 @@ public class HeaderSet {
   @Override
   public String toString() {
     return "HeaderFields{" +
-        "tagName=" + tagName +
-        ", tagBody=" + tagBody +
-        ", headerFields=" + headerFields +
-        ", attributes=" + attributes +
-        '}';
+            "tagName=" + tagName +
+            ", tagBody=" + tagBody +
+            ", headerFields=" + headerFields +
+            ", attributes=" + attributes +
+            '}';
   }
 
   public HashSet<TypeMirror> typeParameters() {

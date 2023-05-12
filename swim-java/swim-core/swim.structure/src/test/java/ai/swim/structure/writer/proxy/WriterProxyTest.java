@@ -23,12 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,7 +54,7 @@ class WriterProxyTest {
     assertEquals(WriterProxy.getProxy().lookup(Double.class), ScalarWriters.DOUBLE);
     assertEquals(WriterProxy.getProxy().lookup(Double.TYPE), ScalarWriters.DOUBLE);
     assertEquals(WriterProxy.getProxy().lookup(byte[].class), ScalarWriters.PRIMITIVE_BLOB);
-    assertEquals(WriterProxy.getProxy().lookup(BigInteger.class), ScalarWriters.BIG_INT);
+    assertEquals(WriterProxy.getProxy().lookup(BigInteger.class), ScalarWriters.BIG_INTEGER);
     assertEquals(WriterProxy.getProxy().lookup(BigDecimal.class), ScalarWriters.BIG_DECIMAL);
     assertEquals(WriterProxy.getProxy().lookup(Value.class).getClass(), ValueStructuralWritable.class);
     assertEquals(WriterProxy.getProxy().lookup(AtomicInteger.class), ScalarWriters.ATOMIC_INTEGER);
@@ -75,50 +70,50 @@ class WriterProxyTest {
   @Test
   void resolvesStdTypes() {
     assertEquals(
-        WriterProxy.getProxy().lookup(
-            Map.class,
-            WriterTypeParameter.forClass(String.class),
-            WriterTypeParameter.forClass(Integer.class)
-        ).getClass(),
-        MapStructuralWritable.class
+            WriterProxy.getProxy().lookup(
+                    Map.class,
+                    WriterTypeParameter.forClass(String.class),
+                    WriterTypeParameter.forClass(Integer.class)
+            ).getClass(),
+            MapStructuralWritable.class
     );
     assertEquals(
-        WriterProxy.getProxy().lookup(
-            HashMap.class,
-            WriterTypeParameter.forClass(String.class),
-            WriterTypeParameter.forClass(Integer.class)
-        ).getClass(),
-        MapStructuralWritable.class
+            WriterProxy.getProxy().lookup(
+                    HashMap.class,
+                    WriterTypeParameter.forClass(String.class),
+                    WriterTypeParameter.forClass(Integer.class)
+            ).getClass(),
+            MapStructuralWritable.class
     );
     assertEquals(
-        WriterProxy.getProxy().lookup(
-            TreeMap.class,
-            WriterTypeParameter.forClass(String.class),
-            WriterTypeParameter.forClass(Integer.class)
-        ).getClass(),
-        MapStructuralWritable.class
+            WriterProxy.getProxy().lookup(
+                    TreeMap.class,
+                    WriterTypeParameter.forClass(String.class),
+                    WriterTypeParameter.forClass(Integer.class)
+            ).getClass(),
+            MapStructuralWritable.class
     );
 
     assertEquals(
-        WriterProxy.getProxy().lookup(
-            List.class,
-            WriterTypeParameter.forClass(String.class)
-        ).getClass(),
-        ListStructuralWritable.class
+            WriterProxy.getProxy().lookup(
+                    List.class,
+                    WriterTypeParameter.forClass(String.class)
+            ).getClass(),
+            ListStructuralWritable.class
     );
     assertEquals(
-        WriterProxy.getProxy().lookup(
-            ArrayList.class,
-            WriterTypeParameter.forClass(String.class)
-        ).getClass(),
-        ListStructuralWritable.class
+            WriterProxy.getProxy().lookup(
+                    ArrayList.class,
+                    WriterTypeParameter.forClass(String.class)
+            ).getClass(),
+            ListStructuralWritable.class
     );
     assertEquals(
-        WriterProxy.getProxy().lookup(
-            ArrayDeque.class,
-            WriterTypeParameter.forClass(String.class)
-        ).getClass(),
-        ListStructuralWritable.class
+            WriterProxy.getProxy().lookup(
+                    ArrayDeque.class,
+                    WriterTypeParameter.forClass(String.class)
+            ).getClass(),
+            ListStructuralWritable.class
     );
   }
 
@@ -128,11 +123,11 @@ class WriterProxyTest {
     assertThrows(IllegalArgumentException.class, () -> WriterProxy.getProxy().lookupTyped(Map.class, WriterTypeParameter.forClass(Integer.class)));
     assertThrows(IllegalArgumentException.class, () -> WriterProxy.getProxy().lookupTyped(Map.class));
     assertThrows(IllegalArgumentException.class, () -> WriterProxy.getProxy().lookupTyped(
-            Map.class,
-            WriterTypeParameter.forClass(Integer.class),
-            WriterTypeParameter.forClass(Integer.class),
-            WriterTypeParameter.forClass(Integer.class)
-        )
+                    Map.class,
+                    WriterTypeParameter.forClass(Integer.class),
+                    WriterTypeParameter.forClass(Integer.class),
+                    WriterTypeParameter.forClass(Integer.class)
+            )
     );
   }
 

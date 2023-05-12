@@ -17,11 +17,11 @@ class CollectionRecognizerTest {
 
   private static List<ReadEvent> events() {
     return List.of(
-        ReadEvent.startBody(),
-        ReadEvent.number(1),
-        ReadEvent.number(2),
-        ReadEvent.number(3),
-        ReadEvent.endRecord()
+            ReadEvent.startBody(),
+            ReadEvent.number(1),
+            ReadEvent.number(2),
+            ReadEvent.number(3),
+            ReadEvent.endRecord()
     );
   }
 
@@ -43,7 +43,7 @@ class CollectionRecognizerTest {
   @Test
   void testArray() {
     Integer[] actual = runTest(new ArrayRecognizer<>(Integer.class, ScalarRecognizer.INTEGER), events());
-    assertArrayEquals(actual, new Integer[] {1, 2, 3});
+    assertArrayEquals(actual, new Integer[]{1, 2, 3});
   }
 
 }

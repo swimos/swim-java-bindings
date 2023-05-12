@@ -1,12 +1,14 @@
 package ai.swim.structure.processor.schema;
 
+import ai.swim.structure.processor.model.FieldModel;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class PartitionedFields {
-  public HeaderSet headerSet;
-  public Body body;
+  public final HeaderSet headerSet;
+  public final Body body;
 
   public PartitionedFields(HeaderSet headerSet, Body body) {
     this.headerSet = headerSet;
@@ -51,12 +53,6 @@ public class PartitionedFields {
     return headerSet.count() + body.count();
   }
 
-  public List<FieldModel> flatten() {
-    List<FieldModel> fieldModels = this.headerSet.flatten();
-    fieldModels.addAll(this.body.getFields());
-    return fieldModels;
-  }
-
   public boolean hasHeaderFields() {
     return !this.headerSet.headerFields.isEmpty() || this.headerSet.hasTagBody();
   }
@@ -89,9 +85,9 @@ public class PartitionedFields {
   @Override
   public String toString() {
     return "PartitionedFields{" +
-        "headerFields=" + headerSet +
-        ", body=" + body +
-        '}';
+            "headerFields=" + headerSet +
+            ", body=" + body +
+            '}';
   }
 
   public boolean isHeader(FieldModel model) {

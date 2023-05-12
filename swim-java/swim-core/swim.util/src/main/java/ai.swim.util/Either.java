@@ -116,8 +116,8 @@ public abstract class Either<L, R> {
     @Override
     public String toString() {
       return "Left{" +
-          "value=" + value +
-          '}';
+              "value=" + value +
+              '}';
     }
   }
 
@@ -172,8 +172,8 @@ public abstract class Either<L, R> {
     @Override
     public String toString() {
       return "Right{" +
-          "value=" + value +
-          '}';
+              "value=" + value +
+              '}';
     }
   }
 }

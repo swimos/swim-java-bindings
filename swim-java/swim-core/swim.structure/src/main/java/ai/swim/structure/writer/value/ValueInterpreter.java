@@ -102,8 +102,8 @@ public class ValueInterpreter implements HeaderWriter<Value>, BodyWriter<Value> 
   @Override
   public String toString() {
     return "ValueInterpreter{" +
-        "valueWriter=" + valueWriter +
-        ", builder=" + builder +
-        '}';
+            "valueWriter=" + valueWriter +
+            ", builder=" + builder +
+            '}';
   }
 }

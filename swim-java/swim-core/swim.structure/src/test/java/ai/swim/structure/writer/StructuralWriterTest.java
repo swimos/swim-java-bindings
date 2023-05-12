@@ -14,11 +14,7 @@
 
 package ai.swim.structure.writer;
 
-import ai.swim.structure.value.Attr;
-import ai.swim.structure.value.Item;
-import ai.swim.structure.value.Record;
-import ai.swim.structure.value.Text;
-import ai.swim.structure.value.Value;
+import ai.swim.structure.value.*;
 import ai.swim.structure.writer.header.Header;
 import ai.swim.structure.writer.std.ScalarWriters;
 import ai.swim.structure.writer.value.ValueStructuralWriter;
@@ -39,11 +35,11 @@ class StructuralWriterTest {
     Value actual = propWriter.writeInto(prop, new ValueStructuralWriter());
 
     Record expected = Record.of(
-        List.of(Attr.ofAttr("Prop")),
-        List.of(
-            Item.of(Value.of("a"), Value.of(1)),
-            Item.of(Value.of("b"), Value.of(2L))
-        )
+            List.of(Attr.ofAttr("Prop")),
+            List.of(
+                    Item.of(Value.of("a"), Value.of(1)),
+                    Item.of(Value.of("b"), Value.of(2L))
+            )
     );
 
     assertEquals(expected, actual);
@@ -56,8 +52,8 @@ class StructuralWriterTest {
     Value actual = propWriter.writeInto(prop, new ValueStructuralWriter());
 
     Record expected = Record.of(
-        List.of(Attr.ofAttr("Prop", Record.of(Collections.emptyList(), List.of(Item.of(Text.of("a"), Value.of(1)))))),
-        List.of(Item.of(Value.of(2L)))
+            List.of(Attr.ofAttr("Prop", Record.of(Collections.emptyList(), List.of(Item.of(Text.of("a"), Value.of(1)))))),
+            List.of(Item.of(Value.of(2L)))
     );
 
     assertEquals(expected, actual);
@@ -70,8 +66,8 @@ class StructuralWriterTest {
     Value actual = propWriter.writeInto(prop, new ValueStructuralWriter());
 
     Record expected = Record.of(
-        List.of(Attr.ofAttr("Prop", Value.of(1))),
-        List.of(Item.of(Text.of("b"), Value.of(2L)))
+            List.of(Attr.ofAttr("Prop", Value.of(1))),
+            List.of(Item.of(Text.of("b"), Value.of(2L)))
     );
 
     assertEquals(expected, actual);
@@ -85,11 +81,11 @@ class StructuralWriterTest {
 
     assertTrue(actual.isRecord());
     Record expected = Value.of(
-        List.of(Value.ofAttr("GenericClass")),
-        List.of(
-            Value.ofItem(Value.of("gen"), Value.of(13)),
-            Value.ofItem(Value.of("key"), Value.of("value"))
-        )
+            List.of(Value.ofAttr("GenericClass")),
+            List.of(
+                    Value.ofItem(Value.of("gen"), Value.of(13)),
+                    Value.ofItem(Value.of("key"), Value.of("value"))
+            )
     );
 
     assertEquals(expected, actual);
@@ -123,24 +119,24 @@ class StructuralWriterTest {
       switch (strategy) {
         case Plain:
           return structuralWriter
-              .record(1)
-              .writeExtantAttr("Prop")
-              .completeHeader(2)
-              .writeSlot(ScalarWriters.STRING, "a", ScalarWriters.INTEGER, from.a)
-              .writeSlot(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
-              .done();
+                  .record(1)
+                  .writeExtantAttr("Prop")
+                  .completeHeader(2)
+                  .writeSlot(ScalarWriters.STRING, "a", ScalarWriters.INTEGER, from.a)
+                  .writeSlot(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
+                  .done();
         case Body:
           return structuralWriter
-              .record(2)
-              .writeAttr("Prop", Header.NoSlots.prepend("a", ScalarWriters.INTEGER, from.a).simple())
-              .delegate(ScalarWriters.LONG, from.b);
+                  .record(2)
+                  .writeAttr("Prop", Header.NoSlots.prepend("a", ScalarWriters.INTEGER, from.a).simple())
+                  .delegate(ScalarWriters.LONG, from.b);
         case HeaderBody:
           return structuralWriter
-              .record(1)
-              .writeAttr("Prop", ScalarWriters.INTEGER, from.a)
-              .completeHeader(1)
-              .writeSlot(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
-              .done();
+                  .record(1)
+                  .writeAttr("Prop", ScalarWriters.INTEGER, from.a)
+                  .completeHeader(1)
+                  .writeSlot(ScalarWriters.STRING, "b", ScalarWriters.LONG, from.b)
+                  .done();
         default:
           throw new AssertionError(strategy);
       }
@@ -168,12 +164,12 @@ class StructuralWriterTest {
     @Override
     public <T> T writeInto(GenericClass<G> from, StructuralWriter<T> structuralWriter) {
       return structuralWriter
-          .record(1)
-          .writeExtantAttr("GenericClass")
-          .completeHeader(2)
-          .writeSlot(ScalarWriters.STRING, "gen", genWriter, from.gen)
-          .writeSlot(ScalarWriters.STRING, "key", ScalarWriters.STRING, from.key)
-          .done();
+              .record(1)
+              .writeExtantAttr("GenericClass")
+              .completeHeader(2)
+              .writeSlot(ScalarWriters.STRING, "gen", genWriter, from.gen)
+              .writeSlot(ScalarWriters.STRING, "key", ScalarWriters.STRING, from.key)
+              .done();
     }
   }
 

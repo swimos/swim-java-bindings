@@ -43,16 +43,16 @@ class MapStructuralWritableTest {
     Value value = mapWritable.writeInto(map, new ValueStructuralWriter());
     assertTrue(value.isRecord());
     assertEquals(
-        Value.ofItems(
-            List.of(
-                Item.of(Value.of("a"), Value.of(1)),
-                Item.of(Value.of("b"), Value.of(2)),
-                Item.of(Value.of("c"), Value.of(3)),
-                Item.of(Value.of("d"), Value.of(4)),
-                Item.of(Value.of("e"), Value.of(5))
-            )
-        ),
-        value
+            Value.ofItems(
+                    List.of(
+                            Item.of(Value.of("a"), Value.of(1)),
+                            Item.of(Value.of("b"), Value.of(2)),
+                            Item.of(Value.of("c"), Value.of(3)),
+                            Item.of(Value.of("d"), Value.of(4)),
+                            Item.of(Value.of("e"), Value.of(5))
+                    )
+            ),
+            value
     );
   }
 
@@ -68,12 +68,12 @@ class MapStructuralWritableTest {
 
     assertTrue(actual.isRecord());
     assertEquals(
-        Value.ofItems(List.of(
-            Item.of(Value.of("a"), Value.ofItems(List.of(Item.valueItem(1), Item.valueItem(2), Item.valueItem(3)))),
-            Item.of(Value.of("b"), Value.ofItems(List.of(Item.valueItem(4), Item.valueItem(5), Item.valueItem(6)))),
-            Item.of(Value.of("c"), Value.ofItems(List.of(Item.valueItem(7), Item.valueItem(8), Item.valueItem(9))))
-        )),
-        actual
+            Value.ofItems(List.of(
+                    Item.of(Value.of("a"), Value.ofItems(List.of(Item.valueItem(1), Item.valueItem(2), Item.valueItem(3)))),
+                    Item.of(Value.of("b"), Value.ofItems(List.of(Item.valueItem(4), Item.valueItem(5), Item.valueItem(6)))),
+                    Item.of(Value.of("c"), Value.ofItems(List.of(Item.valueItem(7), Item.valueItem(8), Item.valueItem(9))))
+            )),
+            actual
     );
   }
 }

@@ -28,8 +28,8 @@ public class DoubleNumber extends NumberValue {
   @Override
   public String toString() {
     return "DoubleNumber{" +
-        "value=" + value +
-        '}';
+            "value=" + value +
+            '}';
   }
 
   @Override

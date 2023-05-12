@@ -15,10 +15,10 @@ class EnumRecognizerTest {
   void readSimpleEnum() {
     Recognizer<Level> recognizer = new EnumRecognizer<>(Level.class);
     List<ReadEvent> events = List.of(
-        ReadEvent.startAttribute("warn"),
-        ReadEvent.endAttribute(),
-        ReadEvent.startBody(),
-        ReadEvent.endRecord()
+            ReadEvent.startAttribute("warn"),
+            ReadEvent.endAttribute(),
+            ReadEvent.startBody(),
+            ReadEvent.endRecord()
     );
 
     Level level = runTest(recognizer, events);

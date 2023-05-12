@@ -111,7 +111,7 @@ public class ScalarWriters {
     }
   };
 
-  public final static Writable<BigInteger> BIG_INT = new Writable<>() {
+  public final static Writable<BigInteger> BIG_INTEGER = new Writable<>() {
     @Override
     public <T> T writeInto(BigInteger from, StructuralWriter<T> structuralWriter) {
       return structuralWriter.writeBigInt(from);

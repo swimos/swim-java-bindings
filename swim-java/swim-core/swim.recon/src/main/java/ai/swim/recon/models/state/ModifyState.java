@@ -55,7 +55,7 @@ public class ModifyState extends StateChange {
   @Override
   public String toString() {
     return "ChangeState{" +
-        "state=" + state +
-        '}';
+            "state=" + state +
+            '}';
   }
 }
