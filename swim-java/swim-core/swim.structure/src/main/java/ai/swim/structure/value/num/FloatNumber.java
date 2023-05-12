@@ -28,8 +28,8 @@ public class FloatNumber extends NumberValue {
   @Override
   public String toString() {
     return "FloatNumber{" +
-      "value=" + value +
-      '}';
+        "value=" + value +
+        '}';
   }
 
   @Override

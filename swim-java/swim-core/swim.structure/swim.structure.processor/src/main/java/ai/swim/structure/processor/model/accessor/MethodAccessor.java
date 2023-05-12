@@ -40,8 +40,8 @@ public class MethodAccessor extends Accessor {
   @Override
   public String toString() {
     return "MethodAccessor{" +
-      "setMethod=" + setMethod +
-      "getMethod=" + getMethod +
-      '}';
+        "setMethod=" + setMethod +
+        "getMethod=" + getMethod +
+        '}';
   }
 }

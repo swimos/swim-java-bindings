@@ -63,24 +63,24 @@ public class ConcreteClassWriter extends ClassWriter {
         DeclaredType writableType = typeUtils.getDeclaredType(writableElement, fieldType);
 
         FieldSpec writerField = FieldSpec
-          .builder(TypeName.get(writableType), writableName)
-          .addModifiers(Modifier.PRIVATE)
-          .build();
+            .builder(TypeName.get(writableType), writableName)
+            .addModifiers(Modifier.PRIVATE)
+            .build();
         fields.add(writerField);
 
         DeclaredType classType = typeUtils.getDeclaredType(classElement, fieldType);
         FieldSpec classField = FieldSpec
-          .builder(TypeName.get(classType), String.format("%sClass", writableName))
-          .addModifiers(Modifier.PRIVATE)
-          .build();
+            .builder(TypeName.get(classType), String.format("%sClass", writableName))
+            .addModifiers(Modifier.PRIVATE)
+            .build();
         fields.add(classField);
       } else {
         InitializedType initializedType = fieldModel.instantiate(context.getInitializer(), false);
         DeclaredType writableType = typeUtils.getDeclaredType(writableElement, initializedType.getMirror());
         FieldSpec classField = FieldSpec
-          .builder(TypeName.get(writableType), writableName)
-          .initializer(initializedType.getInitializer())
-          .build();
+            .builder(TypeName.get(writableType), writableName)
+            .initializer(initializedType.getInitializer())
+            .build();
         fields.add(classField);
       }
     }
@@ -134,9 +134,9 @@ public class ConcreteClassWriter extends ClassWriter {
           DeclaredType classType = typeUtils.getDeclaredType(classElement, fieldModel.type());
 
           body.beginControlFlow("if ($L == null || $LClass != $L.getClass())", writableName, writableName, fieldName)
-            .addStatement("$L = getProxy().lookupObject($L)", writableName, fieldName)
-            .addStatement("$LClass = ($T) $L.getClass()", writableName, TypeName.get(classType), fieldName)
-            .endControlFlow();
+              .addStatement("$L = getProxy().lookupObject($L)", writableName, fieldName)
+              .addStatement("$LClass = ($T) $L.getClass()", writableName, TypeName.get(classType), fieldName)
+              .endControlFlow();
         }
 
         body.endControlFlow();
@@ -165,18 +165,18 @@ public class ConcreteClassWriter extends ClassWriter {
           }
 
           body
-            .add("$> case $L:", enclosedElement.toString())
-            .addStatement("$> __tag = \"$L\"", tagString)
-            .addStatement("break")
-            .add("$<$<");
+              .add("$> case $L:", enclosedElement.toString())
+              .addStatement("$> __tag = \"$L\"", tagString)
+              .addStatement("break")
+              .add("$<$<");
         }
       }
 
       body
-        .add("$>default:")
-        .addStatement("$> throw new AssertionError(\"Bug: Unhandled enum constant during annotation processing for: $L\")", root)
-        .add("$<$<")
-        .endControlFlow();
+          .add("$>default:")
+          .addStatement("$> throw new AssertionError(\"Bug: Unhandled enum constant during annotation processing for: $L\")", root)
+          .add("$<$<")
+          .endControlFlow();
     } else {
       body.addStatement("String __tag = \"$L\"", model.getTag());
     }
@@ -235,15 +235,15 @@ public class ConcreteClassWriter extends ClassWriter {
         CodeBlock init = isRuntimeLookup ? CodeBlock.of("$L", context.getFormatter().writableName(bodyField.propertyName())) : CodeBlock.of("$L", writableName);
 
         CodeBlock writeOp = CodeBlock
-          .builder()
-          .addStatement("__bodyWriter = __bodyWriter.writeSlot($S, $L, $L)", fieldName, init, fieldName)
-          .build();
+            .builder()
+            .addStatement("__bodyWriter = __bodyWriter.writeSlot($S, $L, $L)", fieldName, init, fieldName)
+            .build();
 
         if (!rawType.getKind().isPrimitive()) {
           bodyStatements
-            .beginControlFlow("if ($L != null)", fieldName)
-            .add(writeOp)
-            .endControlFlow();
+              .beginControlFlow("if ($L != null)", fieldName)
+              .add(writeOp)
+              .endControlFlow();
         } else {
           bodyStatements.add(writeOp);
         }
@@ -273,10 +273,10 @@ public class ConcreteClassWriter extends ClassWriter {
       CodeBlock.Builder getter = CodeBlock.builder();
       fieldModel.getAccessor().writeGet(getter, "from");
       headerBlock.add(
-        "\n.prepend($S, $L, $L)",
-        fieldModel.propertyName(),
-        isRuntimeLookup ? context.getFormatter().writableName(fieldModel.propertyName()) : writableName,
-        getter.build());
+          "\n.prepend($S, $L, $L)",
+          fieldModel.propertyName(),
+          isRuntimeLookup ? context.getFormatter().writableName(fieldModel.propertyName()) : writableName,
+          getter.build());
     }
 
     if (tagBody == null) {
@@ -299,11 +299,11 @@ public class ConcreteClassWriter extends ClassWriter {
     ParameterizedTypeName headerWriter = ParameterizedTypeName.get(ClassName.get(rawHeaderWriter), writerType);
 
     return buildInit()
-      .addStatement("int __numAttrs = $L", fields.headerSet.attributes.size())
-      .addStatement("$T __recWriter = structuralWriter.record(__numAttrs)", headerWriter)
-      .add(writeAttrs())
-      .add(writeSlots())
-      .build();
+        .addStatement("int __numAttrs = $L", fields.headerSet.attributes.size())
+        .addStatement("$T __recWriter = structuralWriter.record(__numAttrs)", headerWriter)
+        .add(writeAttrs())
+        .add(writeSlots())
+        .build();
   }
 
 }

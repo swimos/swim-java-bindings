@@ -54,10 +54,10 @@ public class RecognizerFormWriter implements Writer {
   public void writeInterface(InterfaceModel model) throws IOException {
     RecognizerContext context = RecognizerContext.build(model.getElement(), environment, inspector, model.getJavaClassName(), model.getDeclaredPackage());
     TypeSpec typeSpec = PolymorphicRecognizer.buildPolymorphicRecognizer(context, model.getSubTypes())
-      .build();
+        .build();
     JavaFile javaFile = JavaFile.builder(model.getDeclaredPackage().getQualifiedName().toString(), typeSpec)
-      .addStaticImport(ClassName.bestGuess(RECOGNIZER_PROXY), "getProxy")
-      .build();
+        .addStaticImport(ClassName.bestGuess(RECOGNIZER_PROXY), "getProxy")
+        .build();
 
     javaFile.writeTo(context.getProcessingEnvironment().getFiler());
   }

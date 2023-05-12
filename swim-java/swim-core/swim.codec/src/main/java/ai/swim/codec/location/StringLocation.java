@@ -65,10 +65,10 @@ public class StringLocation implements Location {
   @Override
   public String toString() {
     return "StringLocation{" +
-      "line=" + line +
-      ", column=" + column +
-      ", offset=" + offset +
-      '}';
+        "line=" + line +
+        ", column=" + column +
+        ", offset=" + offset +
+        '}';
   }
 
 }

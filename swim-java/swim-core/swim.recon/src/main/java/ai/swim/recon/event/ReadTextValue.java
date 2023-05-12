@@ -36,8 +36,8 @@ public class ReadTextValue extends ReadEvent {
   @Override
   public String toString() {
     return "ReadTextValue{" +
-      "value='" + value + '\'' +
-      '}';
+        "value='" + value + '\'' +
+        '}';
   }
 
   @Override

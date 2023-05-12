@@ -35,16 +35,16 @@ class CollectionStructuralWritableTest {
     Value value = listWritable.writeInto(list, new ValueStructuralWriter());
     assertTrue(value.isRecord());
     assertEquals(
-      Value.ofItems(
-        List.of(
-          Item.valueItem(1),
-          Item.valueItem(2),
-          Item.valueItem(3),
-          Item.valueItem(4),
-          Item.valueItem(5)
-        )
-      ),
-      value
+        Value.ofItems(
+            List.of(
+                Item.valueItem(1),
+                Item.valueItem(2),
+                Item.valueItem(3),
+                Item.valueItem(4),
+                Item.valueItem(5)
+            )
+        ),
+        value
     );
   }
 
@@ -56,16 +56,16 @@ class CollectionStructuralWritableTest {
     Value value = writable.writeInto(array, new ValueStructuralWriter());
     assertTrue(value.isRecord());
     assertEquals(
-      Value.ofItems(
-        List.of(
-          Item.valueItem(1),
-          Item.valueItem(2),
-          Item.valueItem(3),
-          Item.valueItem(4),
-          Item.valueItem(5)
-        )
-      ),
-      value
+        Value.ofItems(
+            List.of(
+                Item.valueItem(1),
+                Item.valueItem(2),
+                Item.valueItem(3),
+                Item.valueItem(4),
+                Item.valueItem(5)
+            )
+        ),
+        value
     );
   }
 
@@ -153,9 +153,9 @@ class CollectionStructuralWritableTest {
 
     Value actual = writer.writeInto(list, new ValueStructuralWriter());
     Value expected = Value.ofItems(List.of(
-      Item.of(Value.ofItems(List.of(Item.valueItem(1)))),
-      Item.of(Value.ofItems(List.of(Item.valueItem(2)))),
-      Item.of(Value.ofItems(List.of(Item.valueItem(3))))
+        Item.of(Value.ofItems(List.of(Item.valueItem(1)))),
+        Item.of(Value.ofItems(List.of(Item.valueItem(2)))),
+        Item.of(Value.ofItems(List.of(Item.valueItem(3))))
     ));
 
     assertEquals(expected, actual);
@@ -168,9 +168,9 @@ class CollectionStructuralWritableTest {
 
     Value actual = writer.writeInto(list, new ValueStructuralWriter());
     Value expected = Value.ofItems(List.of(
-      Item.valueItem(1),
-      Item.valueItem(2),
-      Item.valueItem(3)
+        Item.valueItem(1),
+        Item.valueItem(2),
+        Item.valueItem(3)
     ));
 
     assertEquals(expected, actual);
@@ -179,17 +179,17 @@ class CollectionStructuralWritableTest {
   @Test
   void nestedListResolvesWriter() {
     List<List<Integer>> list = List.of(
-      List.of(1, 2),
-      List.of(3, 4),
-      List.of(5, 6)
+        List.of(1, 2),
+        List.of(3, 4),
+        List.of(5, 6)
     );
     Writable<List<List<Integer>>> writer = new ListStructuralWritable<>();
 
     Value actual = writer.writeInto(list, new ValueStructuralWriter());
     Value expected = Value.ofItems(List.of(
-      Item.of(Value.ofItems(List.of(Item.valueItem(1), Item.valueItem(2)))),
-      Item.of(Value.ofItems(List.of(Item.valueItem(3), Item.valueItem(4)))),
-      Item.of(Value.ofItems(List.of(Item.valueItem(5), Item.valueItem(6))))
+        Item.of(Value.ofItems(List.of(Item.valueItem(1), Item.valueItem(2)))),
+        Item.of(Value.ofItems(List.of(Item.valueItem(3), Item.valueItem(4)))),
+        Item.of(Value.ofItems(List.of(Item.valueItem(5), Item.valueItem(6))))
     ));
 
     assertEquals(expected, actual);

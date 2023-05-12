@@ -50,12 +50,12 @@ public class PolymorphicRecognizer {
     DeclaredType declaredType = (DeclaredType) context.getRoot().asType();
 
     AnnotationSpec recognizerAnnotationSpec = AnnotationSpec.builder(AutoloadedRecognizer.class)
-      .addMember("value", "$T.class", typeUtils.erasure(declaredType))
-      .build();
+        .addMember("value", "$T.class", typeUtils.erasure(declaredType))
+        .build();
 
     TypeSpec.Builder classSpec = TypeSpec.classBuilder(context.getFormatter().recognizerClassName())
-      .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-      .addAnnotation(recognizerAnnotationSpec);
+        .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+        .addAnnotation(recognizerAnnotationSpec);
 
     for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
       classSpec.addTypeVariable((TypeVariableName) TypeVariableName.get(typeArgument));
@@ -66,9 +66,9 @@ public class PolymorphicRecognizer {
     classSpec.superclass(TypeName.get(recognizerType));
 
     MethodSpec constructor = MethodSpec.constructorBuilder()
-      .addModifiers(Modifier.PUBLIC)
-      .addStatement("super($L)", buildInitializer(context, subTypes))
-      .build();
+        .addModifiers(Modifier.PUBLIC)
+        .addStatement("super($L)", buildInitializer(context, subTypes))
+        .build();
     classSpec.addMethod(constructor);
 
     return classSpec;

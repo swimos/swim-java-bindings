@@ -125,9 +125,9 @@ public abstract class Builder {
    */
   private MethodSpec buildReset() {
     MethodSpec.Builder builder = MethodSpec.methodBuilder(RECOGNIZING_BUILDER_RESET)
-      .addModifiers(Modifier.PUBLIC)
-      .addAnnotation(Override.class)
-      .returns(this.target);
+        .addModifiers(Modifier.PUBLIC)
+        .addAnnotation(Override.class)
+        .returns(this.target);
     builder.addCode(buildResetBlock().toString());
 
     return builder.build();
@@ -145,11 +145,11 @@ public abstract class Builder {
     Elements elementUtils = context.getElementUtils();
     TypeElement readEventType = elementUtils.getTypeElement(TYPE_READ_EVENT);
     MethodSpec.Builder builder = MethodSpec.methodBuilder(RECOGNIZING_BUILDER_FEED_INDEX)
-      .addModifiers(Modifier.PUBLIC)
-      .addAnnotation(Override.class)
-      .addParameter(Integer.TYPE, "index")
-      .addParameter(TypeName.get(readEventType.asType()), "event")
-      .returns(boolean.class);
+        .addModifiers(Modifier.PUBLIC)
+        .addAnnotation(Override.class)
+        .addParameter(Integer.TYPE, "index")
+        .addParameter(TypeName.get(readEventType.asType()), "event")
+        .returns(boolean.class);
 
     builder.addCode(buildFeedIndexedBlock().toString());
 

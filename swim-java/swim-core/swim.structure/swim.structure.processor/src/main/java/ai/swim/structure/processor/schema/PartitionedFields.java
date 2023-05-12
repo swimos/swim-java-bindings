@@ -102,9 +102,9 @@ public class PartitionedFields {
   @Override
   public String toString() {
     return "PartitionedFields{" +
-      "headerFields=" + headerSet +
-      ", body=" + body +
-      '}';
+        "headerFields=" + headerSet +
+        ", body=" + body +
+        '}';
   }
 
   /**

@@ -44,10 +44,10 @@ public class InterfaceModel extends StructuralModel {
   @Override
   public String toString() {
     return "InterfaceModel{" +
-      "root=" + getElement() +
-      ", subTypes=" + subTypes +
-      ", declaredPackage=" + getDeclaredPackage() +
-      ", type=" + type +
-      '}';
+        "root=" + getElement() +
+        ", subTypes=" + subTypes +
+        ", declaredPackage=" + getDeclaredPackage() +
+        ", type=" + type +
+        '}';
   }
 }

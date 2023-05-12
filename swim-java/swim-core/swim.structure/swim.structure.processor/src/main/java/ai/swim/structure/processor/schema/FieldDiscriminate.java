@@ -91,8 +91,8 @@ public abstract class FieldDiscriminate {
     @Override
     public String toString() {
       return "SingleField{" +
-        "field=" + field +
-        '}';
+          "field=" + field +
+          '}';
     }
 
     @Override
@@ -126,9 +126,9 @@ public abstract class FieldDiscriminate {
     @Override
     public String toString() {
       return "HeaderFields{" +
-        "tagBody=" + tagBody +
-        "fields=" + fields +
-        '}';
+          "tagBody=" + tagBody +
+          "fields=" + fields +
+          '}';
     }
   }
 

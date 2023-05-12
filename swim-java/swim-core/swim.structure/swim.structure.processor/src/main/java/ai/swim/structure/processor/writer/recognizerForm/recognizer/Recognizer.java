@@ -99,10 +99,10 @@ public class Recognizer {
     }
 
     JavaFile javaFile = JavaFile
-      .builder(model.getDeclaredPackage().getQualifiedName().toString(), typeSpec)
-      .addStaticImport(Objects.class, "requireNonNullElse")
-      .addStaticImport(ClassName.bestGuess(RECOGNIZER_PROXY), "getProxy")
-      .build();
+        .builder(model.getDeclaredPackage().getQualifiedName().toString(), typeSpec)
+        .addStaticImport(Objects.class, "requireNonNullElse")
+        .addStaticImport(ClassName.bestGuess(RECOGNIZER_PROXY), "getProxy")
+        .build();
     javaFile.writeTo(context.getProcessingEnvironment().getFiler());
   }
 
@@ -172,11 +172,11 @@ public class Recognizer {
 
   static MethodSpec buildPolymorphicMethod(TypeName returns, String name, ParameterSpec parameterSpec, CodeBlock body) {
     MethodSpec.Builder builder = MethodSpec
-      .methodBuilder(name)
-      .returns(returns)
-      .addModifiers(Modifier.PUBLIC)
-      .addAnnotation(Override.class)
-      .addCode(body);
+        .methodBuilder(name)
+        .returns(returns)
+        .addModifiers(Modifier.PUBLIC)
+        .addAnnotation(Override.class)
+        .addCode(body);
 
     if (parameterSpec != null) {
       builder.addParameter(parameterSpec);
@@ -464,11 +464,11 @@ public class Recognizer {
     @Override
     public MethodSpec builderBind(RecognizerContext context) {
       return MethodSpec.methodBuilder(RECOGNIZING_BUILDER_BIND)
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .returns(TypeName.get(context.getRoot().asType()))
-        .addCode(new BindEmitter(model, fields, context).toString())
-        .build();
+          .addModifiers(Modifier.PUBLIC)
+          .addAnnotation(Override.class)
+          .returns(TypeName.get(context.getRoot().asType()))
+          .addCode(new BindEmitter(model, fields, context).toString())
+          .build();
     }
 
     @Override
@@ -491,25 +491,25 @@ public class Recognizer {
       Elements elementUtils = context.getProcessingEnvironment().getElementUtils();
       TypeElement fieldTagSpecElement = elementUtils.getTypeElement(ENUM_TAG_SPEC);
       String variantTags = model
-        .getElement()
-        .getEnclosedElements()
-        .stream()
-        .filter(e -> e.getKind().equals(ElementKind.ENUM_CONSTANT))
-        .map(e -> {
-          AutoForm.Tag tag = e.getAnnotation(AutoForm.Tag.class);
-          if (tag != null && !tag.value().isBlank()) {
-            return tag.value();
-          } else {
-            return e.toString();
-          }
-        })
-        .map(v -> String.format("\"%s\"", v)).collect(Collectors.joining(", "));
+          .getElement()
+          .getEnclosedElements()
+          .stream()
+          .filter(e -> e.getKind().equals(ElementKind.ENUM_CONSTANT))
+          .map(e -> {
+            AutoForm.Tag tag = e.getAnnotation(AutoForm.Tag.class);
+            if (tag != null && !tag.value().isBlank()) {
+              return tag.value();
+            } else {
+              return e.toString();
+            }
+          })
+          .map(v -> String.format("\"%s\"", v)).collect(Collectors.joining(", "));
 
       return FieldSpec
-        .builder(TypeName.get(fieldTagSpecElement.asType()), "tagSpec")
-        .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-        .initializer(CodeBlock.of("new $T(java.util.List.of($L))", fieldTagSpecElement, variantTags))
-        .build();
+          .builder(TypeName.get(fieldTagSpecElement.asType()), "tagSpec")
+          .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+          .initializer(CodeBlock.of("new $T(java.util.List.of($L))", fieldTagSpecElement, variantTags))
+          .build();
     }
 
     @Override
@@ -530,9 +530,9 @@ public class Recognizer {
         fieldModel.getAccessor().writeGet(getter, "obj");
 
         body
-          .beginControlFlow("if ($L != spec.$L)", getter.build(), fieldModel.getName())
-          .addStatement("throw new ai.swim.structure.recognizer.RecognizerException(String.format(\"Field mismatch. Expected '%s' but got '%s'\", spec.$L, $L))", fieldModel.getName(), getter.build())
-          .endControlFlow();
+            .beginControlFlow("if ($L != spec.$L)", getter.build(), fieldModel.getName())
+            .addStatement("throw new ai.swim.structure.recognizer.RecognizerException(String.format(\"Field mismatch. Expected '%s' but got '%s'\", spec.$L, $L))", fieldModel.getName(), getter.build())
+            .endControlFlow();
       }
 
       return buildPolymorphicMethod(typeName, "bind", null, body.addStatement("return obj").build());
@@ -556,33 +556,33 @@ public class Recognizer {
       ClassName enumTy = ClassName.bestGuess(formatter.enumSpec());
 
       String bindOp = model
-        .getFields()
-        .stream()
-        .filter(f -> !f.isIgnored())
-        .map(f -> {
-          if (fields.isHeader(f)) {
-            return String.format("__header.%s", f.getName());
-          } else {
-            return String.format("%s.bind()", formatter.fieldBuilderName(f.getName().toString()));
-          }
-        })
-        .collect(Collectors.joining(", "));
+          .getFields()
+          .stream()
+          .filter(f -> !f.isIgnored())
+          .map(f -> {
+            if (fields.isHeader(f)) {
+              return String.format("__header.%s", f.getName());
+            } else {
+              return String.format("%s.bind()", formatter.fieldBuilderName(f.getName().toString()));
+            }
+          })
+          .collect(Collectors.joining(", "));
 
       body.addStatement("return new $T($L)", enumTy, bindOp);
 
       return buildPolymorphicMethod(
-        ClassName.bestGuess(formatter.enumSpec()),
-        "bind",
-        null,
-        body.build()
+          ClassName.bestGuess(formatter.enumSpec()),
+          "bind",
+          null,
+          body.build()
       );
     }
 
     @Override
     public TypeSpec nested(RecognizerContext context) {
       TypeSpec.Builder builder = TypeSpec
-        .classBuilder(context.getFormatter().enumSpec())
-        .addModifiers(Modifier.PRIVATE, Modifier.STATIC);
+          .classBuilder(context.getFormatter().enumSpec())
+          .addModifiers(Modifier.PRIVATE, Modifier.STATIC);
       MethodSpec.Builder constructor = MethodSpec.constructorBuilder();
 
       for (FieldModel fieldModel : model.getFields()) {

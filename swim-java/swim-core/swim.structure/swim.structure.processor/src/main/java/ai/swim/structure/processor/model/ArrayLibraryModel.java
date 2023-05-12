@@ -41,9 +41,9 @@ public class ArrayLibraryModel extends Model {
   @Override
   public String toString() {
     return "ArrayLibraryModel{" +
-      "arrayType=" + componentType +
-      ", componentModel=" + componentModel +
-      ", type=" + type +
-      '}';
+        "arrayType=" + componentType +
+        ", componentModel=" + componentModel +
+        ", type=" + type +
+        '}';
   }
 }

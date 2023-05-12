@@ -60,8 +60,8 @@ class UntypedRecognizerTest {
   @Test
   void readsEmptyList() {
     List<ReadEvent> events = List.of(
-      ReadEvent.startBody(),
-      ReadEvent.endRecord()
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
     );
 
     multipleEventsOk(events, Collections.emptyList());
@@ -70,9 +70,9 @@ class UntypedRecognizerTest {
   @Test
   void readsSimpleList1() {
     List<ReadEvent> events = List.of(
-      ReadEvent.startBody(),
-      ReadEvent.number(1),
-      ReadEvent.endRecord()
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.endRecord()
     );
 
     multipleEventsOk(events, List.of(1));
@@ -81,11 +81,11 @@ class UntypedRecognizerTest {
   @Test
   void readsSimpleList2() {
     List<ReadEvent> events = List.of(
-      ReadEvent.startBody(),
-      ReadEvent.number(1),
-      ReadEvent.number(2),
-      ReadEvent.number(3),
-      ReadEvent.endRecord()
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.number(2),
+        ReadEvent.number(3),
+        ReadEvent.endRecord()
     );
 
     multipleEventsOk(events, List.of(1, 2, 3));
@@ -94,11 +94,11 @@ class UntypedRecognizerTest {
   @Test
   void readsSimpleMap1() {
     List<ReadEvent> events = List.of(
-      ReadEvent.startBody(),
-      ReadEvent.number(1),
-      ReadEvent.slot(),
-      ReadEvent.number(1),
-      ReadEvent.endRecord()
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.endRecord()
     );
 
     multipleEventsOk(events, Map.of(1, 1));
@@ -107,14 +107,14 @@ class UntypedRecognizerTest {
   @Test
   void readsSimpleMap2() {
     List<ReadEvent> events = List.of(
-      ReadEvent.startBody(),
-      ReadEvent.number(1),
-      ReadEvent.slot(),
-      ReadEvent.number(1),
-      ReadEvent.number(2),
-      ReadEvent.slot(),
-      ReadEvent.number(2),
-      ReadEvent.endRecord()
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.number(2),
+        ReadEvent.slot(),
+        ReadEvent.number(2),
+        ReadEvent.endRecord()
     );
 
     multipleEventsOk(events, Map.of(1, 1, 2, 2));
@@ -123,71 +123,71 @@ class UntypedRecognizerTest {
   @Test
   void readsListOfMaps() {
     List<ReadEvent> events = List.of(
-      ReadEvent.startBody(),
+        ReadEvent.startBody(),
 
-      ReadEvent.startBody(),
-      ReadEvent.number(1),
-      ReadEvent.slot(),
-      ReadEvent.number(1),
-      ReadEvent.endRecord(),
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.endRecord(),
 
-      ReadEvent.startBody(),
-      ReadEvent.number(2),
-      ReadEvent.slot(),
-      ReadEvent.number(2),
-      ReadEvent.endRecord(),
+        ReadEvent.startBody(),
+        ReadEvent.number(2),
+        ReadEvent.slot(),
+        ReadEvent.number(2),
+        ReadEvent.endRecord(),
 
-      ReadEvent.startBody(),
-      ReadEvent.number(3),
-      ReadEvent.slot(),
-      ReadEvent.number(3),
-      ReadEvent.endRecord(),
+        ReadEvent.startBody(),
+        ReadEvent.number(3),
+        ReadEvent.slot(),
+        ReadEvent.number(3),
+        ReadEvent.endRecord(),
 
-      ReadEvent.endRecord()
+        ReadEvent.endRecord()
     );
     multipleEventsOk(events, List.of(
-      Map.of(1, 1),
-      Map.of(2, 2),
-      Map.of(3, 3)
+        Map.of(1, 1),
+        Map.of(2, 2),
+        Map.of(3, 3)
     ));
   }
 
   @Test
   void readsMapOfLists() {
     List<ReadEvent> events = List.of(
-      ReadEvent.startBody(),
+        ReadEvent.startBody(),
 
-      ReadEvent.number(1),
-      ReadEvent.slot(),
-      ReadEvent.startBody(),
-      ReadEvent.number(1),
-      ReadEvent.number(2),
-      ReadEvent.number(3),
-      ReadEvent.endRecord(),
+        ReadEvent.number(1),
+        ReadEvent.slot(),
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.number(2),
+        ReadEvent.number(3),
+        ReadEvent.endRecord(),
 
-      ReadEvent.number(2),
-      ReadEvent.slot(),
-      ReadEvent.startBody(),
-      ReadEvent.number(4),
-      ReadEvent.number(5),
-      ReadEvent.number(6),
-      ReadEvent.endRecord(),
+        ReadEvent.number(2),
+        ReadEvent.slot(),
+        ReadEvent.startBody(),
+        ReadEvent.number(4),
+        ReadEvent.number(5),
+        ReadEvent.number(6),
+        ReadEvent.endRecord(),
 
-      ReadEvent.number(3),
-      ReadEvent.slot(),
-      ReadEvent.startBody(),
-      ReadEvent.number(7),
-      ReadEvent.number(8),
-      ReadEvent.number(9),
-      ReadEvent.endRecord(),
+        ReadEvent.number(3),
+        ReadEvent.slot(),
+        ReadEvent.startBody(),
+        ReadEvent.number(7),
+        ReadEvent.number(8),
+        ReadEvent.number(9),
+        ReadEvent.endRecord(),
 
-      ReadEvent.endRecord()
+        ReadEvent.endRecord()
     );
 
     multipleEventsOk(events, Map.of(
-      1, List.of(1, 2, 3),
-      2, List.of(4, 5, 6),
-      3, List.of(7, 8, 9)
+        1, List.of(1, 2, 3),
+        2, List.of(4, 5, 6),
+        3, List.of(7, 8, 9)
     ));
   }
 
@@ -207,19 +207,19 @@ class UntypedRecognizerTest {
   @Test
   void badStructures() {
     testFail(List.of(
-      ReadEvent.startBody(),
-      ReadEvent.slot()
+        ReadEvent.startBody(),
+        ReadEvent.slot()
     ));
     testFail(List.of(ReadEvent.startAttribute("bad")));
     testFail(List.of(ReadEvent.endRecord()));
     testFail(List.of(
-      ReadEvent.startBody(),
-      ReadEvent.number(1),
-      ReadEvent.slot(),
-      ReadEvent.number(1),
-      ReadEvent.number(2),
-      ReadEvent.slot(),
-      ReadEvent.slot()
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.slot(),
+        ReadEvent.number(1),
+        ReadEvent.number(2),
+        ReadEvent.slot(),
+        ReadEvent.slot()
     ));
   }
 }

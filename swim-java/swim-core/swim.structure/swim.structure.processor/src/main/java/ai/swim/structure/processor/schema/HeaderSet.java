@@ -90,11 +90,11 @@ public class HeaderSet {
   @Override
   public String toString() {
     return "HeaderFields{" +
-      "tagName=" + tagName +
-      ", tagBody=" + tagBody +
-      ", headerFields=" + headerFields +
-      ", attributes=" + attributes +
-      '}';
+        "tagName=" + tagName +
+        ", tagBody=" + tagBody +
+        ", headerFields=" + headerFields +
+        ", attributes=" + attributes +
+        '}';
   }
 
   /**

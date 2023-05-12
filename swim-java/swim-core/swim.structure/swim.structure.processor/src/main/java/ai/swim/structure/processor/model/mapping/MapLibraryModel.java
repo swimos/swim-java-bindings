@@ -47,9 +47,9 @@ public class MapLibraryModel extends KnownTypeModel {
   @Override
   public String toString() {
     return "MapLibraryModel{" +
-      "keyModel=" + keyModel +
-      ", valueModel=" + valueModel +
-      ", type=" + type +
-      '}';
+        "keyModel=" + keyModel +
+        ", valueModel=" + valueModel +
+        ", type=" + type +
+        '}';
   }
 }

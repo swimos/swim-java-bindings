@@ -214,9 +214,9 @@ public class ValueRecognizer extends Recognizer<Value> {
   @Override
   public String toString() {
     return "ValueRecognizer{" +
-      "stack=" + stack +
-      ", slotKey=" + slotKey +
-      '}';
+        "stack=" + stack +
+        ", slotKey=" + slotKey +
+        '}';
   }
 
   protected static class IncrementalValueBuilder {
@@ -232,10 +232,10 @@ public class ValueRecognizer extends Recognizer<Value> {
     @Override
     public String toString() {
       return "IncrementalValueBuilder{" +
-        "record=" + record +
-        ", key=" + key +
-        ", inBody=" + inBody +
-        '}';
+          "record=" + record +
+          ", key=" + key +
+          ", inBody=" + inBody +
+          '}';
     }
   }
 }

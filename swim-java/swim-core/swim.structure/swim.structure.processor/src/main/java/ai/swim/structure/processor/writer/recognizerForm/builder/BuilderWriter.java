@@ -78,8 +78,8 @@ public class BuilderWriter {
       parentSpec.addType(headerBuilder.build(recognizingBuilderType));
 
       TypeSpec.Builder headerClass = TypeSpec.classBuilder(formatter.headerClassName())
-        .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-        .addTypeVariables(mappedTypeParameters);
+          .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+          .addTypeVariables(mappedTypeParameters);
 
       HeaderSet headerFieldSet = fields.headerSet;
       List<FieldModel> headerFields = headerFieldSet.headerFields;

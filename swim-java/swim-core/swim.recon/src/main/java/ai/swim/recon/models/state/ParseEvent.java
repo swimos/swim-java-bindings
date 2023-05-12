@@ -55,7 +55,7 @@ public class ParseEvent extends Action {
   @Override
   public String toString() {
     return "ChangeState{" +
-      "state=" + state +
-      '}';
+        "state=" + state +
+        '}';
   }
 }

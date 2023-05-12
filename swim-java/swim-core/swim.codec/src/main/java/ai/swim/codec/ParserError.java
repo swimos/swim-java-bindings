@@ -62,7 +62,7 @@ public class ParserError<O> extends Parser<O> {
 
   private IllegalStateException bail() {
     return new IllegalStateException(
-      String.format("Parser error caused by %s at: %s", cause, location)
+        String.format("Parser error caused by %s at: %s", cause, location)
     );
   }
 }

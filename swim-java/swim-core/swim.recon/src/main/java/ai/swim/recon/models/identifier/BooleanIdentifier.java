@@ -57,7 +57,7 @@ public final class BooleanIdentifier extends Identifier {
   @Override
   public String toString() {
     return "BooleanIdentifier{" +
-      "value=" + value +
-      '}';
+        "value=" + value +
+        '}';
   }
 }

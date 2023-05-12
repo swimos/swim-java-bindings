@@ -131,13 +131,13 @@ public class ClassLikeModel extends StructuralModel {
   @Override
   public String toString() {
     return "ClassLikeModel{" +
-      "element=" + getElement() +
-      ", declaredPackage=" + getDeclaredPackage() +
-      ", fields=" + fields +
-      ", methods=" + methods +
-      ", subTypes=" + subTypes +
-      ", isAbstract=" + isAbstract +
-      '}';
+        "element=" + getElement() +
+        ", declaredPackage=" + getDeclaredPackage() +
+        ", fields=" + fields +
+        ", methods=" + methods +
+        ", subTypes=" + subTypes +
+        ", isAbstract=" + isAbstract +
+        '}';
   }
 
   /**

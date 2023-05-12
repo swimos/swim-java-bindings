@@ -36,7 +36,7 @@ public class FieldAccessor extends Accessor {
   @Override
   public String toString() {
     return "FieldAccessor{" +
-      "fieldName=" + fieldName +
-      '}';
+        "fieldName=" + fieldName +
+        '}';
   }
 }

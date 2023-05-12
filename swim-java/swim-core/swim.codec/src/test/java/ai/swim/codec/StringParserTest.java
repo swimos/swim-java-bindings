@@ -72,8 +72,8 @@ class StringParserTest {
     @Override
     public String toString() {
       return "StringReadEvent{" +
-        "value='" + value + '\'' +
-        '}';
+          "value='" + value + '\'' +
+          '}';
     }
   }
 }

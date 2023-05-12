@@ -20,7 +20,7 @@ public class UntypedModel extends Model {
   @Override
   public String toString() {
     return "UntypedModel{" +
-      "type=" + type +
-      '}';
+        "type=" + type +
+        '}';
   }
 }

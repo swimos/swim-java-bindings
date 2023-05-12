@@ -17,11 +17,11 @@ class CollectionRecognizerTest {
 
   private static List<ReadEvent> events() {
     return List.of(
-      ReadEvent.startBody(),
-      ReadEvent.number(1),
-      ReadEvent.number(2),
-      ReadEvent.number(3),
-      ReadEvent.endRecord()
+        ReadEvent.startBody(),
+        ReadEvent.number(1),
+        ReadEvent.number(2),
+        ReadEvent.number(3),
+        ReadEvent.endRecord()
     );
   }
 

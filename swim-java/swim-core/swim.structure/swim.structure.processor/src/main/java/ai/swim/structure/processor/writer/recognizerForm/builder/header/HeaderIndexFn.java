@@ -82,17 +82,17 @@ public class HeaderIndexFn extends Emitter {
     body.addStatement("$T headerSlotKey = ($T) key", headerSlotKey, headerSlotKey);
 
     WriterUtils.writeIndexSwitchBlock(
-      body,
-      "headerSlotKey.getName()",
-      idx,
-      (offset, i) -> {
-        if (i - offset == headerFieldSet.headerFields.size()) {
-          return null;
-        } else {
-          FieldModel recognizer = headerFieldSet.headerFields.get(i - offset);
-          return String.format("case \"%s\":\r\n\t return %s;\r\n", recognizer.propertyName(), i);
+        body,
+        "headerSlotKey.getName()",
+        idx,
+        (offset, i) -> {
+          if (i - offset == headerFieldSet.headerFields.size()) {
+            return null;
+          } else {
+            FieldModel recognizer = headerFieldSet.headerFields.get(i - offset);
+            return String.format("case \"%s\":\r\n\t return %s;\r\n", recognizer.propertyName(), i);
+          }
         }
-      }
     );
 
     body.endControlFlow();

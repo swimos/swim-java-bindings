@@ -57,8 +57,8 @@ public abstract class LabelledFieldKey {
     @Override
     public String toString() {
       return "AttrFieldKey{" +
-        "key='" + key + '\'' +
-        '}';
+          "key='" + key + '\'' +
+          '}';
     }
   }
 
@@ -82,8 +82,8 @@ public abstract class LabelledFieldKey {
     @Override
     public String toString() {
       return "ItemFieldKey{" +
-        "name='" + name + '\'' +
-        '}';
+          "name='" + name + '\'' +
+          '}';
     }
   }
 }

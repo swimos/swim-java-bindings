@@ -40,8 +40,8 @@ public class ListLibraryModel extends KnownTypeModel {
   @Override
   public String toString() {
     return "ListLibraryModel{" +
-      "elementModel=" + elementModel +
-      ", type=" + type +
-      '}';
+        "elementModel=" + elementModel +
+        ", type=" + type +
+        '}';
   }
 }

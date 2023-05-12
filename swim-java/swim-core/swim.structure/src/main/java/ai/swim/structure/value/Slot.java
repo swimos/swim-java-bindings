@@ -28,9 +28,9 @@ public class Slot extends Item {
   @Override
   public String toString() {
     return "Slot{" +
-      "key=" + key +
-      ", value=" + value +
-      '}';
+        "key=" + key +
+        ", value=" + value +
+        '}';
   }
 
   @Override

@@ -25,8 +25,8 @@ public class ReadLongValue extends ReadEvent {
   @Override
   public String toString() {
     return "ReadLongValue{" +
-      "value=" + value +
-      '}';
+        "value=" + value +
+        '}';
   }
 
   @Override

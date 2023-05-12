@@ -28,8 +28,8 @@ public class ResultOk<O> extends ParseResult<O> {
   @Override
   public String toString() {
     return "ResultOk{" +
-      "item=" + item +
-      '}';
+        "item=" + item +
+        '}';
   }
 
   @Override

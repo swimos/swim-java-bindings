@@ -116,11 +116,11 @@ public class WriterProxy {
 
       if (!Writable.class.isAssignableFrom(clazz)) {
         String error = String.format("%s is annotated with @%s(%s.class) but %s does not extend %s",
-          clazz.getCanonicalName(),
-          AutoloadedWriter.class.getSimpleName(),
-          targetClass.getCanonicalName(),
-          clazz.getCanonicalName(),
-          Writable.class.getSimpleName()
+            clazz.getCanonicalName(),
+            AutoloadedWriter.class.getSimpleName(),
+            targetClass.getCanonicalName(),
+            clazz.getCanonicalName(),
+            Writable.class.getSimpleName()
         );
         throw new RuntimeException(error);
       }

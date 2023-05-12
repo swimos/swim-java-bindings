@@ -26,8 +26,8 @@ public class ValueItem extends Item {
   @Override
   public String toString() {
     return "ValueItem{" +
-      "value=" + value +
-      '}';
+        "value=" + value +
+        '}';
   }
 
   @Override

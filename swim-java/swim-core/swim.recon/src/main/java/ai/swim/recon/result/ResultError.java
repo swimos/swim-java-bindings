@@ -32,8 +32,8 @@ public class ResultError<O> extends ParseResult<O> {
   @Override
   public String toString() {
     return "ResultError{" +
-      "cause='" + cause + '\'' +
-      ", location=" + location +
-      '}';
+        "cause='" + cause + '\'' +
+        ", location=" + location +
+        '}';
   }
 }
