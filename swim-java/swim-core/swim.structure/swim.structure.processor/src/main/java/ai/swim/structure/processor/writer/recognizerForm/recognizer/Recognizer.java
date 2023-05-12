@@ -45,37 +45,54 @@ import static ai.swim.structure.processor.writer.WriterUtils.typeParametersToTyp
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.*;
 import static ai.swim.structure.processor.writer.recognizerForm.recognizer.PolymorphicRecognizer.buildPolymorphicRecognizer;
 
+/**
+ * Core recognizer writer functionality.
+ */
 public class Recognizer {
 
-  public static void writeRecognizer(ClassLikeModel model, RecognizerContext context) throws IOException, InvalidModelException {
+  /**
+   * Writes a recognizer for the provided class model.
+   *
+   * @param model   that a recognizer will be derived for.
+   * @param context recognizer scoped context to the root processing element.
+   * @throws IOException if there is a failure to write the recognizer to disk.
+   */
+  public static void writeRecognizer(ClassLikeModel model, RecognizerContext context) throws IOException {
     List<Model> subTypes = model.getSubTypes();
     TypeSpec typeSpec;
 
     PartitionedFields fields = PartitionedFields.buildFrom(model.getFields());
 
     if (model.isAbstract()) {
+      // Write an abstract class recognizer
       typeSpec = buildPolymorphicRecognizer(context, subTypes).build();
-    } else if (!subTypes.isEmpty()) {
-      TypeSpec.Builder concreteRecognizer = writeClassRecognizer(true, model, fields, context, new ClassTransposition(model, fields));
-      subTypes.add(new Model(null, null, null) {
-        @Override
-        public InitializedType instantiate(TypeInitializer initializer, boolean inConstructor) throws InvalidModelException {
-          return new InitializedType(null, CodeBlock.of("new $L()", context.getFormatter().concreteRecognizerClassName()));
-        }
-
-        @Override
-        public String toString() {
-          return null;
-        }
-      });
-
-      TypeSpec.Builder classRecognizer = buildPolymorphicRecognizer(context, subTypes);
-      classRecognizer.addType(concreteRecognizer.build());
-
-      typeSpec = classRecognizer.build();
     } else if (model.isClass()) {
-      typeSpec = writeClassRecognizer(false, model, fields, context, new ClassTransposition(model, fields)).build();
+      boolean isPolymorphic = !subTypes.isEmpty();
+      TypeSpec.Builder concreteRecognizer = writeClassRecognizer(isPolymorphic, model, fields, context, new ClassTransposition(model, fields));
+      if (isPolymorphic) {
+        // The class is not abstract but does have subtypes. So we need to write an abstract class recognizer that also
+        // has an extra 'subtype' that is the concrete class (the root processing element).
+
+        subTypes.add(new Model(null, null, null) {
+          @Override
+          public InitializedType instantiate(TypeInitializer initializer, boolean inConstructor) throws InvalidModelException {
+            return new InitializedType(null, CodeBlock.of("new $L()", context.getFormatter().concreteRecognizerClassName()));
+          }
+
+          @Override
+          public String toString() {
+            return null;
+          }
+        });
+
+        TypeSpec.Builder classRecognizer = buildPolymorphicRecognizer(context, subTypes);
+        classRecognizer.addType(concreteRecognizer.build());
+        typeSpec = classRecognizer.build();
+      } else {
+        typeSpec = concreteRecognizer.build();
+      }
     } else if (model.isEnum()) {
+      // Write a class recognizer for the enum.
       typeSpec = writeClassRecognizer(false, model, fields, context, new EnumTransposition(model, fields)).build();
     } else {
       throw new AssertionError("Unhandled class map type: " + model.getClass().getCanonicalName());
@@ -171,7 +188,7 @@ public class Recognizer {
   private static List<MethodSpec> buildConstructors(ClassLikeModel model, PartitionedFields fields, RecognizerContext context, Transposition transposition) {
     List<MethodSpec> constructors = new ArrayList<>();
     constructors.add(buildDefaultConstructor(model, context));
-    constructors.add(buildParameterisedConstructor(fields, context, transposition));
+    constructors.add(buildBuilderConstructor(fields, context, transposition));
 
     if (!model.getTypeParameters().isEmpty()) {
       constructors.add(buildTypedConstructor(model, context));
@@ -180,11 +197,25 @@ public class Recognizer {
     return constructors;
   }
 
+  /**
+   * Builds the default, zero-arg, constructor for this recognizer.
+   */
   private static MethodSpec buildDefaultConstructor(ClassLikeModel model, RecognizerContext context) {
     String recognizers = model.getTypeParameters().stream().map(ty -> "ai.swim.structure.recognizer.proxy.RecognizerTypeParameter.untyped()").collect(Collectors.joining(", "));
     return MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).addCode("this(new $L($L));", context.getFormatter().builderClassName(), recognizers).build();
   }
 
+  /**
+   * Builds a typed constructor:
+   * <pre>
+   *   {@code
+   *   @AutoForm.TypedConstructor
+   *   public GenericBodyRecognizer(RecognizerTypeParameter<N> nType) {
+   *     this(new GenericBodyBuilder<>(requireNonNullElse(nType, RecognizerTypeParameter.<N>untyped())));
+   *   }
+   *   }
+   * </pre>
+   */
   private static MethodSpec buildTypedConstructor(ClassLikeModel model, RecognizerContext context) {
     MethodSpec.Builder methodBuilder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).addAnnotation(AutoForm.TypedConstructor.class);
 
@@ -213,7 +244,26 @@ public class Recognizer {
     return methodBuilder.addParameters(parameters).build();
   }
 
-  private static MethodSpec buildParameterisedConstructor(PartitionedFields fields, RecognizerContext context, Transposition transposition) {
+  /**
+   * Builds the constructor which accepts the delegate field builder.
+   * <pre>
+   *   {@code
+   *     private GenericBodyRecognizer(GenericBodyBuilder builder) {
+   *     this.recognizer = new DelegateClassRecognizer<GenericBody<N>>(tagSpec, builder, 3, (key) -> {
+   *       if (key.isHeader()) {
+   *         return 0;
+   *       }
+   *       if (key.isFirstItem()) {
+   *         return 1;
+   *       }
+   *       return null;
+   *     }
+   *     );
+   *   }
+   *   }
+   * </pre>
+   */
+  private static MethodSpec buildBuilderConstructor(PartitionedFields fields, RecognizerContext context, Transposition transposition) {
     MethodSpec.Builder methodBuilder = MethodSpec.constructorBuilder().addModifiers(Modifier.PRIVATE).addParameter(ParameterSpec.builder(ClassName.bestGuess(context.getFormatter().builderClassName()), "builder").build());
 
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
@@ -351,15 +401,34 @@ public class Recognizer {
     return body.build();
   }
 
+  /**
+   * A transposition that is applied to a class, specifying how its tag, builder type, builder bind is defined as well
+   * as an optional nested class that may be inserted.
+   */
   public interface Transposition {
+    /**
+     * Builds the tag specification for the class.
+     */
     FieldSpec tagSpec(RecognizerContext context);
 
+    /**
+     * Builds the bind method for the recognizer.
+     */
     MethodSpec classBind(RecognizerContext context);
 
+    /**
+     * Specifies the name of the builder for the class.
+     */
     TypeName builderType(RecognizerContext context);
 
+    /**
+     * Builds the bind method for the class builder.
+     */
     MethodSpec builderBind(RecognizerContext context);
 
+    /**
+     * Specifies an optional, nested, class to be inserted into the parent's type specification.
+     */
     TypeSpec nested(RecognizerContext context);
   }
 
@@ -511,7 +580,9 @@ public class Recognizer {
 
     @Override
     public TypeSpec nested(RecognizerContext context) {
-      TypeSpec.Builder builder = TypeSpec.classBuilder(context.getFormatter().enumSpec()).addModifiers(Modifier.PRIVATE, Modifier.STATIC);
+      TypeSpec.Builder builder = TypeSpec
+              .classBuilder(context.getFormatter().enumSpec())
+              .addModifiers(Modifier.PRIVATE, Modifier.STATIC);
       MethodSpec.Builder constructor = MethodSpec.constructorBuilder();
 
       for (FieldModel fieldModel : model.getFields()) {

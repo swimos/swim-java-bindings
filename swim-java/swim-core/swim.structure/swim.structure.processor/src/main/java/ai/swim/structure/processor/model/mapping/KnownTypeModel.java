@@ -17,6 +17,9 @@ import java.util.Map;
 
 import static ai.swim.structure.processor.Utils.isSubType;
 
+/**
+ * A model representing a known class type and for resolving known types; primitives, array types, list and map types.
+ */
 public abstract class KnownTypeModel extends Model {
   private final TypeMapping typeMapping;
 
@@ -25,6 +28,16 @@ public abstract class KnownTypeModel extends Model {
     this.typeMapping = typeMapping;
   }
 
+  /**
+   * Attempts to resolve a known library model; primitives, array types, list and map types.
+   *
+   * @param environment the current processing environment.
+   * @param inspector   for resolving nested types.
+   * @param element     to inspect.
+   * @param type        of the element.
+   * @return a resolved model or null if resolution failed.
+   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
+   */
   public static Model getLibraryModel(ProcessingEnvironment environment, ModelInspector inspector, Element element, TypeMirror type) {
     TypeKind typeKind = type.getKind();
     if (typeKind.isPrimitive()) {
@@ -38,6 +51,15 @@ public abstract class KnownTypeModel extends Model {
     }
   }
 
+  /**
+   * Attempts to resolve an unboxed primitive model from {@code type}.
+   *
+   * @param environment the current processing environment.
+   * @param element     to resolve.
+   * @param type        of the element.
+   * @return a matching primitive library model.
+   * @throws IllegalArgumentException if the type is not a primitive.
+   */
   public static Model fromPrimitive(ProcessingEnvironment environment, Element element, TypeMirror type) {
     switch (type.getKind()) {
       case BOOLEAN:
@@ -61,6 +83,16 @@ public abstract class KnownTypeModel extends Model {
     }
   }
 
+  /**
+   * Attempts to resolve a model from {@code type}. This may be a boxed primitive type, a known library type, a list or
+   * map type.
+   *
+   * @param environment the current processing environment.
+   * @param element     to resolve.
+   * @param type        of the element.
+   * @return a resolved model or null.
+   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
+   */
   private static Model tryFromDeclared(ProcessingEnvironment environment, Element element, ModelInspector inspector, DeclaredType type) {
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
@@ -122,6 +154,18 @@ public abstract class KnownTypeModel extends Model {
     }
   }
 
+  /**
+   * Resolves an array type from {@code arrayType}. If the component type is declared then the component type will be
+   * resolved through the inspector, if it is a type var then an untyped model is returned, otherwise, it will be
+   * unresolved.
+   *
+   * @param environment the current processing environment.
+   * @param inspector   for resolving the component type if it is declared.
+   * @param element     to resolve.
+   * @param arrayType   of the element.
+   * @return a resolved model.
+   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
+   */
   private static Model fromArray(ProcessingEnvironment environment, ModelInspector inspector, Element element, ArrayType arrayType) {
     TypeMirror componentType = arrayType.getComponentType();
     Model componentModel = getLibraryModel(environment, inspector, element, componentType);
@@ -149,7 +193,15 @@ public abstract class KnownTypeModel extends Model {
     return typeUtils.isSameType(typeElement.asType(), declaredType);
   }
 
-  public static UnrolledType unrollType(ProcessingEnvironment environment, Element element, ModelInspector inspector, TypeMirror typeMirror) {
+  /**
+   * Unpacks 
+   * @param environment
+   * @param element
+   * @param inspector
+   * @param typeMirror
+   * @return
+   */
+  private static UnrolledType unrollType(ProcessingEnvironment environment, Element element, ModelInspector inspector, TypeMirror typeMirror) {
     switch (typeMirror.getKind()) {
       case DECLARED:
         DeclaredType declaredType = (DeclaredType) typeMirror;

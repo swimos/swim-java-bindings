@@ -33,17 +33,98 @@ import java.util.*;
 import static ai.swim.structure.processor.Utils.accessorFor;
 import static ai.swim.structure.processor.Utils.getNoArgConstructor;
 
+/**
+ * Core type inspector for deriving a representation of a Java enumeration, class, interface or primitive type that will
+ * be used when applying a transformation into a recognizer and/or writer class.
+ * <p>
+ *
+ * <h2>Model Resolution</h2>
+ * This class provides model resolution and inspection via two {@code getOrInspect} methods which provides resolution
+ * through a {@code TypeElement} which is typically a root processing element in a class or by a {@code TypeMirror} when
+ * resolving a field in a class.
+ * <p>
+ * When a type is being inspected, its superclasses, subclasses, fields and methods are all inspected, traversed and
+ * models are derived and stored for possible resolution through another invocation. This enables faster resolution for
+ * frequently used types. For example, a class {@code C} may have fields that are declared types of type {@code A} and
+ * {@code B}. When {@code C} is inspected, both {@code A} and {@code B} will also be inspected and their respective
+ * model derivations will be stored in the inspector for possible access by another model.
+ *
+ * <h3>Class Resolution</h3>
+ * <p>
+ * If a class that is being derived has a superclass, then the type's hierarchy is traversed and a flattened
+ * representation is derived that contains all of its parents fields and accessors; excluding ignored fields. This
+ * places a constraint in the hierarchy that all fields and accessors must be unique. As an example:
+ * <pre>
+ * {@code
+ *  class SuperType {
+ *    public String name;
+ *  }
+ *
+ *  class SubType extends SuperType {
+ *    public int age;
+ *  }
+ * }
+ * </pre>
+ * This is a valid hierarchy as each field is unique. If {@code SubType} also contained a field named {@code name} then
+ * model resolution would fail.
+ * <p>
+ * Once {@code SuperType}'s model has been resolved, it is placed into a map where it can be retrieved by its type
+ * mirror.
+ * <p>
+ *
+ * <h3>Inheritance Resolution</h3>
+ * The inspector supports inheritance through class abstraction (like Java, it does not support multiple inheritance)
+ * and interfaces.
+ * <p>
+ * When inspecting a class or interface that contains super and/or subtypes, a guard is placed to prevent an infinite
+ * resolution cycle between two types. Without this, it's possible for a class's supertype to be inspected and then its
+ * subtypes to be inspected and then a resolution cycle is formed. This is observed in this class as a 'skip' field and
+ * when a cycle is observed, a resolved model is instead placed into the current model instead of it being inspected.
+ * <p>
+ * A restriction is enforced in the type hierarchy that a type may not extend another type that is not automatically
+ * derived. If this functionality is required, then a form must be manually implemented.
+ */
 public class ModelInspector {
+  /**
+   * Type map between a type mirror and its derived model representation.
+   * <p>
+   * A type mirror may be a mirror from a {@code TypeElement} or a field's {@code TypeMirror}.
+   */
   private final HashMap<TypeMirror, Model> models;
 
   public ModelInspector() {
     models = new HashMap<>();
   }
 
+  /**
+   * Gets and inspects a {@code Model} for {@code element}.
+   *
+   * @param element     to be inspected.
+   * @param environment the current processing environment.
+   * @return a model representation for {@code element}.
+   * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy.
+   */
   public Model getOrInspect(TypeElement element, ProcessingEnvironment environment) {
     return getOrInspect(element.asType(), element, environment, null);
   }
 
+  /**
+   * Gets and inspects a {@code Model} for {@code element}.
+   * <p>
+   * If {@code element} is an element representing a field then {@code type} *must* be the {@code TypeMirror} for the
+   * field and not for the {@code element} otherwise, when the model is transformed into a recognizer and/or writer
+   * representation an invalid field type will be written.
+   *
+   * @param type        of the class/enum/interface if {@code element} is a {@code TypeElement} or, if it is a field, then
+   *                    the type of the field.
+   * @param element     to be inspected.
+   * @param environment the current processing environment.
+   * @param skip        if this inspection has been triggered through an inheritance resolution call, then skip inspecting the
+   *                    element that triggered the resolution. If this is an inheritance resolution call and this is not
+   *                    provided then this may cause a {@code StackOverflowException}.
+   * @return a model representation for {@code element}.
+   * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy.
+   */
   public Model getOrInspect(TypeMirror type, Element element, ProcessingEnvironment environment, StructuralModel skip) {
     if (element == null) {
       throw new NullPointerException();
@@ -60,6 +141,19 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * Gets and inspects a {@code Model} for a class-like element.
+   *
+   * @param type        of the class/enum.
+   * @param element     to be inspected.
+   * @param environment the current processing environment.
+   * @param skip        if this inspection has been triggered through an inheritance resolution call, then skip inspecting the
+   *                    element that triggered the resolution. If this is an inheritance resolution call and this is not
+   *                    provided then this may cause a {@code StackOverflowException}.
+   * @return a model representation for {@code element}.
+   * @throws InvalidModelException    if an invalid model has been derived anywhere from this element's type hierarchy.
+   * @throws IllegalArgumentException if a previously resolved model exists for {@code type} that is not a class like model.
+   */
   private ClassLikeModel getOrInspectClass(TypeMirror type, TypeElement element, ProcessingEnvironment environment, StructuralModel skip) {
     if (element == null) {
       throw new NullPointerException();
@@ -79,6 +173,21 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * Resolves a declared type by branching into inspecting a class if {@code element} is a class-like element or
+   * inspecting an interface if it is an interface. If resolution fails due to the element not being annotated with
+   * {@code AutoForm} then {@code null} is returned.
+   *
+   * @param type        of the class/enum/interface.
+   * @param element     to be inspected.
+   * @param environment the current processing environment.
+   * @param current     if this inspection has been triggered through an inheritance resolution call, then skip inspecting the
+   *                    element that triggered the resolution. If this is an inheritance resolution call and this is not
+   *                    provided then this may cause a {@code StackOverflowException}.
+   * @return a model representation for {@code element}.
+   * @throws InvalidModelException    if an invalid model has been derived anywhere from this element's type hierarchy.
+   * @throws IllegalArgumentException if the kind of the element is not class-like or an interface.
+   */
   private Model resolveDeclaredType(TypeMirror type, TypeElement element, ProcessingEnvironment environment, StructuralModel current) {
     ElementKind kind = element.getKind();
     if (kind.isClass()) {
@@ -100,6 +209,20 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * Resolves a declared type by branching into inspecting a class if {@code element} is a class-like element or
+   * inspecting an interface if it is an interface. If resolution fails due to the element not being annotated with
+   * {@code AutoForm} then an {@code UnresolvedModel} is returned.
+   *
+   * @param type        of the class/enum/interface.
+   * @param element     to be inspected.
+   * @param environment the current processing environment.
+   * @param current     if this inspection has been triggered through an inheritance resolution call, then skip inspecting the
+   *                    element that triggered the resolution. If this is an inheritance resolution call and this is not
+   *                    provided then this may cause a {@code StackOverflowException}.
+   * @return a model representation for {@code element}.
+   * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy.
+   */
   private Model inspectDeclaredType(TypeMirror type, TypeElement element, ProcessingEnvironment environment, StructuralModel current) {
     Model resolved = resolveDeclaredType(type, element, environment, current);
     if (resolved == null) {
@@ -111,6 +234,24 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * Gets and inspects a {@code Model} for {@code element}.
+   * <p>
+   * If {@code element} is an element representing a field then {@code type} *must* be the {@code TypeMirror} for the
+   * field and not for the {@code element} otherwise, when the model is transformed into a recognizer and/or writer
+   * representation an invalid field type will be written.
+   *
+   * @param elementType of the class/enum/interface if {@code element} is a {@code TypeElement} or, if it is a field, then
+   *                    the type of the field.
+   * @param element     to be inspected.
+   * @param environment the current processing environment.
+   * @param skipRoot    if this inspection has been triggered through an inheritance resolution call, then skip inspecting the
+   *                    element that triggered the resolution. If this is an inheritance resolution call and this is not
+   *                    provided then this may cause a {@code StackOverflowException}.
+   * @return a model representation for {@code element}. This may be a derived structural model or an unresolved model.
+   * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy or
+   *                               if resolution failed.
+   */
   private Model inspectElement(TypeMirror elementType, Element element, ProcessingEnvironment environment, StructuralModel skipRoot) {
     ElementKind kind = element.getKind();
     Model model = KnownTypeModel.getLibraryModel(environment, this, element, elementType);
@@ -140,13 +281,30 @@ public class ModelInspector {
       } else if (typeKind == TypeKind.TYPEVAR || typeKind == TypeKind.WILDCARD) {
         Elements elementUtils = environment.getElementUtils();
         PackageElement packageElement = elementUtils.getPackageOf(element);
+        // Return an unresolved model for the transformation to decide on how to handle typevars and wildcards.
+        // For a recognizer, it will be aligned to an untyped class and for a writer it will perform a runtime lookup of
+        // the type or resolution will fail.
         return new UnresolvedModel(fieldType, element, packageElement);
       }
     }
 
+    // This is a bug if the kind has not been handled or the user defined something that isn't supported.
     throw new AssertionError("Unsupported type: " + kind);
   }
 
+  /**
+   * Gets and inspects a {@code ClassLikeModel} for {@code element}. If {@code element} contains a direct superclass,
+   * then the returned model will contain *all* of the fields in the inheritance tree and the corresponding accessors.
+   *
+   * @param type        of the class.
+   * @param element     to be inspected.
+   * @param environment the current processing environment.
+   * @param skipSubType if this inspection has been triggered through an inheritance resolution call, then skip inspecting the
+   *                    element that triggered the resolution. If this is an inheritance resolution call and this is not
+   *                    provided then this may cause a {@code StackOverflowException}.
+   * @return a model representation for {@code element}.
+   * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy.
+   */
   private ClassLikeModel inspectClass(TypeMirror type, TypeElement element, ProcessingEnvironment environment, StructuralModel skipSubType) {
     validateNoArgConstructor(element);
 
@@ -158,6 +316,9 @@ public class ModelInspector {
     inspectTag(element);
     inspectClass(classModel, element, environment);
 
+    // The model's fields and methods have now been resolved, and so we can trigger an inheritance resolution call. If
+    // the call was performed earlier then the class merge operation would be missing elements.
+
     if (!element.getKind().equals(ElementKind.ENUM)) {
       inspectSuperclass(element, classModel, environment, skipSubType);
     }
@@ -167,6 +328,11 @@ public class ModelInspector {
     return classModel;
   }
 
+  /**
+   * Validates the placement and content of an {@code @Tag} if it has been placed on {@code element}.
+   *
+   * @throws InvalidModelException is the tag is invalid.
+   */
   private void inspectTag(TypeElement element) {
     if (element.getKind().equals(ElementKind.ENUM)) {
       if (element.getAnnotation(AutoForm.Tag.class) != null) {
@@ -206,6 +372,16 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * Inspects {@code rootElement}'s fields and methods. Ensuring that each field's type can be resolved and that the
+   * suitable accessors exists; a field must either be public or have a getter and setter.
+   *
+   * @param classModel  the model being built.
+   * @param rootElement to be inspected.
+   * @param environment the current processing environment.
+   * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy or
+   *                               if the Recon field schema is invalid.
+   */
   private void inspectClass(ClassLikeModel classModel, TypeElement rootElement, ProcessingEnvironment environment) {
     Types typeUtils = environment.getTypeUtils();
     List<VariableElement> variables = new ArrayList<>();
@@ -257,6 +433,21 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * Inspects {@code rootElement}'s subtypes if the element has its {@code subTypes} field populated and that the
+   * annotation has been correctly used; that it has not been placed on an enumeration or the class is abstract and has
+   * no subtypes.
+   * <p>
+   * This method triggers an inheritance resolution call whereby {@code classModel} will be ignored during the
+   * resolution. As such, {@code classModel} must be fully resolved to ensure that other types resolve correctly.
+   *
+   * @param classModel  the model being built.
+   * @param rootElement to be inspected.
+   * @param environment the current processing environment.
+   * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy or
+   *                               if class is missing subtypes, and it is abstract, or if the annotation has been
+   *                               placed on an enumeration.
+   */
   private void inspectClassSubTypes(Element rootElement, ClassLikeModel classModel, ProcessingEnvironment environment) {
     boolean isAbstract = rootElement.getModifiers().stream().anyMatch(modifier -> modifier.equals(Modifier.ABSTRACT));
 
@@ -281,6 +472,19 @@ public class ModelInspector {
     classModel.setSubTypes(subTypeElements);
   }
 
+  /**
+   * Inspects a set of subtypes for a structural model (class or interface) and returns a resolved list of models.
+   * <p>
+   * This method triggers an inheritance resolution call whereby {@code classModel} will be ignored during the
+   * resolution. As such, {@code classModel} must be fully resolved to ensure that other types resolve correctly.
+   *
+   * @param rootElement to be inspected.
+   * @param model       the model being built.
+   * @param environment the current processing environment.
+   * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy or
+   *                               an invalid inheritance tree has been defined (a user defined a subtype that does not
+   *                               extend from {@code rootElement} or it is the same class).
+   */
   private List<Model> inspectSubTypes(Element rootElement, StructuralModel model, ProcessingEnvironment environment, Set<AutoForm.Type> subTypes) {
     Types typeUtils = environment.getTypeUtils();
     Set<Model> subTypeElements = new HashSet<>(subTypes.size());
@@ -324,6 +528,17 @@ public class ModelInspector {
     return new ArrayList<>(subTypeElements);
   }
 
+  /**
+   * This method is intended to be used after resolving an accessor using the method {@code accessorFor} and validates
+   * that the setter is valid for a field of name {@code name}. A setter is considered to be valid if it is not {@code null},
+   * it is public and it contains a single parameter that has a matching type to the field.
+   *
+   * @param setter       method.
+   * @param name         the name of the field.
+   * @param expectedType the expected type of the field.
+   * @param environment  the current processing environment.
+   * @throws InvalidModelException if any of the constraints are violated.
+   */
   private void validateSetter(ExecutableElement setter, Name name, TypeMirror expectedType, ProcessingEnvironment environment) {
     Types typeUtils = environment.getTypeUtils();
 
@@ -348,6 +563,17 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * This method is intended to be used after resolving an accessor using the method {@code accessorFor} and validates
+   * that the getter is valid for a field of name {@code name}. A getter is considered to be valid if it is not {@code null},
+   * it is public and the return type matches the type of the field.
+   *
+   * @param getter       method.
+   * @param name         the name of the field.
+   * @param expectedType the expected type of the field.
+   * @param environment  the current processing environment.
+   * @throws InvalidModelException if any of the constraints are violated.
+   */
   private void validateGetter(ExecutableElement getter, Name name, TypeMirror expectedType, ProcessingEnvironment environment) {
     Types typeUtils = environment.getTypeUtils();
 
@@ -368,6 +594,10 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * Returns the corresponding Recon {@code Kind} of the field. If the element is annotated with {@code Kind} then the
+   * value is returned, otherwise, defaults to a slot.
+   */
   private FieldKind getFieldKind(Element element) {
     AutoForm.Kind kind = element.getAnnotation(AutoForm.Kind.class);
     if (kind == null) {
@@ -377,6 +607,16 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * Inspects the direct supertype of {@code element} and if on exists, then its fields are merged into {@code classModel}.
+   * If this method has been triggered through an inheritance resolution call and the direct supertype is {@code skipRoot}
+   * then its contents are merged into {@code classModel} and as such, it must be a fully resolved model.
+   *
+   * @param element     to be inspected.
+   * @param classModel  the model being built.
+   * @param environment the current processing environment.
+   * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy.
+   */
   private void inspectSuperclass(TypeElement element, ClassLikeModel classModel, ProcessingEnvironment environment, StructuralModel skipRoot) {
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
@@ -397,6 +637,8 @@ public class ModelInspector {
 
     if (skipRoot != null && typeUtils.isSameType(typeElement.asType(), skipRoot.type)) {
       if (skipRoot.isClassLike()) {
+        // Skip resolving the class as it is the same as skipRoot. This would cause an infinite resolution cycle
+        // otherwise.
         merge(classModel, (ClassLikeModel) skipRoot);
       }
     } else {
@@ -405,6 +647,11 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * Merges the contents of {@code superClassModel} into {@code classModel}.
+   *
+   * @throws InvalidModelException if {@code classModel} contains the same field name as in {@code superClassModel}.
+   */
   private void merge(ClassLikeModel classModel, ClassLikeModel superClassModel) {
     for (FieldModel field : classModel.getFields()) {
       FieldModel parentField = superClassModel.getFieldByPropertyName(field.propertyName());
@@ -417,6 +664,11 @@ public class ModelInspector {
     classModel.merge(superClassModel);
   }
 
+  /**
+   * Validates that {@code rootElement} contains a zero-arg constructor.
+   *
+   * @throws InvalidModelException if the element does not contain a zero-arg constructor.
+   */
   private void validateNoArgConstructor(Element rootElement) {
     ExecutableElement constructor = getNoArgConstructor(rootElement);
 
@@ -425,6 +677,15 @@ public class ModelInspector {
     }
   }
 
+  /**
+   * Inspects {@code rootElement}'s and derives an {@code InterfaceModel}
+   * <p>
+   * This method triggers an inheritance resolution call.
+   *
+   * @param rootElement to be inspected.
+   * @param environment the current processing environment.
+   * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy.
+   */
   private InterfaceModel inspectInterface(TypeElement rootElement, ProcessingEnvironment environment) {
     if (!rootElement.getKind().isInterface()) {
       throw new RuntimeException("Element is not an interface: " + rootElement);

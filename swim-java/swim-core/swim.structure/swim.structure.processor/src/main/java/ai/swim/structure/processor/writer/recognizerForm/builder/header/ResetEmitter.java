@@ -14,13 +14,22 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.header;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import com.squareup.javapoet.CodeBlock;
 
 import java.util.List;
 
+/**
+ * Header reset emitter:
+ * <pre>
+ *   {@code
+ *    this.laneBuilder = this.laneBuilder.reset();
+ *    return this;
+ *   }
+ * </pre>
+ */
 public class ResetEmitter extends Emitter {
   private final List<FieldModel> fields;
   private final RecognizerContext context;

@@ -14,9 +14,12 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.recognizer;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.FieldModel;
 
+/**
+ * Recognizer field transformation that is applied depending on the placement of the item in the output record.
+ */
 public class RecognizerTransformation extends Emitter {
   private final FieldModel fieldModel;
 

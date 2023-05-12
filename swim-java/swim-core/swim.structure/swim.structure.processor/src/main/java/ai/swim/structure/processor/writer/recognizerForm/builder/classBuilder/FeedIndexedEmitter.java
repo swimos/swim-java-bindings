@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.classBuilder;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
@@ -23,6 +23,24 @@ import com.squareup.javapoet.CodeBlock;
 
 import java.util.List;
 
+/**
+ * Emitter for building the recognizer's feedIndexed method body.
+ * <pre>
+ *   {@code
+ *     @Override
+ *     public boolean feedIndexed(int index, ReadEvent event) {
+ *       switch (index) {
+ *         case 0:
+ *             return this.bBuilder.feed(event);
+ *         case 1:
+ *             return this.aBuilder.feed(event);
+ *         default:
+ *             throw new RuntimeException("Unknown idx: " + index);
+ *       }
+ *     }
+ *   }
+ * </pre>
+ */
 public class FeedIndexedEmitter extends Emitter {
   private final PartitionedFields fields;
   private final RecognizerContext context;

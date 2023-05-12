@@ -14,13 +14,26 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.classBuilder;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerNameFormatter;
 import com.squareup.javapoet.CodeBlock;
 
+/**
+ * Emitter for building the recognizer's reset method:
+ * <pre>
+ *   {@code
+ *     @Override
+ *     public RecognizingBuilder<ProcessorTest.OptionalFieldClass> reset() {
+ *       this.bBuilder = this.bBuilder.reset();
+ *       this.aBuilder = this.aBuilder.reset();
+ *       return this;
+ *     }
+ *   }
+ * </pre>
+ */
 public class ResetEmitter extends Emitter {
   private final PartitionedFields fields;
   private final RecognizerContext context;

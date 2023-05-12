@@ -34,6 +34,12 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+/**
+ * Annotation processor for deriving recognizer and writable implementations for type elements annotated with
+ * {@link AutoForm}.
+ * <p>
+ * See README.md in the project's directory for a detailed design document on its control flow.
+ */
 @AutoService(Processor.class)
 public class FormProcessor extends AbstractProcessor {
   private ModelInspector models;

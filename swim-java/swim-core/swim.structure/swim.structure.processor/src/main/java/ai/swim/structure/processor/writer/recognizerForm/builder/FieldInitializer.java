@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import ai.swim.structure.processor.writer.recognizerForm.recognizer.RecognizerTransformation;
@@ -22,6 +22,12 @@ import com.squareup.javapoet.CodeBlock;
 
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.FIELD_RECOGNIZING_BUILDER_CLASS;
 
+/**
+ * Recognizer field initializer and emitter.
+ * <p>
+ * Depending on whether the context is scoped to a constructor and depending on the resolved model, this will either
+ * emit a field that is directly initialized or initialize the model with the type parameters.
+ */
 public class FieldInitializer extends Emitter {
   private final FieldModel fieldModel;
   private final boolean inConstructor;

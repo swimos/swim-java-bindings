@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.classBuilder;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
@@ -28,6 +28,24 @@ import java.util.List;
 
 import static ai.swim.structure.processor.writer.recognizerForm.builder.BuilderWriter.typeParametersToVariables;
 
+/**
+ * Recognizer bind method emitter.
+ * <p>
+ * Builds a bind block like:
+ * <pre>
+ * {@code
+ *     @Override
+ *     public OptionalFieldClass bind() {
+ *       OptionalFieldClass obj = new OptionalFieldClass();
+ *
+ *       obj.b = this.bBuilder.bind();
+ *       obj.setA(this.aBuilder.bindOr(0));
+ *
+ *       return obj;
+ *     }
+ * }
+ * </pre>
+ */
 public class BindEmitter extends Emitter {
   private final ClassLikeModel model;
   private final PartitionedFields fields;
@@ -39,12 +57,12 @@ public class BindEmitter extends Emitter {
     this.context = context;
   }
 
-
   @Override
   public String toString() {
     CodeBlock.Builder body = CodeBlock.builder();
     RecognizerNameFormatter formatter = context.getFormatter();
     TypeMirror ty = context.getRoot().asType();
+    // Instantiate the target class
     body.add("$T obj = new $T();\n\n", ty, ty);
 
     for (FieldDiscriminate fieldDiscriminate : fields.discriminate()) {

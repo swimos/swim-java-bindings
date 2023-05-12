@@ -2,7 +2,7 @@ package ai.swim.structure.processor.writer.writerForm;
 
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.InterfaceModel;
-import ai.swim.structure.processor.schema.AbstractSchema;
+import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.Writer;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
@@ -29,7 +29,7 @@ public class WriterFormWriter implements Writer {
     if (model.isAbstract()) {
       typeSpec = new AbstractClassWriter(model.getElement(), context, model.getSubTypes()).build();
     } else {
-      typeSpec = new ConcreteClassWriter(model.getElement(), context, AbstractSchema.forClass(model)).build();
+      typeSpec = new ConcreteClassWriter(model.getElement(), context, model, PartitionedFields.buildFrom(model.getFields())).build();
     }
 
     writeTypeSpec(typeSpec, model.getDeclaredPackage());

@@ -15,9 +15,9 @@
 package ai.swim.structure.processor.writer.writerForm;
 
 import ai.swim.structure.annotations.AutoForm;
+import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.model.InitializedType;
-import ai.swim.structure.processor.schema.AbstractSchema;
 import ai.swim.structure.processor.schema.HeaderSet;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import com.squareup.javapoet.*;
@@ -37,11 +37,13 @@ import static ai.swim.structure.processor.writer.writerForm.Lookups.*;
 
 public class ConcreteClassWriter extends ClassWriter {
 
-  private final AbstractSchema classSchema;
+  private final ClassLikeModel model;
+  private final PartitionedFields fields;
 
-  public ConcreteClassWriter(TypeElement root, WriterContext context, AbstractSchema classSchema) {
+  public ConcreteClassWriter(TypeElement root, WriterContext context, ClassLikeModel model, PartitionedFields fields) {
     super(root, context);
-    this.classSchema = classSchema;
+    this.model = model;
+    this.fields = fields;
   }
 
   @Override
@@ -53,7 +55,7 @@ public class ConcreteClassWriter extends ClassWriter {
 
     List<FieldSpec> fields = new ArrayList<>();
 
-    for (FieldModel fieldModel : classSchema.getFields()) {
+    for (FieldModel fieldModel : model.getFields()) {
       String writableName = context.getFormatter().writableName(fieldModel.propertyName());
 
       if (fieldModel.getModel().isUnresolved()) {
@@ -92,12 +94,12 @@ public class ConcreteClassWriter extends ClassWriter {
 
     CodeBlock.Builder body = CodeBlock.builder();
 
-    if (!classSchema.getPartitionedFields().body.isReplaced()) {
+    if (!fields.body.isReplaced()) {
       body.add("int __numSlots = 0;\n");
     }
 
     // unpack the object and for any fields that are not null and require a runtime lookup, look them up and store them.
-    for (FieldModel fieldModel : classSchema.getFields()) {
+    for (FieldModel fieldModel : model.getFields()) {
       if (fieldModel.isIgnored()) {
         continue;
       }
@@ -121,7 +123,7 @@ public class ConcreteClassWriter extends ClassWriter {
       if (!rawType.getKind().isPrimitive()) {
         body.beginControlFlow("if ($L != null)", fieldName);
 
-        if (!classSchema.getPartitionedFields().body.isReplaced()) {
+        if (!fields.body.isReplaced()) {
           body.addStatement("__numSlots += 1");
         }
 
@@ -145,15 +147,14 @@ public class ConcreteClassWriter extends ClassWriter {
   }
 
   private CodeBlock writeAttrs() {
-    PartitionedFields partitionedFields = classSchema.getPartitionedFields();
-    HeaderSet headerSet = partitionedFields.headerSet;
+    HeaderSet headerSet = fields.headerSet;
     CodeBlock.Builder body = CodeBlock.builder();
 
-    if (classSchema.isEnum()) {
+    if (model.isEnum()) {
       body.addStatement("String __tag");
       body.beginControlFlow("switch (from)");
 
-      Element root = classSchema.getRoot();
+      Element root = model.getElement();
       for (Element enclosedElement : root.getEnclosedElements()) {
         if (enclosedElement.getKind().equals(ElementKind.ENUM_CONSTANT)) {
           String tagString = enclosedElement.toString();
@@ -177,7 +178,7 @@ public class ConcreteClassWriter extends ClassWriter {
               .add("$<$<")
               .endControlFlow();
     } else {
-      body.addStatement("String __tag = \"$L\"", classSchema.getTag());
+      body.addStatement("String __tag = \"$L\"", model.getTag());
     }
 
     if (headerSet.headerFields.isEmpty()) {
@@ -205,13 +206,12 @@ public class ConcreteClassWriter extends ClassWriter {
   }
 
   private CodeBlock writeSlots() {
-    PartitionedFields partitionedFields = classSchema.getPartitionedFields();
     Elements elementUtils = context.getElementUtils();
 
     CodeBlock.Builder body = CodeBlock.builder();
 
-    if (partitionedFields.body.isReplaced()) {
-      FieldModel formBody = partitionedFields.body.getFields().get(0);
+    if (fields.body.isReplaced()) {
+      FieldModel formBody = fields.body.getFields().get(0);
       CodeBlock.Builder getter = CodeBlock.builder();
       formBody.getAccessor().writeGet(getter, "from");
       String writableName = context.getFormatter().writableName(formBody.propertyName());
@@ -225,7 +225,7 @@ public class ConcreteClassWriter extends ClassWriter {
 
       bodyStatements.add("\r\n$T __bodyWriter = __recWriter.completeHeader(__numSlots);\n\r", bodyWriter);
 
-      for (FieldModel bodyField : partitionedFields.body.getFields()) {
+      for (FieldModel bodyField : fields.body.getFields()) {
 
         boolean isRuntimeLookup = bodyField.getModel().isUnresolved();
         String fieldName = bodyField.propertyName();
@@ -259,9 +259,8 @@ public class ConcreteClassWriter extends ClassWriter {
     Elements elementUtils = context.getElementUtils();
 
     TypeElement noSlots = elementUtils.getTypeElement(HEADER_NO_SLOTS);
-    PartitionedFields partitionedFields = classSchema.getPartitionedFields();
-    List<FieldModel> headerFields = partitionedFields.headerSet.headerFields;
-    FieldModel tagBody = partitionedFields.headerSet.tagBody;
+    List<FieldModel> headerFields = fields.headerSet.headerFields;
+    FieldModel tagBody = fields.headerSet.tagBody;
 
     CodeBlock.Builder headerBlock = CodeBlock.builder();
     headerBlock.add("$L", noSlots);
@@ -300,7 +299,7 @@ public class ConcreteClassWriter extends ClassWriter {
     ParameterizedTypeName headerWriter = ParameterizedTypeName.get(ClassName.get(rawHeaderWriter), writerType);
 
     return buildInit()
-            .addStatement("int __numAttrs = $L", classSchema.getPartitionedFields().headerSet.attributes.size())
+            .addStatement("int __numAttrs = $L", fields.headerSet.attributes.size())
             .addStatement("$T __recWriter = structuralWriter.record(__numAttrs)", headerWriter)
             .add(writeAttrs())
             .add(writeSlots())

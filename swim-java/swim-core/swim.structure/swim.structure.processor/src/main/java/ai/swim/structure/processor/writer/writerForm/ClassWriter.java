@@ -26,6 +26,9 @@ import javax.lang.model.util.Types;
 
 import static ai.swim.structure.processor.writer.writerForm.Lookups.*;
 
+/**
+ * Abstract class writer for shared functionality between concrete and abstract class writables.
+ */
 public abstract class ClassWriter {
   protected static final TypeVariableName writerType = TypeVariableName.get("__Writable_Ty__");
   protected final WriterContext context;
@@ -36,6 +39,9 @@ public abstract class ClassWriter {
     this.context = context;
   }
 
+  /**
+   * Builds this class writer specification into a {@link TypeSpec}.
+   */
   public TypeSpec build() {
     Elements elementUtils = context.getElementUtils();
     Types typeUtils = context.getTypeUtils();
@@ -80,8 +86,14 @@ public abstract class ClassWriter {
     return builder.addCode(writeIntoBody()).build();
   }
 
+  /**
+   * Returns an iterable over the fields that this writable should contain.
+   */
   public abstract Iterable<FieldSpec> getFields();
 
+  /**
+   * Returns a code block for the body of the write into method.
+   */
   public abstract CodeBlock writeIntoBody();
 
 }

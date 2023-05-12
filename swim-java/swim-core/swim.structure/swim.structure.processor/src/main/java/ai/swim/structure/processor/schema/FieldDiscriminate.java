@@ -4,6 +4,9 @@ import ai.swim.structure.processor.model.FieldModel;
 
 import java.util.List;
 
+/**
+ * A field discrimination for its placement in a record.
+ */
 public abstract class FieldDiscriminate {
 
   public static FieldDiscriminate tag(FieldModel field) {
@@ -46,18 +49,30 @@ public abstract class FieldDiscriminate {
     };
   }
 
+  /**
+   * Returns whether this field contains the tag.
+   */
   public boolean isTag() {
     return false;
   }
 
+  /**
+   * Returns whether this field is in the header of the record.
+   */
   public boolean isHeader() {
     return false;
   }
 
+  /**
+   * Returns whether this field is in the body of the record.
+   */
   public boolean isBody() {
     return false;
   }
 
+  /**
+   * Returns the value of this discriminate if this field is a tag, attribute, item or delegate body.
+   */
   public FieldModel getSingleField() {
     throw new UnsupportedOperationException();
   }

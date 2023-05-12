@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.header;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
@@ -39,6 +39,10 @@ import java.util.stream.Collectors;
 
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.FIELD_RECOGNIZING_BUILDER_CLASS;
 
+/**
+ * Header builder and recognizer for classes that have fields promoted to headers. This emits a nested class for the
+ * parent recognizer.
+ */
 public class HeaderBuilder extends Builder {
   private final List<TypeVariableName> typeParameters;
 

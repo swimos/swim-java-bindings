@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.header;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerNameFormatter;
@@ -27,6 +27,24 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Recognizer header builder bind method emitter.
+ * <p>
+ * Builds a bind block like:
+ * <pre>
+ * {@code
+ *     @Override
+ *     public OptionalFieldClass bind() {
+ *       OptionalFieldClass obj = new OptionalFieldClass();
+ *
+ *       obj.b = this.bBuilder.bind();
+ *       obj.setA(this.aBuilder.bindOr(0));
+ *
+ *       return obj;
+ *     }
+ * }
+ * </pre>
+ */
 public class BindEmitter extends Emitter {
   private final List<FieldModel> fields;
   private final RecognizerContext context;

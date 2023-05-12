@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.schema.PartitionedFields;
@@ -35,12 +35,29 @@ import java.util.List;
 
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.*;
 
+/**
+ * Recognizer builder shared functionality for use between class and header builders.
+ */
 public abstract class Builder {
-
+  /**
+   * The model that is being built.
+   */
   protected final ClassLikeModel model;
+  /**
+   * Discriminated Recon fields.
+   */
   protected final PartitionedFields partitionedFields;
+  /**
+   * Recognizer context scoped to the root processing element.
+   */
   protected final RecognizerContext context;
+  /**
+   * The name of the target class.
+   */
   protected TypeName target;
+  /**
+   * The fields that will be used by the recognizer.
+   */
   protected List<FieldModel> fields;
 
   public Builder(ClassLikeModel model, PartitionedFields partitionedFields, RecognizerContext context) {
@@ -49,6 +66,12 @@ public abstract class Builder {
     this.context = context;
   }
 
+  /**
+   * Builds and returns a {@code TypeSpec} for this Recognizer.
+   *
+   * @param ty the name of the class.
+   * @return an initialized type spec for this recognizer.
+   */
   public TypeSpec build(TypeName ty) {
     this.target = ty;
     this.fields = getFields();
@@ -62,6 +85,9 @@ public abstract class Builder {
     return builder.build();
   }
 
+  /**
+   * Transpose the fields into {@link FieldSpec}s.
+   */
   protected List<FieldSpec> buildFields() {
     List<FieldSpec> fieldSpecs = new ArrayList<>(fields.size());
     Elements elementUtils = context.getElementUtils();
@@ -80,14 +106,23 @@ public abstract class Builder {
     return fieldSpecs;
   }
 
+  /**
+   * Transpose the methods into {@link MethodSpec}s.
+   */
   private List<MethodSpec> buildMethods() {
     List<MethodSpec> methods = buildConstructors();
     methods.addAll(List.of(buildFeedIndexed(), buildBind(), buildReset()));
     return methods;
   }
 
+  /**
+   * Build the constructors required for this builder.
+   */
   protected abstract List<MethodSpec> buildConstructors();
 
+  /**
+   * Build the recognizer's reset method.
+   */
   private MethodSpec buildReset() {
     MethodSpec.Builder builder = MethodSpec.methodBuilder(RECOGNIZING_BUILDER_RESET)
             .addModifiers(Modifier.PUBLIC)
@@ -98,8 +133,14 @@ public abstract class Builder {
     return builder.build();
   }
 
+  /**
+   * Build the recognizer's bind method.
+   */
   protected abstract MethodSpec buildBind();
 
+  /**
+   * Build the recognizer's reset method.
+   */
   private MethodSpec buildFeedIndexed() {
     Elements elementUtils = context.getElementUtils();
     TypeElement readEventType = elementUtils.getTypeElement(TYPE_READ_EVENT);
@@ -115,11 +156,23 @@ public abstract class Builder {
     return builder.build();
   }
 
+  /**
+   * Initialize the builder.
+   */
   protected abstract TypeSpec.Builder init();
 
+  /**
+   * Build the recognizer's feed index method body.
+   */
   protected abstract Emitter buildFeedIndexedBlock();
 
+  /**
+   * Build the recognizer's reset method body.
+   */
   protected abstract Emitter buildResetBlock();
 
+  /**
+   * Returns the fields that this builder expects.
+   */
   protected abstract List<FieldModel> getFields();
 }

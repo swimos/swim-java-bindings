@@ -28,12 +28,21 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.List;
 
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.POLYMORPHIC_RECOGNIZER;
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.RECOGNIZER_CLASS;
 
+/**
+ * Abstract class recognizer builder.
+ */
 public class PolymorphicRecognizer {
 
-  public static final String POLYMORPHIC_RECOGNIZER = "ai.swim.structure.recognizer.structural.PolymorphicRecognizer";
-
+  /**
+   * Builds an abstract class recognizer for the provided subtypes.
+   *
+   * @param context  recognizer scoped context to the root processing element.
+   * @param subTypes that this recognizer can deserialize into.
+   * @return a builder for this recognizer.
+   */
   public static TypeSpec.Builder buildPolymorphicRecognizer(RecognizerContext context, List<Model> subTypes) {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();

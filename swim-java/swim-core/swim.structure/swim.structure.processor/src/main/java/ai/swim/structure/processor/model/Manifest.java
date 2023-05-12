@@ -16,10 +16,18 @@ package ai.swim.structure.processor.model;
 
 import ai.swim.structure.annotations.FieldKind;
 
+/**
+ * Recon field manifest validation class.
+ */
 public class Manifest {
   boolean hasHeaderBody;
   boolean hasBody;
 
+  /**
+   * Validates {@code kind} against the current manifest.
+   *
+   * @throws InvalidModelException if pushing {@code kind} violates the manifest.
+   */
   public void validate(FieldKind kind) {
     switch (kind) {
       case Body:

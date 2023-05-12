@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Description of how the fields of a type are written into a record.
+ */
 public class PartitionedFields {
   public final HeaderSet headerSet;
   public final Body body;
@@ -15,6 +18,9 @@ public class PartitionedFields {
     this.body = body;
   }
 
+  /**
+   * Partitions {@code fields} according to their field kind.
+   */
   public static PartitionedFields buildFrom(List<FieldModel> fields) {
     HeaderSet headerSet = new HeaderSet();
     Body body = new Body();
@@ -49,14 +55,25 @@ public class PartitionedFields {
     return new PartitionedFields(headerSet, body);
   }
 
+  /**
+   * Returns the total number of header and body fields.
+   */
   public int count() {
     return headerSet.count() + body.count();
   }
 
+  /**
+   * Returns whether there are any header fields.
+   */
   public boolean hasHeaderFields() {
     return !this.headerSet.headerFields.isEmpty() || this.headerSet.hasTagBody();
   }
 
+  /**
+   * Discriminates against all of the fields by their type; tag, header, attribute, item or body.
+   *
+   * @return
+   */
   public List<FieldDiscriminate> discriminate() {
     List<FieldDiscriminate> discriminates = new ArrayList<>();
 
@@ -90,6 +107,9 @@ public class PartitionedFields {
             '}';
   }
 
+  /**
+   * Returns whether {@code model} is a header.
+   */
   public boolean isHeader(FieldModel model) {
     return headerSet.isHeader(model);
   }

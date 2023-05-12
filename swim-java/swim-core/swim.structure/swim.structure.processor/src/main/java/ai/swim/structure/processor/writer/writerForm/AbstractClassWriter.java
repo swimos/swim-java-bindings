@@ -32,6 +32,12 @@ import java.util.stream.Collectors;
 
 import static ai.swim.structure.processor.writer.writerForm.Lookups.WRITER_EXCEPTION;
 
+/**
+ * Class for emitting writable implementations for abstract classes.
+ * <p>
+ * The emitted class will contain an uninitialized field for each subclass that it *may* serialize at some point. Once
+ * a matched subclass is encountered, it will resolve the writable for that subclass and store it for use in the future.
+ */
 public class AbstractClassWriter extends ClassWriter {
   private final HashMap<String, String> subtypeWritableLut;
   private final List<Model> subTypes;
@@ -42,6 +48,9 @@ public class AbstractClassWriter extends ClassWriter {
     this.subtypeWritableLut = mapSubTypes(context.getFormatter(), subTypes);
   }
 
+  /**
+   * Maps class subtype names to a name without type parameters. Such as {@code ValueClass<T> -> ValueClass}.
+   */
   private static HashMap<String, String> mapSubTypes(WriterNameFormatter formatter, List<Model> subTypes) {
     HashMap<String, String> lut = new HashMap<>(subTypes.size());
 
@@ -53,7 +62,6 @@ public class AbstractClassWriter extends ClassWriter {
       end = end == -1 ? tyString.length() : end;
 
       String tyName = tyString.substring(start, end);
-
       lut.put(type.toString(), formatter.writableName(tyName));
     }
 

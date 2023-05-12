@@ -8,6 +8,10 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 
+/**
+ * A primitive library model representing either a Character, Byte, Short, Integer, Long, Float, Double, Boolean,
+ * String, Number, BigInteger or BigDecimal.
+ */
 public class PrimitiveLibraryModel extends Model {
   private final CoreTypeKind coreTypeKind;
 

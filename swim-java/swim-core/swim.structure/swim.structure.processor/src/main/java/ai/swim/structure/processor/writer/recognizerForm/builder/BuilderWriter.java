@@ -40,6 +40,15 @@ import static ai.swim.structure.processor.writer.WriterUtils.typeParametersToTyp
 
 public class BuilderWriter {
 
+  /**
+   * Writes a class and header builder - if the class contains header - to the class specification builder.
+   *
+   * @param parentSpec    to write both the class and header builder into.
+   * @param model         that is being processed.
+   * @param fields        discriminated fields.
+   * @param context       recognizer context scoped to the root processing element.
+   * @param transposition to apply to the builder.
+   */
   public static void write(TypeSpec.Builder parentSpec, ClassLikeModel model, PartitionedFields fields, RecognizerContext context, Recognizer.Transposition transposition) {
     Elements elementUtils = context.getElementUtils();
     RecognizerNameFormatter formatter = context.getFormatter();

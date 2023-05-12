@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.header;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.schema.HeaderSet;
 import ai.swim.structure.processor.schema.PartitionedFields;
@@ -27,6 +27,27 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 
+/**
+ * Header index method functional interface emitter:
+ *
+ * <pre>
+ *   {@code
+ *       if (key.isHeaderBody()) {
+ *         return 0;
+ *       }
+ *       if (key.isHeaderSlot()) {
+ *         HeaderSlotKey headerSlotKey = (HeaderSlotKey) key;
+ *         switch (headerSlotKey.getName()) {
+ *           case "value":
+ *           	 return 1;
+ *           default:	throw new RuntimeException("Unexpected key: " + key);
+ *         }
+ *       }
+ *       return null;
+ *       });
+ *   }
+ * </pre>
+ */
 public class HeaderIndexFn extends Emitter {
   private final PartitionedFields fields;
   private final RecognizerContext context;

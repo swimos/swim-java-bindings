@@ -14,7 +14,6 @@
 
 package ai.swim.structure.processor.model;
 
-import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.writer.Writer;
 
 import javax.lang.model.element.PackageElement;
@@ -22,18 +21,14 @@ import javax.lang.model.element.TypeElement;
 import java.io.IOException;
 import java.util.ArrayList;
 
+/**
+ * An interface model.
+ */
 public class InterfaceModel extends StructuralModel {
-  private final TypeElement root;
 
   public InterfaceModel(TypeElement root, PackageElement declaredPackage) {
     super(root.asType(), root, declaredPackage);
-    this.root = root;
     this.subTypes = new ArrayList<>();
-  }
-
-  @Override
-  public TypeElement getElement() {
-    return root;
   }
 
   @Override
@@ -46,24 +41,10 @@ public class InterfaceModel extends StructuralModel {
     return initializer.declared(this, inConstructor);
   }
 
-  public String getJavaClassName() {
-    return this.root.getSimpleName().toString();
-  }
-
-  public String getTag() {
-    AutoForm.Tag tag = this.root.getAnnotation(AutoForm.Tag.class);
-
-    if (tag == null || tag.value().isBlank()) {
-      return getJavaClassName();
-    } else {
-      return tag.value();
-    }
-  }
-
   @Override
   public String toString() {
     return "InterfaceModel{" +
-            "root=" + root +
+            "root=" + getElement() +
             ", subTypes=" + subTypes +
             ", declaredPackage=" + getDeclaredPackage() +
             ", type=" + type +

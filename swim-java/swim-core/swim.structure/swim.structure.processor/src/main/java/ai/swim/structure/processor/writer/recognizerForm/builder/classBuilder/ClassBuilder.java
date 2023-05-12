@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.classBuilder;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
@@ -44,6 +44,9 @@ import static ai.swim.structure.processor.writer.WriterUtils.typeParametersToTyp
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.RECOGNIZING_BUILDER_CLASS;
 import static ai.swim.structure.processor.writer.recognizerForm.RecognizerFormWriter.writeGenericRecognizerConstructor;
 
+/**
+ * Recognizer class builder.
+ */
 public class ClassBuilder extends Builder {
 
   private final Recognizer.Transposition transposition;
@@ -85,6 +88,22 @@ public class ClassBuilder extends Builder {
       HashSet<TypeMirror> headerTypeParameters = partitionedFields.headerSet.typeParameters();
       String typeParameters = headerTypeParameters.stream().map(ty -> formatter.typeParameterName(ty.toString())).collect(Collectors.joining(", "));
 
+      /*
+       Build header builder. E.g:
+
+       this.headerBuilder = headerBuilder(false, () -> new OuterBodyHeaderBuilder(), 1, (key) -> {
+         if (key.isHeaderSlot()) {
+           HeaderSlotKey headerSlotKey = (HeaderSlotKey) key;
+           switch (headerSlotKey.getName()) {
+             case "var":
+               return 0;
+             default:	throw new RuntimeException("Unexpected key: " + key);
+           }
+         }
+         return null;
+       });
+      */
+
       body.add(CodeBlock.of(
               "this.$L = $L($L, () -> new $L($L), $L, $L);",
               formatter.headerBuilderFieldName(),
@@ -107,9 +126,18 @@ public class ClassBuilder extends Builder {
     return transposition.builderBind(context);
   }
 
+  /**
+   * Initialise a parameterized field from its constructor argument.
+   * <pre>
+   *   {@code
+   *   @AutoForm.TypedConstructor
+   *   public GenericArrayClassRecognizer(RecognizerTypeParameter<N> nType) {
+   *     this(new GenericArrayClassBuilder<>(requireNonNullElse(nType, RecognizerTypeParameter.<N>untyped())));
+   *   }
+   * </pre>
+   */
   private CodeBlock initialiseTypeVarField(RecognizerContext context, FieldModel fieldModel) {
     String fieldBuilderName = context.getFormatter().fieldBuilderName(fieldModel.getName().toString());
-
     return CodeBlock.builder().addStatement("this.$L = $L", fieldBuilderName, new TypeVarFieldInitializer(context, fieldModel)).build();
   }
 

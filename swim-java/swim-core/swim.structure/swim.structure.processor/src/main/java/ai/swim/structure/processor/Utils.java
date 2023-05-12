@@ -13,6 +13,18 @@ import java.util.function.Predicate;
 
 public class Utils {
 
+  /**
+   * Searches for an accessor (getter or setter) in a provided list of methods that matches either a predicate test or
+   * that the method's name is prefixed by 'prefix' and suffixed by 'name', while ignoring casing.
+   *
+   * @param methods    to search through.
+   * @param prefix     that the method name must start by.
+   * @param name       that the method name must end by.
+   * @param annotation that the method may be annotated with. This annotation is passed to the predicate to test.
+   * @param predicate  to test for method name validation.
+   * @param <A>        the type of the annotation.
+   * @return a matching method or null if one was not found.
+   */
   public static <A extends Annotation> ExecutableElement accessorFor(List<ExecutableElement> methods, String prefix, Name name, Class<A> annotation, Predicate<A> predicate) {
     for (ExecutableElement method : methods) {
       String methodName = method.getSimpleName().toString().toLowerCase();
@@ -34,6 +46,15 @@ public class Utils {
     return null;
   }
 
+  /**
+   * Asserts whether a {@link TypeMirror} is a subtype of a class.
+   *
+   * @param processingEnvironment the current processing environment.
+   * @param mirror                to check against {@code target}.
+   * @param target                to check against {@code mirror}.
+   * @param <T>                   the type of the class.
+   * @return whether {@code mirror} is a subtype of {@code target}.
+   */
   public static <T> boolean isSubType(ProcessingEnvironment processingEnvironment, TypeMirror mirror, Class<T> target) {
     if (mirror.getKind() == TypeKind.DECLARED) {
       Elements elementUtils = processingEnvironment.getElementUtils();
@@ -55,6 +76,12 @@ public class Utils {
     }
   }
 
+  /**
+   * Searches in {@code rootElement} for a root-level, public, zero-arg constructor.
+   *
+   * @param rootElement to search within.
+   * @return a matching constructor or null if one was not found.
+   */
   public static ExecutableElement getNoArgConstructor(Element rootElement) {
     for (Element element : rootElement.getEnclosedElements()) {
       ElementKind elementKind = element.getKind();

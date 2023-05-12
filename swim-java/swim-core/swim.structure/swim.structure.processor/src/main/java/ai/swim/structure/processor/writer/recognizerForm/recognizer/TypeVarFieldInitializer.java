@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.recognizer;
 
-import ai.swim.structure.processor.Emitter;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import com.squareup.javapoet.CodeBlock;
@@ -26,6 +26,11 @@ import javax.lang.model.util.Types;
 
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.FIELD_RECOGNIZING_BUILDER_CLASS;
 
+/**
+ * Generic type variable field initializer and emitter.
+ * <p>
+ * This is used to initialize a field that accepts a type parameter for its recognizer.
+ */
 public class TypeVarFieldInitializer extends Emitter {
   private final FieldModel fieldModel;
   private final RecognizerContext context;

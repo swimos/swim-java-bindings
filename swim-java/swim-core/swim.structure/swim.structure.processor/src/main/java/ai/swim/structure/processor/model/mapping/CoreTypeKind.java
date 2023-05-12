@@ -1,5 +1,8 @@
 package ai.swim.structure.processor.model.mapping;
 
+/**
+ * A core type kind.
+ */
 public enum CoreTypeKind {
   Character(java.lang.Character.class),
   Byte(java.lang.Byte.class),
@@ -20,6 +23,9 @@ public enum CoreTypeKind {
     this.clazz = clazz;
   }
 
+  /**
+   * Returns a String representation of the package name of this core type kind.
+   */
   public String getPackageName() {
     return clazz.getPackageName();
   }
