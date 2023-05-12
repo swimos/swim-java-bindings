@@ -1,10 +1,10 @@
-// Copyright 2015-2022 Swim Inc.
+// Copyright 2015-2021 Swim Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,24 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.structure.value.num;
+package ai.swim.recon.models.state;
 
-import ai.swim.structure.writer.PrimitiveWriter;
+import ai.swim.recon.models.ParseState;
 
 import java.util.Objects;
 
-public class NumberI32 extends NumberValue {
-  private final int value;
+public class ParseEvent extends Action {
 
-  public NumberI32(int value) {
-    this.value = value;
-  }
+  private final ParseState state;
 
-  @Override
-  public String toString() {
-    return "NumberI32{" +
-            "value=" + value +
-            '}';
+  public ParseEvent(ParseState state) {
+    this.state = state;
   }
 
   @Override
@@ -40,17 +34,28 @@ public class NumberI32 extends NumberValue {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NumberI32 numberI32 = (NumberI32) o;
-    return value == numberI32.value;
+    ParseEvent that = (ParseEvent) o;
+    return state == that.state;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(value);
+    return Objects.hash(state);
+  }
+
+  public ParseState getState() {
+    return state;
   }
 
   @Override
-  protected <T> T writePrimitive(PrimitiveWriter<T> writer) {
-    return writer.writeInt(value);
+  public boolean isParseEvent() {
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "ChangeState{" +
+            "state=" + state +
+            '}';
   }
 }

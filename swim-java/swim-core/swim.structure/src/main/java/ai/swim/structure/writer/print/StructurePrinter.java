@@ -30,6 +30,7 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
   private boolean braceWritten;
   private boolean singleItem;
   private boolean first;
+  private AttributePrinter attributePrinter;
 
   public StructurePrinter(java.io.Writer writer, PrintStrategy printStrategy) {
     this.writer = new SuppressingWriter(writer);
@@ -38,6 +39,7 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
     this.braceWritten = false;
     this.singleItem = false;
     this.first = true;
+    this.attributePrinter=     new AttributePrinter(this.writer, printStrategy);
   }
 
   public static StructurePrinter stdOut(PrintStrategy printStrategy) {
@@ -114,8 +116,6 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
   @Override
   public <V> HeaderWriter<String> writeAttr(String key, Writable<V> valueWriter, V value) {
     writeExtantAttr(key);
-
-    AttributePrinter attributePrinter = new AttributePrinter(writer, printStrategy);
     valueWriter.writeInto(value, attributePrinter);
 
     return this;
@@ -124,7 +124,7 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
   @Override
   public HeaderWriter<String> writeAttr(String key, WritableHeader writable) {
     writeExtantAttr(key);
-    writable.writeInto(new AttributePrinter(writer, printStrategy));
+    writable.writeInto(attributePrinter);
 
     return this;
   }

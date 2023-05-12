@@ -16,7 +16,7 @@ package ai.swim.recon.models.state;
 
 import java.util.Objects;
 
-public class PushAttrNewRec extends StateChange {
+public class PushAttrNewRec extends Action {
 
   private final boolean hasBody;
 

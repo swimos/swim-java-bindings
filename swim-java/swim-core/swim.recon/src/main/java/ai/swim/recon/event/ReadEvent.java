@@ -17,7 +17,7 @@ package ai.swim.recon.event;
 import ai.swim.codec.parsers.number.TypedNumber;
 import ai.swim.recon.event.number.*;
 import ai.swim.recon.models.ParserTransition;
-import ai.swim.recon.models.state.StateChange;
+import ai.swim.recon.models.state.Action;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -168,7 +168,7 @@ public abstract class ReadEvent {
   }
 
   public ParserTransition transition() {
-    return new ParserTransition(this, StateChange.none());
+    return new ParserTransition(this, Action.none());
   }
 
   @Override
