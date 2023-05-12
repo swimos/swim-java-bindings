@@ -194,12 +194,17 @@ public abstract class KnownTypeModel extends Model {
   }
 
   /**
-   * Unpacks
-   * @param environment
-   * @param element
-   * @param inspector
-   * @param typeMirror
-   * @return
+   * Resolves a type parameter. If {@code typeMirror} is a declared type, then model resolution is attempted on it, if it
+   * is a type variable then an {@link UntypedModel} is returned, if it is a wildcard type then it's bounds are removed
+   * and a new {@link TypeMirror} is built. I.e, if the {@link TypeMirror} represents {@code List<? super Map<Integer, String}
+   * then a new type is built for {@code List<Map<Integer, String>>}.
+   *
+   * @param environment the current processing environment.
+   * @param element     being processed.
+   * @param inspector   for resolving the component types.
+   * @param typeMirror  to unroll.
+   * @return a resolved model.
+   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
    */
   private static UnrolledType unrollType(ProcessingEnvironment environment, Element element, ModelInspector inspector, TypeMirror typeMirror) {
     switch (typeMirror.getKind()) {
@@ -216,6 +221,21 @@ public abstract class KnownTypeModel extends Model {
     }
   }
 
+  /**
+   * Removes either an upper or lower bound from a wildcard type if it contains any and returns a {@link UnrolledType}
+   * containing a new {@link TypeMirror} for the type and a resolved {@link Model} .
+   * <p>
+   * I.e, if the {@link TypeMirror} represents {@code List<? super Map<Integer, String} then a new type is built for
+   * {@code List<Map<Integer, String>>}.
+   *
+   * @param environment the current processing environment.
+   * @param element     being processed.
+   * @param inspector   for resolving the component types.
+   * @param lowerBound  {@link TypeMirror} of the lower bound.
+   * @param upperBound  {@link TypeMirror} of the upper bound.
+   * @return a resolved model.
+   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
+   */
   private static UnrolledType unrollBoundedType(ProcessingEnvironment environment, Element element, ModelInspector inspector, TypeMirror lowerBound, TypeMirror upperBound) {
     TypeMirror bound = lowerBound;
 
@@ -232,7 +252,7 @@ public abstract class KnownTypeModel extends Model {
       PackageElement packageElement = elementUtils.getPackageElement(Object.class.getCanonicalName());
       return new UnrolledType(objectTypeElement.asType(), new UntypedModel(objectTypeElement.asType(), element, packageElement));
     } else {
-      // we need to retype the model here so that the new, unrolled, type is shifted up a level. I.e, if the type that
+      // We need to retype the model here so that the new, unrolled, type is shifted up a level. I.e, if the type that
       // we're unrolling is List<? extends Number> then the new model is List<Number> and that is now the element's
       // type; this will then be propagated up to the callee when they retype the field itself.
       return unrollType(environment, element, inspector, bound);
@@ -244,11 +264,14 @@ public abstract class KnownTypeModel extends Model {
     return true;
   }
 
+  /**
+   * Returns the type that this known type model references.
+   */
   public TypeMapping getTypeMapping() {
     return typeMapping;
   }
 
-  public static class UnrolledType {
+  private static class UnrolledType {
     public final TypeMirror typeMirror;
     public final Model model;
 
