@@ -194,7 +194,7 @@ public abstract class KnownTypeModel extends Model {
   }
 
   /**
-   * Unpacks 
+   * Unpacks
    * @param environment
    * @param element
    * @param inspector
