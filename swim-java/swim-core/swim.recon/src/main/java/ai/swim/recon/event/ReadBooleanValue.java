@@ -36,8 +36,8 @@ public class ReadBooleanValue extends ReadEvent {
   @Override
   public String toString() {
     return "ReadBooleanValue{" +
-            "value=" + value +
-            '}';
+      "value=" + value +
+      '}';
   }
 
   @Override

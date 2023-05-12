@@ -78,8 +78,8 @@ public class ParserTransition {
   @Override
   public String toString() {
     return "ParserTransition{" +
-        "events=" + events +
-        ", change=" + action +
-        '}';
+      "events=" + events +
+      ", change=" + action +
+      '}';
   }
 }

@@ -29,16 +29,16 @@ class ValueRecognizerTest {
   void simpleValue() {
     Recognizer<Value> recognizer = new ValueRecognizer();
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("attr"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.text("a"),
-            ReadEvent.slot(),
-            ReadEvent.number(1),
-            ReadEvent.text("b"),
-            ReadEvent.slot(),
-            ReadEvent.number(2),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("attr"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.text("a"),
+      ReadEvent.slot(),
+      ReadEvent.number(1),
+      ReadEvent.text("b"),
+      ReadEvent.slot(),
+      ReadEvent.number(2),
+      ReadEvent.endRecord()
     );
 
     for (int i = 0; i < events.size(); i++) {
@@ -48,11 +48,11 @@ class ValueRecognizerTest {
         assertTrue(recognizer.isDone());
 
         Value expected = Value.of(
-                List.of(Value.ofAttr("attr")),
-                List.of(
-                        Item.of(Value.of("a"), Value.of(1)),
-                        Item.of(Value.of("b"), Value.of(2))
-                )
+          List.of(Value.ofAttr("attr")),
+          List.of(
+            Item.of(Value.of("a"), Value.of(1)),
+            Item.of(Value.of("b"), Value.of(2))
+          )
         );
 
         assertEquals(expected, recognizer.bind());
@@ -66,22 +66,22 @@ class ValueRecognizerTest {
   void complexRecord() {
     Recognizer<Value> recognizer = new ValueRecognizer();
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("attr"),
-            ReadEvent.number(1),
-            ReadEvent.number(2),
-            ReadEvent.startBody(),
-            ReadEvent.number(1.1f),
-            ReadEvent.endRecord(),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.text("text"),
-            ReadEvent.startAttribute("nestedAttr"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.number(3),
-            ReadEvent.number(5),
-            ReadEvent.endRecord(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("attr"),
+      ReadEvent.number(1),
+      ReadEvent.number(2),
+      ReadEvent.startBody(),
+      ReadEvent.number(1.1f),
+      ReadEvent.endRecord(),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.text("text"),
+      ReadEvent.startAttribute("nestedAttr"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.number(3),
+      ReadEvent.number(5),
+      ReadEvent.endRecord(),
+      ReadEvent.endRecord()
     );
 
     for (int i = 0; i < events.size(); i++) {
@@ -91,23 +91,23 @@ class ValueRecognizerTest {
         assertTrue(recognizer.isDone());
 
         Value expected = Value.of(
-                List.of(Value.ofAttr("attr", Value.ofItems(
-                        List.of(
-                                Item.of(Value.of(1)),
-                                Item.of(Value.of(2)),
-                                Item.of(Value.ofItems(List.of(Item.of(Value.of(1.1f)))))
-                        )
-                ))),
-                List.of(
-                        Item.of(Value.of("text")),
-                        Item.of(Value.of(
-                                List.of(Value.ofAttr("nestedAttr")),
-                                List.of(
-                                        Item.of(Value.of(3)),
-                                        Item.of(Value.of(5))
-                                )
-                        ))
-                )
+          List.of(Value.ofAttr("attr", Value.ofItems(
+            List.of(
+              Item.of(Value.of(1)),
+              Item.of(Value.of(2)),
+              Item.of(Value.ofItems(List.of(Item.of(Value.of(1.1f)))))
+            )
+          ))),
+          List.of(
+            Item.of(Value.of("text")),
+            Item.of(Value.of(
+              List.of(Value.ofAttr("nestedAttr")),
+              List.of(
+                Item.of(Value.of(3)),
+                Item.of(Value.of(5))
+              )
+            ))
+          )
         );
 
         assertEquals(expected, recognizer.bind());

@@ -86,7 +86,7 @@ public class RecognizerBridge<T> implements StructuralWriter<T>, BodyWriter<T>, 
   }
 
   private T feed(ReadEvent event) {
-    if (depth!=0) {
+    if (depth != 0) {
       feedExpect(event);
       return null;
     } else {
@@ -110,25 +110,25 @@ public class RecognizerBridge<T> implements StructuralWriter<T>, BodyWriter<T>, 
 
   @Override
   public <K, V> BodyWriter<T> writeSlot(Writable<K> keyWriter, K key, Writable<V> valueWriter, V value) {
-    depth+=1;
+    depth += 1;
     keyWriter.writeInto(key, this);
     feedExpect(ReadEvent.slot());
     valueWriter.writeInto(value, this);
-    depth-=1;
+    depth -= 1;
     return this;
   }
 
   @Override
   public <V> BodyWriter<T> writeValue(Writable<V> writer, V value) {
-    depth+=1;
+    depth += 1;
     writer.writeInto(value, this);
-    depth-=1;
+    depth -= 1;
     return this;
   }
 
   @Override
   public T done() {
-    if (depth==0) {
+    if (depth == 0) {
       try {
         return feed(ReadEvent.endRecord());
       } catch (RecognizerException e) {
@@ -152,30 +152,30 @@ public class RecognizerBridge<T> implements StructuralWriter<T>, BodyWriter<T>, 
 
   @Override
   public HeaderWriter<T> writeExtantAttr(String key) {
-    depth+=1;
+    depth += 1;
     feedExpect(ReadEvent.startAttribute(key));
     feedExpect(ReadEvent.endAttribute());
-    depth-=1;
+    depth -= 1;
     return this;
   }
 
   @Override
   public <V> HeaderWriter<T> writeAttr(String key, Writable<V> valueWriter, V value) {
-    depth+=1;
+    depth += 1;
     feedExpect(ReadEvent.startAttribute(key));
     valueWriter.writeInto(value, this);
-    depth-=1;
+    depth -= 1;
     feedExpect(ReadEvent.endAttribute());
     return this;
   }
 
   @Override
   public HeaderWriter<T> writeAttr(String key, WritableHeader writable) {
-    depth+=1;
+    depth += 1;
     feedExpect(ReadEvent.startAttribute(key));
     writable.writeInto(this);
     feedExpect(ReadEvent.endAttribute());
-    depth-=1;
+    depth -= 1;
     return this;
   }
 

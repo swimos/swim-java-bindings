@@ -55,8 +55,8 @@ public class FormParser<T> extends Parser<T> {
   @Override
   public String toString() {
     return "FormParser{" +
-            "recognizer=" + recognizer +
-            ", parser=" + parser +
-            '}';
+      "recognizer=" + recognizer +
+      ", parser=" + parser +
+      '}';
   }
 }

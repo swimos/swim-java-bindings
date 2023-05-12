@@ -113,7 +113,7 @@ public class AbstractClassWriter extends ClassWriter {
     }
 
     body.endControlFlow()
-            .addStatement("throw new $T(\"Unsupported type: \" + from)", writerException);
+      .addStatement("throw new $T(\"Unsupported type: \" + from)", writerException);
 
     return body.build();
   }

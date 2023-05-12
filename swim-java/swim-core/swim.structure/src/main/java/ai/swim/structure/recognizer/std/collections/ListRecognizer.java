@@ -26,8 +26,8 @@ public class ListRecognizer<E> extends CollectionRecognizer<E, List<E>, List<E>>
   @Override
   public Recognizer<List<E>> asAttrRecognizer() {
     return new FirstOf<>(
-            new ListRecognizer<>(this.delegate.reset(), true),
-            new SimpleAttrBodyRecognizer<>(new ListRecognizer<>(this.delegate.reset(), false))
+      new ListRecognizer<>(this.delegate.reset(), true),
+      new SimpleAttrBodyRecognizer<>(new ListRecognizer<>(this.delegate.reset(), false))
     );
   }
 

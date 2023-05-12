@@ -45,8 +45,8 @@ public class WriterFormWriter implements Writer {
 
   private void writeTypeSpec(TypeSpec typeSpec, PackageElement packageElement) throws IOException {
     JavaFile javaFile = JavaFile.builder(packageElement.toString(), typeSpec)
-            .addStaticImport(ClassName.bestGuess(WRITER_PROXY), "getProxy")
-            .build();
+      .addStaticImport(ClassName.bestGuess(WRITER_PROXY), "getProxy")
+      .build();
 
     javaFile.writeTo(environment.getFiler());
   }

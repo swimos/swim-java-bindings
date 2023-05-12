@@ -44,11 +44,11 @@ public class FieldModel {
   @Override
   public String toString() {
     return "FieldModel{" +
-            "accessor=" + accessor +
-            ", model=" + model +
-            ", element=" + element +
-            ", fieldKind=" + fieldKind +
-            '}';
+      "accessor=" + accessor +
+      ", model=" + model +
+      ", element=" + element +
+      ", fieldKind=" + fieldKind +
+      '}';
   }
 
   /**

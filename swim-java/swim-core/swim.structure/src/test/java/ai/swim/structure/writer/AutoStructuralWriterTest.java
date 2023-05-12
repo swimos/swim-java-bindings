@@ -243,24 +243,24 @@ class AutoStructuralWriterTest {
     Writable<EnumForm> writable = proxy.lookup(EnumForm.class);
 
     assertEquals(
-            Value.of("tagA", Item.of(Value.of("fieldA"), Value.of(1)), Item.of(Value.of("b"), Value.of(2))),
-            writable.asValue(EnumForm.A)
+      Value.of("tagA", Item.of(Value.of("fieldA"), Value.of(1)), Item.of(Value.of("b"), Value.of(2))),
+      writable.asValue(EnumForm.A)
     );
     assertEquals(
-            Value.of("B", Item.of(Value.of("fieldA"), Value.of(3)), Item.of(Value.of("b"), Value.of(4))),
-            writable.asValue(EnumForm.B)
+      Value.of("B", Item.of(Value.of("fieldA"), Value.of(3)), Item.of(Value.of("b"), Value.of(4))),
+      writable.asValue(EnumForm.B)
     );
   }
 
   @Test
   void enumPolymorphism() {
     assertEquals(
-            Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
-            proxy.lookup((Class<EnumInterface<String>>) (Class<?>) EnumInterface.class).asValue(ChildEnum.A)
+      Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
+      proxy.lookup((Class<EnumInterface<String>>) (Class<?>) EnumInterface.class).asValue(ChildEnum.A)
     );
     assertEquals(
-            Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
-            proxy.lookup(ChildEnum.class).asValue(ChildEnum.A)
+      Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
+      proxy.lookup(ChildEnum.class).asValue(ChildEnum.A)
     );
   }
 

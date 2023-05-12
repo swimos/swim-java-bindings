@@ -61,74 +61,74 @@ class RecognizerBridgeTest {
   void optFields() {
     Recognizer<Clazz<Integer, Integer>> rec = proxy.lookup((Class<Clazz<Integer, Integer>>) (Class<?>) Clazz.class);
     assertEquals(rec.transform(
-                    Value.of(
-                            List.of(Value.ofAttr("Clazz")),
-                            List.of(
-                                    Item.of(Value.of("first"), Value.of(2)),
-                                    Item.of(Value.of("second"), Value.of(3))
-                            ))
-            ),
-            new Clazz<>(2, 3)
+        Value.of(
+          List.of(Value.ofAttr("Clazz")),
+          List.of(
+            Item.of(Value.of("first"), Value.of(2)),
+            Item.of(Value.of("second"), Value.of(3))
+          ))
+      ),
+      new Clazz<>(2, 3)
     );
 
     rec = rec.reset();
     assertEquals(rec.transform(
-                    Value.of(
-                            List.of(Value.ofAttr("Clazz")),
-                            List.of(Item.of(Value.of("second"), Value.of(3))))
-            ),
-            new Clazz<>(null, 3)
+        Value.of(
+          List.of(Value.ofAttr("Clazz")),
+          List.of(Item.of(Value.of("second"), Value.of(3))))
+      ),
+      new Clazz<>(null, 3)
     );
 
     rec = rec.reset();
     assertEquals(rec.transform(
-                    Value.of(
-                            List.of(Value.ofAttr("Clazz")),
-                            List.of(
-                                    Item.of(Value.of("first"), Value.extant()),
-                                    Item.of(Value.of("second"), Value.of(3))
-                            ))
-            ),
-            new Clazz<>(null, 3)
+        Value.of(
+          List.of(Value.ofAttr("Clazz")),
+          List.of(
+            Item.of(Value.of("first"), Value.extant()),
+            Item.of(Value.of("second"), Value.of(3))
+          ))
+      ),
+      new Clazz<>(null, 3)
     );
 
     rec = rec.reset();
     assertEquals(rec.transform(
-                    Value.of(
-                            List.of(Value.ofAttr("Clazz")),
-                            List.of(Item.of(Value.of("first"), Value.of(2))))
-            ),
-            new Clazz<>(2, null)
+        Value.of(
+          List.of(Value.ofAttr("Clazz")),
+          List.of(Item.of(Value.of("first"), Value.of(2))))
+      ),
+      new Clazz<>(2, null)
     );
 
     rec = rec.reset();
     assertEquals(rec.transform(
-                    Value.of(
-                            List.of(Value.ofAttr("Clazz")),
-                            List.of(
-                                    Item.of(Value.of("first"), Value.of(2)),
-                                    Item.of(Value.of("second"), Value.extant())
-                            ))
-            ),
-            new Clazz<>(2, null)
+        Value.of(
+          List.of(Value.ofAttr("Clazz")),
+          List.of(
+            Item.of(Value.of("first"), Value.of(2)),
+            Item.of(Value.of("second"), Value.extant())
+          ))
+      ),
+      new Clazz<>(2, null)
     );
 
     rec = rec.reset();
     assertEquals(
-            rec.transform(Value.ofAttrs(List.of(Value.ofAttr("Clazz")))),
-            new Clazz<>(null, null)
+      rec.transform(Value.ofAttrs(List.of(Value.ofAttr("Clazz")))),
+      new Clazz<>(null, null)
     );
 
     rec = rec.reset();
     assertEquals(rec.transform(
-                    Value.of(
-                            List.of(Value.ofAttr("Clazz")),
-                            List.of(
-                                    Item.of(Value.of("first"), Value.extant()),
-                                    Item.of(Value.of("second"), Value.extant())
-                            ))
-            ),
-            new Clazz<>(null, null)
+        Value.of(
+          List.of(Value.ofAttr("Clazz")),
+          List.of(
+            Item.of(Value.of("first"), Value.extant()),
+            Item.of(Value.of("second"), Value.extant())
+          ))
+      ),
+      new Clazz<>(null, null)
     );
   }
 
@@ -138,18 +138,18 @@ class RecognizerBridgeTest {
     Clazz<Integer, List<Integer>> expected = new Clazz<>(13, List.of(1, 2, 3));
 
     assertEquals(
-            expected,
-            rec.transform(Value.of(
-                    List.of(Value.ofAttr("Clazz")),
-                    List.of(
-                            Value.ofItem(Value.of("first"), Value.of(13)),
-                            Value.ofItem(Value.of("second"), Value.ofItems(List.of(
-                                    Item.of(Value.of(1)),
-                                    Item.of(Value.of(2)),
-                                    Item.of(Value.of(3))
-                            )))
-                    )
-            ))
+      expected,
+      rec.transform(Value.of(
+        List.of(Value.ofAttr("Clazz")),
+        List.of(
+          Value.ofItem(Value.of("first"), Value.of(13)),
+          Value.ofItem(Value.of("second"), Value.ofItems(List.of(
+            Item.of(Value.of(1)),
+            Item.of(Value.of(2)),
+            Item.of(Value.of(3))
+          )))
+        )
+      ))
     );
   }
 
@@ -186,9 +186,9 @@ class RecognizerBridgeTest {
     @Override
     public String toString() {
       return "Clazz{" +
-              "first=" + first +
-              ", second=" + second +
-              '}';
+        "first=" + first +
+        ", second=" + second +
+        '}';
     }
   }
 

@@ -32,8 +32,8 @@ public class HeaderRecognizer<T> extends Recognizer<T> {
 
   public static <T> RecognizingBuilder<T> headerBuilder(boolean hasBody, Supplier<RecognizingBuilder<T>> builder, int numSlots, IndexFn<HeaderFieldKey> indexFn) {
     return new FieldRecognizingBuilder<>(new FirstOf<>(
-            new HeaderRecognizer<>(hasBody, true, builder.get(), numSlots, indexFn),
-            new HeaderRecognizer<>(hasBody, false, builder.get(), numSlots, indexFn)
+      new HeaderRecognizer<>(hasBody, true, builder.get(), numSlots, indexFn),
+      new HeaderRecognizer<>(hasBody, false, builder.get(), numSlots, indexFn)
     ));
   }
 

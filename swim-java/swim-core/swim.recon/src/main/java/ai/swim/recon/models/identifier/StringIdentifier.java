@@ -40,8 +40,8 @@ public class StringIdentifier extends Identifier {
   @Override
   public String toString() {
     return "StringIdentifier{" +
-            "value='" + value + '\'' +
-            '}';
+      "value='" + value + '\'' +
+      '}';
   }
 
   @Override

@@ -47,11 +47,11 @@ public abstract class ClassWriter {
     Types typeUtils = context.getTypeUtils();
 
     AnnotationSpec writerAnnotationSpec = AnnotationSpec.builder(AutoloadedWriter.class)
-            .addMember("value", "$T.class", typeUtils.erasure(root.asType()))
-            .build();
+      .addMember("value", "$T.class", typeUtils.erasure(root.asType()))
+      .build();
     TypeSpec.Builder classSpec = TypeSpec.classBuilder(context.getFormatter().writerClassName())
-            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-            .addAnnotation(writerAnnotationSpec);
+      .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+      .addAnnotation(writerAnnotationSpec);
 
     DeclaredType declaredType = (DeclaredType) root.asType();
     for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
@@ -73,7 +73,7 @@ public abstract class ClassWriter {
     Elements elementUtils = context.getElementUtils();
 
     MethodSpec.Builder builder = MethodSpec.methodBuilder(WRITABLE_WRITE_INTO)
-            .addModifiers(Modifier.PUBLIC);
+      .addModifiers(Modifier.PUBLIC);
 
     TypeElement writableTypeElement = elementUtils.getTypeElement(STRUCTURAL_WRITER_CLASS);
 

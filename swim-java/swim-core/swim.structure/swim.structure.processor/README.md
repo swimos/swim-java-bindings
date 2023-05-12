@@ -159,9 +159,17 @@ Which are then merged into the `LaneAddressed` model:
 | node | String | CoreTypeKind.String |
 | host | String | CoreTypeKind.String |
 
-For concrete classes that contain subtypes, a writer and recognizer is written that supports both its concrete class and its subtypes.
+For concrete classes that contain subtypes, a writer and recognizer is written that supports both its concrete class and
+its subtypes.
 
 ## Model transformations
-Once a model has been derived, a recognizer and/or writable is derived and written out to the classpath. This is done using a [TypeInitializer](./src/main/java/ai/swim/structure/processor/model/TypeInitializer.java) interface that visits models and their fields. These type initializers transpose a model to an initialized type (I.e, an Integer to an IntegerRecognizer) and a code block for instantiating it (ScalarRecognizers.INTEGER).
 
-Both the derived recognizers and structural writable implementations work similarly to the Rust implementation except for runtime model resolution for types that may not have been available at compile time (a type with a manual form implementation) and for writables that contain type parameters (these are resolved at runtime and stored in the class so they are available for the next invocation).
+Once a model has been derived, a recognizer and/or writable is derived and written out to the classpath. This is done
+using a [TypeInitializer](./src/main/java/ai/swim/structure/processor/model/TypeInitializer.java) interface that visits
+models and their fields. These type initializers transpose a model to an initialized type (I.e, an Integer to an
+IntegerRecognizer) and a code block for instantiating it (ScalarRecognizers.INTEGER).
+
+Both the derived recognizers and structural writable implementations work similarly to the Rust implementation except
+for runtime model resolution for types that may not have been available at compile time (a type with a manual form
+implementation) and for writables that contain type parameters (these are resolved at runtime and stored in the class so
+they are available for the next invocation).

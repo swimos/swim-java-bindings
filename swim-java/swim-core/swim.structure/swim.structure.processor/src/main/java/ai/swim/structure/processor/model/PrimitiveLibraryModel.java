@@ -64,8 +64,8 @@ public class PrimitiveLibraryModel extends Model {
   @Override
   public String toString() {
     return "PrimitiveLibraryModel{" +
-            "coreTypeKind=" + coreTypeKind +
-            ", type=" + type +
-            '}';
+      "coreTypeKind=" + coreTypeKind +
+      ", type=" + type +
+      '}';
   }
 }

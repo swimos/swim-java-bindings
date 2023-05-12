@@ -14,11 +14,11 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.header;
 
-import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.PartitionedFields;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.Lookups;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerNameFormatter;
@@ -54,14 +54,14 @@ public class HeaderBuilder extends Builder {
   @Override
   protected TypeSpec.Builder init() {
     return TypeSpec.classBuilder(context.getFormatter().headerBuilderClassName())
-            .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-            .addTypeVariables(typeParameters);
+      .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+      .addTypeVariables(typeParameters);
   }
 
   @Override
   protected List<MethodSpec> buildConstructors() {
     MethodSpec.Builder builder = MethodSpec.constructorBuilder()
-            .addModifiers(Modifier.PUBLIC);
+      .addModifiers(Modifier.PUBLIC);
 
     Types typeUtils = context.getTypeUtils();
     Elements elementUtils = context.getElementUtils();
@@ -98,9 +98,9 @@ public class HeaderBuilder extends Builder {
     }
 
     MethodSpec.Builder builder = MethodSpec.methodBuilder(Lookups.RECOGNIZING_BUILDER_BIND)
-            .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(Override.class)
-            .returns(classType);
+      .addModifiers(Modifier.PUBLIC)
+      .addAnnotation(Override.class)
+      .returns(classType);
     builder.addCode(new BindEmitter(fields, context).toString());
 
     return builder.build();
@@ -119,20 +119,20 @@ public class HeaderBuilder extends Builder {
   @Override
   protected List<FieldModel> getFields() {
     return partitionedFields.discriminate()
-            .stream()
-            .filter(FieldDiscriminate::isHeader)
-            .flatMap(f -> {
-              FieldDiscriminate.HeaderFields headerFields = (FieldDiscriminate.HeaderFields) f;
-              FieldModel tagBody = headerFields.getTagBody();
+      .stream()
+      .filter(FieldDiscriminate::isHeader)
+      .flatMap(f -> {
+        FieldDiscriminate.HeaderFields headerFields = (FieldDiscriminate.HeaderFields) f;
+        FieldModel tagBody = headerFields.getTagBody();
 
-              if (tagBody != null) {
-                List<FieldModel> fields = new ArrayList<>(Collections.singleton(headerFields.getTagBody()));
-                fields.addAll(headerFields.getFields());
-                return fields.stream();
-              } else {
-                return headerFields.getFields().stream();
-              }
-            })
-            .collect(Collectors.toList());
+        if (tagBody != null) {
+          List<FieldModel> fields = new ArrayList<>(Collections.singleton(headerFields.getTagBody()));
+          fields.addAll(headerFields.getFields());
+          return fields.stream();
+        } else {
+          return headerFields.getFields().stream();
+        }
+      })
+      .collect(Collectors.toList());
   }
 }

@@ -28,7 +28,7 @@ public class UnresolvedModel extends Model {
   @Override
   public String toString() {
     return "UnresolvedModel{" +
-            "type=" + type +
-            '}';
+      "type=" + type +
+      '}';
   }
 }

@@ -53,7 +53,7 @@ public class PushAttrNewRec extends Action {
   @Override
   public String toString() {
     return "PushAttrNewRec{" +
-            "hasBody=" + hasBody +
-            '}';
+      "hasBody=" + hasBody +
+      '}';
   }
 }

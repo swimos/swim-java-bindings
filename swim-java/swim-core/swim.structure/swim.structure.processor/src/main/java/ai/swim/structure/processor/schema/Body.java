@@ -76,8 +76,8 @@ public class Body {
   @Override
   public String toString() {
     return "Body{" +
-            "isReplaced=" + isReplaced +
-            ", fields=" + fields +
-            '}';
+      "isReplaced=" + isReplaced +
+      ", fields=" + fields +
+      '}';
   }
 }

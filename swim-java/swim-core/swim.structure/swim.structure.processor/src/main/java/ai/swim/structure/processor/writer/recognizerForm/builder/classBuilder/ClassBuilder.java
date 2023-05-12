@@ -14,11 +14,11 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.classBuilder;
 
-import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.schema.FieldDiscriminate;
 import ai.swim.structure.processor.schema.PartitionedFields;
+import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerNameFormatter;
 import ai.swim.structure.processor.writer.recognizerForm.builder.Builder;
@@ -59,8 +59,8 @@ public class ClassBuilder extends Builder {
   @Override
   protected TypeSpec.Builder init() {
     return TypeSpec.classBuilder(context.getFormatter().builderClassName())
-            .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-            .addTypeVariables(typeParametersToTypeVariable(model.getTypeParameters()));
+      .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+      .addTypeVariables(typeParametersToTypeVariable(model.getTypeParameters()));
   }
 
   @Override
@@ -105,20 +105,20 @@ public class ClassBuilder extends Builder {
       */
 
       body.add(CodeBlock.of(
-              "this.$L = $L($L, () -> new $L($L), $L, $L);",
-              formatter.headerBuilderFieldName(),
-              formatter.headerBuilderMethod(),
-              partitionedFields.headerSet.hasTagBody(),
-              formatter.headerBuilderCanonicalName(),
-              typeParameters,
-              partitionedFields.headerSet.headerFields.size(),
-              new HeaderIndexFn(partitionedFields, context)
+        "this.$L = $L($L, () -> new $L($L), $L, $L);",
+        formatter.headerBuilderFieldName(),
+        formatter.headerBuilderMethod(),
+        partitionedFields.headerSet.hasTagBody(),
+        formatter.headerBuilderCanonicalName(),
+        typeParameters,
+        partitionedFields.headerSet.headerFields.size(),
+        new HeaderIndexFn(partitionedFields, context)
       ));
     }
 
     return new ArrayList<>(List.of(builder.addParameters(parameters)
-            .addCode(body.build())
-            .build()));
+      .addCode(body.build())
+      .build()));
   }
 
   @Override
@@ -173,9 +173,9 @@ public class ClassBuilder extends Builder {
     ParameterizedTypeName typedBuilder = ParameterizedTypeName.get(recognizingBuilder, targetType);
 
     return FieldSpec.builder(
-            typedBuilder,
-            formatter.headerBuilderFieldName(),
-            Modifier.PRIVATE
+      typedBuilder,
+      formatter.headerBuilderFieldName(),
+      Modifier.PRIVATE
     ).build();
   }
 
@@ -192,12 +192,12 @@ public class ClassBuilder extends Builder {
   @Override
   protected List<FieldModel> getFields() {
     return partitionedFields.discriminate()
-            .stream()
-            .filter(f -> !f.isHeader())
-            .flatMap(f -> {
-              FieldDiscriminate.SingleField singleField = (FieldDiscriminate.SingleField) f;
-              return Stream.of(singleField.getField());
-            })
-            .collect(Collectors.toList());
+      .stream()
+      .filter(f -> !f.isHeader())
+      .flatMap(f -> {
+        FieldDiscriminate.SingleField singleField = (FieldDiscriminate.SingleField) f;
+        return Stream.of(singleField.getField());
+      })
+      .collect(Collectors.toList());
   }
 }

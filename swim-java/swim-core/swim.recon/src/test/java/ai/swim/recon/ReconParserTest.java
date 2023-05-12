@@ -76,40 +76,40 @@ class ReconParserTest {
   @Test
   void testParser() {
     runTestOk("@tag(field:1)", List.of(
-            ReadEvent.startAttribute("tag"),
-            ReadEvent.text("field"),
-            ReadEvent.slot(),
-            ReadEvent.number(1),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("tag"),
+      ReadEvent.text("field"),
+      ReadEvent.slot(),
+      ReadEvent.number(1),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     ));
     runTestOk("@tag(a:1,b:abc,c:\"string\")", List.of(
-            ReadEvent.startAttribute("tag"),
-            ReadEvent.text("a"),
-            ReadEvent.slot(),
-            ReadEvent.number(1),
-            ReadEvent.text("b"),
-            ReadEvent.slot(),
-            ReadEvent.text("abc"),
-            ReadEvent.text("c"),
-            ReadEvent.slot(),
-            ReadEvent.text("string"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("tag"),
+      ReadEvent.text("a"),
+      ReadEvent.slot(),
+      ReadEvent.number(1),
+      ReadEvent.text("b"),
+      ReadEvent.slot(),
+      ReadEvent.text("abc"),
+      ReadEvent.text("c"),
+      ReadEvent.slot(),
+      ReadEvent.text("string"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     ));
 
     runTestOk("@tag(a:\"abc\")",
-            List.of(
-                    ReadEvent.startAttribute("tag"),
-                    ReadEvent.text("a"),
-                    ReadEvent.slot(),
-                    ReadEvent.text("abc"),
-                    ReadEvent.endAttribute(),
-                    ReadEvent.startBody(),
-                    ReadEvent.endRecord()
-            )
+      List.of(
+        ReadEvent.startAttribute("tag"),
+        ReadEvent.text("a"),
+        ReadEvent.slot(),
+        ReadEvent.text("abc"),
+        ReadEvent.endAttribute(),
+        ReadEvent.startBody(),
+        ReadEvent.endRecord()
+      )
     );
 
     runTestOk("\"string\"", List.of(ReadEvent.text("string")));
@@ -144,11 +144,11 @@ class ReconParserTest {
   @Test
   void simpleRecord() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.number(1),
-            ReadEvent.text("two"),
-            ReadEvent.number(3),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.number(1),
+      ReadEvent.text("two"),
+      ReadEvent.number(3),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{1,two,3}", events);
@@ -159,36 +159,36 @@ class ReconParserTest {
   @Test
   void missingItems() {
     runTestOk("{,two,3}", List.of(
-            ReadEvent.startBody(),
-            ReadEvent.extant(),
-            ReadEvent.text("two"),
-            ReadEvent.number(3),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.extant(),
+      ReadEvent.text("two"),
+      ReadEvent.number(3),
+      ReadEvent.endRecord()
     ));
     runTestOk("{1,,3}", List.of(
-            ReadEvent.startBody(),
-            ReadEvent.number(1),
-            ReadEvent.extant(),
-            ReadEvent.number(3),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.number(1),
+      ReadEvent.extant(),
+      ReadEvent.number(3),
+      ReadEvent.endRecord()
     ));
     runTestOk("{1,two,}", List.of(
-            ReadEvent.startBody(),
-            ReadEvent.number(1),
-            ReadEvent.text("two"),
-            ReadEvent.extant(),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.number(1),
+      ReadEvent.text("two"),
+      ReadEvent.extant(),
+      ReadEvent.endRecord()
     ));
   }
 
   @Test
   void newlineSeparators() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.number(1),
-            ReadEvent.text("two"),
-            ReadEvent.number(3),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.number(1),
+      ReadEvent.text("two"),
+      ReadEvent.number(3),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{1\ntwo\n3}", events);
@@ -198,11 +198,11 @@ class ReconParserTest {
   @Test
   void singletonSlot() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.text("name"),
-            ReadEvent.slot(),
-            ReadEvent.number(1),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.text("name"),
+      ReadEvent.slot(),
+      ReadEvent.number(1),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{name:1}", events);
@@ -213,11 +213,11 @@ class ReconParserTest {
   @Test
   void missingSlotValue() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.text("name"),
-            ReadEvent.slot(),
-            ReadEvent.extant(),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.text("name"),
+      ReadEvent.slot(),
+      ReadEvent.extant(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{name:}", events);
@@ -228,11 +228,11 @@ class ReconParserTest {
   @Test
   void missingSlotKey() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.extant(),
-            ReadEvent.slot(),
-            ReadEvent.number(1),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.extant(),
+      ReadEvent.slot(),
+      ReadEvent.number(1),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{:1}", events);
@@ -243,17 +243,17 @@ class ReconParserTest {
   @Test
   void simpleSlotsRecord() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.text("first"),
-            ReadEvent.slot(),
-            ReadEvent.number(1),
-            ReadEvent.text("second"),
-            ReadEvent.slot(),
-            ReadEvent.text("two"),
-            ReadEvent.text("third"),
-            ReadEvent.slot(),
-            ReadEvent.number(3),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.text("first"),
+      ReadEvent.slot(),
+      ReadEvent.number(1),
+      ReadEvent.text("second"),
+      ReadEvent.slot(),
+      ReadEvent.text("two"),
+      ReadEvent.text("third"),
+      ReadEvent.slot(),
+      ReadEvent.number(3),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{first:1,second:two,third:3}", events);
@@ -263,17 +263,17 @@ class ReconParserTest {
   @Test
   void missingSlotParts() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.text("first"),
-            ReadEvent.slot(),
-            ReadEvent.number(1),
-            ReadEvent.text("second"),
-            ReadEvent.slot(),
-            ReadEvent.extant(),
-            ReadEvent.extant(),
-            ReadEvent.slot(),
-            ReadEvent.number(3),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.text("first"),
+      ReadEvent.slot(),
+      ReadEvent.number(1),
+      ReadEvent.text("second"),
+      ReadEvent.slot(),
+      ReadEvent.extant(),
+      ReadEvent.extant(),
+      ReadEvent.slot(),
+      ReadEvent.number(3),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{first:1,second:,:3}", events);
@@ -287,10 +287,10 @@ class ReconParserTest {
   @Test
   void tagAttribute() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("tag"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("tag"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@tag", events);
@@ -300,11 +300,11 @@ class ReconParserTest {
   @Test
   void attrSimpleBody() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("name"),
-            ReadEvent.number(2),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("name"),
+      ReadEvent.number(2),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@name(2)", events);
@@ -314,13 +314,13 @@ class ReconParserTest {
   @Test
   void attrSlotBody() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("name"),
-            ReadEvent.text("a"),
-            ReadEvent.slot(),
-            ReadEvent.bool(true),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("name"),
+      ReadEvent.text("a"),
+      ReadEvent.slot(),
+      ReadEvent.bool(true),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@name(a:true)", events);
@@ -332,19 +332,19 @@ class ReconParserTest {
   @Test
   void attrSlotBodyMissingParts() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("name"),
-            ReadEvent.text("a"),
-            ReadEvent.slot(),
-            ReadEvent.extant(),
-            ReadEvent.text("b"),
-            ReadEvent.slot(),
-            ReadEvent.extant(),
-            ReadEvent.text("c"),
-            ReadEvent.slot(),
-            ReadEvent.extant(),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("name"),
+      ReadEvent.text("a"),
+      ReadEvent.slot(),
+      ReadEvent.extant(),
+      ReadEvent.text("b"),
+      ReadEvent.slot(),
+      ReadEvent.extant(),
+      ReadEvent.text("c"),
+      ReadEvent.slot(),
+      ReadEvent.extant(),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@name(a:,b:,c:)", events);
@@ -357,15 +357,15 @@ class ReconParserTest {
   @Test
   void attrMultipleItemBody() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("name"),
-            ReadEvent.number(1),
-            ReadEvent.text("a"),
-            ReadEvent.slot(),
-            ReadEvent.bool(true),
-            ReadEvent.extant(),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("name"),
+      ReadEvent.number(1),
+      ReadEvent.text("a"),
+      ReadEvent.slot(),
+      ReadEvent.bool(true),
+      ReadEvent.extant(),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@name(1, a: true,)", events);
@@ -377,12 +377,12 @@ class ReconParserTest {
   @Test
   void multipleAttributes() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("first"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startAttribute("second"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("first"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startAttribute("second"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@first@second", events);
@@ -392,14 +392,14 @@ class ReconParserTest {
   @Test
   void multipleAttributesWithBodies() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("first"),
-            ReadEvent.number(1),
-            ReadEvent.endAttribute(),
-            ReadEvent.startAttribute("second"),
-            ReadEvent.number(2),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("first"),
+      ReadEvent.number(1),
+      ReadEvent.endAttribute(),
+      ReadEvent.startAttribute("second"),
+      ReadEvent.number(2),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@first(1)@second(2)", events);
@@ -409,14 +409,14 @@ class ReconParserTest {
   @Test
   void emptyNested() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord(),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{{},{},{}}", events);
@@ -425,32 +425,32 @@ class ReconParserTest {
   @Test
   void simpleNested() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.startBody(),
-            ReadEvent.number(4),
-            ReadEvent.text("slot"),
-            ReadEvent.slot(),
-            ReadEvent.text("word"),
-            ReadEvent.endRecord(),
-            ReadEvent.number(1),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.startBody(),
+      ReadEvent.number(4),
+      ReadEvent.text("slot"),
+      ReadEvent.slot(),
+      ReadEvent.text("word"),
+      ReadEvent.endRecord(),
+      ReadEvent.number(1),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{\n" +
-            "            { 4, slot: word }\n" +
-            "            1\n" +
-            "        }", events);
+      "            { 4, slot: word }\n" +
+      "            1\n" +
+      "        }", events);
   }
 
   @Test
   void nestedWithAttr() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.startAttribute("inner"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord(),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.startAttribute("inner"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{ @inner }", events);
@@ -460,13 +460,13 @@ class ReconParserTest {
   @Test
   void nestedAttrWithBody() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.startAttribute("inner"),
-            ReadEvent.number(0),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord(),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.startAttribute("inner"),
+      ReadEvent.number(0),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{ @inner(0) }", events);
@@ -476,14 +476,14 @@ class ReconParserTest {
   @Test
   void nestedWithAttrWithBodyFollowed() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.startAttribute("inner"),
-            ReadEvent.number(0),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord(),
-            ReadEvent.text("after"),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.startAttribute("inner"),
+      ReadEvent.number(0),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
+      ReadEvent.text("after"),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{ @inner(0), after }", events);
@@ -493,12 +493,12 @@ class ReconParserTest {
   @Test
   void emptyNestedInAttr() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("outer"),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord(),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("outer"),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@outer({})", events);
@@ -507,16 +507,16 @@ class ReconParserTest {
   @Test
   void simpleNestedInAttr() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("outer"),
-            ReadEvent.startBody(),
-            ReadEvent.number(4),
-            ReadEvent.text("slot"),
-            ReadEvent.slot(),
-            ReadEvent.text("word"),
-            ReadEvent.endRecord(),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("outer"),
+      ReadEvent.startBody(),
+      ReadEvent.number(4),
+      ReadEvent.text("slot"),
+      ReadEvent.slot(),
+      ReadEvent.text("word"),
+      ReadEvent.endRecord(),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@outer({ 4, slot: word })", events);
@@ -525,14 +525,14 @@ class ReconParserTest {
   @Test
   void nestedWithAttrInAttr() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("outer"),
-            ReadEvent.startAttribute("inner"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord(),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("outer"),
+      ReadEvent.startAttribute("inner"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@outer(@inner)", events);
@@ -542,15 +542,15 @@ class ReconParserTest {
   @Test
   void nestedWithAttrWithBodyInAttr() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("outer"),
-            ReadEvent.startAttribute("inner"),
-            ReadEvent.number(0),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord(),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("outer"),
+      ReadEvent.startAttribute("inner"),
+      ReadEvent.number(0),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@outer(@inner(0))", events);
@@ -560,16 +560,16 @@ class ReconParserTest {
   @Test
   void nestedWithAttrWithBodyFollowedInAttr() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("outer"),
-            ReadEvent.startAttribute("inner"),
-            ReadEvent.number(0),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord(),
-            ReadEvent.number(3),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("outer"),
+      ReadEvent.startAttribute("inner"),
+      ReadEvent.number(0),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord(),
+      ReadEvent.number(3),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@outer(@inner(0), 3)", events);
@@ -579,17 +579,17 @@ class ReconParserTest {
   @Test
   void doubleNested() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.number(1),
-            ReadEvent.startBody(),
-            ReadEvent.number(2),
-            ReadEvent.startBody(),
-            ReadEvent.number(3),
-            ReadEvent.number(4),
-            ReadEvent.endRecord(),
-            ReadEvent.endRecord(),
-            ReadEvent.number(5),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.number(1),
+      ReadEvent.startBody(),
+      ReadEvent.number(2),
+      ReadEvent.startBody(),
+      ReadEvent.number(3),
+      ReadEvent.number(4),
+      ReadEvent.endRecord(),
+      ReadEvent.endRecord(),
+      ReadEvent.number(5),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{1, {2, {3, 4}}, 5}", events);
@@ -598,19 +598,19 @@ class ReconParserTest {
   @Test
   void complexSlot() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.startAttribute("key"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.number(1),
-            ReadEvent.endRecord(),
-            ReadEvent.slot(),
-            ReadEvent.startAttribute("value"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.number(2),
-            ReadEvent.endRecord(),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.startAttribute("key"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.number(1),
+      ReadEvent.endRecord(),
+      ReadEvent.slot(),
+      ReadEvent.startAttribute("value"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.number(2),
+      ReadEvent.endRecord(),
+      ReadEvent.endRecord()
     );
 
     runTestOk("{@key {1}: @value {2}}", events);
@@ -633,14 +633,14 @@ class ReconParserTest {
   @Test
   void recordBody() {
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("update"),
-            ReadEvent.text("key"),
-            ReadEvent.slot(),
-            ReadEvent.text("keyvalue"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.text("value"),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("update"),
+      ReadEvent.text("key"),
+      ReadEvent.slot(),
+      ReadEvent.text("keyvalue"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.text("value"),
+      ReadEvent.endRecord()
     );
 
     runTestOk("@update(key:keyvalue)value", events);

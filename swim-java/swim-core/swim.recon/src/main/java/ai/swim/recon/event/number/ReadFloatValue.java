@@ -54,7 +54,7 @@ public class ReadFloatValue extends ReadEvent {
   @Override
   public String toString() {
     return "ReadFloatValue{" +
-            "value=" + value +
-            '}';
+      "value=" + value +
+      '}';
   }
 }

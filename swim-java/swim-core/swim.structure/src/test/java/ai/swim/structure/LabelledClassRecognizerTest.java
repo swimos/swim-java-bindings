@@ -209,9 +209,9 @@ class LabelledClassRecognizerTest {
     @Override
     public String toString() {
       return "OuterPropClass{" +
-              "c='" + c + '\'' +
-              ", d=" + d +
-              '}';
+        "c='" + c + '\'' +
+        ", d=" + d +
+        '}';
     }
 
     public void setC(String c) {

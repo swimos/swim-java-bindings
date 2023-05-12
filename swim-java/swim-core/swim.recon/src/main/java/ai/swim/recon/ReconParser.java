@@ -7,9 +7,9 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParseState;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.items.ItemsKind;
+import ai.swim.recon.models.state.Action;
 import ai.swim.recon.models.state.ParseEvent;
 import ai.swim.recon.models.state.PushAttrNewRec;
-import ai.swim.recon.models.state.Action;
 import ai.swim.recon.result.ParseResult;
 import ai.swim.recon.result.ResultError;
 
@@ -50,17 +50,17 @@ public final class ReconParser {
 
   private static Parser<ParserTransition> initParser() {
     return alt(
-            new Parser<>() {
-              @Override
-              public Parser<ParserTransition> feed(Input input) {
-                if (input.isDone()) {
-                  return Parser.done(ReadEvent.extant().transition());
-                } else {
-                  return Parser.error(input, "Expected an empty input");
-                }
-              }
-            },
-            preceded(multispace0(), parseInit())
+      new Parser<>() {
+        @Override
+        public Parser<ParserTransition> feed(Input input) {
+          if (input.isDone()) {
+            return Parser.done(ReadEvent.extant().transition());
+          } else {
+            return Parser.error(input, "Expected an empty input");
+          }
+        }
+      },
+      preceded(multispace0(), parseInit())
     );
   }
 
@@ -415,13 +415,13 @@ public final class ReconParser {
   @Override
   public String toString() {
     return "ReconParser{" +
-            "input=" + input +
-            ", state=" + state +
-            ", current=" + current +
-            ", pending=" + pending +
-            ", complete=" + complete +
-            ", clearIfNone=" + clearIfNone +
-            '}';
+      "input=" + input +
+      ", state=" + state +
+      ", current=" + current +
+      ", pending=" + pending +
+      ", complete=" + complete +
+      ", clearIfNone=" + clearIfNone +
+      '}';
   }
 
   private static class PendingEvents {

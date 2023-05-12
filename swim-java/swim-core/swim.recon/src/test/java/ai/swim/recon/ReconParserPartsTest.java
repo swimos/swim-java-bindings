@@ -20,9 +20,9 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParseState;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.items.ItemsKind;
+import ai.swim.recon.models.state.Action;
 import ai.swim.recon.models.state.ParseEvent;
 import ai.swim.recon.models.state.PushAttrNewRec;
-import ai.swim.recon.models.state.Action;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;

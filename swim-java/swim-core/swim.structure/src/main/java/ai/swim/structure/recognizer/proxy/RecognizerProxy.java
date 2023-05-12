@@ -75,11 +75,11 @@ public class RecognizerProxy {
 
       if (!Recognizer.class.isAssignableFrom(clazz)) {
         String error = String.format("%s is annotated with @%s(%s.class) but %s does not extend %s",
-                clazz.getCanonicalName(),
-                AutoloadedRecognizer.class.getSimpleName(),
-                targetClass.getCanonicalName(),
-                clazz.getCanonicalName(),
-                Recognizer.class.getSimpleName()
+          clazz.getCanonicalName(),
+          AutoloadedRecognizer.class.getSimpleName(),
+          targetClass.getCanonicalName(),
+          clazz.getCanonicalName(),
+          Recognizer.class.getSimpleName()
         );
 
         throw new RuntimeException(error);

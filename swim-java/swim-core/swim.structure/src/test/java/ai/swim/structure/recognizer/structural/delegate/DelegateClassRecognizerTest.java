@@ -22,17 +22,17 @@ class DelegateClassRecognizerTest {
   void testDelegateRecognizer() {
     Recognizer<Prop> recognizer = new PropRecognizer();
     List<ReadEvent> events = List.of(
-            ReadEvent.startAttribute("Prop"),
-            ReadEvent.text("a"),
-            ReadEvent.slot(),
-            ReadEvent.number(1),
-            ReadEvent.text("b"),
-            ReadEvent.slot(),
-            ReadEvent.text("b"),
-            ReadEvent.endAttribute(),
-            ReadEvent.startBody(),
-            ReadEvent.text("string"),
-            ReadEvent.endRecord()
+      ReadEvent.startAttribute("Prop"),
+      ReadEvent.text("a"),
+      ReadEvent.slot(),
+      ReadEvent.number(1),
+      ReadEvent.text("b"),
+      ReadEvent.slot(),
+      ReadEvent.text("b"),
+      ReadEvent.endAttribute(),
+      ReadEvent.startBody(),
+      ReadEvent.text("string"),
+      ReadEvent.endRecord()
     );
 
     Prop obj = runTest(recognizer, events);
@@ -105,10 +105,10 @@ class DelegateClassRecognizerTest {
     @Override
     public String toString() {
       return "Prop{" +
-              "a=" + a +
-              ", b='" + b + '\'' +
-              ", c='" + c + '\'' +
-              '}';
+        "a=" + a +
+        ", b='" + b + '\'' +
+        ", c='" + c + '\'' +
+        '}';
     }
 
     @Override
@@ -131,20 +131,20 @@ class DelegateClassRecognizerTest {
 
   public static class PropBuilder implements RecognizingBuilder<Prop> {
     private RecognizingBuilder<PropHeader> headerBuilder = headerBuilder(
-            false,
-            PropHeaderBuilder::new,
-            1,
-            (key) -> {
-              if (key.isHeaderSlot()) {
-                HeaderFieldKey.HeaderSlotKey headerSlotKey = (HeaderFieldKey.HeaderSlotKey) key;
-                if ("a".equals(headerSlotKey.getName())) {
-                  return 0;
-                } else if ("b".equals(headerSlotKey.getName())) {
-                  return 1;
-                }
-              }
-              return null;
-            }
+      false,
+      PropHeaderBuilder::new,
+      1,
+      (key) -> {
+        if (key.isHeaderSlot()) {
+          HeaderFieldKey.HeaderSlotKey headerSlotKey = (HeaderFieldKey.HeaderSlotKey) key;
+          if ("a".equals(headerSlotKey.getName())) {
+            return 0;
+          } else if ("b".equals(headerSlotKey.getName())) {
+            return 1;
+          }
+        }
+        return null;
+      }
     );
     private RecognizingBuilder<String> bBuilder = new FieldRecognizingBuilder<>(RecognizerProxy.getProxy().lookup(String.class).asBodyRecognizer());
 
@@ -182,19 +182,19 @@ class DelegateClassRecognizerTest {
 
     public PropRecognizer() {
       this.delegate = new DelegateClassRecognizer<>(
-              new FixedTagSpec(Prop.class.getSimpleName()),
-              new PropBuilder(),
-              3,
-              (key) -> {
-                if (key.isHeader()) {
-                  return 0;
-                }
-                if (key.isFirstItem()) {
-                  return 1;
-                }
+        new FixedTagSpec(Prop.class.getSimpleName()),
+        new PropBuilder(),
+        3,
+        (key) -> {
+          if (key.isHeader()) {
+            return 0;
+          }
+          if (key.isFirstItem()) {
+            return 1;
+          }
 
-                return null;
-              }
+          return null;
+        }
       );
     }
 

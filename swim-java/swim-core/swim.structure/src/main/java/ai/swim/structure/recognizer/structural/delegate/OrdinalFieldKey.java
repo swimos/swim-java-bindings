@@ -60,8 +60,8 @@ public abstract class OrdinalFieldKey {
     @Override
     public String toString() {
       return "OrdinalFieldKeyAttr{" +
-              "name='" + name + '\'' +
-              '}';
+        "name='" + name + '\'' +
+        '}';
     }
   }
 }

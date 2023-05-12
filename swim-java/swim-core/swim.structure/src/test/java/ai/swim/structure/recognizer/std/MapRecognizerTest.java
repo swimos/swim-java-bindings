@@ -15,17 +15,17 @@ class MapRecognizerTest {
   void testHashMap() {
     Recognizer<Map<String, Integer>> recognizer = new MapRecognizer<>(ScalarRecognizer.STRING, ScalarRecognizer.INTEGER);
     List<ReadEvent> events = List.of(
-            ReadEvent.startBody(),
-            ReadEvent.text("a"),
-            ReadEvent.slot(),
-            ReadEvent.number(1),
-            ReadEvent.text("b"),
-            ReadEvent.slot(),
-            ReadEvent.number(2),
-            ReadEvent.text("c"),
-            ReadEvent.slot(),
-            ReadEvent.number(3),
-            ReadEvent.endRecord()
+      ReadEvent.startBody(),
+      ReadEvent.text("a"),
+      ReadEvent.slot(),
+      ReadEvent.number(1),
+      ReadEvent.text("b"),
+      ReadEvent.slot(),
+      ReadEvent.number(2),
+      ReadEvent.text("c"),
+      ReadEvent.slot(),
+      ReadEvent.number(3),
+      ReadEvent.endRecord()
     );
 
     runTest(recognizer, events);

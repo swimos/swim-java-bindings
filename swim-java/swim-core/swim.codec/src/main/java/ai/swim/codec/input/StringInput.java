@@ -104,12 +104,12 @@ public class StringInput extends Input {
   @Override
   public String toString() {
     return "StringSource{" +
-            "data='" + data + '\'' +
-            ", line=" + line +
-            ", column=" + column +
-            ", index=" + index +
-            ", offset=" + offset +
-            '}';
+      "data='" + data + '\'' +
+      ", line=" + line +
+      ", column=" + column +
+      ", index=" + index +
+      ", offset=" + offset +
+      '}';
   }
 
   @Override

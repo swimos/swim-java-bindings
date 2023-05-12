@@ -39,7 +39,7 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
     this.braceWritten = false;
     this.singleItem = false;
     this.first = true;
-    this.attributePrinter=     new AttributePrinter(this.writer, printStrategy);
+    this.attributePrinter = new AttributePrinter(this.writer, printStrategy);
   }
 
   public static StructurePrinter stdOut(PrintStrategy printStrategy) {
