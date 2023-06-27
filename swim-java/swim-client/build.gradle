@@ -17,23 +17,23 @@ ext {
     debug_dir = target_dir.concat('/debug')
     release_dir = target_dir.concat('/release')
 }
-
-graalvmNative {
-    binaries {
-        main {
-            compileRust(true)
-            def library_path = '-Djava.library.path='.concat(bridge_dir)
-            runtimeArgs.add(library_path)
-        }
-        test {
-            compileRust(false)
-            buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
-
-            def library_path = '-Djava.library.path='.concat(bridge_dir)
-            runtimeArgs.add(library_path)
-        }
-    }
-}
+//
+//graalvmNative {
+//    binaries {
+//        main {
+//            compileRust(true)
+//            def library_path = '-Djava.library.path='.concat(bridge_dir)
+//            runtimeArgs.add(library_path)
+//        }
+//        test {
+//            compileRust(false)
+//            buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
+//
+//            def library_path = '-Djava.library.path='.concat(bridge_dir)
+//            runtimeArgs.add(library_path)
+//        }
+//    }
+//}
 
 test {
     def library_path = '-Djava.library.path='.concat(debug_dir)
@@ -79,21 +79,21 @@ def compileRust(release) {
 }
 
 compileTestJava {
-    doLast {
+    doFirst {
         compileRust(false)
     }
 }
 
 assemble {
-    doLast {
+    doFirst {
         compileRust(true)
     }
 }
 
 task cleanRust {
-    doLast {
+    doFirst {
         exec {
-            println "cleaning"
+            println "Cleaning swim-rust sources"
             workingDir(bridge_dir)
             commandLine 'cargo', 'clean'
         }
@@ -116,4 +116,12 @@ dependencies {
     implementation project(':swim-structure')
     annotationProcessor project(':swim-structure-processor')
     testAnnotationProcessor project(':swim-structure-processor')
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "${buildDir}/generated/main/java"
+        }
+    }
 }

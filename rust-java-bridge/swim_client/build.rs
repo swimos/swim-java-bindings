@@ -1,6 +1,7 @@
-use bytebridge::{FormatStyle, JavaSourceWriterBuilder, RustSourceWriterBuilder};
+use bytebridge::{JavaSourceWriterBuilder, RustSourceWriterBuilder};
 use std::env;
 use std::env::current_dir;
+use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 
 fn main() {
@@ -11,13 +12,15 @@ fn main() {
     build_file.push("out.rs");
 
     let builder = bytebridge::Builder::default();
-    let _java_writer = JavaSourceWriterBuilder::std_out("test.package.somewhere").copyright_header(
-        r#"Copyright line 1
-Copyright line 2"#,
-        FormatStyle::Line,
-    );
 
-    let java_writer = JavaSourceWriterBuilder::dir(current_dir().unwrap(), "ai.swim").unwrap();
+    let mut dir = current_dir().unwrap();
+    dir.push("../../swim-java/swim-client/build/generated/main/java");
+
+    if !dir.exists() {
+        create_dir_all(&dir).unwrap();
+    }
+
+    let java_writer = JavaSourceWriterBuilder::dir(dir, "ai.swim.client").unwrap();
 
     let rust_writer = RustSourceWriterBuilder::file(build_file)
         .unwrap()

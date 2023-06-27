@@ -38,9 +38,8 @@ impl TestCase {
                         .variants
                         .iter()
                         .map(|variant| {
-                            unpack_rename(&variant.attrs).unwrap_or_else(|| {
-                                format!("{}{}", superclass_name, variant.ident)
-                            })
+                            unpack_rename(&variant.attrs)
+                                .unwrap_or_else(|| format!("{}{}", superclass_name, variant.ident))
                         })
                         .collect(),
                 }
@@ -186,16 +185,6 @@ where
     run_test(input, |result| match result {
         Ok(output) => assertion(output),
         Err(e) => panic!("Expected test to pass: {:?}", e),
-    })
-}
-
-fn run_test_err<F>(input: impl ToTokens, assertion: F)
-where
-    F: FnOnce(Error),
-{
-    run_test(input, |result| match result {
-        Ok(output) => panic!("Expected test to pass:\n{:?}", output),
-        Err(e) => assertion(e),
     })
 }
 

@@ -69,4 +69,12 @@ public class Superclass {
     return __buf.array();
   }
 
+  @Override
+  public String toString() {
+    return "Superclass{" +
+     "fieldA='" + fieldA + '\'' +
+     ", member_field_b='" + member_field_b + '\'' +
+     '}';
+  }
+
 }

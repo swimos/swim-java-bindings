@@ -1,7 +1,6 @@
 use std::io;
 use std::mem::size_of;
 
-use crate::bindings::java::writer::{ClassType, INDENTATION};
 use heck::AsLowerCamelCase;
 use proc_macro2::Span;
 use quote::ToTokens;
@@ -13,12 +12,14 @@ use syn::{
     Attribute, Error, Expr, ExprLit, Field, ItemEnum, Lit, LitInt, Meta, MetaNameValue,
     PathSegment, Token, Type, TypePath, Variant,
 };
+
 pub use writer::{JavaSourceWriter, JavaSourceWriterBuilder};
 
 use crate::bindings::java::models::{
     Block, Constraint, ConstraintKind, JavaField, JavaMethod, JavaType, PrimitiveJavaType,
-    AS_BYTES_METHOD, BUFFER_SIZE_VAR, BUFFER_VAR, JAVA_KEYWORDS, TEMP_VAR,
+    AS_BYTES_METHOD, BUFFER_SIZE_VAR, BUFFER_VAR, JAVA_KEYWORDS, TEMP_VAR, TO_STRING_METHOD,
 };
+use crate::bindings::java::writer::{ClassType, INDENTATION};
 use crate::bindings::{
     ATTR_DEFAULT_VALUE, ATTR_DOC, ATTR_NATURAL, ATTR_NON_ZERO, ATTR_RANGE, ATTR_RENAME,
     ATTR_UNSIGNED_ARRAY, INVALID_PROPERTY_NAME, MACRO_PATH, UNKNOWN_ATTRIBUTE,
@@ -71,6 +72,7 @@ impl ClassBinding {
             &fields,
             parent.as_ref().map(|cfg| cfg.ordinal),
         );
+        let to_string_method = ClassBinding::to_string_method(&name, &fields);
 
         let file_writer = java_writer.for_file(name.clone())?;
         let class_type = match parent.as_ref() {
@@ -98,6 +100,7 @@ impl ClassBinding {
         }
 
         class_writer.write_method(transposition_method)?;
+        class_writer.write_method(to_string_method)?;
         class_writer.end_class()
     }
 
@@ -175,6 +178,35 @@ impl ClassBinding {
             .extend(transposition.add_statement(format!("return {}.array()", BUFFER_VAR)));
         method.set_block(body)
     }
+
+    fn to_string_method(name: &str, fields: &[JavaField]) -> JavaMethod {
+        let method = JavaMethod::new(
+            TO_STRING_METHOD,
+            JavaType::String,
+            Some("@Override".to_string()),
+        );
+
+        if fields.is_empty() {
+            return method.set_block(Block::of(format!("\"{}{{}}\"", name)));
+        }
+
+        let mut block = Block::of(format!("return \"{}{{\" +\n", name));
+        let mut first = true;
+
+        for field in fields.iter() {
+            let prefix = if first {
+                first = false;
+                "\""
+            } else {
+                "\", "
+            };
+            let name = &field.name;
+
+            block = block.add(format!("{prefix}{name}='\" + {name} + '\\'' +\n"))
+        }
+
+        method.set_block(block.add_statement(" '}'"))
+    }
 }
 
 /// Resolves an instance method call on a Java ByteBuffer that corresponds to a primitive java type.
@@ -227,7 +259,7 @@ impl AbstractClassBinding {
         let mut class_writer =
             file_writer.begin_class(name.clone(), documentation, ClassType::Abstract)?;
 
-        let method = JavaMethod::new(
+        let as_bytes_method = JavaMethod::new(
             AS_BYTES_METHOD,
             JavaType::Array(PrimitiveJavaType::Byte {
                 unsigned: false,
@@ -238,7 +270,15 @@ impl AbstractClassBinding {
         .add_documentation("Returns a byte array representation of the current configuration.")
         .set_abstract();
 
-        class_writer.write_method(method)?;
+        let to_string_method = JavaMethod::new(
+            TO_STRING_METHOD,
+            JavaType::String,
+            Some("@Override".to_string()),
+        )
+        .set_abstract();
+
+        class_writer.write_method(to_string_method)?;
+        class_writer.write_method(as_bytes_method)?;
         class_writer.end_class()?;
 
         // We defer writing the variants here in case the file writer is writing to STDOUT. We want

@@ -12,31 +12,100 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-extern crate core;
-
+use std::num::NonZeroUsize;
 use std::panic;
 
+use bytebridge::ByteCodec;
 use bytes::BytesMut;
 use client_runtime::RemotePath;
 use jni::objects::JString;
 use jni::sys::{jbyteArray, jobject};
-use url::Url;
-
 use jvm_sys::vm::set_panic_hook;
 use jvm_sys::vm::utils::new_global_ref;
 use jvm_sys::{jni_try, npch, parse_string};
+use ratchet::WebSocketConfig;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
-use swim_client_core::{client_fn, ClientConfig, ClientHandle, SwimClient};
+use swim_client_core::{client_fn, ClientHandle, SwimClient};
+use url::Url;
+
+include!(concat!(env!("OUT_DIR"), "/out.rs"));
+
+impl From<ClientConfig> for swim_client_core::ClientConfig {
+    fn from(config: ClientConfig) -> Self {
+        let ClientConfig {
+            max_message_size,
+            remote_buffer_size,
+            transport_buffer_size,
+            registration_buffer_size,
+            #[cfg(feature = "deflate")]
+            server_max_window_bits,
+            #[cfg(feature = "deflate")]
+            client_max_window_bits,
+            #[cfg(feature = "deflate")]
+            request_server_no_context_takeover,
+            #[cfg(feature = "deflate")]
+            request_client_no_context_takeover,
+            #[cfg(feature = "deflate")]
+            accept_no_context_takeover,
+            #[cfg(feature = "deflate")]
+            compression_level,
+        } = config;
+
+        let into_non_zero = |val: u32| unsafe { NonZeroUsize::new_unchecked(val as usize) };
+
+        swim_client_core::ClientConfig {
+            websocket: WebSocketConfig {
+                max_message_size: max_message_size as usize,
+            },
+            #[cfg(feature = "deflate")]
+            deflate: {
+                use ratchet_deflate::{Compression, DeflateConfig, WindowBits};
+
+                DeflateConfig {
+                    server_max_window_bits: ratchet_deflate::WindowBits::try_from(
+                        server_max_window_bits,
+                    )
+                    .unwrap(),
+                    client_max_window_bits: ratchet_deflate::WindowBits::try_from(
+                        client_max_window_bits,
+                    )
+                    .unwrap(),
+                    request_server_no_context_takeover,
+                    request_client_no_context_takeover,
+                    accept_no_context_takeover,
+                    compression_level: Compression::new(compression_level),
+                }
+            },
+            remote_buffer_size: into_non_zero(remote_buffer_size),
+            transport_buffer_size: into_non_zero(transport_buffer_size),
+            registration_buffer_size: into_non_zero(registration_buffer_size),
+        }
+    }
+}
 
 client_fn! {
     SwimClient_startClient(
         env,
         _class,
+        config: jbyteArray,
     ) -> SwimClient {
+        let mut config_bytes = jni_try! {
+            env,
+            "Failed to parse configuration array",
+            env.convert_byte_array(config).map(BytesMut::from_iter),
+            std::ptr::null_mut()
+        };
+        let config = jni_try!{
+            env,
+            "Failed to read client configuration",
+            ClientConfig::try_from_bytes(&mut config_bytes).map(Into::into),
+            std::ptr::null_mut()
+        };
+
         let client = Box::leak(Box::new(SwimClient::new(
             env.get_java_vm().expect("Failed to get Java VM"),
-            ClientConfig::default()
+            config
         )));
 
         set_panic_hook();

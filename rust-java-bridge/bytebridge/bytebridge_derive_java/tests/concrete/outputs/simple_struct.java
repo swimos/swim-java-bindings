@@ -61,4 +61,12 @@ public class Test {
     return __buf.array();
   }
 
+  @Override
+  public String toString() {
+    return "Test{" +
+     "a='" + a + '\'' +
+     ", b='" + b + '\'' +
+     '}';
+  }
+
 }

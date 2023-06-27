@@ -54,7 +54,6 @@ use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
 
 pub mod downlink;
 mod macros;
-include!(concat!(env!("OUT_DIR"), "/out.rs"));
 
 pub struct SwimClient {
     error_mode: ErrorHandlingConfig,
@@ -150,7 +149,7 @@ impl SwimClient {
 }
 
 #[cfg(not(feature = "deflate"))]
-fn build_websockets(config: client_runtime::WebSocketConfig) -> RatchetNetworking<NoExtProvider> {
+fn build_websockets(config: ratchet::WebSocketConfig) -> RatchetNetworking<NoExtProvider> {
     RatchetNetworking {
         config: ratchet::WebSocketConfig {
             max_message_size: config.max_message_size,

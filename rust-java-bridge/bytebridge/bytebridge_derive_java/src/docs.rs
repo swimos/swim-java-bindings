@@ -16,11 +16,9 @@ impl StringStack {
         let prefix = if self.is_empty() { "" } else { "\n" };
 
         if !line.starts_with(' ') {
-            self.inner
-                .push_str(&format!("{} {}", prefix, line));
+            self.inner.push_str(&format!("{} {}", prefix, line));
         } else {
-            self.inner
-                .push_str(&format!("{}{}", prefix, line));
+            self.inner.push_str(&format!("{}{}", prefix, line));
         }
     }
 }
@@ -213,28 +211,31 @@ impl Documentation {
 #[derive(Debug, Copy, Clone)]
 pub enum FormatStyle {
     /// Block style. E.g,
-    /// ```
+    /// ```no_run
     /// /*
     ///  *
     ///  *
     ///  */
+    /// # drop(());
     /// ```
     Block,
     /// Line style. E.g,
-    /// ```
+    /// ```no_run
     /// //
     /// //
     /// //
     /// //
     /// //
+    /// # drop(());
     /// ```
     Line,
     /// Documentation style. E.g,
-    /// ```
+    /// ```no_run
     /// /**
     ///  *
     ///  *
     ///  */
+    /// # drop(());
     /// ```
     Documentation,
 }

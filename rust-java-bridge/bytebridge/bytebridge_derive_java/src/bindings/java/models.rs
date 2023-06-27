@@ -16,10 +16,10 @@ pub const BUFFER_SIZE_VAR: &str = "__buf__size";
 pub const BUFFER_VAR: &str = "__buf";
 pub const TEMP_VAR: &str = "__elem_";
 pub const AS_BYTES_METHOD: &str = "asBytes";
+pub const TO_STRING_METHOD: &str = "toString";
 
 lazy_static! {
     pub static ref JAVA_KEYWORDS: HashSet<&'static str> = {
-        
         HashSet::from([
             "abstract",
             "assert",
@@ -622,12 +622,7 @@ impl Constraint {
             ),
             ConstraintKind::InRange(min, max) => documentation.add_throws(
                 "IllegalArgumentException",
-                format!(
-                    "if '{}' is not in range {}..{}.",
-                    field_name,
-                    min,
-                    max
-                ),
+                format!("if '{}' is not in range {}..{}.", field_name, min, max),
             ),
             ConstraintKind::Natural => documentation.add_throws(
                 "IllegalArgumentException",
@@ -724,6 +719,17 @@ impl JavaMethodParameter {
 #[derive(Default, Debug)]
 pub struct Block {
     lines: Vec<String>,
+}
+
+impl Display for Block {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let Block { lines } = self;
+        for l in lines {
+            write!(f, "{}", l)?;
+        }
+
+        Ok(())
+    }
 }
 
 impl Block {

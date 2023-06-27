@@ -441,3 +441,28 @@ impl bytebridge::ByteCodec for Configuration {
   - bool -> boolean
 - Vec of primitive types -> array
 - std::time::Duration -> int >= 0
+
+# Java setup
+In your Gradle `build.config` (or equivalent Maven command) an additional source set needs to be added that includes the generated files. This must align with the directory that is provided to the `JavaSourceWriterBuilder`:
+```groovy
+sourceSets {
+    main {
+        java {
+            srcDir "${buildDir}/generated/main/java"
+        }
+    }
+}
+```
+
+```rust
+let mut dir = current_dir()?;
+dir.push("../../../swim-java/swim-client/build/generated/main/java");
+
+if !dir.exists() {
+    create_dir_all(&dir)?;
+}
+
+let java_writer = JavaSourceWriterBuilder::dir(dir, "ai.swim.client")?;
+```
+
+It's not currently possible to provide individual struct/class specific packages.

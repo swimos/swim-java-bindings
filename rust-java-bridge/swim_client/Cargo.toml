@@ -8,7 +8,7 @@ crate-type = ["cdylib"]
 
 [features]
 default = []
-deflate = ["swim_client_core/deflate"]
+deflate = ["swim_client_core/deflate", "ratchet_deflate"]
 tls = ["swim_client_core/tls"]
 
 [dependencies]
@@ -19,6 +19,9 @@ swim_downlink = { path = "../../swim-rust/swim_downlink" }
 swim_api = { path = "../../swim-rust/api/swim_api" }
 swim_model = { path = "../../swim-rust/api/swim_model" }
 swim_utilities = { path = "../../swim-rust/swim_utilities", features = ["byte_channel"] }
+bytebridge = { path = "../bytebridge/bytebridge" }
+ratchet_deflate = { workspace = true, optional = true }
+ratchet = { workspace = true }
 
 futures = { workspace = true }
 futures-util = { workspace = true }
@@ -31,3 +34,6 @@ url = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread"] }
+
+[build-dependencies]
+bytebridge = { path = "../bytebridge/bytebridge", features = ["derive_java"] }

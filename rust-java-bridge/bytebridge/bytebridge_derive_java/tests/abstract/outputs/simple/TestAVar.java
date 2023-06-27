@@ -71,4 +71,12 @@ public class TestAVar extends Test {
     return __buf.array();
   }
 
+  @Override
+  public String toString() {
+    return "TestAVar{" +
+     "a='" + a + '\'' +
+     ", b='" + b + '\'' +
+     '}';
+  }
+
 }

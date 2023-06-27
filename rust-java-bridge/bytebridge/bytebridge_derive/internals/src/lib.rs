@@ -1,13 +1,9 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::__private::ext::RepToTokensExt;
 use quote::{format_ident, quote, ToTokens};
-use syn::{parse2, Data, DeriveInput, Error, Fields, Type, Visibility};
+use syn::{parse2, Attribute, Data, DeriveInput, Error, Fields, Meta, Type, Visibility};
 
 pub fn derive(input: TokenStream) -> TokenStream {
-    proc_macro_derive(input)
-}
-
-fn proc_macro_derive(input: TokenStream) -> TokenStream {
     let input = match parse2::<DeriveInput>(input) {
         Ok(input) => input,
         Err(e) => return e.to_compile_error(),
@@ -39,6 +35,11 @@ fn expand(input: DeriveInput) -> Result<TokenStream, Error> {
             }
         };
     };
+
+    if "PropVar" == ty_ident.to_string() {
+        println!("{}", tokens.to_string());
+    }
+
     Ok(tokens)
 }
 
@@ -76,12 +77,10 @@ fn derive_byte_transformations(item: &DeriveInput) -> Result<ByteRepr<'_>, Error
                 variants: derive_variants(data.variants.iter())?,
             }))
         }
-        Data::Union(_) => {
-            Err(Error::new_spanned(
-                item,
-                "ByteBridge does not support unions",
-            ))
-        }
+        Data::Union(_) => Err(Error::new_spanned(
+            item,
+            "ByteBridge does not support unions",
+        )),
     }
 }
 
@@ -98,6 +97,7 @@ struct EnumRepr<'a> {
 struct Field<'a> {
     ty: &'a Type,
     ident: &'a Ident,
+    cfg_attrs: Vec<&'a Attribute>,
 }
 
 struct Variant<'a> {
@@ -114,9 +114,20 @@ struct TryFromBytes<'v, 'a>(&'v ByteRepr<'a>);
 impl<'v, 'a> TryFromBytes<'v, 'v> {
     fn fold_fields(fields: &[Field<'a>]) -> TokenStream {
         fields.iter().fold(TokenStream::new(), |tokens, field| {
-            let Field { ty, ident } = field;
+            let Field {
+                ty,
+                ident,
+                cfg_attrs,
+            } = field;
+            let attrs = cfg_attrs.iter().fold(TokenStream::new(), |ts, attr| {
+                quote! {
+                    #ts
+                    #attr
+                }
+            });
             quote! {
                 #tokens
+                #attrs
                 #ident: <#ty as bytebridge::ByteCodec>::try_from_bytes(bytes)?,
             }
         })
@@ -183,8 +194,16 @@ impl<'v, 'a> ToBytes<'v, 'a> {
     fn destruct(ident: &Ident, fields: &[Field<'a>]) -> TokenStream {
         let fields = fields.iter().fold(TokenStream::new(), |tokens, field| {
             let field_ident = field.ident;
+            let attrs = field.cfg_attrs.iter().fold(TokenStream::new(), |ts, attr| {
+                quote! {
+                    #ts
+                    #attr
+                }
+            });
             quote! {
-                #tokens #field_ident,
+                #tokens
+                #attrs
+                #field_ident,
             }
         });
         quote! {
@@ -194,9 +213,18 @@ impl<'v, 'a> ToBytes<'v, 'a> {
 
     fn fold_fields(fields: &[Field<'a>]) -> TokenStream {
         fields.iter().fold(TokenStream::new(), |tokens, field| {
-            let Field { ident, .. } = field;
+            let Field {
+                ident, cfg_attrs, ..
+            } = field;
+            let attrs = cfg_attrs.iter().fold(TokenStream::new(), |ts, attr| {
+                quote! {
+                    #ts
+                    #attr
+                }
+            });
             quote! {
                 #tokens
+                #attrs
                 bytebridge::ByteCodec::to_bytes(#ident, bytes);
             }
         })
@@ -209,8 +237,8 @@ impl<'v, 'a> ToTokens for ToBytes<'v, 'a> {
         match inner {
             ByteRepr::Struct(repr) => {
                 let StructRepr { ident, fields } = repr;
-                let destructed = Self::destruct(ident, fields);
-                let fields = Self::fold_fields(fields);
+                let destructed = ToBytes::destruct(ident, fields);
+                let fields = ToBytes::fold_fields(fields);
                 let to_bytes = quote! {
                     let #destructed = self;
                     #fields
@@ -286,6 +314,7 @@ where
                 fields.push(Field {
                     ty: &field.ty,
                     ident: field.ident.as_ref().expect("Named field missing ident"),
+                    cfg_attrs: inspect_cfg_attrs(&field.attrs)?,
                 });
                 Ok(fields)
             }),
@@ -298,4 +327,17 @@ where
             "Bytebridge does not support unit structs/variants",
         )),
     }
+}
+
+fn inspect_cfg_attrs(attrs: &[Attribute]) -> Result<Vec<&Attribute>, Error> {
+    let mut cfg_attrs = Vec::new();
+
+    for attr in attrs {
+        match &attr.meta {
+            Meta::List(inner) if inner.path.is_ident("cfg") => cfg_attrs.push(attr),
+            _ => {}
+        }
+    }
+
+    Ok(cfg_attrs)
 }

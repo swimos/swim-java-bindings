@@ -261,14 +261,29 @@ public class Test {
     __buf.order(java.nio.ByteOrder.LITTLE_ENDIAN);
     __buf.putInt(this.runtimeEmptyTimeout);
     __buf.putLong(this.runtimeAttachmentQueueSize);
-    __buf.put((byte) (this.runtimeAbortOnBadFrames ? 1 : 0)));
+    __buf.put((byte) (this.runtimeAbortOnBadFrames ? 1 : 0));
     __buf.putLong(this.runtimeRemoteBufferSize);
     __buf.putLong(this.runtimeDownlinkBufferSize);
-    __buf.put((byte) (this.downlinkEventsWhenNotSynced ? 1 : 0)));
-    __buf.put((byte) (this.downlinkTerminateOnUnlinked ? 1 : 0)));
+    __buf.put((byte) (this.downlinkEventsWhenNotSynced ? 1 : 0));
+    __buf.put((byte) (this.downlinkTerminateOnUnlinked ? 1 : 0));
     __buf.putLong(this.downlinkBufferSize);
-    __buf.put((byte) (this.keepLinked ? 1 : 0)));
+    __buf.put((byte) (this.keepLinked ? 1 : 0));
     return __buf.array();
+  }
+
+  @Override
+  public String toString() {
+    return "Test{" +
+     "runtimeEmptyTimeout='" + runtimeEmptyTimeout + '\'' +
+     ", runtimeAttachmentQueueSize='" + runtimeAttachmentQueueSize + '\'' +
+     ", runtimeAbortOnBadFrames='" + runtimeAbortOnBadFrames + '\'' +
+     ", runtimeRemoteBufferSize='" + runtimeRemoteBufferSize + '\'' +
+     ", runtimeDownlinkBufferSize='" + runtimeDownlinkBufferSize + '\'' +
+     ", downlinkEventsWhenNotSynced='" + downlinkEventsWhenNotSynced + '\'' +
+     ", downlinkTerminateOnUnlinked='" + downlinkTerminateOnUnlinked + '\'' +
+     ", downlinkBufferSize='" + downlinkBufferSize + '\'' +
+     ", keepLinked='" + keepLinked + '\'' +
+     '}';
   }
 
 }

@@ -4,6 +4,9 @@ package ai.swim;
 
 public abstract class Test {
 
+  @Override
+  public abstract String toString();
+
   /**
    * Returns a byte array representation of the current configuration.
    */

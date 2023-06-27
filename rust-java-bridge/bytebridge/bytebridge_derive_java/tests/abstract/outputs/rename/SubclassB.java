@@ -69,4 +69,12 @@ public class SubclassB extends Superclass {
     return __buf.array();
   }
 
+  @Override
+  public String toString() {
+    return "SubclassB{" +
+     "c='" + c + '\'' +
+     ", d='" + d + '\'' +
+     '}';
+  }
+
 }
