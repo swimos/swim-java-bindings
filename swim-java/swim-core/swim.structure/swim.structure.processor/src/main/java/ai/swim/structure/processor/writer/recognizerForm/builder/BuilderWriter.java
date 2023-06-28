@@ -16,7 +16,7 @@ package ai.swim.structure.processor.writer.recognizerForm.builder;
 
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
-import ai.swim.structure.processor.schema.HeaderSet;
+import ai.swim.structure.processor.schema.HeaderSpec;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.recognizerForm.Lookups;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
@@ -59,11 +59,11 @@ public class BuilderWriter {
     ClassBuilder classBuilder = new ClassBuilder(model, fields, context, transposition);
     parentSpec.addType(classBuilder.build(classRecognizingBuilderType));
 
-    HeaderSet headerSet = fields.headerSet;
+    HeaderSpec headerSpec = fields.headerSpec;
 
-    if (!headerSet.headerFields.isEmpty() || headerSet.hasTagBody()) {
+    if (!headerSpec.headerFields.isEmpty() || headerSpec.hasTagBody()) {
       TypeElement recognizingBuilderElement = elementUtils.getTypeElement(Lookups.RECOGNIZING_BUILDER_CLASS);
-      List<TypeVariableName> mappedTypeParameters = typeParametersToVariables(headerSet.typeParameters(), model.getTypeParameters(), context.getRoot());
+      List<TypeVariableName> mappedTypeParameters = typeParametersToVariables(headerSpec.typeParameters(), model.getTypeParameters(), context.getRoot());
 
       ParameterizedTypeName recognizingBuilderType;
 
@@ -81,7 +81,7 @@ public class BuilderWriter {
           .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
           .addTypeVariables(mappedTypeParameters);
 
-      HeaderSet headerFieldSet = fields.headerSet;
+      HeaderSpec headerFieldSet = fields.headerSpec;
       List<FieldModel> headerFields = headerFieldSet.headerFields;
 
       if (headerFieldSet.tagBody != null) {

@@ -10,11 +10,11 @@ import java.util.stream.Collectors;
  * Description of how the fields of a type are written into a record.
  */
 public class PartitionedFields {
-  public final HeaderSet headerSet;
+  public final HeaderSpec headerSpec;
   public final Body body;
 
-  public PartitionedFields(HeaderSet headerSet, Body body) {
-    this.headerSet = headerSet;
+  public PartitionedFields(HeaderSpec headerSpec, Body body) {
+    this.headerSpec = headerSpec;
     this.body = body;
   }
 
@@ -22,51 +22,51 @@ public class PartitionedFields {
    * Partitions {@code fields} according to their field kind.
    */
   public static PartitionedFields buildFrom(List<FieldModel> fields) {
-    HeaderSet headerSet = new HeaderSet();
+    HeaderSpec headerSpec = new HeaderSpec();
     Body body = new Body();
 
     for (FieldModel field : fields) {
       switch (field.getFieldKind()) {
         case Body:
           List<FieldModel> newHeaderFields = body.replace(field);
-          headerSet.addHeaderFields(newHeaderFields);
+          headerSpec.addHeaderFields(newHeaderFields);
           break;
         case Header:
-          headerSet.addHeaderField(field);
+          headerSpec.addHeaderField(field);
           break;
         case HeaderBody:
-          if (!headerSet.hasTagBody()) {
-            headerSet.setTagBody(field);
+          if (!headerSpec.hasTagBody()) {
+            headerSpec.setTagBody(field);
           }
           break;
         case Attr:
-          headerSet.addAttribute(field);
+          headerSpec.addAttribute(field);
           break;
         case Slot:
           if (!body.isReplaced()) {
             body.addField(field);
           } else {
-            headerSet.addHeaderField(field);
+            headerSpec.addHeaderField(field);
           }
           break;
       }
     }
 
-    return new PartitionedFields(headerSet, body);
+    return new PartitionedFields(headerSpec, body);
   }
 
   /**
    * Returns the total number of header and body fields.
    */
   public int count() {
-    return headerSet.count() + body.count();
+    return headerSpec.count() + body.count();
   }
 
   /**
    * Returns whether there are any header fields.
    */
   public boolean hasHeaderFields() {
-    return !this.headerSet.headerFields.isEmpty() || this.headerSet.hasTagBody();
+    return !this.headerSpec.headerFields.isEmpty() || this.headerSpec.hasTagBody();
   }
 
   /**
@@ -74,26 +74,26 @@ public class PartitionedFields {
    *
    * @return
    */
-  public List<FieldDiscriminate> discriminate() {
-    List<FieldDiscriminate> discriminates = new ArrayList<>();
+  public List<FieldDiscriminant> discriminate() {
+    List<FieldDiscriminant> discriminates = new ArrayList<>();
 
-    FieldModel tagName = this.headerSet.tagName;
+    FieldModel tagName = this.headerSpec.tagName;
     if (tagName != null) {
-      discriminates.add(FieldDiscriminate.tag(tagName));
+      discriminates.add(FieldDiscriminant.tag(tagName));
     }
 
-    if (headerSet.hasTagBody() || !headerSet.headerFields.isEmpty()) {
-      discriminates.add(FieldDiscriminate.header(headerSet.tagBody, headerSet.headerFields));
+    if (headerSpec.hasTagBody() || !headerSpec.headerFields.isEmpty()) {
+      discriminates.add(FieldDiscriminant.header(headerSpec.tagBody, headerSpec.headerFields));
     }
 
-    discriminates.addAll(headerSet.attributes.stream().map(FieldDiscriminate::attribute).collect(Collectors.toList()));
+    discriminates.addAll(headerSpec.attributes.stream().map(FieldDiscriminant::attribute).collect(Collectors.toList()));
 
     List<FieldModel> bodyFields = body.getFields();
 
     if (body.isReplaced()) {
-      discriminates.add(FieldDiscriminate.body(bodyFields.get(0)));
+      discriminates.add(FieldDiscriminant.body(bodyFields.get(0)));
     } else {
-      discriminates.addAll(bodyFields.stream().map(FieldDiscriminate::item).collect(Collectors.toList()));
+      discriminates.addAll(bodyFields.stream().map(FieldDiscriminant::item).collect(Collectors.toList()));
     }
 
     return discriminates;
@@ -102,7 +102,7 @@ public class PartitionedFields {
   @Override
   public String toString() {
     return "PartitionedFields{" +
-        "headerFields=" + headerSet +
+        "headerFields=" + headerSpec +
         ", body=" + body +
         '}';
   }
@@ -111,7 +111,7 @@ public class PartitionedFields {
    * Returns whether {@code model} is a header.
    */
   public boolean isHeader(FieldModel model) {
-    return headerSet.isHeader(model);
+    return headerSpec.isHeader(model);
   }
 
 }

@@ -15,7 +15,7 @@
 package ai.swim.structure.processor.writer.recognizerForm.builder.header;
 
 import ai.swim.structure.processor.model.FieldModel;
-import ai.swim.structure.processor.schema.HeaderSet;
+import ai.swim.structure.processor.schema.HeaderSpec;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.WriterUtils;
@@ -62,7 +62,7 @@ public class HeaderIndexFn extends Emitter {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
 
-    HeaderSet headerFieldSet = fields.headerSet;
+    HeaderSpec headerFieldSet = fields.headerSpec;
 
     int idx = 0;
     CodeBlock.Builder body = CodeBlock.builder();

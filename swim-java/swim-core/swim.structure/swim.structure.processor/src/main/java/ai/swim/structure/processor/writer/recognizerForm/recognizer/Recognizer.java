@@ -17,7 +17,7 @@ package ai.swim.structure.processor.writer.recognizerForm.recognizer;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.processor.model.*;
-import ai.swim.structure.processor.schema.HeaderSet;
+import ai.swim.structure.processor.schema.HeaderSpec;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.WriterUtils;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
@@ -284,7 +284,7 @@ public class Recognizer {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
 
-    HeaderSet headerFieldSet = fields.headerSet;
+    HeaderSpec headerFieldSet = fields.headerSpec;
 
     int idx = 0;
     CodeBlock.Builder body = CodeBlock.builder();
@@ -340,28 +340,28 @@ public class Recognizer {
     CodeBlock.Builder body = CodeBlock.builder();
     body.beginControlFlow("(key) ->");
 
-    HeaderSet headerSet = fields.headerSet;
+    HeaderSpec headerSpec = fields.headerSpec;
 
     int idx = 0;
 
-    if (headerSet.hasTagBody() || fields.hasHeaderFields()) {
+    if (headerSpec.hasTagBody() || fields.hasHeaderFields()) {
       body.beginControlFlow("if (key.isHeader())");
       body.addStatement("return $L", idx);
       body.endControlFlow();
       idx += 1;
     }
 
-    if (!headerSet.attributes.isEmpty()) {
+    if (!headerSpec.attributes.isEmpty()) {
       body.beginControlFlow("if (key.isAttribute())");
       TypeElement attrFieldKeyElement = elementUtils.getTypeElement(LABELLED_ATTR_FIELD_KEY);
 
       body.addStatement("$T attrFieldKey = ($T) key", attrFieldKeyElement, attrFieldKeyElement);
       body.beginControlFlow("switch (attrFieldKey.getKey())");
 
-      int attrCount = headerSet.attributes.size();
+      int attrCount = headerSpec.attributes.size();
 
       for (int i = 0; i < attrCount; i++) {
-        FieldModel recognizer = headerSet.attributes.get(i);
+        FieldModel recognizer = headerSpec.attributes.get(i);
 
         body.add("case \"$L\":", recognizer.propertyName());
         body.addStatement("\t return $L", i + idx);

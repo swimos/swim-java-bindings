@@ -1,16 +1,24 @@
 package ai.swim.structure.processor.writer.recognizerForm;
 
-import ai.swim.structure.processor.model.*;
-import ai.swim.structure.processor.model.mapping.CoreTypeKind;
-import ai.swim.structure.processor.model.mapping.KnownTypeModel;
+import ai.swim.structure.processor.model.ArrayLibraryModel;
+import ai.swim.structure.processor.model.CoreTypeModel;
+import ai.swim.structure.processor.model.InitializedType;
+import ai.swim.structure.processor.model.InvalidModelException;
+import ai.swim.structure.processor.model.Model;
+import ai.swim.structure.processor.model.ModelInspector;
+import ai.swim.structure.processor.model.ParameterisedTypeModel;
+import ai.swim.structure.processor.model.TypeInitializer;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
-
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.*;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.math.BigDecimal;
@@ -18,28 +26,34 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static ai.swim.structure.processor.writer.recognizerForm.Lookups.*;
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.ARRAY_RECOGNIZER_CLASS;
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.COLLECTIONS_PACKAGE;
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.LIST_RECOGNIZER_CLASS;
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.MAP_RECOGNIZER_CLASS;
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.STD_PACKAGE;
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.UNTYPED_RECOGNIZER;
 
 public class RecognizerTypeInitializer implements TypeInitializer {
   private final ProcessingEnvironment environment;
   private final RecognizerNameFormatter nameFormatter;
   private final ModelInspector inspector;
 
-  public RecognizerTypeInitializer(ProcessingEnvironment environment, RecognizerNameFormatter nameFormatter, ModelInspector inspector) {
+  public RecognizerTypeInitializer(ProcessingEnvironment environment,
+                                   RecognizerNameFormatter nameFormatter,
+                                   ModelInspector inspector) {
     this.environment = environment;
     this.nameFormatter = nameFormatter;
     this.inspector = inspector;
   }
 
   @Override
-  public InitializedType core(CoreTypeKind typeKind) {
+  public InitializedType core(CoreTypeModel model) {
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
     TypeMirror mirror;
     CodeBlock initializer;
 
-    switch (typeKind) {
+    switch (model.getKind()) {
       case Character:
         mirror = typeUtils.getPrimitiveType(TypeKind.CHAR);
         initializer = CodeBlock.of("ai.swim.structure.recognizer.std.ScalarRecognizer.CHARACTER");
@@ -89,7 +103,7 @@ public class RecognizerTypeInitializer implements TypeInitializer {
         initializer = CodeBlock.of("ai.swim.structure.recognizer.std.ScalarRecognizer.BIG_DECIMAL");
         break;
       default:
-        throw new AssertionError("Unhandled primitive type: " + typeKind);
+        throw new AssertionError("Unhandled primitive type: " + model.getKind());
     }
 
     if (mirror.getKind().isPrimitive()) {
@@ -105,7 +119,12 @@ public class RecognizerTypeInitializer implements TypeInitializer {
     InitializedType initializedComponentType = model.getComponentModel().instantiate(this, inConstructor);
     ClassName className = ClassName.get(COLLECTIONS_PACKAGE, ARRAY_RECOGNIZER_CLASS);
     CodeBlock classTy = CodeBlock.of("(Class<$T>) (Class<?>) Object.class", initializedComponentType.getMirror());
-    return new InitializedType(model.getType(), CodeBlock.of("new $T($L, $L)", className, classTy, initializedComponentType.getInitializer()));
+    return new InitializedType(
+        model.getType(),
+        CodeBlock.of("new $T($L, $L)",
+                     className,
+                     classTy,
+                     initializedComponentType.getInitializer()));
   }
 
   @Override
@@ -128,7 +147,6 @@ public class RecognizerTypeInitializer implements TypeInitializer {
   @Override
   public InitializedType declared(Model model, boolean inConstructor, Model... parameters) {
     TypeMirror type = model.getType();
-
     CodeBlock.Builder typeParameters = CodeBlock.builder();
 
     if (parameters != null && parameters.length != 0) {
@@ -147,8 +165,8 @@ public class RecognizerTypeInitializer implements TypeInitializer {
 
     ClassName className;
 
-    if (model.isKnownType()) {
-      KnownTypeModel knownType = (KnownTypeModel) model;
+    if (model.isParameterisedType()) {
+      ParameterisedTypeModel knownType = (ParameterisedTypeModel) model;
       switch (knownType.getTypeMapping()) {
         case List:
           className = ClassName.get(COLLECTIONS_PACKAGE, LIST_RECOGNIZER_CLASS);
@@ -186,7 +204,8 @@ public class RecognizerTypeInitializer implements TypeInitializer {
       for (TypeMirror ty : typeArguments) {
         switch (ty.getKind()) {
           case DECLARED:
-            typeArgumentModels.add(this.inspector.getOrInspect((TypeElement) ty, environment).instantiate(this, inConstructor));
+            typeArgumentModels.add(this.inspector.getOrInspect((TypeElement) ty, environment)
+                                                 .instantiate(this, inConstructor));
             break;
           case TYPEVAR:
             typeArgumentModels.add(this.untyped(ty, inConstructor));
@@ -198,7 +217,12 @@ public class RecognizerTypeInitializer implements TypeInitializer {
       }
 
       if (typeArgumentModels.size() != 0) {
-        typeParameters = typeArgumentModels.stream().map(ty -> String.format("%s.from(() -> %s)", ty.getMirror().toString(), ty.getInitializer())).collect(Collectors.joining(", "));
+        typeParameters = typeArgumentModels.stream()
+                                           .map(ty -> String.format(
+                                               "%s.from(() -> %s)",
+                                               ty.getMirror().toString(),
+                                               ty.getInitializer()))
+                                           .collect(Collectors.joining(", "));
       }
 
       typeParameters = typeParameters.isBlank() ? "" : ", " + typeParameters;
@@ -207,7 +231,12 @@ public class RecognizerTypeInitializer implements TypeInitializer {
 //      TypeMirror rootType = context.getRoot().asType();
 //      return CodeBlock.of("getProxy().lookup((Class<? extends $T>) (Class<?>) $T.class $L)", rootType, erasure, typeParameters);
 //    } else {
-      return new InitializedType(type, CodeBlock.of("getProxy().lookup((Class<$T>) (Class<?>) $T.class $L)", declaredType, erasure, typeParameters));
+      return new InitializedType(
+          type,
+          CodeBlock.of("getProxy().lookup((Class<$T>) (Class<?>) $T.class $L)",
+                       declaredType,
+                       erasure,
+                       typeParameters));
 //    }
     } else {
       return new InitializedType(type, CodeBlock.of("getProxy().lookup($T.class)", type, erasure));

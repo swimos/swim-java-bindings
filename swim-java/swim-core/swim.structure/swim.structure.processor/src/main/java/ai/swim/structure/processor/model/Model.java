@@ -71,7 +71,7 @@ public abstract class Model {
   /**
    * Returns whether this model represents a core library type.
    */
-  public boolean isKnownType() {
+  public boolean isParameterisedType() {
     return false;
   }
 
@@ -92,7 +92,4 @@ public abstract class Model {
   public Object defaultValue() {
     return null;
   }
-
-  @Override
-  public abstract String toString();
 }

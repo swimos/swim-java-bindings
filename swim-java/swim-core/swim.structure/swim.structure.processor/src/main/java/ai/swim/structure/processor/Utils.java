@@ -47,7 +47,7 @@ public class Utils {
   }
 
   /**
-   * Asserts whether a {@link TypeMirror} is a subtype of a class.
+   * Returns whether a {@link TypeMirror} is a subtype of a class.
    *
    * @param processingEnvironment the current processing environment.
    * @param mirror                to check against {@code target}.

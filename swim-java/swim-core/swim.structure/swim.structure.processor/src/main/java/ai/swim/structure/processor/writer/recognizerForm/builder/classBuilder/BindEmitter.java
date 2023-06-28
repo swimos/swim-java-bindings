@@ -16,7 +16,7 @@ package ai.swim.structure.processor.writer.recognizerForm.builder.classBuilder;
 
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
-import ai.swim.structure.processor.schema.FieldDiscriminate;
+import ai.swim.structure.processor.schema.FieldDiscriminant;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
@@ -65,11 +65,11 @@ public class BindEmitter extends Emitter {
     // Instantiate the target class
     body.add("$T obj = new $T();\n\n", ty, ty);
 
-    for (FieldDiscriminate fieldDiscriminate : fields.discriminate()) {
+    for (FieldDiscriminant fieldDiscriminate : fields.discriminate()) {
       if (fieldDiscriminate.isHeader()) {
-        FieldDiscriminate.HeaderFields headerFields = (FieldDiscriminate.HeaderFields) fieldDiscriminate;
+        FieldDiscriminant.HeaderFields headerFields = (FieldDiscriminant.HeaderFields) fieldDiscriminate;
 
-        List<TypeVariableName> mappedTypeParameters = typeParametersToVariables(fields.headerSet.typeParameters(), model.getTypeParameters(), context.getRoot());
+        List<TypeVariableName> mappedTypeParameters = typeParametersToVariables(fields.headerSpec.typeParameters(), model.getTypeParameters(), context.getRoot());
         ClassName headerElement = ClassName.bestGuess(formatter.headerCanonicalName());
 
         if (mappedTypeParameters.isEmpty()) {
@@ -88,7 +88,7 @@ public class BindEmitter extends Emitter {
           tagBody.getAccessor().writeSet(body, "obj", String.format("header.%s", tagBody.getName().toString()));
         }
       } else {
-        FieldDiscriminate.SingleField singleField = (FieldDiscriminate.SingleField) fieldDiscriminate;
+        FieldDiscriminant.SingleField singleField = (FieldDiscriminant.SingleField) fieldDiscriminate;
         FieldModel field = singleField.getField();
         String fieldName = formatter.fieldBuilderName(field.getName().toString());
 

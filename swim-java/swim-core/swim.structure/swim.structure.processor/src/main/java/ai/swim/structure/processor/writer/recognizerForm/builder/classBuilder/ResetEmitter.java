@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.classBuilder;
 
-import ai.swim.structure.processor.schema.FieldDiscriminate;
+import ai.swim.structure.processor.schema.FieldDiscriminant;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
@@ -48,12 +48,12 @@ public class ResetEmitter extends Emitter {
     CodeBlock.Builder body = CodeBlock.builder();
     RecognizerNameFormatter formatter = context.getFormatter();
 
-    for (FieldDiscriminate field : fields.discriminate()) {
+    for (FieldDiscriminant field : fields.discriminate()) {
       String fieldName;
       if (field.isHeader()) {
         fieldName = formatter.headerBuilderFieldName();
       } else {
-        FieldDiscriminate.SingleField fieldDiscriminate = (FieldDiscriminate.SingleField) field;
+        FieldDiscriminant.SingleField fieldDiscriminate = (FieldDiscriminant.SingleField) field;
         fieldName = formatter.fieldBuilderName(fieldDiscriminate.getField().getName().toString());
       }
 

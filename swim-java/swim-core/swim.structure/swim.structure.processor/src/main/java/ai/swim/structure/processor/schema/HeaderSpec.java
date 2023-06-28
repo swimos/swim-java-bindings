@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Description of how fields should be written into the attributes of the record.
  */
-public class HeaderSet {
+public class HeaderSpec {
   /**
    * Fields that should be promoted to the body of the tag after the `tagBody` field, if it exists.
    */
@@ -33,7 +33,7 @@ public class HeaderSet {
    */
   public FieldModel tagBody;
 
-  public HeaderSet() {
+  public HeaderSpec() {
     this.headerFields = new ArrayList<>();
     this.attributes = new ArrayList<>();
   }

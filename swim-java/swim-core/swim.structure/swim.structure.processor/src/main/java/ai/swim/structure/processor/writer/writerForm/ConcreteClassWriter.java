@@ -18,7 +18,7 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.model.InitializedType;
-import ai.swim.structure.processor.schema.HeaderSet;
+import ai.swim.structure.processor.schema.HeaderSpec;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import com.squareup.javapoet.*;
 
@@ -147,7 +147,7 @@ public class ConcreteClassWriter extends ClassWriter {
   }
 
   private CodeBlock writeAttrs() {
-    HeaderSet headerSet = fields.headerSet;
+    HeaderSpec headerSpec = fields.headerSpec;
     CodeBlock.Builder body = CodeBlock.builder();
 
     if (model.isEnum()) {
@@ -181,8 +181,8 @@ public class ConcreteClassWriter extends ClassWriter {
       body.addStatement("String __tag = \"$L\"", model.getTag());
     }
 
-    if (headerSet.headerFields.isEmpty()) {
-      FieldModel tagBody = headerSet.tagBody;
+    if (headerSpec.headerFields.isEmpty()) {
+      FieldModel tagBody = headerSpec.tagBody;
       if (tagBody == null) {
         body.addStatement("__recWriter = __recWriter.writeExtantAttr(__tag)");
       } else {
@@ -195,7 +195,7 @@ public class ConcreteClassWriter extends ClassWriter {
       body.addStatement("__recWriter = __recWriter.writeAttr(__tag, $L\n)", makeHeader());
     }
 
-    headerSet.attributes.forEach(attr -> {
+    headerSpec.attributes.forEach(attr -> {
       CodeBlock.Builder getter = CodeBlock.builder();
       attr.getAccessor().writeGet(getter, "from");
       String writableName = context.getFormatter().writableName(attr.propertyName());
@@ -259,8 +259,8 @@ public class ConcreteClassWriter extends ClassWriter {
     Elements elementUtils = context.getElementUtils();
 
     TypeElement noSlots = elementUtils.getTypeElement(HEADER_NO_SLOTS);
-    List<FieldModel> headerFields = fields.headerSet.headerFields;
-    FieldModel tagBody = fields.headerSet.tagBody;
+    List<FieldModel> headerFields = fields.headerSpec.headerFields;
+    FieldModel tagBody = fields.headerSpec.tagBody;
 
     CodeBlock.Builder headerBlock = CodeBlock.builder();
     headerBlock.add("$L", noSlots);
@@ -299,7 +299,7 @@ public class ConcreteClassWriter extends ClassWriter {
     ParameterizedTypeName headerWriter = ParameterizedTypeName.get(ClassName.get(rawHeaderWriter), writerType);
 
     return buildInit()
-        .addStatement("int __numAttrs = $L", fields.headerSet.attributes.size())
+        .addStatement("int __numAttrs = $L", fields.headerSpec.attributes.size())
         .addStatement("$T __recWriter = structuralWriter.record(__numAttrs)", headerWriter)
         .add(writeAttrs())
         .add(writeSlots())

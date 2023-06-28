@@ -16,7 +16,7 @@ package ai.swim.structure.processor.writer.recognizerForm.builder.header;
 
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
-import ai.swim.structure.processor.schema.FieldDiscriminate;
+import ai.swim.structure.processor.schema.FieldDiscriminant;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.Lookups;
@@ -120,9 +120,9 @@ public class HeaderBuilder extends Builder {
   protected List<FieldModel> getFields() {
     return partitionedFields.discriminate()
         .stream()
-        .filter(FieldDiscriminate::isHeader)
+        .filter(FieldDiscriminant::isHeader)
         .flatMap(f -> {
-          FieldDiscriminate.HeaderFields headerFields = (FieldDiscriminate.HeaderFields) f;
+          FieldDiscriminant.HeaderFields headerFields = (FieldDiscriminant.HeaderFields) f;
           FieldModel tagBody = headerFields.getTagBody();
 
           if (tagBody != null) {

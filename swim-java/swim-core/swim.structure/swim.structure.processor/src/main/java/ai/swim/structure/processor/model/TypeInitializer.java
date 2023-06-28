@@ -1,7 +1,5 @@
 package ai.swim.structure.processor.model;
 
-import ai.swim.structure.processor.model.mapping.CoreTypeKind;
-
 import javax.lang.model.type.TypeMirror;
 
 /**
@@ -14,12 +12,12 @@ import javax.lang.model.type.TypeMirror;
  */
 public interface TypeInitializer {
   /**
-   * Construct an initialized type from a core type kind.
+   * Construct an initialized type from a core type model.
    *
-   * @param typeKind to construct.
+   * @param model to construct.
    * @return an initialized type.
    */
-  InitializedType core(CoreTypeKind typeKind);
+  InitializedType core(CoreTypeModel model);
 
   /**
    * Construct an initialized type from an array library model.

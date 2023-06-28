@@ -48,8 +48,7 @@ public class PolymorphicRecognizer<T> extends StructuralRecognizer<T> {
 
   @Override
   public Recognizer<T> reset() {
-    this.recognizers = recognizers.stream().map(Recognizer::reset).collect(Collectors.toList());
-    ;
+    recognizers.replaceAll(Recognizer::reset);
     this.current = null;
     return this;
   }

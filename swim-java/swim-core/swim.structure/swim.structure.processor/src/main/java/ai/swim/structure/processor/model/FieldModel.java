@@ -125,7 +125,7 @@ public class FieldModel {
    * Returns whether this field is parameterised.
    */
   public boolean isParameterised() {
-    TypeMirror type = model.type;
+    TypeMirror type = model.getType();
     TypeKind typeKind = type.getKind();
 
     switch (typeKind) {

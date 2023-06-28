@@ -14,7 +14,7 @@
 
 package ai.swim.structure.processor.writer.recognizerForm.builder.classBuilder;
 
-import ai.swim.structure.processor.schema.FieldDiscriminate;
+import ai.swim.structure.processor.schema.FieldDiscriminant;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
@@ -53,19 +53,19 @@ public class FeedIndexedEmitter extends Emitter {
   @Override
   public String toString() {
     RecognizerNameFormatter formatter = context.getFormatter();
-    List<FieldDiscriminate> discriminate = fields.discriminate();
+    List<FieldDiscriminant> discriminate = fields.discriminate();
 
     CodeBlock.Builder body = CodeBlock.builder();
     body.beginControlFlow("switch (index)");
 
     for (int i = 0; i < discriminate.size(); i++) {
-      FieldDiscriminate field = discriminate.get(i);
+      FieldDiscriminant field = discriminate.get(i);
       String fieldName;
 
       if (field.isHeader()) {
         fieldName = formatter.headerBuilderFieldName();
       } else {
-        fieldName = formatter.fieldBuilderName(((FieldDiscriminate.SingleField) field).getField().getName().toString());
+        fieldName = formatter.fieldBuilderName(((FieldDiscriminant.SingleField) field).getField().getName().toString());
       }
 
       body.add("case $L:", i);

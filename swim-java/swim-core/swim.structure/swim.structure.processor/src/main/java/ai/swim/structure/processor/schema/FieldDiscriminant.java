@@ -7,9 +7,9 @@ import java.util.List;
 /**
  * A field discrimination for its placement in a record.
  */
-public abstract class FieldDiscriminate {
+public abstract class FieldDiscriminant {
 
-  public static FieldDiscriminate tag(FieldModel field) {
+  public static FieldDiscriminant tag(FieldModel field) {
     return new SingleField(field) {
       @Override
       public boolean isTag() {
@@ -18,11 +18,11 @@ public abstract class FieldDiscriminate {
     };
   }
 
-  public static FieldDiscriminate header(FieldModel tagBody, List<FieldModel> fields) {
+  public static FieldDiscriminant header(FieldModel tagBody, List<FieldModel> fields) {
     return new HeaderFields(tagBody, fields);
   }
 
-  public static FieldDiscriminate attribute(FieldModel field) {
+  public static FieldDiscriminant attribute(FieldModel field) {
     return new SingleField(field) {
       @Override
       public FieldModel getSingleField() {
@@ -31,7 +31,7 @@ public abstract class FieldDiscriminate {
     };
   }
 
-  public static FieldDiscriminate item(FieldModel field) {
+  public static FieldDiscriminant item(FieldModel field) {
     return new SingleField(field) {
       @Override
       public FieldModel getSingleField() {
@@ -40,7 +40,7 @@ public abstract class FieldDiscriminate {
     };
   }
 
-  public static FieldDiscriminate body(FieldModel field) {
+  public static FieldDiscriminant body(FieldModel field) {
     return new SingleField(field) {
       @Override
       public boolean isBody() {
@@ -77,7 +77,7 @@ public abstract class FieldDiscriminate {
     throw new UnsupportedOperationException();
   }
 
-  public static class SingleField extends FieldDiscriminate {
+  public static class SingleField extends FieldDiscriminant {
     private final FieldModel field;
 
     public SingleField(FieldModel field) {
@@ -101,7 +101,7 @@ public abstract class FieldDiscriminate {
     }
   }
 
-  public static class HeaderFields extends FieldDiscriminate {
+  public static class HeaderFields extends FieldDiscriminant {
     private final List<FieldModel> fields;
     private final FieldModel tagBody;
 

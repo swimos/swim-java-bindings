@@ -1,11 +1,14 @@
 package ai.swim.structure.processor.writer.writerForm;
 
-import ai.swim.structure.processor.model.*;
-import ai.swim.structure.processor.model.mapping.CoreTypeKind;
-import ai.swim.structure.processor.model.mapping.KnownTypeModel;
+import ai.swim.structure.processor.model.ArrayLibraryModel;
+import ai.swim.structure.processor.model.CoreTypeModel;
+import ai.swim.structure.processor.model.InitializedType;
+import ai.swim.structure.processor.model.InvalidModelException;
+import ai.swim.structure.processor.model.Model;
+import ai.swim.structure.processor.model.ParameterisedTypeModel;
+import ai.swim.structure.processor.model.TypeInitializer;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
-
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.PackageElement;
@@ -17,8 +20,10 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-
-import static ai.swim.structure.processor.writer.writerForm.Lookups.*;
+import static ai.swim.structure.processor.writer.writerForm.Lookups.ARRAY_WRITER_CLASS;
+import static ai.swim.structure.processor.writer.writerForm.Lookups.LIST_WRITER_CLASS;
+import static ai.swim.structure.processor.writer.writerForm.Lookups.MAP_WRITER_CLASS;
+import static ai.swim.structure.processor.writer.writerForm.Lookups.STD_PACKAGE;
 
 public class WriterTypeInitializer implements TypeInitializer {
   private final ProcessingEnvironment environment;
@@ -30,13 +35,13 @@ public class WriterTypeInitializer implements TypeInitializer {
   }
 
   @Override
-  public InitializedType core(CoreTypeKind typeKind) {
+  public InitializedType core(CoreTypeModel model) {
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
     TypeMirror mirror;
     CodeBlock initializer;
 
-    switch (typeKind) {
+    switch (model.getKind()) {
       case Character:
         mirror = typeUtils.getPrimitiveType(TypeKind.CHAR);
         initializer = CodeBlock.of("ai.swim.structure.writer.std.ScalarWriters.CHARACTER");
@@ -86,7 +91,7 @@ public class WriterTypeInitializer implements TypeInitializer {
         initializer = CodeBlock.of("ai.swim.structure.writer.std.ScalarWriters.BIG_DECIMAL");
         break;
       default:
-        throw new AssertionError("Unhandled primitive type: " + typeKind);
+        throw new AssertionError("Unhandled primitive type: " + model.getKind());
     }
 
     if (mirror.getKind().isPrimitive()) {
@@ -102,7 +107,12 @@ public class WriterTypeInitializer implements TypeInitializer {
     InitializedType initializedComponentType = model.getComponentModel().instantiate(this, inConstructor);
     ClassName className = ClassName.get(STD_PACKAGE, ARRAY_WRITER_CLASS);
     CodeBlock classTy = CodeBlock.of("(Class<$T>) (Class<?>) Object.class", initializedComponentType.getMirror());
-    return new InitializedType(model.getType(), CodeBlock.of("new $T($L, $L)", className, initializedComponentType.getInitializer(), classTy));
+    return new InitializedType(
+        model.getType(),
+        CodeBlock.of("new $T($L, $L)",
+                     className,
+                     initializedComponentType.getInitializer(),
+                     classTy));
   }
 
   @Override
@@ -117,8 +127,8 @@ public class WriterTypeInitializer implements TypeInitializer {
     ClassName className;
     TypeMirror type = model.getType();
 
-    if (model.isKnownType()) {
-      KnownTypeModel knownType = (KnownTypeModel) model;
+    if (model.isParameterisedType()) {
+      ParameterisedTypeModel knownType = (ParameterisedTypeModel) model;
       switch (knownType.getTypeMapping()) {
         case List:
           className = ClassName.get(STD_PACKAGE, LIST_WRITER_CLASS);

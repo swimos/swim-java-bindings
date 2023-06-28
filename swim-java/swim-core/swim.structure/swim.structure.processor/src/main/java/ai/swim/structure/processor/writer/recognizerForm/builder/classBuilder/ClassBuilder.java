@@ -16,7 +16,7 @@ package ai.swim.structure.processor.writer.recognizerForm.builder.classBuilder;
 
 import ai.swim.structure.processor.model.ClassLikeModel;
 import ai.swim.structure.processor.model.FieldModel;
-import ai.swim.structure.processor.schema.FieldDiscriminate;
+import ai.swim.structure.processor.schema.FieldDiscriminant;
 import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
@@ -69,7 +69,7 @@ public class ClassBuilder extends Builder {
     List<ParameterSpec> parameters = writeGenericRecognizerConstructor(model.getTypeParameters(), context);
     CodeBlock.Builder body = CodeBlock.builder();
 
-    for (FieldDiscriminate discriminate : partitionedFields.discriminate()) {
+    for (FieldDiscriminant discriminate : partitionedFields.discriminate()) {
       if (!discriminate.isHeader()) {
         FieldModel fieldModel = discriminate.getSingleField();
         VariableElement element = fieldModel.getElement();
@@ -85,7 +85,7 @@ public class ClassBuilder extends Builder {
 
     if (partitionedFields.hasHeaderFields()) {
       RecognizerNameFormatter formatter = context.getFormatter();
-      HashSet<TypeMirror> headerTypeParameters = partitionedFields.headerSet.typeParameters();
+      HashSet<TypeMirror> headerTypeParameters = partitionedFields.headerSpec.typeParameters();
       String typeParameters = headerTypeParameters.stream().map(ty -> formatter.typeParameterName(ty.toString())).collect(Collectors.joining(", "));
 
       /*
@@ -108,10 +108,10 @@ public class ClassBuilder extends Builder {
           "this.$L = $L($L, () -> new $L($L), $L, $L);",
           formatter.headerBuilderFieldName(),
           formatter.headerBuilderMethod(),
-          partitionedFields.headerSet.hasTagBody(),
+          partitionedFields.headerSpec.hasTagBody(),
           formatter.headerBuilderCanonicalName(),
           typeParameters,
-          partitionedFields.headerSet.headerFields.size(),
+          partitionedFields.headerSpec.headerFields.size(),
           new HeaderIndexFn(partitionedFields, context)
       ));
     }
@@ -162,7 +162,7 @@ public class ClassBuilder extends Builder {
     ProcessingEnvironment processingEnvironment = context.getProcessingEnvironment();
     Elements elementUtils = processingEnvironment.getElementUtils();
 
-    HashSet<TypeMirror> headerTypeParameters = partitionedFields.headerSet.typeParameters();
+    HashSet<TypeMirror> headerTypeParameters = partitionedFields.headerSpec.typeParameters();
     TypeName targetType = ClassName.bestGuess(formatter.headerClassName());
 
     if (!headerTypeParameters.isEmpty()) {
@@ -195,7 +195,7 @@ public class ClassBuilder extends Builder {
         .stream()
         .filter(f -> !f.isHeader())
         .flatMap(f -> {
-          FieldDiscriminate.SingleField singleField = (FieldDiscriminate.SingleField) f;
+          FieldDiscriminant.SingleField singleField = (FieldDiscriminant.SingleField) f;
           return Stream.of(singleField.getField());
         })
         .collect(Collectors.toList());
