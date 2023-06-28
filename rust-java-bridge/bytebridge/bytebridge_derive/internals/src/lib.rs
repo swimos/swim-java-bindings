@@ -36,10 +36,6 @@ fn expand(input: DeriveInput) -> Result<TokenStream, Error> {
         };
     };
 
-    if "PropVar" == ty_ident.to_string() {
-        println!("{}", tokens.to_string());
-    }
-
     Ok(tokens)
 }
 

@@ -26,7 +26,7 @@ public class Test {
    * @throws IllegalArgumentException if a contains negative elements
    */
   public void setA(int[] a) {
-    for (byte b : a) {
+    for (int b : a) {
       if (b < 0) {
         throw new IllegalArgumentException("'a' contains negative numbers");
       }

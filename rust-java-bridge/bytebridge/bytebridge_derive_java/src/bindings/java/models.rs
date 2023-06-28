@@ -91,6 +91,15 @@ pub enum JavaType {
 }
 
 impl JavaType {
+    pub fn component_type(&self) -> JavaType {
+        match self {
+            JavaType::Void => JavaType::Void,
+            JavaType::String => JavaType::String,
+            JavaType::Primitive(ty) => JavaType::Primitive(*ty),
+            JavaType::Array(ty) => JavaType::Primitive(*ty),
+        }
+    }
+
     /// Attempts to align a Rust type to a Java Type.
     pub fn try_map(ident: &str, arguments: &PathArguments) -> Result<JavaType, UnsupportedType> {
         match ident {
@@ -644,8 +653,9 @@ impl Constraint {
     }
 
     /// Builds this constraint into a source code block.
-    fn as_block(&self, field_name: &str) -> Block {
+    fn as_block(&self, field_name: &str, ty: JavaType) -> Block {
         let Constraint { kind, .. } = self;
+        let component_type = ty.component_type();
         match kind {
             ConstraintKind::None => Block::default(),
             ConstraintKind::NonZero => Block::of(format!("if ({field_name} == 0) {{"))
@@ -661,14 +671,14 @@ impl Constraint {
                     .add_line("}")
             }
             ConstraintKind::UnsignedArray => {
-                Block::of(format!("for (byte b : {field_name}) {{"))
+                Block::of(format!("for ({component_type} b : {field_name}) {{"))
                     .add_line(format!("{INDENTATION}if (b < 0) {{"))
                     .add_statement(format!("{INDENTATION}{INDENTATION}throw new IllegalArgumentException(\"'{field_name}' contains negative numbers\")"))
                     .add_line(format!("{INDENTATION}}}"))
                     .add_line("}")
             }
             ConstraintKind::NonZeroArray => {
-                Block::of(format!("for (byte b : {field_name}) {{"))
+                Block::of(format!("for ({component_type} b : {field_name}) {{"))
                     .add_line(format!("{INDENTATION}if (b == 0) {{"))
                     .add_statement(format!("{INDENTATION}{INDENTATION}throw new IllegalArgumentException(\"'{field_name}' contains an element equal to zero\")"))
                     .add_line(format!("{INDENTATION}}}"))
@@ -707,10 +717,10 @@ impl JavaMethodParameter {
         }
     }
 
-    fn from_field(field: &JavaField) -> JavaMethodParameter {
+    fn from_field(name: &str, ty: JavaType) -> JavaMethodParameter {
         JavaMethodParameter {
-            name: field.name.clone(),
-            ty: field.ty,
+            name: name.to_string(),
+            ty,
         }
     }
 }
@@ -866,19 +876,23 @@ impl JavaMethod {
 
     /// Infers a Java Method setter from the provided field.
     pub fn setter_for(field: JavaField) -> JavaMethod {
-        let mut documentation = Documentation::for_setter(field.name.clone());
-        field
-            .constraint
-            .apply_to_docs(&field.name, &mut documentation);
+        let JavaField {
+            name,
+            ty,
+            constraint,
+            ..
+        } = field;
 
-        let body = field
-            .constraint
-            .as_block(&field.name)
-            .add_statement(format!("this.{} = {}", field.name, field.name));
-        let arg = JavaMethodParameter::from_field(&field);
+        let mut documentation = Documentation::for_setter(name.clone());
+        constraint.apply_to_docs(&name, &mut documentation);
+
+        let body = constraint
+            .as_block(&name, ty)
+            .add_statement(format!("this.{name} = {name}"));
+        let arg = JavaMethodParameter::from_field(name.as_str(), ty);
 
         JavaMethod {
-            name: format!("set{}", AsUpperCamelCase(field.name)),
+            name: format!("set{}", AsUpperCamelCase(name)),
             documentation,
             return_type: JavaType::Void,
             args: vec![arg],
