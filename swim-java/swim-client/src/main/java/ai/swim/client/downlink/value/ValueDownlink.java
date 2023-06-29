@@ -15,8 +15,7 @@
 package ai.swim.client.downlink.value;
 
 import ai.swim.client.SwimClientException;
-
-import java.util.concurrent.CountDownLatch;
+import ai.swim.concurrent.Trigger;
 
 /**
  * A Swim Value Downlink representation. A ValueDownlink synchronizes a shared real-time value with a remote value lane
@@ -27,7 +26,7 @@ import java.util.concurrent.CountDownLatch;
  * @param <T> the type of the value.
  */
 public abstract class ValueDownlink<T> {
-  private final CountDownLatch stoppedBarrier;
+  private final Trigger trigger;
   /// Referenced through FFI and *possibly* set to an error that occurred while the downlink was running. Iff this is
   /// non-null *after* calling 'awaitStopped' then the downlink terminated with an error and it *must* be thrown from
   /// that method. Iff it is null then the downlink terminated successfully.
@@ -41,8 +40,8 @@ public abstract class ValueDownlink<T> {
   @SuppressWarnings({"FieldCanBeLocal", "unused"})
   private final ValueDownlinkState<T> state;
 
-  protected ValueDownlink(CountDownLatch stoppedBarrier, ValueDownlinkState<T> state) {
-    this.stoppedBarrier = stoppedBarrier;
+  protected ValueDownlink(Trigger trigger, ValueDownlinkState<T> state) {
+    this.trigger = trigger;
     this.state = state;
   }
 
@@ -53,7 +52,7 @@ public abstract class ValueDownlink<T> {
    */
   public void awaitStopped() throws SwimClientException {
     try {
-      stoppedBarrier.await();
+      trigger.awaitTrigger();
     } catch (InterruptedException e) {
       throw new SwimClientException(e);
     }

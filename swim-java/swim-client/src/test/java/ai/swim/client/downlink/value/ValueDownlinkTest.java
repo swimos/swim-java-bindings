@@ -17,6 +17,7 @@ import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.DownlinkConfig;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
+import ai.swim.concurrent.Trigger;
 import ai.swim.structure.Form;
 import ai.swim.structure.Recon;
 import ai.swim.structure.annotations.AutoForm;
@@ -47,7 +48,7 @@ class ValueDownlinkTest {
   }
 
   private static native long lifecycleTest(
-      CountDownLatch lock,
+      Trigger trigger,
       String input,
       String host,
       String node,
@@ -66,14 +67,14 @@ class ValueDownlinkTest {
    */
   @Test
   void simpleOpen() throws InterruptedException {
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger trigger = new Trigger();
     TestValueDownlink<String> downlink = (TestValueDownlink<String>) new TestValueDownlinkBuilder<>(String.class, "host", "node", "lane", (build) -> {
       ValueDownlinkState<String> state = new ValueDownlinkState<>(Form.forClass(build.formType));
-      CountDownLatch stoppedBarrier = new CountDownLatch(1);
+      Trigger stoppedBarrier = new Trigger();
       TestValueDownlink<String> testValueDownlink = new TestValueDownlink<>(stoppedBarrier, state);
 
       long ptr = lifecycleTest(
-          lock,
+          trigger,
           "",
           build.host,
           build.node,
@@ -91,7 +92,7 @@ class ValueDownlinkTest {
     }).open();
 
     downlink.close();
-    awaitLatch(lock, 5, "downlink");
+    awaitTrigger(trigger, 5, "downlink");
   }
 
   <I> void runTestOk(Class<I> clazz, ConcurrentLinkedDeque<I> syncEvents, ConcurrentLinkedDeque<I> events) throws InterruptedException, SwimClientException {
@@ -110,14 +111,14 @@ class ValueDownlinkTest {
 
     input.append("@unlinked(node:node,lane:lane)\n");
 
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     AtomicReference<LinkState> linkState = new AtomicReference<>(LinkState.Init);
     AtomicReference<I> last = new AtomicReference<>(null);
 
     TestValueDownlinkBuilder<I> builder = new TestValueDownlinkBuilder<>(clazz, "host", "node", "lane", (build) -> {
       ValueDownlinkLifecycle<I> lifecycle = build.lifecycle;
       ValueDownlinkState<I> state = new ValueDownlinkState<>(Form.forClass(build.formType));
-      CountDownLatch stoppedBarrier = new CountDownLatch(1);
+      Trigger stoppedBarrier = new Trigger();
       TestValueDownlink<I> testValueDownlink = new TestValueDownlink<>(stoppedBarrier, state);
 
       long ptr = lifecycleTest(
@@ -220,7 +221,7 @@ class ValueDownlinkTest {
     awaitLatch(event, 5, "event");
     awaitLatch(set, 5, "set");
     awaitLatch(unlinked, 5, "unlinked");
-    awaitLatch(lock, 10, "test lock");
+    awaitTrigger(lock, 10, "test lock");
 
     downlink.close();
   }
@@ -246,6 +247,12 @@ class ValueDownlinkTest {
 
   void awaitLatch(CountDownLatch latch, long time, String latchName) throws InterruptedException {
     if (!latch.await(time, TimeUnit.SECONDS)) {
+      fail(String.format("%s latch elapsed before countdown reached", latchName));
+    }
+  }
+
+  void awaitTrigger(Trigger trigger, long time, String latchName) throws InterruptedException {
+    if (!trigger.awaitTrigger(time, TimeUnit.SECONDS)) {
       fail(String.format("%s latch elapsed before countdown reached", latchName));
     }
   }
@@ -278,8 +285,8 @@ class ValueDownlinkTest {
   private static class TestValueDownlink<T> extends ValueDownlink<T> {
     private Runnable close;
 
-    TestValueDownlink(CountDownLatch stoppedBarrier, ValueDownlinkState<T> state) {
-      super(stoppedBarrier, state);
+    TestValueDownlink(Trigger trigger, ValueDownlinkState<T> state) {
+      super(trigger, state);
     }
 
     public void close() {
@@ -356,8 +363,8 @@ class ValueDownlinkTest {
 
   private static native <T> long driveDownlink(
       ValueDownlink<T> downlinkRef,
-      CountDownLatch stoppedBarrier,
-      CountDownLatch testBarrier,
+      Trigger stoppedBarrier,
+      Trigger testBarrier,
       String host,
       String node,
       String lane,
@@ -377,12 +384,12 @@ class ValueDownlinkTest {
     CountDownLatch eventLatch = new CountDownLatch(1);
     CountDownLatch setLatch = new CountDownLatch(1);
     CountDownLatch unlinkedLatch = new CountDownLatch(1);
-    CountDownLatch ffiBarrier = new CountDownLatch(1);
+    Trigger ffiBarrier = new Trigger();
 
     TestValueDownlinkBuilder<Integer> builder = new TestValueDownlinkBuilder<>(Integer.class, "ws://127.0.0.1", "node", "lane", (build) -> {
       ValueDownlinkLifecycle<Integer> lifecycle = build.lifecycle;
       ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(build.formType));
-      CountDownLatch stoppedBarrier = new CountDownLatch(1);
+      Trigger stoppedBarrier = new Trigger();
       TestValueDownlink<Integer> downlink = new TestValueDownlink<>(null, state);
 
       long ptr = driveDownlink(
@@ -427,7 +434,7 @@ class ValueDownlinkTest {
     awaitLatch(setLatch, 10, "setLatch");
     awaitLatch(unlinkedLatch, 10, "unlinkedLatch");
 
-    ffiBarrier.countDown();
+    ffiBarrier.trigger();
 
     assertEquals(0, linkedLatch.getCount());
     assertEquals(0, syncedLatch.getCount());
@@ -440,14 +447,14 @@ class ValueDownlinkTest {
 
   @Test
   void invalidUrl() {
-    CountDownLatch barrier = new CountDownLatch(1);
+    Trigger barrier = new Trigger();
     assertThrows(SwimClientException.class, () -> {
       ValueDownlink<Object> downlink = new ValueDownlink<>(null, null) {
       };
 
       driveDownlink(
           downlink,
-          new CountDownLatch(1),
+          new Trigger(),
           barrier,
           "swim.ai",
           "",
@@ -459,11 +466,11 @@ class ValueDownlinkTest {
 
   @Test
   void testAwaitClosedOk() throws SwimClientException {
-    CountDownLatch ffiBarrier = new CountDownLatch(1);
+    Trigger ffiBarrier = new Trigger();
 
     TestValueDownlink<Integer> testDownlink = (TestValueDownlink<Integer>) new TestValueDownlinkBuilder<>(Integer.class, "ws://127.0.0.1", "node", "lane", (build) -> {
       ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(build.formType));
-      CountDownLatch stoppedBarrier = new CountDownLatch(1);
+      Trigger stoppedBarrier = new Trigger();
       TestValueDownlink<Integer> downlink = new TestValueDownlink<>(stoppedBarrier, state);
 
       long ptr = driveDownlink(
@@ -496,17 +503,17 @@ class ValueDownlinkTest {
 
   private static native <T> long driveDownlinkError(
       ValueDownlink<T> downlinkRef,
-      CountDownLatch stoppedBarrier,
-      CountDownLatch testBarrier,
+      Trigger stoppedBarrier,
+      Trigger testBarrier,
       Consumer<ByteBuffer> onEvent
   );
 
   @Test
   void testAwaitClosedError() throws SwimClientException {
-    CountDownLatch ffiBarrier = new CountDownLatch(1);
+    Trigger ffiBarrier = new Trigger();
     TestValueDownlink<Integer> testDownlink = (TestValueDownlink<Integer>) new TestValueDownlinkBuilder<>(Integer.class, "ws://127.0.0.1", "node", "lane", (build) -> {
       ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(build.formType));
-      CountDownLatch stoppedBarrier = new CountDownLatch(1);
+      Trigger stoppedBarrier = new Trigger();
       TestValueDownlink<Integer> downlink = new TestValueDownlink<>(stoppedBarrier, state);
       ValueDownlinkLifecycle<Integer> lifecycle = build.lifecycle;
 

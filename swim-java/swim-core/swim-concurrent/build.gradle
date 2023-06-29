@@ -1,0 +1,10 @@
+ext.moduleName = 'swim-concurrent'
+
+dependencies {
+
+}
+
+repositories {
+    mavenCentral()
+}
+

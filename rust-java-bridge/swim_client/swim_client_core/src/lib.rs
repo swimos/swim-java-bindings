@@ -24,7 +24,7 @@ use jni::objects::{GlobalRef, JValue};
 use jni::JNIEnv;
 use jni::JavaVM;
 #[cfg(feature = "deflate")]
-use ratchet::deflate::DeflateExtProvider;
+use ratchet::deflate::{DeflateConfig, DeflateExtProvider};
 #[cfg(not(feature = "deflate"))]
 use ratchet::NoExtProvider;
 use ratchet::WebSocketStream;
@@ -45,7 +45,7 @@ use tokio::runtime::{Builder, Handle, Runtime};
 use tokio::task::JoinHandle;
 
 use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
-use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
+use jvm_sys::vm::utils::VmExt;
 use jvm_sys::vm::{with_local_frame_null, SpannedError};
 pub use macros::*;
 
@@ -116,11 +116,18 @@ impl SwimClient {
             remote_buffer_size,
             transport_buffer_size,
             registration_buffer_size,
-            ..
+            #[cfg(feature = "deflate")]
+            deflate,
         } = config;
+
+        #[cfg(feature = "deflate")]
+        let websockets = build_websockets(websocket, deflate);
+        #[cfg(not(feature = "deflate"))]
+        let websockets = build_websockets(websocket);
+
         let transport = Transport::new(
             build_networking(runtime.handle()),
-            build_websockets(websocket),
+            websockets,
             remote_buffer_size,
         );
         SwimClient::with_transport(
@@ -149,11 +156,9 @@ impl SwimClient {
 }
 
 #[cfg(not(feature = "deflate"))]
-fn build_websockets(config: client_runtime::WebSocketConfig) -> RatchetNetworking<NoExtProvider> {
+fn build_websockets(config: ratchet::WebSocketConfig) -> RatchetNetworking<NoExtProvider> {
     RatchetNetworking {
-        config: ratchet::WebSocketConfig {
-            max_message_size: config.max_message_size,
-        },
+        config,
         provider: NoExtProvider,
         subprotocols: Default::default(),
     }
@@ -161,13 +166,12 @@ fn build_websockets(config: client_runtime::WebSocketConfig) -> RatchetNetworkin
 
 #[cfg(feature = "deflate")]
 fn build_websockets(
-    config: client_runtime::WebSocketConfig,
+    config: ratchet::WebSocketConfig,
+    deflate_config: Option<DeflateConfig>,
 ) -> RatchetNetworking<DeflateExtProvider> {
     RatchetNetworking {
-        config: ratchet::WebSocketConfig {
-            max_message_size: config.max_message_size,
-        },
-        provider: DeflateExtProvider::with_config(config.deflate_config.unwrap_or_default()),
+        config,
+        provider: DeflateExtProvider::with_config(deflate_config.unwrap_or_default()),
         subprotocols: Default::default(),
     }
 }
@@ -249,7 +253,7 @@ impl ClientHandle {
             }
             Err(e) => {
                 // any errors will have already been logged by the runtime
-                let env = get_env_shared(&vm).expect("Failed to get JNI environment");
+                let env = vm.expect_env();
                 env.throw_new(
                     "java/lang/Exception",
                     format!("Failed to spawn downlink: {:?}", e),
@@ -272,7 +276,7 @@ fn spawn_monitor(
         let result = receiver
             .await
             .map_err(|_| DownlinkRuntimeError::new(DownlinkErrorKind::Terminated));
-        let env = get_env_shared_expect(&vm);
+        let env = vm.expect_env();
 
         match result {
             Ok(arc_result) => {
@@ -288,10 +292,9 @@ fn spawn_monitor(
 }
 
 fn notify_stopped(env: &JNIEnv, stopped_barrier: GlobalRef) {
-    let mut countdown =
-        JavaObjectMethodDef::new("java/util/concurrent/CountDownLatch", "countDown", "()V")
-            .initialise(env)
-            .expect("Failed to initialise countdown latch method");
+    let mut countdown = JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
+        .initialise(env)
+        .expect("Failed to initialise countdown latch method");
 
     if let Err(e) = countdown.invoke(env, &stopped_barrier, &[]) {
         env.fatal_error(&e.to_string());

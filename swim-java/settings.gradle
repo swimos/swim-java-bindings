@@ -22,7 +22,5 @@ project(':swim-core/swim-structure/swim-structure-processor').name = 'swim-struc
 include('swim-core/swim-util')
 project(':swim-core/swim-util').name = 'swim-util'
 
-include 'swim-ffi'
-
-//include('swim-ffi/swim-lang-ffi')
-//project(':swim-ffi/swim-lang-ffi').name = 'swim-lang-ffi'
+include('swim-core/swim-concurrent')
+project(':swim-core/swim-concurrent').name = 'swim-concurrent'

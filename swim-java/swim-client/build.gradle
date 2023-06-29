@@ -112,6 +112,7 @@ application {
 dependencies {
     api project(':swim-codec')
     api project(':swim-recon')
+    api project(':swim-concurrent')
 
     implementation project(':swim-structure')
     annotationProcessor project(':swim-structure-processor')

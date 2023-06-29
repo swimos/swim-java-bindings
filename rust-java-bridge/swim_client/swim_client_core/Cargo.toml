@@ -17,7 +17,7 @@ swim_api = { path = "../../../swim-rust/api/swim_api" }
 swim_model = { path = "../../../swim-rust/api/swim_model" }
 swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["byte_channel"] }
 swim_recon = { path = "../../../swim-rust/api/formats/swim_recon" }
-ratchet = { package = "ratchet_rs", version = "0.2.0" }
+ratchet = { workspace = true }
 swim_runtime = { path = "../../../swim-rust/runtime/swim_runtime" }
 swim_tls = { path = "../../../swim-rust/runtime/swim_tls", optional = true }
 

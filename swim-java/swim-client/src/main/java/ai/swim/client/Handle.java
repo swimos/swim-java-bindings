@@ -19,7 +19,7 @@ package ai.swim.client;
  * <p>
  * Created through swim_client/src/lib.rs#Java_ai_swim_client_SwimClient_handle
  */
-public class Handle {
+public class Handle implements AutoCloseable {
   private final long handlePtr;
   private boolean dropped;
 
@@ -49,4 +49,10 @@ public class Handle {
 
   private static native long dropHandle(long handlePtr);
 
+  @Override
+  public void close() {
+    if (!dropped) {
+      drop();
+    }
+  }
 }

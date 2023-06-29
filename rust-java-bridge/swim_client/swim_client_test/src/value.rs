@@ -27,6 +27,7 @@ use jni::errors::Error;
 use jni::objects::{GlobalRef, JObject, JString};
 use jni::sys::{jbyteArray, jobject};
 use jni::JNIEnv;
+use jvm_sys::vm::utils::VmExt;
 use swim_api::downlink::{Downlink, DownlinkConfig};
 use swim_api::protocol::downlink::{DownlinkNotification, DownlinkNotificationEncoder};
 use swim_form::Form;
@@ -44,7 +45,7 @@ use url::Url;
 
 use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
 use jvm_sys::vm::set_panic_hook;
-use jvm_sys::vm::utils::{get_env_shared, new_global_ref};
+use jvm_sys::vm::utils::new_global_ref;
 use jvm_sys::{jni_try, jvm_tryf, parse_string};
 use jvm_sys_tests::run_test;
 use swim_client_core::downlink::value::FfiValueDownlink;
@@ -295,7 +296,7 @@ client_fn! {
         let vm = handle.vm();
 
         let mut countdown =
-            JavaObjectMethodDef::new("java/util/concurrent/CountDownLatch", "countDown", "()V")
+            JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
                 .initialise(&env)
                 .unwrap();
 
@@ -316,7 +317,7 @@ client_fn! {
             lane_peer.send_event(15).await;
             lane_peer.send_unlinked().await;
 
-            let env = get_env_shared(&vm).unwrap();
+            let env = vm.expect_env();
             countdown_latch(&env, barrier_global_ref);
         });
 
@@ -400,7 +401,7 @@ client_fn! {
         let vm = handle.vm();
 
         let mut countdown =
-            JavaObjectMethodDef::new("java/util/concurrent/CountDownLatch", "countDown", "()V")
+            JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
                 .initialise(&env)
                 .unwrap();
 
@@ -409,7 +410,7 @@ client_fn! {
             lane_peer.await_link().await;
             lane_peer.await_sync(13).await;
             lane_peer.send_event(Value::text("blah")).await;
-            let env = get_env_shared(&vm).unwrap();
+            let env = vm.expect_env();
 
             match countdown.invoke(&env, &barrier_global_ref, &[]) {
                 Ok(_) => {}

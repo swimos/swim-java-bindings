@@ -22,22 +22,21 @@ use jni::errors::JniError;
 use jni::objects::{GlobalRef, JObject, JString, JValue};
 use jni::JNIEnv;
 
-pub mod exception;
 pub mod method;
 pub mod utils;
 
-enum ErrorDiscriminate {
+enum ErrorDiscriminant {
     Exception,
     Detached,
     Bug,
 }
 
-impl From<&jni::errors::Error> for ErrorDiscriminate {
-    fn from(d: &jni::errors::Error) -> ErrorDiscriminate {
+impl From<&jni::errors::Error> for ErrorDiscriminant {
+    fn from(d: &jni::errors::Error) -> ErrorDiscriminant {
         match d {
-            jni::errors::Error::JavaException => ErrorDiscriminate::Exception,
-            jni::errors::Error::JniCall(JniError::ThreadDetached) => ErrorDiscriminate::Detached,
-            _ => ErrorDiscriminate::Bug,
+            jni::errors::Error::JavaException => ErrorDiscriminant::Exception,
+            jni::errors::Error::JniCall(JniError::ThreadDetached) => ErrorDiscriminant::Detached,
+            _ => ErrorDiscriminant::Bug,
         }
     }
 }
@@ -127,12 +126,12 @@ where
 {
     match (f)() {
         Ok(o) => Ok(o),
-        Err(e) => match ErrorDiscriminate::from(&e) {
-            ErrorDiscriminate::Exception => Err(handle_exception(Location::caller(), env)),
-            ErrorDiscriminate::Bug => {
+        Err(e) => match ErrorDiscriminant::from(&e) {
+            ErrorDiscriminant::Exception => Err(handle_exception(Location::caller(), env)),
+            ErrorDiscriminant::Bug => {
                 panic!("Failed to execute JNI function. Cause: {:?}", e)
             }
-            ErrorDiscriminate::Detached => {
+            ErrorDiscriminant::Detached => {
                 unreachable!("Attempted to use a detached JNI interface")
             }
         },

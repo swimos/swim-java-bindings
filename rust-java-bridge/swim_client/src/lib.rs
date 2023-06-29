@@ -24,7 +24,7 @@ use url::Url;
 
 use jvm_sys::vm::set_panic_hook;
 use jvm_sys::vm::utils::new_global_ref;
-use jvm_sys::{jni_try, npch, parse_string};
+use jvm_sys::{jni_try, null_pointer_check_abort, parse_string};
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
 use swim_client_core::{client_fn, ClientConfig, ClientHandle, SwimClient};
@@ -51,7 +51,7 @@ client_fn! {
         _class,
         client: *mut SwimClient,
     ) {
-        npch!(env, client);
+        null_pointer_check_abort!(env, client);
         let runtime = unsafe { Box::from_raw(client) };
         runtime.shutdown();
 
@@ -65,7 +65,7 @@ client_fn! {
         _class,
         runtime: *mut SwimClient,
     ) -> ClientHandle {
-        npch!(env, runtime);
+        null_pointer_check_abort!(env, runtime);
         let runtime = unsafe { &*runtime };
         let handle = runtime.handle();
 
@@ -79,7 +79,7 @@ client_fn! {
         _class,
         handle: *mut ClientHandle,
     ) {
-        npch!(env, handle);
+        null_pointer_check_abort!(env, handle);
         unsafe {
             drop(Box::from_raw(handle));
         }
@@ -106,7 +106,7 @@ client_fn! {
         on_synced: jobject,
         on_unlinked: jobject,
     ) {
-        npch!(env, handle, stopped_barrier, downlink_ref, config);
+        null_pointer_check_abort!(env, handle, stopped_barrier, downlink_ref, config);
 
         let mut config_bytes = jni_try! {
             env,
