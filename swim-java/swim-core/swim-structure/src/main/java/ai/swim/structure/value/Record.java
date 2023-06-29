@@ -14,11 +14,7 @@
 
 package ai.swim.structure.value;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Record extends Value {
   private static final Attr[] EMPTY_ATTR_DATA = {};

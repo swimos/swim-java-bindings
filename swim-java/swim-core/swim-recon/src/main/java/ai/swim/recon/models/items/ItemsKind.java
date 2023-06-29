@@ -16,7 +16,7 @@ package ai.swim.recon.models.items;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParseState;
-import ai.swim.recon.models.state.StateChange;
+import ai.swim.recon.models.state.Action;
 
 public interface ItemsKind {
   static ItemsKind attr() {
@@ -41,5 +41,5 @@ public interface ItemsKind {
 
   ReadEvent endEvent();
 
-  StateChange endStateChange();
+  Action endStateChange();
 }

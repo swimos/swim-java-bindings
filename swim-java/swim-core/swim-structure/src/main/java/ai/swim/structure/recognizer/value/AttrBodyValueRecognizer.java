@@ -27,14 +27,14 @@ import java.util.List;
 class AttrBodyValueRecognizer extends ValueRecognizer {
 
   public AttrBodyValueRecognizer() {
-    stack.push(new ValueRecognizer.IncrementalValueBuilder(null, true));
+    stack.push(new IncrementalValueBuilder(null, true));
   }
 
   @Override
   public Recognizer<Value> feedEvent(ReadEvent event) {
     if (stack.size() == 1) {
       if (event.isEndAttribute()) {
-        ValueRecognizer.IncrementalValueBuilder builder = stack.getFirst();
+        IncrementalValueBuilder builder = stack.getFirst();
         Record.Builder record = builder.record;
         int itemCount = record.itemCount();
 
