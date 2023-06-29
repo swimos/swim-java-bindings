@@ -91,7 +91,7 @@ public class WriterProxy {
     writers.put(Double.TYPE, WriterFactory.buildFrom(Double.TYPE, Writable.class, () -> ScalarWriters.DOUBLE));
     writers.put(byte[].class, WriterFactory.buildFrom(byte[].class, Writable.class, () -> ScalarWriters.PRIMITIVE_BLOB));
     writers.put(Number.class, WriterFactory.buildFrom(Number.class, Writable.class, () -> ScalarWriters.NUMBER));
-    writers.put(BigInteger.class, WriterFactory.buildFrom(BigInteger.class, Writable.class, () -> ScalarWriters.BIG_INT));
+    writers.put(BigInteger.class, WriterFactory.buildFrom(BigInteger.class, Writable.class, () -> ScalarWriters.BIG_INTEGER));
     writers.put(BigDecimal.class, WriterFactory.buildFrom(BigDecimal.class, Writable.class, () -> ScalarWriters.BIG_DECIMAL));
     writers.put(AtomicInteger.class, WriterFactory.buildFrom(AtomicInteger.class, Writable.class, () -> ScalarWriters.ATOMIC_INTEGER));
     writers.put(AtomicLong.class, WriterFactory.buildFrom(AtomicLong.class, Writable.class, () -> ScalarWriters.ATOMIC_LONG));

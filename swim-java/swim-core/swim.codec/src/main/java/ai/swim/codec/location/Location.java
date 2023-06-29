@@ -21,5 +21,8 @@ public interface Location {
   }
 
   int offset();
+
+  @Override
+  String toString();
 }
 

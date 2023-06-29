@@ -64,6 +64,15 @@ public interface Writable<F> {
   }
 
   /**
+   * Returns a Recon representation of {@code value} using the provided {@link PrintStrategy}.
+   */
+  default String print(Writable<F> writable, F value, PrintStrategy printStrategy) {
+    StringWriter stringWriter = new StringWriter();
+    Recon.printRecon(stringWriter, writable, value, printStrategy);
+    return stringWriter.toString();
+  }
+
+  /**
    * Returns an inline Recon representation of {@code value}.
    */
   default String asReconString(F value) {
@@ -82,12 +91,6 @@ public interface Writable<F> {
    */
   default String asPrettyReconString(F value) {
     return print(this, value, new PrettyPrintStrategy());
-  }
-
-  private static <F> String print(Writable<F> writable, F value, PrintStrategy printStrategy) {
-    StringWriter stringWriter = new StringWriter();
-    Recon.printRecon(stringWriter, writable, value, printStrategy);
-    return stringWriter.toString();
   }
 
 }

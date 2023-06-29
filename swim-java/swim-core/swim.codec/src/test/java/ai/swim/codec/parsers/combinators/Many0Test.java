@@ -12,9 +12,7 @@ import static ai.swim.codec.LambdaParser.lambda;
 import static ai.swim.codec.parsers.MapReduce.mapReduce;
 import static ai.swim.codec.parsers.combinators.Many0.many0;
 import static ai.swim.codec.parsers.text.EqChar.eqChar;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class Many0Test {
 

@@ -14,7 +14,7 @@
 
 package ai.swim.recon.models.state;
 
-public class PushBody extends StateChange {
+public class PushBody extends Action {
   PushBody() {
 
   }

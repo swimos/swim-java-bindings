@@ -29,7 +29,6 @@ import java.util.function.Supplier;
  * @param <T> the type that the {@code Writable} produces.
  */
 class WriterFactory<T> {
-
   /**
    * A supplier for creating a new {@code Writable<T>}
    */

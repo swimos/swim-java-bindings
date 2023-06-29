@@ -16,6 +16,7 @@ package ai.swim.structure.writer.print.strategy;
 
 import ai.swim.structure.writer.print.Padding;
 
+
 /**
  * An interface for defining Recon print strategies.
  */
@@ -29,7 +30,6 @@ public interface PrintStrategy {
    * A standard Recon print strategy which writes spaces between attributes, items and slots.
    */
   PrintStrategy STANDARD = new StandardPrintStrategy();
-
 
   Padding attrPadding();
 

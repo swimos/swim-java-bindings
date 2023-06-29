@@ -75,12 +75,17 @@ class TypedNumberTest {
     numberTestOk("0x3039", 12345);
     numberTestOk("1230x3039", 1230);
     numberTestOk("0x3039", 12345);
+    //    numberTestOk("nan", Float.NaN);
+    //    numberTestOk("NaN", Float.NaN);
     numberTestOk("-inf", Float.NEGATIVE_INFINITY);
+    //    numberTestOk("inf", Float.POSITIVE_INFINITY);
+    //    numberTestOk("infinity", Float.POSITIVE_INFINITY);
     numberTestOk("12345.0", 12345.0f);
     numberTestOk("1", 1);
     numberTestOk("0012345", 12345);
     numberTestOk("0012345.12345", 12345.12345);
     numberTestOk("0x3039 ", 12345);
+    //    numberTestOk("nan ", Float.NaN);
     numberTestOk("-inf ", Float.NEGATIVE_INFINITY);
     numberTestOk("12345.0 ", 12345.0f);
     numberTestOk("1 ", 1);

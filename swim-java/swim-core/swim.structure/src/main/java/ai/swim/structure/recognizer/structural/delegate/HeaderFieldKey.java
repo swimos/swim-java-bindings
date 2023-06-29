@@ -9,7 +9,7 @@ public abstract class HeaderFieldKey {
   };
 
   public static HeaderFieldKey slot(String name) {
-    return new HeaderFieldKey.HeaderSlotKey(name);
+    return new HeaderSlotKey(name);
   }
 
   public boolean isHeaderBody() {

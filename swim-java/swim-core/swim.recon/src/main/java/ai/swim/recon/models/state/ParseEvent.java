@@ -18,11 +18,11 @@ import ai.swim.recon.models.ParseState;
 
 import java.util.Objects;
 
-public class ModifyState extends StateChange {
+public class ParseEvent extends Action {
 
   private final ParseState state;
 
-  public ModifyState(ParseState state) {
+  public ParseEvent(ParseState state) {
     this.state = state;
   }
 
@@ -34,7 +34,7 @@ public class ModifyState extends StateChange {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ModifyState that = (ModifyState) o;
+    ParseEvent that = (ParseEvent) o;
     return state == that.state;
   }
 
@@ -48,7 +48,7 @@ public class ModifyState extends StateChange {
   }
 
   @Override
-  public boolean isModify() {
+  public boolean isParseEvent() {
     return true;
   }
 

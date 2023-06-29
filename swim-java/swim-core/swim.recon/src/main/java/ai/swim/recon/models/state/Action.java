@@ -14,42 +14,42 @@
 
 package ai.swim.recon.models.state;
 
-public abstract class StateChange {
-  private static StateChange POP_AFTER_ATTR;
-  private static StateChange POP_AFTER_ITEM;
-  private static StateChange PUSH_ATTR;
-  private static StateChange PUSH_BODY;
-  private static StateChange NONE;
+public abstract class Action {
+  private static Action POP_AFTER_ATTR;
+  private static Action POP_AFTER_ITEM;
+  private static Action PUSH_ATTR;
+  private static Action PUSH_BODY;
+  private static Action NONE;
 
-  public static StateChange popAfterAttr() {
+  public static Action popAfterAttr() {
     if (POP_AFTER_ATTR == null) {
       POP_AFTER_ATTR = new PopAfterAttr();
     }
     return POP_AFTER_ATTR;
   }
 
-  public static StateChange popAfterItem() {
+  public static Action popAfterItem() {
     if (POP_AFTER_ITEM == null) {
       POP_AFTER_ITEM = new PopAfterItem();
     }
     return POP_AFTER_ITEM;
   }
 
-  public static StateChange none() {
+  public static Action none() {
     if (NONE == null) {
-      NONE = new NoStateChange();
+      NONE = new NoAction();
     }
     return NONE;
   }
 
-  public static StateChange pushAttr() {
+  public static Action pushAttr() {
     if (PUSH_ATTR == null) {
       PUSH_ATTR = new PushAttr();
     }
     return PUSH_ATTR;
   }
 
-  public static StateChange pushBody() {
+  public static Action pushBody() {
     if (PUSH_BODY == null) {
       PUSH_BODY = new PushBody();
     }
@@ -68,7 +68,7 @@ public abstract class StateChange {
     return false;
   }
 
-  public boolean isModify() {
+  public boolean isParseEvent() {
     return false;
   }
 

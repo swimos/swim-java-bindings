@@ -29,4 +29,3 @@ public interface StructuralWriter<T> extends PrimitiveWriter<T> {
    */
   HeaderWriter<T> record(int numAttrs);
 }
-

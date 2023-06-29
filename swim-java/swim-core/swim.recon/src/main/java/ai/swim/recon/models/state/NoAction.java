@@ -14,8 +14,8 @@
 
 package ai.swim.recon.models.state;
 
-public class NoStateChange extends StateChange {
-  NoStateChange() {
+public class NoAction extends Action {
+  NoAction() {
 
   }
 

@@ -22,6 +22,10 @@ subprojects {
     test {
         useJUnitPlatform()
     }
+
+    jar {
+        duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    }
 }
 
 repositories {
