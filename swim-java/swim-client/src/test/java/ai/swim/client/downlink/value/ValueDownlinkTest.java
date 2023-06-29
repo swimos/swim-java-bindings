@@ -253,7 +253,7 @@ class ValueDownlinkTest {
 
   void awaitTrigger(Trigger trigger, long time, String latchName) throws InterruptedException {
     if (!trigger.awaitTrigger(time, TimeUnit.SECONDS)) {
-      fail(String.format("%s latch elapsed before countdown reached", latchName));
+      fail(String.format("%s trigger elapsed before it was fired", latchName));
     }
   }
 
