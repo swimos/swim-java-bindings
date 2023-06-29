@@ -1,6 +1,7 @@
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'java'
+    apply plugin: 'application'
 
     group = "ai.swim"
     version = '0.0.1-SNAPSHOT'

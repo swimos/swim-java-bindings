@@ -46,12 +46,6 @@ import java.io.StringWriter;
  */
 public interface Writable<F> {
 
-  private static <F> String print(Writable<F> writable, F value, PrintStrategy printStrategy) {
-    StringWriter stringWriter = new StringWriter();
-    Recon.printRecon(stringWriter, writable, value, printStrategy);
-    return stringWriter.toString();
-  }
-
   /**
    * Transform's {@code from} into a new representation.
    *

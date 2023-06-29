@@ -127,20 +127,11 @@ public class ConcreteClassWriter extends ClassWriter {
           body.addStatement("__numSlots += 1");
         }
 
-<<<<<<<< HEAD:swim-java/swim-core/swim-structure/swim-structure-processor/src/main/java/ai/swim/structure/processor/writer/writerForm/ConcreteClassWriter.java
         if (fieldModel.getModel().isUnresolved()) {
           String writableName = context.getFormatter().writableName(fieldModel.propertyName());
 
           TypeElement classElement = elementUtils.getTypeElement(Class.class.getCanonicalName());
           DeclaredType classType = typeUtils.getDeclaredType(classElement, fieldModel.type());
-========
-        if (fieldModel.getModel() instanceof RuntimeLookupModel) {
-          String writableName = nameFactory.writableName(fieldModel.propertyName());
-
-
-          TypeElement classElement = elementUtils.getTypeElement(Class.class.getCanonicalName());
-          DeclaredType classType = typeUtils.getDeclaredType(classElement, fieldModel.type(processingEnvironment));
->>>>>>>> 01c6f3e20f9238147e06d257e083e8a71267fd37:swim-java/swim-core/swim-structure/swim-structure-processor/src/main/java/ai/swim/structure/processor/writer/ConcreteClassWriter.java
 
           body.beginControlFlow("if ($L == null || $LClass != $L.getClass())", writableName, writableName, fieldName)
               .addStatement("$L = getProxy().lookupObject($L)", writableName, fieldName)

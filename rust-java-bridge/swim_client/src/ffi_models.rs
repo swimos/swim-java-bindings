@@ -1,13 +1,13 @@
 #[derive(Debug, Default)]
 #[bytebridge]
 pub struct ClientConfig {
-    #[bytebridge(default_value = 8192, range(1, 4294967295))]
+    #[bytebridge(default_value = 8192, natural)]
     pub max_message_size: u32,
-    #[bytebridge(default_value = 4096, range(1, 4294967295))]
+    #[bytebridge(default_value = 4096, natural)]
     pub remote_buffer_size: u32,
-    #[bytebridge(default_value = 32, range(1, 4294967295))]
+    #[bytebridge(default_value = 32, natural)]
     pub transport_buffer_size: u32,
-    #[bytebridge(default_value = 32, range(1, 4294967295))]
+    #[bytebridge(default_value = 32, natural)]
     pub registration_buffer_size: u32,
     /// The client's LZ77 sliding window size. Negotiated during the HTTP upgrade. In client mode,
     /// this conforms to RFC 7692 7.1.2.1. In server mode, this conforms to RFC 7692 7.1.2.2. Must
