@@ -27,12 +27,14 @@ public class Trigger {
   public void trigger() {
     lock.lock();
 
-    if (!triggered) {
-      condition.signalAll();
-      triggered = true;
+    try {
+      if (!triggered) {
+        condition.signalAll();
+        triggered = true;
+      }
+    } finally {
+      lock.unlock();
     }
-
-    lock.unlock();
   }
 
   /**
@@ -42,10 +44,14 @@ public class Trigger {
    */
   public void awaitTrigger() throws InterruptedException {
     lock.lock();
-    if (!triggered) {
-      condition.await();
+
+    try {
+      if (!triggered) {
+        condition.await();
+      }
+    } finally {
+      lock.unlock();
     }
-    lock.unlock();
   }
 
   /**
@@ -60,11 +66,11 @@ public class Trigger {
   public boolean awaitTrigger(long time, TimeUnit unit) throws InterruptedException {
     lock.lock();
 
-    if (!triggered) {
-      return condition.await(time, unit);
+    try {
+      return triggered || condition.await(time, unit);
+    } finally {
+      lock.unlock();
     }
-
-    return true;
   }
 
   /**
@@ -72,9 +78,11 @@ public class Trigger {
    */
   public boolean hasTriggered() {
     lock.lock();
-    boolean triggered = this.triggered;
-    lock.unlock();
-    return triggered;
+    try {
+      return triggered;
+    } finally {
+      lock.unlock();
+    }
   }
 
 }
