@@ -172,7 +172,6 @@ fn build_websockets(
     }
 }
 
-// todo: tls
 #[cfg(not(feature = "tls"))]
 fn build_networking(runtime_handle: &Handle) -> impl ClientConnections<ClientSocket = TcpStream> {
     let resolver = runtime_handle.block_on(Resolver::new());
@@ -183,7 +182,6 @@ fn build_networking(runtime_handle: &Handle) -> impl ClientConnections<ClientSoc
 fn build_networking(
     runtime_handle: &Handle,
 ) -> impl ClientConnections<ClientSocket = MaybeTlsStream> {
-    // todo: tls
     let resolver = runtime_handle.block_on(Resolver::new());
     RustlsClientNetworking::try_from_config(Arc::new(resolver), swim_tls::ClientConfig::new(vec![]))
         .unwrap()
