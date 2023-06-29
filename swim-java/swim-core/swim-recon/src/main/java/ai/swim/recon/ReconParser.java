@@ -7,28 +7,19 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParseState;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.items.ItemsKind;
-import ai.swim.recon.models.state.ChangeState;
+import ai.swim.recon.models.state.Action;
+import ai.swim.recon.models.state.ParseEvent;
 import ai.swim.recon.models.state.PushAttrNewRec;
-import ai.swim.recon.models.state.StateChange;
 import ai.swim.recon.result.ParseResult;
 import ai.swim.recon.result.ResultError;
 
-import java.util.ArrayDeque;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static ai.swim.codec.Parser.preceded;
 import static ai.swim.codec.parsers.combinators.Alt.alt;
 import static ai.swim.codec.parsers.text.Multispace0.multispace0;
 import static ai.swim.codec.parsers.text.StringExt.space0;
-import static ai.swim.recon.ReconParserParts.parseAfterAttr;
-import static ai.swim.recon.ReconParserParts.parseAfterSlot;
-import static ai.swim.recon.ReconParserParts.parseAfterValue;
-import static ai.swim.recon.ReconParserParts.parseInit;
-import static ai.swim.recon.ReconParserParts.parseNotAfterItem;
-import static ai.swim.recon.ReconParserParts.parseSlotValue;
+import static ai.swim.recon.ReconParserParts.*;
 
 /**
  * An incremental recon parser.
@@ -254,7 +245,7 @@ public final class ReconParser {
     }
 
     ParserTransition output = this.current.bind();
-    this.transition(output.getChange(), clearIfNone);
+    this.transition(output.getAction(), clearIfNone);
     this.current = null;
     return ParseResult.ok(output.getEvents());
   }
@@ -301,7 +292,7 @@ public final class ReconParser {
               return new ParserTransition();
             }
           } else {
-            this.transition(StateChange.popAfterItem(), false);
+            this.transition(Action.popAfterItem(), false);
             return new ParserTransition(ReadEvent.endRecord());
           }
         }), false);
@@ -312,7 +303,7 @@ public final class ReconParser {
             this.state.addLast(s.get());
             return new ParserTransition();
           } else {
-            this.transition(StateChange.popAfterItem(), false);
+            this.transition(Action.popAfterItem(), false);
             return new ParserTransition(ReadEvent.endRecord());
           }
         }), false);
@@ -323,7 +314,7 @@ public final class ReconParser {
             this.state.addLast(s.get());
             return new ParserTransition();
           } else {
-            this.transition(StateChange.popAfterAttr(), false);
+            this.transition(Action.popAfterAttr(), false);
             return new ParserTransition(ReadEvent.endAttribute());
           }
         }), false);
@@ -340,7 +331,7 @@ public final class ReconParser {
               return new ParserTransition();
             }
           } else {
-            this.transition(StateChange.popAfterAttr(), false);
+            this.transition(Action.popAfterAttr(), false);
             return new ParserTransition(ReadEvent.endAttribute());
           }
         }), false);
@@ -353,25 +344,25 @@ public final class ReconParser {
     }
   }
 
-  private void transition(StateChange stateChange, boolean clearIfNone) {
-    if (stateChange == null) {
+  private void transition(Action action, boolean clearIfNone) {
+    if (action == null) {
       if (clearIfNone) {
         this.state.clear();
       }
       return;
     }
 
-    if (stateChange.isNone()) {
+    if (action.isNone()) {
       if (clearIfNone) {
         this.state.clear();
       }
-    } else if (stateChange.isPopAfterAttr()) {
+    } else if (action.isPopAfterAttr()) {
       this.state.pollLast();
       ParseState last = this.state.pollLast();
       if (last != null) {
         this.state.addLast(ParseState.AfterAttr);
       }
-    } else if (stateChange.isPopAfterItem()) {
+    } else if (action.isPopAfterItem()) {
       this.state.pollLast();
       ParseState parseState = this.state.pollLast();
       if (parseState != null) {
@@ -394,27 +385,27 @@ public final class ReconParser {
             this.state.addLast(ParseState.RecordBodyAfterSlot);
             break;
           default:
-            throw new IllegalStateException("Invalid state transition from: " + parseState + ", to: " + stateChange);
+            throw new IllegalStateException("Invalid state transition from: " + parseState + ", to: " + action);
         }
       }
-    } else if (stateChange.isChangeState()) {
+    } else if (action.isParseEvent()) {
       ParseState last = this.state.pollLast();
       if (last != null) {
-        this.state.addLast(((ChangeState) stateChange).getState());
+        this.state.addLast(((ParseEvent) action).getState());
       }
-    } else if (stateChange.isPushAttr()) {
+    } else if (action.isPushAttr()) {
       this.state.addLast(ParseState.AttrBodyStartOrNl);
-    } else if (stateChange.isPushAttrNewRec()) {
-      PushAttrNewRec pushAttr = (PushAttrNewRec) stateChange;
+    } else if (action.isPushAttrNewRec()) {
+      PushAttrNewRec pushAttr = (PushAttrNewRec) action;
       if (pushAttr.hasBody()) {
         this.state.addLast(ParseState.Init);
         this.state.addLast(ParseState.AttrBodyStartOrNl);
       } else {
         this.state.addLast(ParseState.AfterAttr);
       }
-    } else if (stateChange.isPushAttrNewRec()) {
+    } else if (action.isPushAttrNewRec()) {
       this.state.addLast(ParseState.AttrBodyStartOrNl);
-    } else if (stateChange.isPushBody()) {
+    } else if (action.isPushBody()) {
       this.state.addLast(ParseState.RecordBodyStartOrNl);
     } else {
       throw new AssertionError();

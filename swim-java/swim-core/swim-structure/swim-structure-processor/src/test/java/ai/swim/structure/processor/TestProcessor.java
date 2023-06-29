@@ -143,4 +143,10 @@ public class TestProcessor {
         .hadErrorContaining("At most one field can replace the tag body.");
   }
 
+  @Test
+  void recursiveType() {
+    assertThat(compile("RecursiveType.java"))
+        .hadErrorContaining("Recursive types are not supported by the form annotation processor.");
+  }
+
 }

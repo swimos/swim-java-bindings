@@ -22,6 +22,12 @@ import ai.swim.structure.writer.proxy.WriterProxy;
 
 import java.util.Collection;
 
+/**
+ * An abstract base for building collection-like {@code Writable}s.
+ *
+ * @param <E> the type of the collection's elements.
+ * @param <C> the type of the collection.
+ */
 public abstract class CollectionStructuralWritable<E, C extends Collection<E>> implements StructuralWritable<C> {
   private Class<E> eClass;
   private Writable<E> eWritable;

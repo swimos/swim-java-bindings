@@ -16,7 +16,7 @@ package ai.swim.recon.models.items;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.ParseState;
-import ai.swim.recon.models.state.StateChange;
+import ai.swim.recon.models.state.Action;
 
 public class RecordBodyItems implements ItemsKind {
   RecordBodyItems() {
@@ -59,7 +59,7 @@ public class RecordBodyItems implements ItemsKind {
   }
 
   @Override
-  public StateChange endStateChange() {
-    return StateChange.popAfterItem();
+  public Action endStateChange() {
+    return Action.popAfterItem();
   }
 }

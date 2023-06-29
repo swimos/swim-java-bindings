@@ -14,12 +14,7 @@
 
 package ai.swim.structure.writer.print;
 
-import ai.swim.structure.writer.BodyWriter;
-import ai.swim.structure.writer.HeaderWriter;
-import ai.swim.structure.writer.StringMeta;
-import ai.swim.structure.writer.StructuralWriter;
-import ai.swim.structure.writer.SuppressingWriter;
-import ai.swim.structure.writer.Writable;
+import ai.swim.structure.writer.*;
 import ai.swim.structure.writer.header.WritableHeader;
 import ai.swim.structure.writer.print.strategy.PrintStrategy;
 
@@ -35,6 +30,7 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
   private boolean braceWritten;
   private boolean singleItem;
   private boolean first;
+  private AttributePrinter attributePrinter;
 
   public StructurePrinter(java.io.Writer writer, PrintStrategy printStrategy) {
     this.writer = new SuppressingWriter(writer);
@@ -43,6 +39,7 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
     this.braceWritten = false;
     this.singleItem = false;
     this.first = true;
+    this.attributePrinter = new AttributePrinter(this.writer, printStrategy);
   }
 
   public static StructurePrinter stdOut(PrintStrategy printStrategy) {
@@ -119,8 +116,6 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
   @Override
   public <V> HeaderWriter<String> writeAttr(String key, Writable<V> valueWriter, V value) {
     writeExtantAttr(key);
-
-    AttributePrinter attributePrinter = new AttributePrinter(writer, printStrategy);
     valueWriter.writeInto(value, attributePrinter);
 
     return this;
@@ -129,7 +124,7 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
   @Override
   public HeaderWriter<String> writeAttr(String key, WritableHeader writable) {
     writeExtantAttr(key);
-    writable.writeInto(new AttributePrinter(writer, printStrategy));
+    writable.writeInto(attributePrinter);
 
     return this;
   }
@@ -201,11 +196,11 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
 
   @Override
   public String writeText(String value) {
-    if (StringMeta.isIdentifier(value)) {
+    if (StringUtils.isIdentifier(value)) {
       writer.writeUnchecked(value);
       return "";
-    } else if (StringMeta.needsEscape(value)) {
-      value = StringMeta.escape(value);
+    } else if (StringUtils.needsEscape(value)) {
+      value = StringUtils.escape(value);
     }
 
     return write(String.format("\"%s\"", value));

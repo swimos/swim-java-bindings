@@ -1,35 +1,7 @@
-plugins {
-    id 'java'
-    id 'application'
-    id 'org.graalvm.buildtools.native' version '0.9.13'
-    id 'checkstyle'
-}
-
-repositories {
-    mavenCentral()
-    gradlePluginPortal()
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
-
-    annotationProcessor group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '1.34'
-    implementation group: 'org.openjdk.jmh', name: 'jmh-core', version: '1.34'
-
-    implementation group: 'org.graalvm.nativeimage', name: 'svm', version: '22.0.0.2'
-
-    implementation 'org.reflections:reflections:0.10.2'
-}
-
-allprojects {
+subprojects {
     apply plugin: 'java-library'
     apply plugin: 'java'
-    apply plugin: 'org.graalvm.buildtools.native'
+    apply plugin: 'application'
 
     group = "ai.swim"
     version = '0.0.1-SNAPSHOT'
@@ -44,10 +16,8 @@ allprojects {
     }
 
     dependencies {
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
-
-        implementation group: 'org.graalvm.nativeimage', name: 'svm', version: '22.0.0.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
     }
 
     test {
@@ -58,3 +28,8 @@ allprojects {
         duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
     }
 }
+
+repositories {
+    mavenCentral()
+}
+

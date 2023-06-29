@@ -18,23 +18,6 @@ ext {
     release_dir = target_dir.concat('/release')
 }
 
-graalvmNative {
-    binaries {
-        main {
-            compileRust(true)
-            def library_path = '-Djava.library.path='.concat(bridge_dir)
-            runtimeArgs.add(library_path)
-        }
-        test {
-            compileRust(false)
-            buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
-
-            def library_path = '-Djava.library.path='.concat(bridge_dir)
-            runtimeArgs.add(library_path)
-        }
-    }
-}
-
 test {
     def library_path = '-Djava.library.path='.concat(debug_dir)
     jvmArgs library_path

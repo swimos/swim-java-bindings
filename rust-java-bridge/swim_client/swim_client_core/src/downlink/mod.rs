@@ -94,6 +94,7 @@ impl FfiFailureHandler for SinkingHandler {
 /// u8 terminate_on_unlinked -> bool
 /// u64 buffer_size -> NonZeroUSize
 /// u8 downlink options -> bool
+// todo: this can be removed once the builder module has been merged
 #[derive(Debug, PartialEq, Eq)]
 pub struct DownlinkConfigurations {
     pub runtime: DownlinkRuntimeConfig,

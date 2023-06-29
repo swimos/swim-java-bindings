@@ -15,11 +15,7 @@
 package ai.swim.structure.writer;
 
 import ai.swim.structure.Recon;
-import ai.swim.structure.value.Attr;
-import ai.swim.structure.value.Item;
-import ai.swim.structure.value.Record;
-import ai.swim.structure.value.Text;
-import ai.swim.structure.value.Value;
+import ai.swim.structure.value.*;
 import ai.swim.structure.writer.value.ValueStructuralWritable;
 import org.junit.jupiter.api.Test;
 
@@ -59,7 +55,7 @@ class ReconTest {
     test(Value.of(0.0d), "0.0", "0.0", "0.0");
     test(Value.of(BigInteger.TEN), "10", "10", "10");
     test(Value.of(BigDecimal.valueOf(13.14)), "13.14", "13.14", "13.14");
-    test(Value.of(new byte[] {1, 2, 3, 4, 5}), "%AQIDBAU=", "%AQIDBAU=", "%AQIDBAU=");
+    test(Value.of(new byte[]{1, 2, 3, 4, 5}), "%AQIDBAU=", "%AQIDBAU=", "%AQIDBAU=");
   }
 
   @Test
