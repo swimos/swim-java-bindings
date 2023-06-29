@@ -1,0 +1,39 @@
+[package]
+name = "swim_client"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = []
+deflate = ["swim_client_core/deflate", "ratchet_deflate"]
+tls = ["swim_client_core/tls"]
+
+[dependencies]
+client_runtime = { package = "runtime", path = "../../swim-rust/client/runtime" }
+swim_client_core = { path = "swim_client_core" }
+jvm_sys = { path = "../jvm_sys" }
+swim_downlink = { path = "../../swim-rust/swim_downlink" }
+swim_api = { path = "../../swim-rust/api/swim_api" }
+swim_model = { path = "../../swim-rust/api/swim_model" }
+swim_utilities = { path = "../../swim-rust/swim_utilities", features = ["byte_channel"] }
+bytebridge = { path = "../bytebridge/bytebridge" }
+ratchet_deflate = { workspace = true, optional = true }
+ratchet = { workspace = true }
+
+futures = { workspace = true }
+futures-util = { workspace = true }
+bytes = { workspace = true }
+jni = { workspace = true }
+tokio-util = { workspace = true, features = ["codec", "io-util"] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["io-util"] }
+url = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread"] }
+
+[build-dependencies]
+bytebridge = { path = "../bytebridge/bytebridge", features = ["derive_java"] }

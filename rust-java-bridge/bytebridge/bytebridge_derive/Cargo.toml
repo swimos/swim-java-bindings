@@ -1,0 +1,13 @@
+[package]
+name = "bytebridge_derive"
+version = "0.1.0"
+authors = ["Swim Inc. developers info@swim.ai"]
+edition = "2021"
+
+[lib]
+name = "bytebridge_derive"
+proc-macro = true
+
+[dependencies]
+derive_internals = { path = "internals" }
+proc-macro2 = { workspace = true }

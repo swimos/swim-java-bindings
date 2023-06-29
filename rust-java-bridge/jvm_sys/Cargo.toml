@@ -1,0 +1,10 @@
+[package]
+name = "jvm_sys"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jni = { workspace = true }
+tokio = { workspace = true, features = ["io-util"] }
+bytes = { workspace = true }
+paste = { workspace = true }

@@ -1,0 +1,127 @@
+ext.moduleName = 'swim-client'
+
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+
+ext.nativeProperties = new Properties();
+ext.nativeProperties.load(file(project.projectDir.absolutePath + "/native.properties").newReader())
+
+ext {
+    bridge_dir = "../../rust-java-bridge"
+    client_dir = bridge_dir.concat('/swim_client')
+    target_dir = bridge_dir.concat('/target')
+
+    if (DefaultNativePlatform.currentOperatingSystem.isMacOsX()) {
+        target_dir = target_dir.concat('/x86_64-apple-darwin')
+    }
+
+    debug_dir = target_dir.concat('/debug')
+    release_dir = target_dir.concat('/release')
+}
+//
+//graalvmNative {
+//    binaries {
+//        main {
+//            compileRust(true)
+//            def library_path = '-Djava.library.path='.concat(bridge_dir)
+//            runtimeArgs.add(library_path)
+//        }
+//        test {
+//            compileRust(false)
+//            buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
+//
+//            def library_path = '-Djava.library.path='.concat(bridge_dir)
+//            runtimeArgs.add(library_path)
+//        }
+//    }
+//}
+
+test {
+    def library_path = '-Djava.library.path='.concat(debug_dir)
+    jvmArgs library_path
+    useJUnitPlatform()
+
+    testLogging.showStandardStreams = true
+}
+
+def compileRust(release) {
+    exec {
+        println "Compiling rust libraries (".concat(release ? "release)" : "debug)")
+
+        workingDir(bridge_dir)
+        environment('RUSTFLAGS', '-Awarnings')
+
+        def args = ['cargo', 'build']
+
+        if (DefaultNativePlatform.currentOperatingSystem.isMacOsX()) {
+            args.add('--target')
+            args.add('x86_64-apple-darwin')
+        }
+
+        def features = []
+        if (ext.nativeProperties.tls.toBoolean()) {
+            features.add('tls')
+        }
+        if (ext.nativeProperties.deflate.toBoolean()) {
+            features.add('deflate')
+        }
+
+        if (!features.isEmpty()) {
+            args.add('--features')
+            args.addAll(features.join(','))
+        }
+
+        if (release) {
+            args.add('--release')
+        }
+
+        commandLine args
+    }
+}
+
+compileTestJava {
+    doFirst {
+        compileRust(false)
+    }
+}
+
+assemble {
+    doFirst {
+        compileRust(true)
+    }
+}
+
+task cleanRust {
+    doFirst {
+        exec {
+            println "Cleaning swim-rust sources"
+            workingDir(bridge_dir)
+            commandLine 'cargo', 'clean'
+        }
+    }
+}
+
+clean {
+    dependsOn(cleanRust)
+}
+
+application {
+    def library_path = '-Djava.library.path='.concat(release_dir)
+    applicationDefaultJvmArgs = [library_path]
+}
+
+dependencies {
+    api project(':swim-codec')
+    api project(':swim-recon')
+
+    implementation project(':swim-structure')
+    annotationProcessor project(':swim-structure-processor')
+    testAnnotationProcessor project(':swim-structure-processor')
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "${buildDir}/generated/main/java"
+        }
+    }
+}

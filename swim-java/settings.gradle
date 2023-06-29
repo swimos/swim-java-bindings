@@ -1,25 +1,28 @@
 rootProject.name = 'swim-java'
 
-include 'swim.codec'
-project(':swim.codec').projectDir = file('swim-core/swim.codec')
-project(':swim.codec').name = 'swim-codec'
+include('swim-client')
 
-include 'swim.recon'
-project(':swim.recon').projectDir = file('swim-core/swim.recon')
-project(':swim.recon').name = 'swim-recon'
+include('swim-core')
 
-include 'swim.structure'
-project(':swim.structure').projectDir = file('swim-core/swim.structure')
-project(':swim.structure').name = 'swim-structure'
+include('swim-core/swim-codec')
+project(':swim-core/swim-codec').name = 'swim-codec'
 
-include 'swim.structure.annotations'
-project(':swim.structure.annotations').projectDir = file('swim-core/swim.structure/swim.structure.annotations')
-project(':swim.structure.annotations').name = 'swim-structure-annotations'
+include(':swim-core/swim-recon')
+project(':swim-core/swim-recon').name = 'swim-recon'
 
-include 'swim.structure.processor'
-project(':swim.structure.processor').projectDir = file('swim-core/swim.structure/swim.structure.processor')
-project(':swim.structure.processor').name = 'swim-structure-processor'
+include('swim-core/swim-structure')
+project(':swim-core/swim-structure').name = 'swim-structure'
 
-include 'swim.util'
-project(':swim.util').projectDir = file('swim-core/swim.util')
-project(':swim.util').name = 'swim-util'
+include('swim-core/swim-structure/swim-structure-annotations')
+project(':swim-core/swim-structure/swim-structure-annotations').name = 'swim-structure-annotations'
+
+include('swim-core/swim-structure/swim-structure-processor')
+project(':swim-core/swim-structure/swim-structure-processor').name = 'swim-structure-processor'
+
+include('swim-core/swim-util')
+project(':swim-core/swim-util').name = 'swim-util'
+
+include 'swim-ffi'
+
+//include('swim-ffi/swim-lang-ffi')
+//project(':swim-ffi/swim-lang-ffi').name = 'swim-lang-ffi'

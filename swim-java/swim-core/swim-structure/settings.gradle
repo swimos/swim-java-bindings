@@ -1,0 +1,2 @@
+include(':swim-structure-annotations')
+include(':swim-structure-processor')

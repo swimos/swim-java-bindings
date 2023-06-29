@@ -1,0 +1,33 @@
+[package]
+name = "swim_client_core"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+tls = ["swim_tls"]
+deflate = ["ratchet/deflate", "client_runtime/deflate"]
+trust_dns = ["swim_runtime/trust_dns"]
+
+[dependencies]
+client_runtime = { package = "runtime", path = "../../../swim-rust/client/runtime" }
+swim_downlink = { path = "../../../swim-rust/swim_downlink" }
+jvm_sys = { path = "../../jvm_sys" }
+swim_api = { path = "../../../swim-rust/api/swim_api" }
+swim_model = { path = "../../../swim-rust/api/swim_model" }
+swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["byte_channel"] }
+swim_recon = { path = "../../../swim-rust/api/formats/swim_recon" }
+ratchet = { workspace = true }
+swim_runtime = { path = "../../../swim-rust/runtime/swim_runtime" }
+swim_tls = { path = "../../../swim-rust/runtime/swim_tls", optional = true }
+
+jni = { workspace = true }
+futures = { workspace = true }
+futures-util = { workspace = true }
+bytes = { workspace = true }
+tokio = { workspace = true, features = ["io-util", "rt-multi-thread"] }
+tokio-util = { workspace = true, features = ["codec", "io-util"] }
+parking_lot = { workspace = true }
+url = { workspace = true }
+
+

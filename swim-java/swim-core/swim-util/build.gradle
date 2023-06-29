@@ -1,0 +1,10 @@
+ext.moduleName = 'swim-util'
+
+dependencies {
+
+}
+
+repositories {
+    mavenCentral()
+}
+

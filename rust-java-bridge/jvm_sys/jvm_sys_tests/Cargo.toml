@@ -1,0 +1,12 @@
+[package]
+name = "jvm_sys_tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jvm_sys = { path = "../../jvm_sys" }
+jni = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "io-util"] }
+bytes = { workspace = true }
+futures = { workspace = true }
+futures-util = { workspace = true }

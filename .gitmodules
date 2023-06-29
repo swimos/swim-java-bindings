@@ -1,4 +1,4 @@
 [submodule "swim-rust"]
 	path = swim-rust
-	url = https://github.com/swimos/swim-rust/
+	url = https://github.com/swimos/swim-rust.git
 	branch = ffi
