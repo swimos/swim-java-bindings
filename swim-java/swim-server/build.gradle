@@ -1,4 +1,4 @@
-ext.moduleName = 'swim-client'
+ext.moduleName = 'swim-server'
 
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
@@ -7,7 +7,6 @@ ext.nativeProperties.load(file(project.projectDir.absolutePath + "/native.proper
 
 ext {
     bridge_dir = "../../rust-java-bridge"
-    client_dir = bridge_dir.concat('/swim_client')
     target_dir = bridge_dir.concat('/target')
 
     if (DefaultNativePlatform.currentOperatingSystem.isMacOsX()) {
@@ -17,23 +16,6 @@ ext {
     debug_dir = target_dir.concat('/debug')
     release_dir = target_dir.concat('/release')
 }
-//
-//graalvmNative {
-//    binaries {
-//        main {
-//            compileRust(true)
-//            def library_path = '-Djava.library.path='.concat(bridge_dir)
-//            runtimeArgs.add(library_path)
-//        }
-//        test {
-//            compileRust(false)
-//            buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
-//
-//            def library_path = '-Djava.library.path='.concat(bridge_dir)
-//            runtimeArgs.add(library_path)
-//        }
-//    }
-//}
 
 test {
     def library_path = '-Djava.library.path='.concat(debug_dir)
@@ -101,10 +83,6 @@ tasks.register('cleanRust') {
 }
 
 check.dependsOn(compileTestJava)
-
-clean {
-    dependsOn(cleanRust)
-}
 
 application {
     def library_path = '-Djava.library.path='.concat(release_dir)

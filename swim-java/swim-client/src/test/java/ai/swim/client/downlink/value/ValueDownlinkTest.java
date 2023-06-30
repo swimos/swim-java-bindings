@@ -14,7 +14,7 @@
 
 package ai.swim.client.downlink.value;
 import ai.swim.client.SwimClientException;
-import ai.swim.client.ClientConfig2;
+
 import ai.swim.client.downlink.DownlinkConfig;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
@@ -61,12 +61,6 @@ class ValueDownlinkTest {
   );
 
   private static native void dropRuntime(long ptr);
-
-  @Test
-  void t() {
-    ClientConfig2 testy = new ClientConfig2();
-    System.out.println(testy);
-  }
 
   /**
    * Tests that the required JNI calls exist for opening a downlink.

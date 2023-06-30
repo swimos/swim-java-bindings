@@ -192,43 +192,4 @@ class RecognizerBridgeTest {
     }
   }
 
-  @AutoForm
-  public static class Clazz<A, B> {
-    public A first;
-    public B second;
-
-    public Clazz() {
-    }
-
-    public Clazz(A first, B second) {
-      this.first = first;
-      this.second = second;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      Clazz<?, ?> clazz = (Clazz<?, ?>) o;
-      return Objects.equals(first, clazz.first) && Objects.equals(second, clazz.second);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(first, second);
-    }
-
-    @Override
-    public String toString() {
-      return "Clazz{" +
-          "first=" + first +
-          ", second=" + second +
-          '}';
-    }
-  }
-
 }

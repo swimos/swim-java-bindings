@@ -1,0 +1,16 @@
+[package]
+name = "swim_server_core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+futures = { workspace = true }
+futures-util = { workspace = true }
+bytes = { workspace = true }
+tokio = { workspace = true, features = ["io-util", "rt-multi-thread"] }
+bytebridge = { path = "../../bytebridge/bytebridge", features = ["derive_java"] }
+swim_api = { path = "../../../swim-rust/api/swim_api" }
+swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["text"] }
+jni = { workspace = true }
+byteorder = { workspace = true }
+rmp = { workspace = true }

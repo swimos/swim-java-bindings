@@ -1,15 +1,18 @@
 [workspace]
 members = [
+    "bytebridge/bytebridge",
+    "bytebridge/bytebridge_derive",
+    "bytebridge/bytebridge_derive/internals",
+    "bytebridge/bytebridge_derive_java",
+    "bytebridge/test/*",
     "jvm_sys",
     "jvm_sys/jvm_sys_tests",
     "swim_client",
     "swim_client/swim_client_core",
     "swim_client/swim_client_test",
-    "bytebridge/bytebridge",
-    "bytebridge/bytebridge_derive",
-    "bytebridge/bytebridge_derive/internals",
-    "bytebridge/bytebridge_derive_java",
-    "bytebridge/test/*"
+    "swim_server",
+    "swim_server/swim_server_core",
+    "swim_server/swim_server_test",
 ]
 
 [workspace.dependencies]
@@ -29,6 +32,8 @@ paste = "1.0.11"
 heck = "0.4.1"
 lazy_static = "1.4.0"
 ratchet_deflate = "0.4.0"
+byteorder = "1.4"
+rmp = "0.8"
 
 [workspace.dependencies.ratchet]
 package = "ratchet_rs"
