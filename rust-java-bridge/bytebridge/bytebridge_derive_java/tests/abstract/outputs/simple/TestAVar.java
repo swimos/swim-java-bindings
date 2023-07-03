@@ -2,6 +2,9 @@
 /// ANY CHANGES MADE MAY BE LOST.
 package ai.swim;
 
+import org.msgpack.core.MessagePacker;
+import java.io.IOException;
+
 public class TestAVar extends Test {
 
   private byte a = 0;
@@ -60,15 +63,12 @@ public class TestAVar extends Test {
    * Returns a byte array representation of the current configuration.
    */
   @Override
-  public byte[] asBytes() {
-    int __buf__size = 0;
-    __buf__size += 6;
-    java.nio.ByteBuffer __buf = java.nio.ByteBuffer.allocate(__buf__size);
-    __buf.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-    __buf.put((byte) 0);
-    __buf.put(this.a);
-    __buf.putInt(this.b);
-    return __buf.array();
+  public void pack(MessagePacker __packer) throws IOException {
+    __packer.packExtensionTypeHeader((byte) 1, 1);
+    __packer.packInt(0);
+    __packer.packArrayHeader(2);
+    __packer.packByte(this.a);
+    __packer.packInt(this.b);
   }
 
   @Override

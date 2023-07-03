@@ -1,15 +1,20 @@
 use bytebridge::{ByteCodec, FromBytesError};
-use bytes::BytesMut;
+use bytes::{Buf, BufMut, BytesMut};
 use std::fmt::Debug;
 
 fn round_trip<O>(expected: O)
 where
     O: ByteCodec + PartialEq + Debug,
 {
-    let mut buf = BytesMut::new();
-    expected.to_bytes(&mut buf);
+    let buf = BytesMut::new();
+    let mut writer = buf.writer();
+    expected
+        .to_bytes(&mut writer)
+        .expect("Failed to write bytes");
 
-    match O::try_from_bytes(&mut buf) {
+    let mut reader = writer.into_inner().reader();
+
+    match O::try_from_reader(&mut reader) {
         Ok(actual) => {
             assert_eq!(expected, actual)
         }
@@ -50,12 +55,13 @@ fn unknown_enum_variant() {
 
     let variant = 13;
 
-    let mut buf = BytesMut::from_iter([variant, 0, 0, 0, 2, 0, 0, 0]);
-    match Prop::try_from_bytes(&mut buf) {
+    let mut buf =
+        BytesMut::from_iter([212, 1, 208, variant, 146, 210, 0, 0, 0, 1, 210, 0, 0, 0, 2]).reader();
+    match Prop::try_from_reader(&mut buf) {
         Ok(_) => {
             panic!("Expected a test failure");
         }
-        Err(FromBytesError::UnknownEnumVariant(n)) if n == variant => {}
+        Err(FromBytesError::UnknownEnumVariant(n)) if n == variant as i8 => {}
         Err(e) => {
             panic!("Expected an unknown enum variant error. Got: {:?}", e);
         }

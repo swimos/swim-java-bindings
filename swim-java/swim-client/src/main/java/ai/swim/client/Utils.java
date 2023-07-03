@@ -30,7 +30,7 @@ public class Utils {
     int lim = Math.min(stackTrace.length, 20);
     StringBuilder builder = new StringBuilder();
 
-    for (int i = 0; i < lim ; i++) {
+    for (int i = 0; i < lim; i++) {
       StackTraceElement element = stackTrace[i];
       if (element == null) {
         break;
@@ -41,6 +41,5 @@ public class Utils {
 
     return builder.toString();
   }
-
 
 }

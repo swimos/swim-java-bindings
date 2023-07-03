@@ -2,14 +2,17 @@
 /// ANY CHANGES MADE MAY BE LOST.
 package ai.swim;
 
+import org.msgpack.core.MessagePacker;
+import java.io.IOException;
+
 public abstract class Superclass {
 
   @Override
   public abstract String toString();
 
   /**
-   * Returns a byte array representation of the current configuration.
+   * Pack a byte representation of the current configuration.
    */
-  public abstract byte[] asBytes();
+  public abstract void pack(MessagePacker __packer) throws IOException;
 
 }

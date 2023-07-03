@@ -17,7 +17,8 @@ use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{
-    Attribute, Error, Expr, ExprLit, Fields, Generics, Item, Lit, Meta, MetaNameValue, Token,
+    Attribute, Error, Expr, ExprLit, Fields, FieldsNamed, Generics, Item, Lit, Meta, MetaNameValue,
+    Token,
 };
 
 const MACRO_PATH: &str = "bytebridge";
@@ -68,7 +69,9 @@ impl DeriveArgsBuilder {
 
     /// Set the state of the visit to an error.
     fn err(&mut self, span: Span, message: impl Display) {
-        self.args = Err(Error::new(span, message))
+        if self.args.is_ok() {
+            self.args = Err(Error::new(span, message));
+        }
     }
 
     /// Consume the state of the builder.
@@ -149,9 +152,22 @@ impl<'ast> Visit<'ast> for DeriveArgsBuilder {
     fn visit_fields(&mut self, i: &'ast Fields) {
         let span = i.span();
         match i {
-            Fields::Named(_) => {}
+            Fields::Named(fields) => self.visit_fields_named(fields),
             Fields::Unnamed(_) => self.err(span, "Tuple structs are not supported"),
             Fields::Unit => self.err(span, "Struct must contain at least one field"),
+        }
+    }
+
+    fn visit_fields_named(&mut self, i: &'ast FieldsNamed) {
+        for x in &i.named {
+            for attr in &x.attrs {
+                if attr.path().is_ident("cfg") {
+                    self.err(
+                        attr.span(),
+                        "Bytebridge does not support conditional attributes",
+                    );
+                }
+            }
         }
     }
 

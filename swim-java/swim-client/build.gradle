@@ -116,6 +116,7 @@ dependencies {
     implementation project(':swim-structure')
     annotationProcessor project(':swim-structure-processor')
     testAnnotationProcessor project(':swim-structure-processor')
+    implementation 'org.msgpack:msgpack-core:0.9.3'
 }
 
 sourceSets {

@@ -12,6 +12,8 @@ derive_java = ["bytebridge_derive_java"]
 bytebridge_derive_java = { path = "../bytebridge_derive_java", optional = true }
 bytebridge_derive = { path = "../bytebridge_derive" }
 bytes = { workspace = true }
+byteorder = { workspace = true }
+rmp = { workspace = true }
 
 [dev-dependencies]
 paste = { workspace = true }

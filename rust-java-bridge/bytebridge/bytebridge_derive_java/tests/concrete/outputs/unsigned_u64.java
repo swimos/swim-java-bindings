@@ -2,6 +2,9 @@
 /// ANY CHANGES MADE MAY BE LOST.
 package ai.swim;
 
+import org.msgpack.core.MessagePacker;
+import java.io.IOException;
+
 public class Test {
 
   private long a = 0;
@@ -55,14 +58,10 @@ public class Test {
   /**
    * Returns a byte array representation of the current configuration.
    */
-  public byte[] asBytes() {
-    int __buf__size = 0;
-    __buf__size += 12;
-    java.nio.ByteBuffer __buf = java.nio.ByteBuffer.allocate(__buf__size);
-    __buf.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-    __buf.putLong(this.a);
-    __buf.putInt(this.b);
-    return __buf.array();
+  public void pack(MessagePacker __packer) throws IOException {
+    __packer.packArrayHeader(2);
+    __packer.packLong(this.a);
+    __packer.packInt(this.b);
   }
 
   @Override
