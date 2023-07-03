@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use std::any::Any;
+use std::io::Write;
 
 use jni::JNIEnv;
 
@@ -46,11 +47,11 @@ macro_rules! jni_try {
             $ret
         )
     };
-    ($expr:expr, $ret:expr $(,)?) => {
+    ($expr:expr, $($ret:expr)? $(,)?) => {
         match $expr {
             Ok(()) => {}
             Err(()) => {
-                return $ret;
+                return $($ret)?;
             }
         }
     };
@@ -169,24 +170,42 @@ pub fn throw<R>(env: &JNIEnv, class: &'static str, cause: Box<dyn Any + Send + '
 where
     R: JniDefault,
 {
-    fn describe<O, E>(result: Result<O, E>, on_err: &'static str) {
-        if let Err(_) = result {
-            eprintln!("{on_err}")
+    fn describe<W, O, E>(writer: &mut W, result: Result<O, E>, on_err: &'static str)
+    where
+        W: Write,
+    {
+        if result.is_err() {
+            let _r = write!(writer, "{on_err}");
         }
     }
 
-    let out = std::io::stdout();
-    let _guard = out.lock();
+    let out = std::io::stderr();
+    let mut writer = out.lock();
 
     match env.exception_check() {
         Ok(true) => {
-            eprintln!("Unhandled exception. Printing and clearing it");
-            describe(env.exception_describe(), "Failed to print exception");
-            describe(env.exception_clear(), "Failed to clear exception");
+            let _r = write!(writer, "Unhandled exception. Printing and clearing it");
+            describe(
+                &mut writer,
+                env.exception_describe(),
+                "Failed to print exception",
+            );
+            describe(
+                &mut writer,
+                env.exception_clear(),
+                "Failed to clear exception",
+            );
         }
         Ok(false) => {}
         Err(e) => {
-            eprintln!("Failed to check if an exception was being thrown: {e:?}")
+            let result = write!(
+                writer,
+                "Failed to check if an exception was being thrown: {e:?}"
+            );
+
+            if result.is_err() {
+                env.fatal_error(result.unwrap_err().to_string());
+            }
         }
     }
 
@@ -198,7 +217,11 @@ where
         "(Unknown panic payload)".to_string()
     };
 
-    describe(env.throw_new(class, cause_str), "Failed to throw exception");
+    describe(
+        &mut writer,
+        env.throw_new(class, cause_str),
+        "Failed to throw exception",
+    );
 
     R::default()
 }

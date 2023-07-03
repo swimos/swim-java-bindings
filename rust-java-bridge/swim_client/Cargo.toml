@@ -6,7 +6,13 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+default = []
+deflate = ["swim_client_core/deflate"]
+tls = ["swim_client_core/tls"]
+
 [dependencies]
+client_runtime = { package = "runtime", path = "../../swim-rust/client/runtime" }
 swim_client_core = { path = "swim_client_core" }
 jvm_sys = { path = "../jvm_sys" }
 swim_downlink = { path = "../../swim-rust/swim_downlink" }

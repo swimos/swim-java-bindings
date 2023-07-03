@@ -1,0 +1,7 @@
+ext.moduleName = 'swim-codec'
+
+repositories {
+    mavenCentral()
+}
+
+

@@ -18,7 +18,6 @@ use jni::errors::Result as JniResult;
 use jni::objects::JByteBuffer;
 use jni::JNIEnv;
 
-// pub mod bytes;
 mod macros;
 pub mod util;
 pub mod vm;

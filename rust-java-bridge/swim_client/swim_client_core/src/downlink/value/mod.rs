@@ -25,10 +25,9 @@ use swim_model::Text;
 use swim_utilities::io::byte_channel::{ByteReader, ByteWriter};
 use tokio_util::codec::FramedRead;
 
-use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
+use jvm_sys::vm::utils::VmExt;
 use jvm_sys::vm::SpannedError;
 
-use crate::downlink::decoder::ValueDlNotDecoder;
 use crate::downlink::value::lifecycle::ValueDownlinkLifecycle;
 use crate::downlink::{ErrorHandlingConfig, FfiFailureHandler};
 use crate::SharedVm;
@@ -51,7 +50,7 @@ impl FfiValueDownlink {
         on_unlinked: jobject,
         error_mode: ErrorHandlingConfig,
     ) -> Result<FfiValueDownlink, Error> {
-        let env = get_env_shared(&vm)?;
+        let env = vm.get_env()?;
         let lifecycle = ValueDownlinkLifecycle::from_parts(
             &env,
             on_event,
@@ -149,12 +148,11 @@ async fn run_ffi_value_downlink(
     } = config;
 
     let mut state = LinkState::Unlinked;
-    let mut framed_read = FramedRead::new(input, ValueDlNotDecoder::default());
+    let mut framed_read = FramedRead::new(input, ValueNotificationDecoder::<Value>::default());
     let mut ffi_buffer = BytesMut::new();
 
     while let Some(result) = framed_read.next().await {
-        let env = get_env_shared_expect(&vm);
-
+        let env = vm.expect_env();
         match result? {
             DownlinkNotification::Linked => {
                 if matches!(&state, LinkState::Unlinked) {

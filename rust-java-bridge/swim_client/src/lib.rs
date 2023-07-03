@@ -14,9 +14,8 @@
 
 extern crate core;
 
-use std::panic;
-
 use bytes::BytesMut;
+use client_runtime::RemotePath;
 use jni::objects::JString;
 use jni::sys::{jbyteArray, jobject};
 use jni::JNIEnv;
@@ -25,11 +24,11 @@ use url::Url;
 
 use jvm_sys::vm::set_panic_hook;
 use jvm_sys::vm::utils::new_global_ref;
-use jvm_sys::{jni_try, npch, parse_string};
+use jvm_sys::{jni_try, null_pointer_check_abort, parse_string};
 use swim_client_core::downlink::map::FfiMapDownlink;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
-use swim_client_core::{client_fn, ClientHandle, SwimClient};
+use swim_client_core::{client_fn, ClientConfig, ClientHandle, SwimClient};
 
 client_fn! {
     SwimClient_startClient(
@@ -38,6 +37,7 @@ client_fn! {
     ) -> SwimClient {
         let client = Box::leak(Box::new(SwimClient::new(
             env.get_java_vm().expect("Failed to get Java VM"),
+            ClientConfig::default()
         )));
 
         set_panic_hook();
@@ -52,7 +52,7 @@ client_fn! {
         _class,
         client: *mut SwimClient,
     ) {
-        npch!(env, client);
+        null_pointer_check_abort!(env, client);
         let runtime = unsafe { Box::from_raw(client) };
         runtime.shutdown();
 
@@ -66,7 +66,7 @@ client_fn! {
         _class,
         runtime: *mut SwimClient,
     ) -> ClientHandle {
-        npch!(env, runtime);
+        null_pointer_check_abort!(env, runtime);
         let runtime = unsafe { &*runtime };
         let handle = runtime.handle();
 
@@ -80,7 +80,7 @@ client_fn! {
         _class,
         handle: *mut ClientHandle,
     ) {
-        npch!(env, handle);
+        null_pointer_check_abort!(env, handle);
         unsafe {
             drop(Box::from_raw(handle));
         }
@@ -166,7 +166,7 @@ client_fn! {
         on_synced: jobject,
         on_unlinked: jobject,
     ) {
-        npch!(env, handle, stopped_barrier, downlink_ref, config);
+        null_pointer_check_abort!(env, handle, stopped_barrier, downlink_ref, config);
 
         let handle = unsafe { &*handle };
         let downlink = jni_try! {

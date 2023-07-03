@@ -1,0 +1,20 @@
+ext.moduleName = 'swim-structure-processor'
+
+dependencies {
+    implementation project(':swim-structure-annotations')
+
+    compileOnly 'com.google.auto.service:auto-service:1.0.1'
+    compileOnly 'com.squareup:javapoet:1.13.0'
+
+    // https://mvnrepository.com/artifact/com.squareup/javapoet
+    implementation group: 'com.squareup', name: 'javapoet', version: '1.13.0'
+
+    testImplementation project(':swim-structure')
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+    testImplementation group: 'com.google.testing.compile', name: 'compile-testing', version: '0.19'
+}
+
+repositories {
+    mavenCentral()
+}
+

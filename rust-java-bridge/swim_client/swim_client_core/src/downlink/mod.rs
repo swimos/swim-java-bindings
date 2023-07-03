@@ -97,7 +97,8 @@ impl FfiFailureHandler for SinkingHandler {
 /// u8 terminate_on_unlinked -> bool
 /// u64 buffer_size -> NonZeroUSize
 /// u8 downlink options -> bool
-#[derive(Debug, PartialEq)]
+// todo: this can be removed once the builder module has been merged
+#[derive(Debug, PartialEq, Eq)]
 pub struct DownlinkConfigurations {
     pub runtime: DownlinkRuntimeConfig,
     pub downlink: DownlinkConfig,
@@ -115,6 +116,7 @@ impl Default for DownlinkConfigurations {
 }
 
 impl DownlinkConfigurations {
+    #[allow(clippy::result_unit_err)]
     pub fn try_from_bytes(buf: &mut BytesMut, env: &JNIEnv) -> Result<DownlinkConfigurations, ()> {
         Ok(jni_try!(
             env,
@@ -169,7 +171,7 @@ fn parse_non_zero_usize(buf: &mut BytesMut) -> Result<NonZeroUsize, String> {
 fn parse_bool(buf: &mut BytesMut) -> Result<bool, String> {
     let b = buf.get_u8();
     if b > 1 {
-        return Err(format!("Invalid boolean: {}", b));
+        Err(format!("Invalid boolean: {}", b))
     } else {
         Ok(b == 1)
     }

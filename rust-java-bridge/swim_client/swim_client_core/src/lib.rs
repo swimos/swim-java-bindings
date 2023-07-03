@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-extern crate core;
-
+use crate::downlink::value::{FfiValueDownlink, SharedVm};
 use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
 use client_runtime::RemotePath;
 use client_runtime::{
@@ -22,23 +21,31 @@ use client_runtime::{
 use jni::objects::{GlobalRef, JValue};
 use jni::JNIEnv;
 use jni::JavaVM;
-use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
-use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
-use jvm_sys::vm::{with_local_frame_null, SpannedError};
-use ratchet::{NoExtProvider, WebSocketConfig, WebSocketStream};
-use std::num::NonZeroUsize;
-use std::sync::Arc;
-use swim_api::downlink::Downlink;
+#[cfg(feature = "deflate")]
+use ratchet::deflate::{DeflateConfig, DeflateExtProvider};
+#[cfg(not(feature = "deflate"))]
+use ratchet::NoExtProvider;
+use ratchet::WebSocketStream;
 use swim_api::error::DownlinkTaskError;
 use swim_runtime::net::dns::Resolver;
+#[cfg(not(feature = "tls"))]
 use swim_runtime::net::plain::TokioPlainTextNetworking;
-use swim_runtime::net::ExternalConnections;
+use swim_runtime::net::ClientConnections;
 use swim_runtime::ws::ext::RatchetNetworking;
 use swim_runtime::ws::WsConnections;
+#[cfg(feature = "tls")]
+use swim_tls::{MaybeTlsStream, RustlsClientNetworking};
 use swim_utilities::trigger;
 use swim_utilities::trigger::promise;
+#[cfg(not(feature = "tls"))]
+use tokio::net::TcpStream;
 use tokio::runtime::{Builder, Handle, Runtime};
-use url::Url;
+use tokio::task::JoinHandle;
+
+use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
+use jvm_sys::vm::utils::VmExt;
+use jvm_sys::vm::{with_local_frame_null, SpannedError};
+pub use macros::*;
 
 pub mod downlink;
 mod macros;
@@ -52,65 +59,73 @@ pub struct SwimClient {
     vm: SharedVm,
     runtime: Runtime,
     stop_tx: trigger::Sender,
+    // todo: implement clone on RawHandle and remove this arc
     downlinks_handle: Arc<RawHandle>,
+    _jh: JoinHandle<()>,
 }
 
 impl SwimClient {
-    pub fn with_transport<Net, Ws>(vm: JavaVM, transport: Transport<Net, Ws>) -> SwimClient
+    pub fn with_transport<Net, Ws>(
+        runtime: Runtime,
+        vm: JavaVM,
+        transport: Transport<Net, Ws>,
+        transport_buffer_size: NonZeroUsize,
+        registration_buffer_size: NonZeroUsize,
+        error_mode: ErrorHandlingConfig,
+    ) -> SwimClient
     where
-        Net: ExternalConnections,
-        Net::Socket: WebSocketStream,
-        Ws: WsConnections<Net::Socket> + Sync + Send + 'static,
+        Net: ClientConnections,
+        Net::ClientSocket: WebSocketStream,
+        Ws: WsConnections<Net::ClientSocket> + Sync + Send + 'static,
     {
-        let runtime = Builder::new_multi_thread()
-            .enable_all()
-            .build()
-            .expect("Failed to build Tokio runtime");
-
         let (stop_tx, downlinks_handle) = runtime.block_on(async move {
             let (handle, stop_tx) = start_runtime(transport, false);
             (stop_tx, Arc::new(handle))
         });
 
         SwimClient {
-            // todo: error mode constructor argument
-            error_mode: ErrorHandlingConfig::Report,
+            error_mode,
             vm: Arc::new(vm),
             runtime,
             stop_tx,
-            downlinks_handle,
+            downlinks_handle: Arc::new(handle),
+            _jh,
         }
     }
 
-    pub fn new(vm: JavaVM) -> SwimClient {
+    pub fn new(vm: JavaVM, config: ClientConfig) -> SwimClient {
         let runtime = Builder::new_multi_thread()
             .enable_all()
             .build()
             .expect("Failed to build Tokio runtime");
 
-        let (stop_tx, downlinks_handle) = runtime.block_on(async move {
-            let websockets = RatchetNetworking {
-                config: WebSocketConfig::default(),
-                provider: NoExtProvider,
-                subprotocols: Default::default(),
-            };
-            let networking = TokioPlainTextNetworking::new(Arc::new(Resolver::new().await));
-            let (handle, stop_tx) = start_runtime(
-                Transport::new(networking, websockets, REMOTE_BUFFER_SIZE),
-                false,
-            );
+        let ClientConfig {
+            websocket,
+            remote_buffer_size,
+            transport_buffer_size,
+            registration_buffer_size,
+            #[cfg(feature = "deflate")]
+            deflate,
+        } = config;
 
-            (stop_tx, Arc::new(handle))
-        });
+        #[cfg(feature = "deflate")]
+        let websockets = build_websockets(websocket, deflate);
+        #[cfg(not(feature = "deflate"))]
+        let websockets = build_websockets(websocket);
 
-        SwimClient {
-            // todo: error mode constructor argument
-            error_mode: ErrorHandlingConfig::Report,
-            vm: Arc::new(vm),
+        let transport = Transport::new(
+            build_networking(runtime.handle()),
+            websockets,
+            remote_buffer_size,
+        );
+        SwimClient::with_transport(
             runtime,
-            stop_tx,
-            downlinks_handle,
-        }
+            vm,
+            transport,
+            transport_buffer_size,
+            registration_buffer_size,
+            ErrorHandlingConfig::Report,
+        )
     }
 
     pub fn handle(&self) -> ClientHandle {
@@ -126,6 +141,42 @@ impl SwimClient {
         self.stop_tx.trigger();
         self.runtime.shutdown_background();
     }
+}
+
+#[cfg(not(feature = "deflate"))]
+fn build_websockets(config: ratchet::WebSocketConfig) -> RatchetNetworking<NoExtProvider> {
+    RatchetNetworking {
+        config,
+        provider: NoExtProvider,
+        subprotocols: Default::default(),
+    }
+}
+
+#[cfg(feature = "deflate")]
+fn build_websockets(
+    config: ratchet::WebSocketConfig,
+    deflate_config: Option<DeflateConfig>,
+) -> RatchetNetworking<DeflateExtProvider> {
+    RatchetNetworking {
+        config,
+        provider: DeflateExtProvider::with_config(deflate_config.unwrap_or_default()),
+        subprotocols: Default::default(),
+    }
+}
+
+#[cfg(not(feature = "tls"))]
+fn build_networking(runtime_handle: &Handle) -> impl ClientConnections<ClientSocket = TcpStream> {
+    let resolver = runtime_handle.block_on(Resolver::new());
+    TokioPlainTextNetworking::new(Arc::new(resolver))
+}
+
+#[cfg(feature = "tls")]
+fn build_networking(
+    runtime_handle: &Handle,
+) -> impl ClientConnections<ClientSocket = MaybeTlsStream> {
+    let resolver = runtime_handle.block_on(Resolver::new());
+    RustlsClientNetworking::try_from_config(Arc::new(resolver), swim_tls::ClientConfig::new(vec![]))
+        .unwrap()
 }
 
 #[derive(Clone)]
@@ -151,15 +202,14 @@ impl ClientHandle {
         self.tokio_handle.clone()
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn spawn_downlink<D>(
         &self,
         config: DownlinkConfigurations,
         downlink_ref: GlobalRef,
         stopped_barrier: GlobalRef,
         downlink: D,
-        host: Url,
-        node: String,
-        lane: String,
+        path: RemotePath,
     ) -> Result<(), ()>
     where
         D: Downlink + Send + Sync + 'static,
@@ -177,7 +227,7 @@ impl ClientHandle {
             options,
         } = config;
         let result = tokio_handle.block_on(downlinks_handle.run_downlink(
-            RemotePath::new(host.to_string(), node.as_str(), lane.as_str()),
+            path,
             runtime_config,
             downlink_config,
             options,
@@ -192,7 +242,7 @@ impl ClientHandle {
             }
             Err(e) => {
                 // any errors will have already been logged by the runtime
-                let env = get_env_shared(&vm).expect("Failed to get JNI environment");
+                let env = vm.expect_env();
                 env.throw_new(
                     "java/lang/Exception",
                     format!("Failed to spawn downlink: {:?}", e),
@@ -215,7 +265,7 @@ fn spawn_monitor(
         let result = receiver
             .await
             .map_err(|_| DownlinkRuntimeError::new(DownlinkErrorKind::Terminated));
-        let env = get_env_shared_expect(&vm);
+        let env = vm.expect_env();
 
         match result {
             Ok(arc_result) => {
@@ -231,12 +281,11 @@ fn spawn_monitor(
 }
 
 fn notify_stopped(env: &JNIEnv, stopped_barrier: GlobalRef) {
-    let mut countdown =
-        JavaObjectMethodDef::new("java/util/concurrent/CountDownLatch", "countDown", "()V")
-            .initialise(&env)
-            .expect("Failed to initialise countdown latch method");
+    let mut countdown = JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
+        .initialise(env)
+        .expect("Failed to initialise countdown latch method");
 
-    if let Err(e) = countdown.invoke(&env, &stopped_barrier, &[]) {
+    if let Err(e) = countdown.invoke(env, &stopped_barrier, &[]) {
         env.fatal_error(&e.to_string());
     }
 }

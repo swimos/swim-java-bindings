@@ -20,4 +20,4 @@ parking_lot = "0.12"
 
 [workspace.dependencies.ratchet]
 package = "ratchet_rs"
-version = "0.2.0"
+version = "0.4.0"

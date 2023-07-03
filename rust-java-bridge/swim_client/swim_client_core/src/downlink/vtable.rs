@@ -87,7 +87,7 @@ impl JavaMethod {
         method: JavaObjectMethodDef,
     ) -> Result<JavaMethod, Error> {
         Ok(JavaMethod {
-            ptr: new_global_ref(&env, ptr)?,
+            ptr: new_global_ref(env, ptr)?,
             def: MethodDefinition::Unit(method),
         })
     }

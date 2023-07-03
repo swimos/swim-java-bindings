@@ -21,25 +21,35 @@ use jni::{JNIEnv, JavaVM};
 
 use crate::JniResult;
 
-#[inline]
-pub fn get_env(vm: &JavaVM) -> JniResult<JNIEnv> {
-    match vm.get_env() {
-        Ok(env) => Ok(env),
-        Err(Error::JniCall(JniError::ThreadDetached)) => vm.attach_current_thread_as_daemon(),
-        Err(e) => Err(e),
+pub trait VmExt {
+    fn get_env(&self) -> JniResult<JNIEnv>;
+
+    fn expect_env(&self) -> JNIEnv {
+        self.get_env()
+            .expect("Failed to get JNI environment interface")
     }
 }
 
-#[inline]
-pub fn get_env_shared(vm: &Arc<JavaVM>) -> JniResult<JNIEnv> {
-    get_env(vm.as_ref())
+impl VmExt for JavaVM {
+    fn get_env(&self) -> JniResult<JNIEnv> {
+        match JavaVM::get_env(self) {
+            Ok(env) => Ok(env),
+            Err(Error::JniCall(JniError::ThreadDetached)) => self.attach_current_thread_as_daemon(),
+            Err(e) => Err(e),
+        }
+    }
 }
 
-#[inline]
-pub fn get_env_shared_expect(vm: &Arc<JavaVM>) -> JNIEnv {
-    get_env_shared(vm).expect("Failed to get JNI environment interface")
+impl<V> VmExt for Arc<V>
+where
+    V: VmExt,
+{
+    fn get_env(&self) -> JniResult<JNIEnv> {
+        self.as_ref().get_env()
+    }
 }
 
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn new_global_ref(env: &JNIEnv, ptr: jobject) -> Result<Option<GlobalRef>, Error> {
     if ptr.is_null() {
         Ok(None)
