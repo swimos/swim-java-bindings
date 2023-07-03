@@ -41,10 +41,6 @@ fn expand(input: DeriveInput) -> Result<TokenStream, Error> {
         };
     };
 
-    if ty_ident.to_string() == "Prop2" {
-        println!("{}", tokens.to_string());
-    }
-
     Ok(tokens)
 }
 
