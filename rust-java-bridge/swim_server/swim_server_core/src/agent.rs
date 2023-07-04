@@ -19,7 +19,7 @@ pub struct LaneSpec {
     lane_kind: LaneKind,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(ByteCodec, Debug, Copy, Clone)]
 enum LaneKind {
     Action,
     Command,

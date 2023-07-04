@@ -1,6 +1,3 @@
-use jni::objects::{GlobalRef, JObject};
-use jni::JNIEnv;
-
 mod agent;
 pub mod macros;
 

@@ -3,17 +3,17 @@ use quote::__private::ext::RepToTokensExt;
 use quote::{format_ident, quote, ToTokens};
 use syn::{parse2, Attribute, Data, DeriveInput, Error, Fields, Meta, Type, Visibility};
 
-pub fn derive(input: TokenStream) -> TokenStream {
+pub fn derive(input: TokenStream, external: bool) -> TokenStream {
     let input = match parse2::<DeriveInput>(input) {
         Ok(input) => input,
         Err(e) => return e.to_compile_error(),
     };
-    expand(input).unwrap_or_else(|e| e.to_compile_error())
+    expand(input, external).unwrap_or_else(|e| e.to_compile_error())
 }
 
-fn expand(input: DeriveInput) -> Result<TokenStream, Error> {
+fn expand(input: DeriveInput, external: bool) -> Result<TokenStream, Error> {
     let ty_ident = &input.ident;
-    let repr = derive_byte_transformations(&input)?;
+    let repr = derive_byte_transformations(&input, external)?;
 
     let try_from_bytes = TryFromBytes(&repr);
     let to_bytes = ToBytes(&repr);
@@ -39,7 +39,7 @@ fn expand(input: DeriveInput) -> Result<TokenStream, Error> {
     Ok(tokens)
 }
 
-fn derive_byte_transformations(item: &DeriveInput) -> Result<ByteRepr<'_>, Error> {
+fn derive_byte_transformations(item: &DeriveInput, external: bool) -> Result<ByteRepr<'_>, Error> {
     match item.generics.params.next() {
         Some(item) if item.is_empty() => {}
         _ => {
@@ -54,10 +54,10 @@ fn derive_byte_transformations(item: &DeriveInput) -> Result<ByteRepr<'_>, Error
         Data::Struct(data) => Ok(ByteRepr::Struct(StructRepr {
             ident: &item.ident,
             fields: derive_fields(&data.fields, |vis| match vis {
-                Visibility::Public(_) => Ok(()),
-                v @ Visibility::Restricted(_) | v @ Visibility::Inherited => {
+                v @ Visibility::Restricted(_) | v @ Visibility::Inherited if external => {
                     Err(Error::new_spanned(v, "Field must be public"))
                 }
+                _ => Ok(()),
             })?,
         })),
         Data::Enum(data) => {
@@ -318,10 +318,7 @@ where
             fields,
             "Bytebridge does not support tuple fields",
         )),
-        Fields::Unit => Err(Error::new_spanned(
-            fields,
-            "Bytebridge does not support unit structs/variants",
-        )),
+        Fields::Unit => Ok(Vec::new()),
     }
 }
 

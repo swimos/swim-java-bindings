@@ -67,7 +67,7 @@ impl RustBindings {
     /// bytebridge_derive attribute macro.
     pub fn write(self, rust_writer: &mut RustSourceWriter) -> io::Result<()> {
         let RustBindings { source } = self;
-        let tokens = derive_internals::derive(source.to_token_stream());
+        let tokens = derive_internals::derive(source.to_token_stream(), true);
         rust_writer.write_tokens(quote! {
             #source
             #tokens
