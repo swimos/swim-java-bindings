@@ -48,9 +48,7 @@ where
     let join_handle = runtime.spawn(fut);
 
     runtime.spawn(async move {
-        println!("Task started");
         let r = join_handle.await;
-        println!("Task completed.");
         let env = vm.expect_env();
 
         let _guard = env.lock_obj(&global_ref).expect("Failed to enter monitor");
@@ -59,21 +57,13 @@ where
                 .initialise(&env)
                 .unwrap();
 
-        println!("INitialised countdown");
-
         match countdown.invoke(&env, &global_ref, &[]) {
-            Ok(_) => {
-                println!("Invoked countdown")
-            }
+            Ok(_) => {}
             Err(Error::JavaException) => {
-                println!("Countdown exception");
                 let throwable = env.exception_occurred().unwrap();
                 jvm_tryf!(env, env.throw(throwable));
             }
-            Err(e) => {
-                println!("Countdown failed");
-                env.fatal_error(&e.to_string())
-            }
+            Err(e) => env.fatal_error(&e.to_string()),
         }
         if r.is_err() {
             env.fatal_error("Test panicked");
