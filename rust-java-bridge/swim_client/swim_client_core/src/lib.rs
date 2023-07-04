@@ -123,9 +123,16 @@ impl SwimClient {
         } = config;
 
         #[cfg(feature = "deflate")]
-        let websockets = build_websockets(Default::default(), websocket.deflate_config);
+        let websockets = build_websockets(
+            ratchet::WebSocketConfig {
+                max_message_size: websocket.max_message_size,
+            },
+            websocket.deflate_config,
+        );
         #[cfg(not(feature = "deflate"))]
-        let websockets = build_websockets(Default::default());
+        let websockets = build_websockets(ratchet::WebSocketConfig {
+            max_message_size: websocket.max_message_size,
+        });
 
         let transport = Transport::new(
             build_networking(runtime.handle()),
