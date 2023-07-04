@@ -21,8 +21,8 @@ use jni::JNIEnv;
 use tokio::runtime::{Builder, Runtime};
 
 use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
-use jvm_sys::vm::utils::get_env;
-use jvm_sys::{jvm_tryf, npch};
+use jvm_sys::vm::utils::VmExt;
+use jvm_sys::{jvm_tryf, null_pointer_check_abort};
 
 /// Creates a new multi-threaded Tokio runtime and spawns 'fut' on to it. A monitor task is spawned
 /// that waits for 'fut' to complete and then notifies 'barrier' that the task has completed; this
@@ -34,7 +34,7 @@ where
     F: Future + Send + 'static,
     F::Output: Send + 'static,
 {
-    npch!(env, barrier);
+    null_pointer_check_abort!(env, barrier);
 
     let vm = env.get_java_vm().unwrap();
     let global_ref = env
@@ -49,11 +49,11 @@ where
 
     runtime.spawn(async move {
         let r = join_handle.await;
-        let env = get_env(&vm).unwrap();
+        let env = vm.expect_env();
 
         let _guard = env.lock_obj(&global_ref).expect("Failed to enter monitor");
         let mut countdown =
-            JavaObjectMethodDef::new("java/util/concurrent/CountDownLatch", "countDown", "()V")
+            JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
                 .initialise(&env)
                 .unwrap();
 

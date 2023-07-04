@@ -54,7 +54,6 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
         let InitialisedJavaObjectMethod {
             signature,
             method_id,
-            ..
         } = self;
 
         if signature.args.len() != args.len() {
@@ -62,12 +61,7 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
         }
 
         let args = args.iter().map(|v| v.to_jni()).collect::<Vec<_>>();
-        env.call_method_unchecked(
-            object,
-            *method_id,
-            signature.ret.clone(),
-            &args,
-        )
+        env.call_method_unchecked(object, *method_id, signature.ret.clone(), &args)
     }
 }
 
@@ -133,56 +127,80 @@ pub trait JavaObjectMethod<'j> {
 }
 
 pub trait JavaMethodExt<'j>: JavaObjectMethod<'j> {
-    fn string<'m>(&'m mut self) -> Mold<'m, 'j, Self, String>
+    fn string<'m>(&'m mut self) -> MoldString<'m, Self>
     where
         Self: Sized,
     {
-        fn mold<'j>(env: &JNIEnv<'j>, value: JValue<'j>) -> Result<String, JError> {
-            let str = env.get_string(JString::from(value.l()?))?;
-            Ok(str
-                .to_str()
-                .expect("Failed to convert Java String to Rust String")
-                .to_string())
-        }
-        Mold {
-            method: self,
-            func: mold,
-        }
+        MoldString { method: self }
     }
 
-    fn void<'m>(&'m mut self) -> Mold<'m, 'j, Self, ()>
+    fn void<'m>(&'m mut self) -> MoldVoid<'m, Self>
     where
         Self: Sized,
     {
-        fn mold<'j>(_env: &JNIEnv<'j>, value: JValue<'j>) -> Result<(), JError> {
-            value.v()
-        }
-
-        Mold {
-            method: self,
-            func: mold,
-        }
+        MoldVoid { method: self }
     }
 
-    fn null<'m>(&'m mut self) -> Mold<'m, 'j, Self, ()>
+    fn null<'m>(&'m mut self) -> MoldNull<'m, Self>
     where
         Self: Sized,
     {
-        fn mold<'j>(_env: &JNIEnv<'j>, value: JValue<'j>) -> Result<(), JError> {
-            match value.l() {
-                Ok(ptr) if ptr.is_null() => Ok(()),
-                Ok(ptr) => Err(WrongJValueType(
-                    "JObject != null",
-                    JValue::Object(ptr).type_name(),
-                )),
-                Err(e) => Err(e),
-            }
-        }
+        MoldNull { method: self }
+    }
+}
 
-        Mold {
-            method: self,
-            func: mold,
-        }
+impl<'j, M> JavaMethodExt<'j> for M where M: JavaObjectMethod<'j> {}
+
+pub struct MoldString<'m, M> {
+    method: &'m mut M,
+}
+
+impl<'j, 'm, M> JavaObjectMethod<'j> for MoldString<'m, M>
+where
+    M: JavaObjectMethod<'j, Output = JValue<'j>>,
+{
+    type Output = String;
+
+    fn invoke<O>(
+        &mut self,
+        env: &'j JNIEnv,
+        object: O,
+        args: &[JValue<'j>],
+    ) -> Result<Self::Output, JError>
+    where
+        O: Into<JObject<'j>>,
+    {
+        let MoldString { method } = self;
+        let value = method.invoke(env, object, args)?;
+        let str = env.get_string(JString::from(value.l()?))?;
+        Ok(str
+            .to_str()
+            .expect("Failed to convert Java String to Rust String")
+            .to_string())
+    }
+}
+
+pub struct MoldVoid<'m, M> {
+    method: &'m mut M,
+}
+
+impl<'j, 'm, M> JavaObjectMethod<'j> for MoldVoid<'m, M>
+where
+    M: JavaObjectMethod<'j, Output = JValue<'j>>,
+{
+    type Output = ();
+
+    fn invoke<O>(
+        &mut self,
+        env: &'j JNIEnv,
+        object: O,
+        args: &[JValue<'j>],
+    ) -> Result<Self::Output, JError>
+    where
+        O: Into<JObject<'j>>,
+    {
+        let MoldVoid { method } = self;
+        method.invoke(env, object, args)?.v()
     }
 }
 
@@ -213,4 +231,35 @@ where
     }
 }
 
-impl<'j, M> JavaMethodExt<'j> for M where M: JavaObjectMethod<'j> {}
+pub struct MoldNull<'m, M> {
+    method: &'m mut M,
+}
+
+impl<'m, 'j, M> JavaObjectMethod<'j> for MoldNull<'m, M>
+where
+    M: JavaObjectMethod<'j, Output = JValue<'j>>,
+{
+    type Output = ();
+
+    fn invoke<O>(
+        &mut self,
+        env: &'j JNIEnv,
+        object: O,
+        args: &[JValue<'j>],
+    ) -> Result<Self::Output, JError>
+    where
+        O: Into<JObject<'j>>,
+    {
+        let MoldNull { method } = self;
+        let value = method.invoke(env, object, args)?;
+
+        match value.l() {
+            Ok(ptr) if ptr.is_null() => Ok(()),
+            Ok(ptr) => Err(WrongJValueType(
+                "JObject != null",
+                JValue::Object(ptr).type_name(),
+            )),
+            Err(e) => Err(e),
+        }
+    }
+}

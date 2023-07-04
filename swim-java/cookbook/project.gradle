@@ -1,0 +1,42 @@
+apply plugin: 'java'
+apply plugin: 'java-library'
+apply plugin: 'application'
+
+group = 'org.swimos'
+version = project.property('swim.version')
+
+repositories {
+    mavenCentral()
+    maven { url 'https://packages.confluent.io/maven/' }
+}
+
+dependencies {
+    api group: 'org.swimos', name: 'swim-api', version: version
+    api group: 'org.swimos', name: 'swim-server', version: version
+
+    api project(':swim-client')
+}
+
+tasks.withType(JavaCompile).configureEach {
+        // Link this task to the build output of the client so that the dependencies are available.
+    compileTask -> compileTask.dependsOn ":swim-client:build"
+}
+
+tasks.create(name: "nativeLibs", type: Sync) {
+    from project(':swim-client').projectDir.toString().concat('/libs')
+    include "*.dylib", "*.so", "*.dll"
+    into "libs"
+}
+
+tasks.named("nativeLibs").configure { dependsOn(":swim_client:nativeLibs") }
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+        resources {
+            srcDir 'libs'
+        }
+    }
+}

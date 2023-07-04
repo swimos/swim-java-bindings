@@ -20,8 +20,11 @@ import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.model.InitializedType;
 import ai.swim.structure.processor.schema.HeaderSpec;
 import ai.swim.structure.processor.schema.PartitionedFields;
-import com.squareup.javapoet.*;
-
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -32,8 +35,9 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.ArrayList;
 import java.util.List;
-
-import static ai.swim.structure.processor.writer.writerForm.Lookups.*;
+import static ai.swim.structure.processor.writer.writerForm.Lookups.BODY_WRITER;
+import static ai.swim.structure.processor.writer.writerForm.Lookups.HEADER_NO_SLOTS;
+import static ai.swim.structure.processor.writer.writerForm.Lookups.HEADER_WRITER;
 
 public class ConcreteClassWriter extends ClassWriter {
 
@@ -120,10 +124,13 @@ public class ConcreteClassWriter extends ClassWriter {
         body.addStatement("$T $L = ($T) $L", type, fieldName, type, getter.build());
       }
 
-      if (!rawType.getKind().isPrimitive()) {
+      boolean isPrimitive = rawType.getKind().isPrimitive();
+      boolean bodyReplaced = fields.body.isReplaced();
+
+      if (!isPrimitive) {
         body.beginControlFlow("if ($L != null)", fieldName);
 
-        if (!fields.body.isReplaced()) {
+        if (!bodyReplaced) {
           body.addStatement("__numSlots += 1");
         }
 
@@ -140,6 +147,8 @@ public class ConcreteClassWriter extends ClassWriter {
         }
 
         body.endControlFlow();
+      } else if (!bodyReplaced) {
+        body.addStatement("__numSlots += 1");
       }
     }
 
@@ -174,7 +183,9 @@ public class ConcreteClassWriter extends ClassWriter {
 
       body
           .add("$>default:")
-          .addStatement("$> throw new AssertionError(\"Bug: Unhandled enum constant during annotation processing for: $L\")", root)
+          .addStatement(
+              "$> throw new AssertionError(\"Bug: Unhandled enum constant during annotation processing for: $L\")",
+              root)
           .add("$<$<")
           .endControlFlow();
     } else {
@@ -199,7 +210,11 @@ public class ConcreteClassWriter extends ClassWriter {
       CodeBlock.Builder getter = CodeBlock.builder();
       attr.getAccessor().writeGet(getter, "from");
       String writableName = context.getFormatter().writableName(attr.propertyName());
-      body.addStatement("__recWriter = __recWriter.writeAttr($S, $L, $L)", attr.propertyName(), writableName, getter.build());
+      body.addStatement(
+          "__recWriter = __recWriter.writeAttr($S, $L, $L)",
+          attr.propertyName(),
+          writableName,
+          getter.build());
     });
 
     return body.build();
@@ -232,7 +247,13 @@ public class ConcreteClassWriter extends ClassWriter {
         TypeMirror rawType = bodyField.getElement().asType();
         String writableName = context.getFormatter().writableName(bodyField.propertyName());
 
-        CodeBlock init = isRuntimeLookup ? CodeBlock.of("$L", context.getFormatter().writableName(bodyField.propertyName())) : CodeBlock.of("$L", writableName);
+        CodeBlock init = isRuntimeLookup ? CodeBlock.of(
+            "$L",
+            context
+                .getFormatter()
+                .writableName(bodyField.propertyName())) : CodeBlock.of(
+            "$L",
+            writableName);
 
         CodeBlock writeOp = CodeBlock
             .builder()

@@ -12,22 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::num::NonZeroUsize;
-use std::sync::Arc;
-
-pub use client_runtime::ClientConfig;
-use client_runtime::RemotePath;
+use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
 use client_runtime::{
     start_runtime, DownlinkErrorKind, DownlinkRuntimeError, RawHandle, Transport,
 };
+use client_runtime::{ClientConfig, RemotePath};
 use jni::objects::{GlobalRef, JValue};
 use jni::JNIEnv;
 use jni::JavaVM;
 #[cfg(feature = "deflate")]
-use ratchet::deflate::DeflateExtProvider;
+use ratchet::deflate::{DeflateConfig, DeflateExtProvider};
 #[cfg(not(feature = "deflate"))]
 use ratchet::NoExtProvider;
 use ratchet::WebSocketStream;
+use std::num::NonZeroUsize;
+use std::sync::Arc;
+use swim_api::downlink::Downlink;
 use swim_api::error::DownlinkTaskError;
 use swim_runtime::net::dns::Resolver;
 #[cfg(not(feature = "tls"))]
@@ -45,15 +45,17 @@ use tokio::runtime::{Builder, Handle, Runtime};
 use tokio::task::JoinHandle;
 
 use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
-use jvm_sys::vm::utils::{get_env_shared, get_env_shared_expect};
+use jvm_sys::vm::utils::VmExt;
 use jvm_sys::vm::{with_local_frame_null, SpannedError};
 pub use macros::*;
 
-use crate::downlink::value::{FfiValueDownlink, SharedVm};
-use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
-
 pub mod downlink;
 mod macros;
+pub use macros::*;
+
+const REMOTE_BUFFER_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(64) };
+
+pub type SharedVm = Arc<JavaVM>;
 
 pub struct SwimClient {
     error_mode: ErrorHandlingConfig,
@@ -85,6 +87,7 @@ impl SwimClient {
             stop_rx,
             transport,
             transport_buffer_size,
+            false,
         );
 
         let runtime_handle = runtime.handle();
@@ -118,9 +121,22 @@ impl SwimClient {
             registration_buffer_size,
             ..
         } = config;
+
+        #[cfg(feature = "deflate")]
+        let websockets = build_websockets(
+            ratchet::WebSocketConfig {
+                max_message_size: websocket.max_message_size,
+            },
+            websocket.deflate_config,
+        );
+        #[cfg(not(feature = "deflate"))]
+        let websockets = build_websockets(ratchet::WebSocketConfig {
+            max_message_size: websocket.max_message_size,
+        });
+
         let transport = Transport::new(
             build_networking(runtime.handle()),
-            build_websockets(websocket),
+            websockets,
             remote_buffer_size,
         );
         SwimClient::with_transport(
@@ -151,9 +167,7 @@ impl SwimClient {
 #[cfg(not(feature = "deflate"))]
 fn build_websockets(config: ratchet::WebSocketConfig) -> RatchetNetworking<NoExtProvider> {
     RatchetNetworking {
-        config: ratchet::WebSocketConfig {
-            max_message_size: config.max_message_size,
-        },
+        config,
         provider: NoExtProvider,
         subprotocols: Default::default(),
     }
@@ -161,18 +175,16 @@ fn build_websockets(config: ratchet::WebSocketConfig) -> RatchetNetworking<NoExt
 
 #[cfg(feature = "deflate")]
 fn build_websockets(
-    config: client_runtime::WebSocketConfig,
+    config: ratchet::WebSocketConfig,
+    deflate_config: Option<DeflateConfig>,
 ) -> RatchetNetworking<DeflateExtProvider> {
     RatchetNetworking {
-        config: ratchet::WebSocketConfig {
-            max_message_size: config.max_message_size,
-        },
-        provider: DeflateExtProvider::with_config(config.deflate_config.unwrap_or_default()),
+        config,
+        provider: DeflateExtProvider::with_config(deflate_config.unwrap_or_default()),
         subprotocols: Default::default(),
     }
 }
 
-// todo: tls
 #[cfg(not(feature = "tls"))]
 fn build_networking(runtime_handle: &Handle) -> impl ClientConnections<ClientSocket = TcpStream> {
     let resolver = runtime_handle.block_on(Resolver::new());
@@ -183,7 +195,6 @@ fn build_networking(runtime_handle: &Handle) -> impl ClientConnections<ClientSoc
 fn build_networking(
     runtime_handle: &Handle,
 ) -> impl ClientConnections<ClientSocket = MaybeTlsStream> {
-    // todo: tls
     let resolver = runtime_handle.block_on(Resolver::new());
     RustlsClientNetworking::try_from_config(Arc::new(resolver), swim_tls::ClientConfig::new(vec![]))
         .unwrap()
@@ -213,14 +224,17 @@ impl ClientHandle {
     }
 
     #[allow(clippy::result_unit_err)]
-    pub fn spawn_value_downlink(
+    pub fn spawn_downlink<D>(
         &self,
         config: DownlinkConfigurations,
         downlink_ref: GlobalRef,
         stopped_barrier: GlobalRef,
-        downlink: FfiValueDownlink,
+        downlink: D,
         path: RemotePath,
-    ) -> Result<(), ()> {
+    ) -> Result<(), ()>
+    where
+        D: Downlink + Send + Sync + 'static,
+    {
         let ClientHandle {
             vm,
             tokio_handle,
@@ -249,7 +263,7 @@ impl ClientHandle {
             }
             Err(e) => {
                 // any errors will have already been logged by the runtime
-                let env = get_env_shared(&vm).expect("Failed to get JNI environment");
+                let env = vm.expect_env();
                 env.throw_new(
                     "java/lang/Exception",
                     format!("Failed to spawn downlink: {:?}", e),
@@ -272,7 +286,7 @@ fn spawn_monitor(
         let result = receiver
             .await
             .map_err(|_| DownlinkRuntimeError::new(DownlinkErrorKind::Terminated));
-        let env = get_env_shared_expect(&vm);
+        let env = vm.expect_env();
 
         match result {
             Ok(arc_result) => {
@@ -288,10 +302,9 @@ fn spawn_monitor(
 }
 
 fn notify_stopped(env: &JNIEnv, stopped_barrier: GlobalRef) {
-    let mut countdown =
-        JavaObjectMethodDef::new("java/util/concurrent/CountDownLatch", "countDown", "()V")
-            .initialise(env)
-            .expect("Failed to initialise countdown latch method");
+    let mut countdown = JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
+        .initialise(env)
+        .expect("Failed to initialise countdown latch method");
 
     if let Err(e) = countdown.invoke(env, &stopped_barrier, &[]) {
         env.fatal_error(&e.to_string());

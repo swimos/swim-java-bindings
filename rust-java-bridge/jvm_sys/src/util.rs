@@ -18,7 +18,7 @@ use std::panic::Location;
 /// Performs a null pointer check on all the pointers provided and if any is null then the JVM
 /// aborts.
 #[macro_export]
-macro_rules! npch {
+macro_rules! null_pointer_check_abort {
     ($env:ident, $($arg:ident),*) => {
         let env_ref = $env;
         $(
@@ -32,7 +32,7 @@ macro_rules! npch {
 /// Performs a null pointer check on all the pointers provided and if any is null then a null
 /// pointer is returned.
 #[macro_export]
-macro_rules! npcs {
+macro_rules! null_pointer_check {
     ($env:ident, $($arg:ident),*) => {
         let env_ref = $env;
         $(

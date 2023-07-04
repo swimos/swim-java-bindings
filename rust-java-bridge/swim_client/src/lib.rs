@@ -17,15 +17,22 @@ use std::panic;
 
 use bytebridge::ByteCodec;
 use bytes::BytesMut;
-use client_runtime::RemotePath;
+use client_runtime::{ClientConfig, RemotePath};
 use jni::objects::JString;
 use jni::sys::{jbyteArray, jobject};
+use jni::JNIEnv;
+use swim_api::downlink::Downlink;
+use url::Url;
+
 use jvm_sys::vm::set_panic_hook;
 use jvm_sys::vm::utils::new_global_ref;
+use jvm_sys::{jni_try, null_pointer_check_abort, parse_string};
+use swim_client_core::downlink::map::FfiMapDownlink;
 use jvm_sys::{jni_try, npch, parse_string};
 use ratchet::WebSocketConfig;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
+use swim_client_core::{client_fn, ClientHandle, SwimClient};
 use swim_client_core::{client_fn, ClientHandle, SwimClient};
 use url::Url;
 
@@ -120,7 +127,7 @@ client_fn! {
         _class,
         client: *mut SwimClient,
     ) {
-        npch!(env, client);
+        null_pointer_check_abort!(env, client);
         let runtime = unsafe { Box::from_raw(client) };
         runtime.shutdown();
 
@@ -134,7 +141,7 @@ client_fn! {
         _class,
         runtime: *mut SwimClient,
     ) -> ClientHandle {
-        npch!(env, runtime);
+        null_pointer_check_abort!(env, runtime);
         let runtime = unsafe { &*runtime };
         let handle = runtime.handle();
 
@@ -148,10 +155,67 @@ client_fn! {
         _class,
         handle: *mut ClientHandle,
     ) {
-        npch!(env, handle);
+        null_pointer_check_abort!(env, handle);
         unsafe {
             drop(Box::from_raw(handle));
         }
+    }
+}
+
+/// Attempts to open a downlink using the provided client handle. This function assumes that the
+/// downlink_ref, config, and stopped_barrier are not null pointers.
+fn open_downlink<D>(
+    env: JNIEnv,
+    handle: &ClientHandle,
+    downlink_ref: jobject,
+    config: jbyteArray,
+    stopped_barrier: jobject,
+    host: JString,
+    node: JString,
+    lane: JString,
+    downlink: D,
+) where
+    D: Downlink + Send + Sync + 'static,
+{
+    let mut config_bytes = jni_try! {
+        env,
+        "Failed to parse configuration array",
+        env.convert_byte_array(config).map(BytesMut::from_iter)
+    };
+
+    let config = jni_try! {
+        env,
+        "Invalid config",
+        DownlinkConfigurations::try_from_bytes(&mut config_bytes,&env)
+    };
+
+    let make_global_ref = |obj, name| {
+        new_global_ref(&env, obj)
+            .expect(&format!(
+                "Failed to create new global reference for {}",
+                name
+            ))
+            .unwrap()
+    };
+
+    let host = jni_try! {
+        env,
+        "Failed to parse host URL",
+        Url::try_from(parse_string!(env, host).as_str())
+    };
+
+    let node = parse_string!(env, node);
+    let lane = parse_string!(env, lane);
+
+    jni_try! {
+        handle.spawn_downlink(
+            config,
+            make_global_ref(downlink_ref, "downlink object"),
+            make_global_ref(stopped_barrier, "stopped barrier"),
+            downlink,
+            RemotePath::new(host.to_string(),node,lane)
+        ),
+        ()
     }
 }
 
@@ -175,19 +239,7 @@ client_fn! {
         on_synced: jobject,
         on_unlinked: jobject,
     ) {
-        npch!(env, handle, stopped_barrier, downlink_ref, config);
-
-        let mut config_bytes = jni_try! {
-            env,
-            "Failed to parse configuration array",
-            env.convert_byte_array(config).map(BytesMut::from_iter)
-        };
-
-        let config = jni_try! {
-            env,
-            "Invalid config",
-            DownlinkConfigurations::try_from_bytes(&mut config_bytes,&env)
-        };
+        null_pointer_check_abort!(env, handle, stopped_barrier, downlink_ref, config);
 
         let handle = unsafe { &*handle };
         let downlink = jni_try! {
@@ -204,34 +256,70 @@ client_fn! {
             ),
         };
 
-        let make_global_ref = |obj, name| {
-            // this closure is only called with arguments that have already had a null check
-            // performed, so the unwrap is safe
-            new_global_ref(&env, obj)
-                .unwrap_or_else(|_| panic!(
-                    "Failed to create new global reference for {}",
-                    name
-                ))
-                .unwrap()
-        };
-
-        let host = jni_try! {
+        open_downlink(
             env,
-            "Failed to parse host URL",
-            Url::try_from(parse_string!(env, host).as_str())
-        };
+            handle,
+            downlink_ref,
+            config,
+            stopped_barrier,
+            host,
+            node,
+            lane,
+            downlink
+        );
+    }
+}
 
-        let node = parse_string!(env, node);
-        let lane = parse_string!(env, lane);
+client_fn! {
+    downlink_map_MapDownlinkModel_open(
+        env,
+        _class,
+        handle: *mut ClientHandle,
+        downlink_ref: jobject,
+        config: jbyteArray,
+        stopped_barrier: jobject,
+        host: JString,
+        node: JString,
+        lane: JString,
+        on_linked: jobject,
+        on_synced: jobject,
+        on_update: jobject,
+        on_remove: jobject,
+        on_clear: jobject,
+        on_unlinked: jobject,
+        take: jobject,
+        drop: jobject,
+    ) {
+        null_pointer_check_abort!(env, handle, stopped_barrier, downlink_ref, config);
 
-        jni_try! {
-            handle.spawn_value_downlink(
-                config,
-                make_global_ref(downlink_ref, "downlink object"),
-                make_global_ref(stopped_barrier, "stopped barrier"),
-                downlink,
-                RemotePath::new(host.to_string(), node, lane)
+        let handle = unsafe { &*handle };
+        let downlink = jni_try! {
+            env,
+            "Failed to create downlink",
+            FfiMapDownlink::create(
+                handle.vm(),
+                on_linked,
+                on_synced,
+                on_update,
+                on_remove,
+                on_clear,
+                on_unlinked,
+                take,
+                drop,
+                handle.error_mode(),
             ),
         };
+
+        open_downlink(
+            env,
+            handle,
+            downlink_ref,
+            config,
+            stopped_barrier,
+            host,
+            node,
+            lane,
+            downlink
+        );
     }
 }

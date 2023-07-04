@@ -55,7 +55,7 @@ public class Trigger {
   }
 
   /**
-   * Causes the current thread to wait until for a trigger or until it is signaled or interrupted, or the specified
+   * Causes the current thread to wait until for a trigger or until it is signalled or interrupted, or the specified
    * waiting time elapses.
    *
    * @param time the maximum time to wait for a trigger event

@@ -15,10 +15,27 @@
 extern crate core;
 
 use jni::errors::Result as JniResult;
+use jni::objects::JByteBuffer;
+use jni::JNIEnv;
 
-// pub mod bytes;
 mod macros;
 pub mod util;
 pub mod vm;
 pub use macros::*;
 pub use paste;
+
+pub trait EnvExt<'a> {
+    unsafe fn new_direct_byte_buffer_exact(
+        &'a self,
+        buf: &mut Vec<u8>,
+    ) -> JniResult<JByteBuffer<'a>>;
+}
+
+impl<'a> EnvExt<'a> for JNIEnv<'a> {
+    unsafe fn new_direct_byte_buffer_exact(
+        &'a self,
+        buf: &mut Vec<u8>,
+    ) -> JniResult<JByteBuffer<'a>> {
+        self.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len())
+    }
+}

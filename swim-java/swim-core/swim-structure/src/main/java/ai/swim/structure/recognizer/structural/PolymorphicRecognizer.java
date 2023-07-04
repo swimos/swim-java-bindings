@@ -3,13 +3,14 @@ package ai.swim.structure.recognizer.structural;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class PolymorphicRecognizer<T> extends StructuralRecognizer<T> {
 
-  private List<Recognizer<? extends T>> recognizers;
+  private final List<Recognizer<? extends T>> recognizers;
   private Recognizer<? extends T> current;
 
   public PolymorphicRecognizer(List<Recognizer<? extends T>> recognizers) {
@@ -17,7 +18,7 @@ public class PolymorphicRecognizer<T> extends StructuralRecognizer<T> {
     if (recognizers.isEmpty()) {
       throw new IllegalArgumentException("Cannot initialise a polymorphic recognizer with no recognizers");
     }
-    this.recognizers = recognizers;
+    this.recognizers = new ArrayList<>(recognizers);
   }
 
   @Override

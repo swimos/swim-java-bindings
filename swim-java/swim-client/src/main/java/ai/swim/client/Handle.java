@@ -14,30 +14,34 @@
 
 package ai.swim.client;
 
+import ai.swim.lang.ffi.AtomicDestructor;
+import ai.swim.lang.ffi.NativeResource;
+
 /**
  * A Rust SwimClient handle pointer.
  * <p>
  * Created through swim_client/src/lib.rs#Java_ai_swim_client_SwimClient_handle
  */
-public class Handle {
+public class Handle implements NativeResource {
   private final long handlePtr;
-  private boolean dropped;
+  private final AtomicDestructor destructor;
 
   public Handle(long handlePtr) {
     this.handlePtr = handlePtr;
-    this.dropped = false;
+    this.destructor = new AtomicDestructor(this, () -> dropHandle(handlePtr));
   }
 
   public static Handle create(long runtimePtr) {
     return new Handle(createHandle(runtimePtr));
   }
 
+  private static native long createHandle(long runtimePtr);
+
+  private static native long dropHandle(long handlePtr);
+
   public void drop() {
-    if (dropped) {
+    if (!destructor.drop()) {
       throw new IllegalStateException("Attempted to drop an already dropped SwimClient handle");
-    } else {
-      dropHandle(handlePtr);
-      dropped = true;
     }
   }
 
@@ -45,8 +49,8 @@ public class Handle {
     return handlePtr;
   }
 
-  private static native long createHandle(long runtimePtr);
-
-  private static native long dropHandle(long handlePtr);
-
+  @Override
+  public void close() {
+    destructor.drop();
+  }
 }

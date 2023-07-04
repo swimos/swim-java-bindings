@@ -106,7 +106,7 @@ public class ModelInspector {
    * A type mirror may be a mirror from a {@code TypeElement} or a field's {@code TypeMirror}.
    */
   private final HashMap<TypeMirror, Model> models;
-  private static final Map<String, CoreTypeSpec<?>> CORE_TYPES  = new HashMap<>();
+  private static final Map<String, CoreTypeSpec<?>> CORE_TYPES = new HashMap<>();
 
   static {
     putType(Character.TYPE, CoreTypeModel.Kind.Character, '\u0000');
@@ -198,9 +198,9 @@ public class ModelInspector {
    * @throws IllegalArgumentException if a previously resolved model exists for {@code type} that is not a class like model.
    */
   private ClassLikeModel getOrInspectClass(TypeMirror type,
-                                           TypeElement element,
-                                           ProcessingEnvironment environment,
-                                           StructuralModel skip) {
+      TypeElement element,
+      ProcessingEnvironment environment,
+      StructuralModel skip) {
     if (element == null) {
       throw new NullPointerException();
     }
@@ -235,9 +235,9 @@ public class ModelInspector {
    * @throws IllegalArgumentException if the kind of the element is not class-like or an interface.
    */
   private Model resolveDeclaredType(TypeMirror type,
-                                    TypeElement element,
-                                    ProcessingEnvironment environment,
-                                    StructuralModel current) {
+      TypeElement element,
+      ProcessingEnvironment environment,
+      StructuralModel current) {
     ElementKind kind = element.getKind();
     if (kind.isClass()) {
       AutoForm annotation = element.getAnnotation(AutoForm.class);
@@ -273,9 +273,9 @@ public class ModelInspector {
    * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy.
    */
   private Model inspectDeclaredType(TypeMirror type,
-                                    TypeElement element,
-                                    ProcessingEnvironment environment,
-                                    StructuralModel current) {
+      TypeElement element,
+      ProcessingEnvironment environment,
+      StructuralModel current) {
     Model resolved = resolveDeclaredType(type, element, environment, current);
     if (resolved == null) {
       Elements elementUtils = environment.getElementUtils();
@@ -305,9 +305,9 @@ public class ModelInspector {
    *                               if resolution failed.
    */
   private Model inspectElement(TypeMirror elementType,
-                               Element element,
-                               ProcessingEnvironment environment,
-                               StructuralModel skipRoot) {
+      Element element,
+      ProcessingEnvironment environment,
+      StructuralModel skipRoot) {
     ElementKind kind = element.getKind();
     Model model = getLibraryModel(environment, this, element, elementType);
 
@@ -361,9 +361,9 @@ public class ModelInspector {
    * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy.
    */
   private ClassLikeModel inspectClass(TypeMirror type,
-                                      TypeElement element,
-                                      ProcessingEnvironment environment,
-                                      StructuralModel skipSubType) {
+      TypeElement element,
+      ProcessingEnvironment environment,
+      StructuralModel skipSubType) {
     validateNoArgConstructor(element);
 
     Elements elementUtils = environment.getElementUtils();
@@ -394,8 +394,9 @@ public class ModelInspector {
   private void inspectTag(TypeElement element) {
     if (element.getKind().equals(ElementKind.ENUM)) {
       if (element.getAnnotation(AutoForm.Tag.class) != null) {
-        throw new InvalidModelException(String.format("%s cannot be used on enumerations, only on constants",
-                                                      AutoForm.Tag.class.getCanonicalName()));
+        throw new InvalidModelException(String.format(
+            "%s cannot be used on enumerations, only on constants",
+            AutoForm.Tag.class.getCanonicalName()));
       }
 
       List<? extends Element> enclosedElements = element.getEnclosedElements();
@@ -477,21 +478,24 @@ public class ModelInspector {
       Model fieldModel = getOrInspect(variableType, variable, environment, classModel);
 
       if (isPublic) {
-        classModel.addField(new FieldModel(new FieldAccessor(variableName.toString()),
-                                           fieldModel,
-                                           variable,
-                                           fieldKind));
+        classModel.addField(new FieldModel(
+            new FieldAccessor(variableName.toString()),
+            fieldModel,
+            variable,
+            fieldKind));
       } else {
-        ExecutableElement setter = accessorFor(classModel.getMethods(),
-                                               "set",
-                                               variableName,
-                                               AutoForm.Setter.class,
-                                               (anno) -> anno.value().equals(variableName.toString()));
-        ExecutableElement getter = accessorFor(classModel.getMethods(),
-                                               "get",
-                                               variableName,
-                                               AutoForm.Getter.class,
-                                               (anno) -> anno.value().equals(variableName.toString()));
+        ExecutableElement setter = accessorFor(
+            classModel.getMethods(),
+            "set",
+            variableName,
+            AutoForm.Setter.class,
+            (anno) -> anno.value().equals(variableName.toString()));
+        ExecutableElement getter = accessorFor(
+            classModel.getMethods(),
+            "get",
+            variableName,
+            AutoForm.Getter.class,
+            (anno) -> anno.value().equals(variableName.toString()));
 
         if (rootElement.getKind() != ElementKind.ENUM) {
           validateSetter(setter, variableName, variableType, environment);
@@ -556,9 +560,9 @@ public class ModelInspector {
    *                               extend from {@code rootElement} or it is the same class).
    */
   private List<Model> inspectSubTypes(Element rootElement,
-                                      StructuralModel model,
-                                      ProcessingEnvironment environment,
-                                      Set<AutoForm.Type> subTypes) {
+      StructuralModel model,
+      ProcessingEnvironment environment,
+      Set<AutoForm.Type> subTypes) {
     Types typeUtils = environment.getTypeUtils();
     Set<Model> subTypeElements = new HashSet<>(subTypes.size());
     TypeMirror rootType = rootElement.asType();
@@ -586,8 +590,12 @@ public class ModelInspector {
       }
 
       ElementKind kind = subTypeElement.getKind();
+      boolean validSuperType = typeUtils
+          .directSupertypes(subTypeMirror)
+          .stream()
+          .anyMatch(elem -> typeUtils.isSameType(elem, rootType));
 
-      if (rootElement.getKind() == ElementKind.CLASS && !typeUtils.directSupertypes(subTypeMirror).contains(rootType)) {
+      if (rootElement.getKind() == ElementKind.CLASS && !validSuperType) {
         throw new InvalidModelException(String.format("%s is not a direct supertype of %s", rootType, subTypeMirror));
       }
 
@@ -613,9 +621,9 @@ public class ModelInspector {
    * @throws InvalidModelException if any of the constraints are violated.
    */
   private void validateSetter(ExecutableElement setter,
-                              Name name,
-                              TypeMirror expectedType,
-                              ProcessingEnvironment environment) {
+      Name name,
+      TypeMirror expectedType,
+      ProcessingEnvironment environment) {
     Types typeUtils = environment.getTypeUtils();
 
     if (setter == null) {
@@ -651,9 +659,9 @@ public class ModelInspector {
    * @throws InvalidModelException if any of the constraints are violated.
    */
   private void validateGetter(ExecutableElement getter,
-                              Name name,
-                              TypeMirror expectedType,
-                              ProcessingEnvironment environment) {
+      Name name,
+      TypeMirror expectedType,
+      ProcessingEnvironment environment) {
     Types typeUtils = environment.getTypeUtils();
 
     if (getter == null) {
@@ -697,9 +705,9 @@ public class ModelInspector {
    * @throws InvalidModelException if an invalid model has been derived anywhere from this element's type hierarchy.
    */
   private void inspectSuperclass(TypeElement element,
-                                 ClassLikeModel classModel,
-                                 ProcessingEnvironment environment,
-                                 StructuralModel skipRoot) {
+      ClassLikeModel classModel,
+      ProcessingEnvironment environment,
+      StructuralModel skipRoot) {
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
     TypeMirror superType = element.getSuperclass();
@@ -740,7 +748,7 @@ public class ModelInspector {
 
       if (parentField != null && !parentField.isIgnored()) {
         throw new InvalidModelException("Class contains a field (" + field.getName()
-                                                                          .toString() + ") with the same name as one in its superclass");
+            .toString() + ") with the same name as one in its superclass");
       }
     }
 
@@ -807,9 +815,9 @@ public class ModelInspector {
    * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
    */
   public static Model getLibraryModel(ProcessingEnvironment environment,
-                                      ModelInspector inspector,
-                                      Element element,
-                                      TypeMirror type) {
+      ModelInspector inspector,
+      Element element,
+      TypeMirror type) {
     CoreTypeSpec<?> model = CORE_TYPES.get(type.toString());
     if (model != null) {
       return CoreTypeModel.from(environment, type, element, model);
@@ -837,9 +845,9 @@ public class ModelInspector {
    * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
    */
   private static Model tryFromDeclared(ProcessingEnvironment environment,
-                                       Element element,
-                                       ModelInspector inspector,
-                                       DeclaredType type) {
+      Element element,
+      ModelInspector inspector,
+      DeclaredType type) {
     Types typeUtils = environment.getTypeUtils();
     Elements elementUtils = environment.getElementUtils();
 
@@ -855,11 +863,12 @@ public class ModelInspector {
       DeclaredType typedContainer = typeUtils.getDeclaredType(containerType, unrolledType.typeMirror);
       PackageElement packageElement = elementUtils.getPackageElement(List.class.getCanonicalName());
 
-      return new ParameterisedTypeModel(typedContainer,
-                                        element,
-                                        packageElement,
-                                        ParameterisedTypeModel.Mapping.List,
-                                        unrolledType.model);
+      return new ParameterisedTypeModel(
+          typedContainer,
+          element,
+          packageElement,
+          ParameterisedTypeModel.Mapping.List,
+          unrolledType.model);
     } else if (isSubType(environment, type, Map.class)) {
       List<? extends TypeMirror> typeArguments = type.getTypeArguments();
 
@@ -871,17 +880,19 @@ public class ModelInspector {
       UnrolledType unrolledValue = unrollType(environment, element, inspector, typeArguments.get(1));
 
       TypeElement containerType = elementUtils.getTypeElement(Map.class.getCanonicalName());
-      DeclaredType typedContainer = typeUtils.getDeclaredType(containerType,
-                                                              unrolledKey.typeMirror,
-                                                              unrolledValue.typeMirror);
+      DeclaredType typedContainer = typeUtils.getDeclaredType(
+          containerType,
+          unrolledKey.typeMirror,
+          unrolledValue.typeMirror);
       PackageElement packageElement = elementUtils.getPackageElement(Map.class.getCanonicalName());
 
-      return new ParameterisedTypeModel(typedContainer,
-                                        element,
-                                        packageElement,
-                                        ParameterisedTypeModel.Mapping.Map,
-                                        unrolledKey.model,
-                                        unrolledValue.model);
+      return new ParameterisedTypeModel(
+          typedContainer,
+          element,
+          packageElement,
+          ParameterisedTypeModel.Mapping.Map,
+          unrolledKey.model,
+          unrolledValue.model);
     } else {
       return null;
     }
@@ -900,32 +911,35 @@ public class ModelInspector {
    * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
    */
   private static Model fromArray(ProcessingEnvironment environment,
-                                 ModelInspector inspector,
-                                 Element element,
-                                 ArrayType arrayType) {
+      ModelInspector inspector,
+      Element element,
+      ArrayType arrayType) {
     TypeMirror componentType = arrayType.getComponentType();
     Model componentModel = getLibraryModel(environment, inspector, element, componentType);
 
     if (componentModel == null && componentType.getKind() == TypeKind.DECLARED) {
       componentModel = inspector.getOrInspect((TypeElement) componentType, environment);
-      return new ArrayLibraryModel(element.asType(),
-                                   element,
-                                   componentType,
-                                   componentModel,
-                                   componentModel.getDeclaredPackage());
+      return new ArrayLibraryModel(
+          element.asType(),
+          element,
+          componentType,
+          componentModel,
+          componentModel.getDeclaredPackage());
     } else if (componentType.getKind() == TypeKind.TYPEVAR) {
-      return new ArrayLibraryModel(element.asType(),
-                                   element,
-                                   componentType,
-                                   new UntypedModel(componentType, element, null),
-                                   null);
+      return new ArrayLibraryModel(
+          element.asType(),
+          element,
+          componentType,
+          new UntypedModel(componentType, element, null),
+          null);
     } else {
       Elements elementUtils = environment.getElementUtils();
-      return new ArrayLibraryModel(element.asType(),
-                                   element,
-                                   componentType,
-                                   new UnresolvedModel(componentType, element, elementUtils.getPackageOf(element)),
-                                   null);
+      return new ArrayLibraryModel(
+          element.asType(),
+          element,
+          componentType,
+          new UnresolvedModel(componentType, element, elementUtils.getPackageOf(element)),
+          null);
     }
   }
 
@@ -943,23 +957,25 @@ public class ModelInspector {
    * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
    */
   private static UnrolledType unrollType(ProcessingEnvironment environment,
-                                         Element element,
-                                         ModelInspector inspector,
-                                         TypeMirror typeMirror) {
+      Element element,
+      ModelInspector inspector,
+      TypeMirror typeMirror) {
     switch (typeMirror.getKind()) {
       case DECLARED:
         DeclaredType declaredType = (DeclaredType) typeMirror;
-        return new UnrolledType(typeMirror,
-                                inspector.getOrInspect(typeMirror, declaredType.asElement(), environment, null));
+        return new UnrolledType(
+            typeMirror,
+            inspector.getOrInspect(typeMirror, declaredType.asElement(), environment, null));
       case TYPEVAR:
         return new UnrolledType(typeMirror, new UntypedModel(typeMirror, element, null));
       case WILDCARD:
         WildcardType wildcardType = (WildcardType) typeMirror;
-        return unrollBoundedType(environment,
-                                 element,
-                                 inspector,
-                                 wildcardType.getExtendsBound(),
-                                 wildcardType.getSuperBound());
+        return unrollBoundedType(
+            environment,
+            element,
+            inspector,
+            wildcardType.getExtendsBound(),
+            wildcardType.getSuperBound());
       default:
         throw new AssertionError("Unrolled type: " + typeMirror.getKind());
     }
@@ -981,10 +997,10 @@ public class ModelInspector {
    * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
    */
   private static UnrolledType unrollBoundedType(ProcessingEnvironment environment,
-                                                Element element,
-                                                ModelInspector inspector,
-                                                TypeMirror lowerBound,
-                                                TypeMirror upperBound) {
+      Element element,
+      ModelInspector inspector,
+      TypeMirror lowerBound,
+      TypeMirror upperBound) {
     TypeMirror bound = lowerBound;
 
     if (bound == null || bound.getKind() == TypeKind.NULL) {
@@ -998,8 +1014,9 @@ public class ModelInspector {
     if (bound == null) {
       TypeElement objectTypeElement = elementUtils.getTypeElement(Object.class.getCanonicalName());
       PackageElement packageElement = elementUtils.getPackageElement(Object.class.getCanonicalName());
-      return new UnrolledType(objectTypeElement.asType(),
-                              new UntypedModel(objectTypeElement.asType(), element, packageElement));
+      return new UnrolledType(
+          objectTypeElement.asType(),
+          new UntypedModel(objectTypeElement.asType(), element, packageElement));
     } else {
       // We need to retype the model here so that the new, unrolled, type is shifted up a level. I.e, if the type that
       // we're unrolling is List<? extends Number> then the new model is List<Number> and that is now the element's
