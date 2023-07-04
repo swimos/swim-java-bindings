@@ -1,0 +1,16 @@
+ext.moduleName = 'swim-server'
+
+apply from: '../ffi.gradle'
+
+dependencies {
+    api project(':swim-codec')
+    api project(':swim-recon')
+    api project(':swim-concurrent')
+    api project(':swim-ffi')
+    implementation project(':swim-structure')
+
+    annotationProcessor project(':swim-structure-processor')
+    testAnnotationProcessor project(':swim-structure-processor')
+
+    implementation 'org.msgpack:msgpack-core:0.9.3'
+}
