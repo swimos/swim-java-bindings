@@ -14,8 +14,10 @@
 
 package ai.swim.client.downlink.map;
 
+import ai.swim.structure.TypeParameter;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
+import ai.swim.structure.recognizer.proxy.RecognizerTypeParameter;
 
 import java.util.Objects;
 

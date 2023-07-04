@@ -49,4 +49,8 @@ public class Handle implements NativeResource {
     return handlePtr;
   }
 
+  @Override
+  public void close() {
+    destructor.drop();
+  }
 }

@@ -28,6 +28,7 @@ use tokio_util::codec::FramedRead;
 use jvm_sys::vm::utils::VmExt;
 use jvm_sys::vm::SpannedError;
 
+use crate::downlink::decoder::ValueDlNotDecoder;
 use crate::downlink::value::lifecycle::ValueDownlinkLifecycle;
 use crate::downlink::{ErrorHandlingConfig, FfiFailureHandler};
 use crate::SharedVm;
@@ -148,7 +149,7 @@ async fn run_ffi_value_downlink(
     } = config;
 
     let mut state = LinkState::Unlinked;
-    let mut framed_read = FramedRead::new(input, ValueNotificationDecoder::<Value>::default());
+    let mut framed_read = FramedRead::new(input, ValueDlNotDecoder::default());
     let mut ffi_buffer = BytesMut::new();
 
     while let Some(result) = framed_read.next().await {

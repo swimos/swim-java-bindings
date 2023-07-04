@@ -14,8 +14,10 @@
 
 extern crate core;
 
+use std::panic;
+
 use bytes::BytesMut;
-use client_runtime::RemotePath;
+use client_runtime::{ClientConfig, RemotePath};
 use jni::objects::JString;
 use jni::sys::{jbyteArray, jobject};
 use jni::JNIEnv;
@@ -28,7 +30,7 @@ use jvm_sys::{jni_try, null_pointer_check_abort, parse_string};
 use swim_client_core::downlink::map::FfiMapDownlink;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
-use swim_client_core::{client_fn, ClientConfig, ClientHandle, SwimClient};
+use swim_client_core::{client_fn, ClientHandle, SwimClient};
 
 client_fn! {
     SwimClient_startClient(
@@ -138,9 +140,7 @@ fn open_downlink<D>(
             make_global_ref(downlink_ref, "downlink object"),
             make_global_ref(stopped_barrier, "stopped barrier"),
             downlink,
-            host,
-            node,
-            lane,
+            RemotePath::new(host.to_string(),node,lane)
         ),
         ()
     }
@@ -217,7 +217,7 @@ client_fn! {
         take: jobject,
         drop: jobject,
     ) {
-        npch!(env, handle, stopped_barrier, downlink_ref, config);
+        null_pointer_check_abort!(env, handle, stopped_barrier, downlink_ref, config);
 
         let handle = unsafe { &*handle };
         let downlink = jni_try! {

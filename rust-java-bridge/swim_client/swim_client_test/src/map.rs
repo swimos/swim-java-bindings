@@ -16,7 +16,7 @@ use crate::lifecycle_test;
 use jni::objects::JString;
 use jni::sys::jobject;
 use jni::JNIEnv;
-use jvm_sys::npch;
+use jvm_sys::null_pointer_check_abort;
 use jvm_sys::vm::set_panic_hook;
 use std::fmt::Display;
 use std::sync::Arc;
@@ -39,7 +39,7 @@ client_fn! {
         drop: jobject,
     ) {
         set_panic_hook();
-        npch!(
+        null_pointer_check_abort!(
             env,
             on_linked,
             on_synced,

@@ -21,7 +21,7 @@ use jni::sys::jbyteArray;
 use jni::sys::jobject;
 use jni::JavaVM;
 use jvm_sys::jni_try;
-use jvm_sys::vm::utils::get_env_shared_expect;
+use jvm_sys::vm::utils::VmExt;
 use jvm_sys_tests::run_test;
 use std::io::ErrorKind;
 use std::sync::Arc;
@@ -80,7 +80,7 @@ fn lifecycle_test<'a, D>(
 where
     D: Downlink + Send + 'static,
 {
-    let env = get_env_shared_expect(&vm);
+    let env = vm.expect_env();
     let host = env.get_string(host).unwrap();
     let node = env.get_string(node).unwrap();
     let lane = env.get_string(lane).unwrap();

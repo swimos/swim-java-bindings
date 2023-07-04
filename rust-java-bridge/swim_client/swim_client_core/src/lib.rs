@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::downlink::value::{FfiValueDownlink, SharedVm};
 use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
-use client_runtime::RemotePath;
 use client_runtime::{
     start_runtime, DownlinkErrorKind, DownlinkRuntimeError, RawHandle, Transport,
 };
+use client_runtime::{ClientConfig, RemotePath};
 use jni::objects::{GlobalRef, JValue};
 use jni::JNIEnv;
 use jni::JavaVM;
@@ -26,6 +25,9 @@ use ratchet::deflate::{DeflateConfig, DeflateExtProvider};
 #[cfg(not(feature = "deflate"))]
 use ratchet::NoExtProvider;
 use ratchet::WebSocketStream;
+use std::num::NonZeroUsize;
+use std::sync::Arc;
+use swim_api::downlink::Downlink;
 use swim_api::error::DownlinkTaskError;
 use swim_runtime::net::dns::Resolver;
 #[cfg(not(feature = "tls"))]
@@ -52,7 +54,8 @@ mod macros;
 pub use macros::*;
 
 const REMOTE_BUFFER_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(64) };
-type SharedVm = Arc<JavaVM>;
+
+pub type SharedVm = Arc<JavaVM>;
 
 pub struct SwimClient {
     error_mode: ErrorHandlingConfig,
@@ -78,10 +81,22 @@ impl SwimClient {
         Net::ClientSocket: WebSocketStream,
         Ws: WsConnections<Net::ClientSocket> + Sync + Send + 'static,
     {
-        let (stop_tx, downlinks_handle) = runtime.block_on(async move {
-            let (handle, stop_tx) = start_runtime(transport, false);
-            (stop_tx, Arc::new(handle))
-        });
+        let (stop_tx, stop_rx) = trigger::trigger();
+        let (handle, task) = start_runtime(
+            registration_buffer_size,
+            stop_rx,
+            transport,
+            transport_buffer_size,
+            false,
+        );
+
+        let runtime_handle = runtime.handle();
+        let _jh = {
+            // The current Tokio runtime context needs to be set before the runtime task can be
+            // spawned.
+            let _guard = runtime_handle.enter();
+            tokio::spawn(task)
+        };
 
         SwimClient {
             error_mode,
@@ -104,14 +119,13 @@ impl SwimClient {
             remote_buffer_size,
             transport_buffer_size,
             registration_buffer_size,
-            #[cfg(feature = "deflate")]
-            deflate,
+            ..
         } = config;
 
         #[cfg(feature = "deflate")]
-        let websockets = build_websockets(websocket, deflate);
+        let websockets = build_websockets(Default::default(), websocket.deflate_config);
         #[cfg(not(feature = "deflate"))]
-        let websockets = build_websockets(websocket);
+        let websockets = build_websockets(Default::default());
 
         let transport = Transport::new(
             build_networking(runtime.handle()),

@@ -19,11 +19,11 @@ package ai.swim.lang.ffi;
  * this may register a destructor that will be run when there are no more phantom references to this object.
  * <p>
  * Objects which implement this interface will generally be wrappers around functionality that is implemented by a
- * native interface and *should* perform memory management automatically but if this is not possible or there is a
+ * native interface and *should* perform memory management automatically, but if this is not possible or there is a
  * memory leak then the destructor will automatically run and reclaim the memory by invoking the provided callback. Any
  * implementations should perform checks against double freeing; a simple atomic boolean which is negated when the
  * object is correctly deallocated and checked in the destructor should suffice.
  */
-public interface NativeResource {
+public interface NativeResource extends AutoCloseable {
 
 }

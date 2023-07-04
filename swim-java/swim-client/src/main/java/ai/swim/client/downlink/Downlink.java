@@ -15,8 +15,7 @@
 package ai.swim.client.downlink;
 
 import ai.swim.client.SwimClientException;
-
-import java.util.concurrent.CountDownLatch;
+import ai.swim.concurrent.Trigger;
 
 /**
  * FFI-downlink base that maintains a reference to the state of the downlink and error handling functionality.
@@ -24,21 +23,21 @@ import java.util.concurrent.CountDownLatch;
  * @param <S> the type of the downlink's state.
  */
 public abstract class Downlink<S> {
-  private final CountDownLatch stoppedBarrier;
+  private final Trigger trigger;
   // Referenced through FFI. Do not remove.
   @SuppressWarnings({"FieldCanBeLocal", "unused"})
   private final S state;
   /// Referenced through FFI and *possibly* set to an error that occurred while the downlink was running. Iff this is
-  /// non-null *after* calling 'awaitStopped' then the downlink terminated with an error and it *must* be thrown from
-  /// that method. Iff it is null then the downlink terminated successfully.
+  /// non-null *after* calling 'awaitStopped' then the downlink terminated with an error, and it *must* be thrown from
+  /// that method. Iff it is null, the downlink terminated successfully.
   ///
-  /// This is implemented this way to avoid a long-running FFI call and so that the 'awaitStopped' method has an
+  /// This is implemented this way to avoid a long-running FFI call, and so that the 'awaitStopped' method has an
   /// exception to throw when it is called - otherwise, the exception would be lost.
   protected String message;
   protected Throwable cause;
 
-  protected Downlink(CountDownLatch stoppedBarrier, S state) {
-    this.stoppedBarrier = stoppedBarrier;
+  protected Downlink(Trigger trigger, S state) {
+    this.trigger = trigger;
     this.state = state;
   }
 
@@ -49,7 +48,7 @@ public abstract class Downlink<S> {
    */
   public void awaitStopped() throws SwimClientException {
     try {
-      stoppedBarrier.await();
+      trigger.awaitTrigger();
     } catch (InterruptedException e) {
       throw new SwimClientException(e);
     }

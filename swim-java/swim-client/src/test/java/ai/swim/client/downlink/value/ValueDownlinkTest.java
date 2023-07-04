@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package ai.swim.client.downlink.value;
+
 import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.FfiTest;
 import ai.swim.client.lifecycle.OnLinked;
@@ -23,7 +24,6 @@ import ai.swim.structure.Recon;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
 import org.junit.jupiter.api.Test;
-
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,8 +40,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class ValueDownlinkTest extends FfiTest {
 
-  private static native long lifecycleTest(
-      Trigger trigger,
+  private static native long lifecycleTest(Trigger trigger,
       String input,
       String host,
       String node,
@@ -51,29 +49,7 @@ class ValueDownlinkTest extends FfiTest {
       OnLinked onLinked,
       Consumer<ByteBuffer> onSet,
       Consumer<ByteBuffer> onSynced,
-      OnUnlinked onUnlinked
-  );
-
-  private static native <T> long driveDownlink(
-      ValueDownlink<T> downlinkRef,
-      CountDownLatch stoppedBarrier,
-      CountDownLatch testBarrier,
-      String host,
-      String node,
-      String lane,
-      Consumer<ByteBuffer> onEvent,
-      OnLinked onLinked,
-      Consumer<ByteBuffer> onSet,
-      Consumer<ByteBuffer> onSynced,
-      OnUnlinked onUnlinked
-  );
-
-  private static native <T> long driveDownlinkError(
-      ValueDownlink<T> downlinkRef,
-      CountDownLatch stoppedBarrier,
-      CountDownLatch testBarrier,
-      Consumer<ByteBuffer> onEvent
-  );
+      OnUnlinked onUnlinked);
 
   /**
    * Tests that the required JNI calls exist for opening a downlink.
@@ -81,34 +57,16 @@ class ValueDownlinkTest extends FfiTest {
   @Test
   void simpleOpen() throws InterruptedException {
     Trigger trigger = new Trigger();
-    TestValueDownlink<String> downlink = (TestValueDownlink<String>) new TestValueDownlinkBuilder<>(String.class, "host", "node", "lane", (build) -> {
-      ValueDownlinkState<String> state = new ValueDownlinkState<>(Form.forClass(build.formType));
-      Trigger stoppedBarrier = new Trigger();
-      TestValueDownlink<String> testValueDownlink = new TestValueDownlink<>(stoppedBarrier, state);
 
-      long ptr = lifecycleTest(
-          trigger,
-          "",
-          build.host,
-          build.node,
-          build.lane,
-          null,
-          null,
-          null,
-          null,
-          null
-      );
+    long ptr = lifecycleTest(trigger, "", "host", "node", "lane", null, null, null, null, null);
 
-      testValueDownlink.setClose(() -> dropRuntime(ptr));
-
-      return testValueDownlink;
-    }).open();
-
-    downlink.close();
     awaitTrigger(trigger, 5, "downlink");
+    dropRuntime(ptr);
   }
 
-  <I> void runTestOk(Class<I> clazz, ConcurrentLinkedDeque<I> syncEvents, ConcurrentLinkedDeque<I> events) throws InterruptedException, SwimClientException {
+  <I> void runTestOk(Class<I> clazz,
+      ConcurrentLinkedDeque<I> syncEvents,
+      ConcurrentLinkedDeque<I> events) throws InterruptedException, SwimClientException {
     StringBuilder input = new StringBuilder();
     input.append("@linked(node:node,lane:lane)\n");
 
@@ -127,30 +85,8 @@ class ValueDownlinkTest extends FfiTest {
     Trigger lock = new Trigger();
     AtomicReference<LinkState> linkState = new AtomicReference<>(LinkState.Init);
     AtomicReference<I> last = new AtomicReference<>(null);
+    ValueDownlinkState<I> state = new ValueDownlinkState<>(Form.forClass(clazz));
 
-    TestValueDownlinkBuilder<I> builder = new TestValueDownlinkBuilder<>(clazz, "host", "node", "lane", (build) -> {
-      ValueDownlinkLifecycle<I> lifecycle = build.lifecycle;
-      ValueDownlinkState<I> state = new ValueDownlinkState<>(Form.forClass(build.formType));
-      Trigger stoppedBarrier = new Trigger();
-      TestValueDownlink<I> testValueDownlink = new TestValueDownlink<>(stoppedBarrier, state);
-
-      long ptr = lifecycleTest(
-          lock,
-          input.toString(),
-          build.host,
-          build.node,
-          build.lane,
-          state.wrapOnEvent(lifecycle.getOnEvent()),
-          lifecycle.getOnLinked(),
-          state.wrapOnSet(lifecycle.getOnSet()),
-          state.wrapOnSynced(lifecycle.getOnSynced()),
-          lifecycle.getOnUnlinked()
-      );
-
-      testValueDownlink.setClose(() -> dropRuntime(ptr));
-
-      return testValueDownlink;
-    });
 
     CountDownLatch linked = new CountDownLatch(1);
     CountDownLatch synced = new CountDownLatch(1);
@@ -159,88 +95,92 @@ class ValueDownlinkTest extends FfiTest {
     CountDownLatch unlinked = new CountDownLatch(1);
 
     ValueDownlinkLifecycle<I> lifecycle = new ValueDownlinkLifecycle<>();
-    lifecycle
-        .setOnLinked(() -> {
-          if (linkState.get() == LinkState.Init && linked.getCount() == 1) {
-            linkState.set(LinkState.Linked);
-            linked.countDown();
+    lifecycle.setOnLinked(() -> {
+      if (linkState.get() == LinkState.Init && linked.getCount() == 1) {
+        linkState.set(LinkState.Linked);
+        linked.countDown();
+      } else {
+        fail(String.format("Illegal downlink state for a linked callback %s, latch count: %s",
+                           linkState.get(),
+                           linked.getCount()));
+      }
+    }).setOnEvent(val -> {
+      switch (linkState.get()) {
+        case Linked:
+          if (event.getCount() == syncEvents.size() + events.size()) {
+            event.countDown();
+            assertEquals(syncEvents.peekFirst(), val);
+            break;
           } else {
-            fail(String.format("Illegal downlink state for a linked callback %s, latch count: %s", linkState.get(), linked.getCount()));
+            fail(String.format("Illegal downlink state for an event callback %s, latch count: %s",
+                               linkState.get(),
+                               event.getCount()));
           }
-        })
-        .setOnEvent(val -> {
-          switch (linkState.get()) {
-            case Linked:
-              if (event.getCount() == syncEvents.size() + events.size()) {
-                event.countDown();
-                assertEquals(syncEvents.peekFirst(), val);
-                break;
-              } else {
-                fail(String.format("Illegal downlink state for an event callback %s, latch count: %s", linkState.get(), event.getCount()));
-              }
-            case Synced:
-              if (event.getCount() == syncEvents.size() + events.size()) {
-                event.countDown();
-                assertEquals(events.peekFirst(), val);
-                break;
-              } else {
-                fail(String.format("Event callback called more than once in the synced state. Count: %s", event.getCount()));
-              }
-          }
-        })
-        .setOnSet((oldValue, newValue) -> {
-          switch (linkState.get()) {
-            case Linked:
-              if (set.getCount() == syncEvents.size() + events.size()) {
-                set.countDown();
-                assertEquals(last.get(), oldValue);
-                assertEquals(syncEvents.pollFirst(), newValue);
-                last.set(newValue);
-                break;
-              } else {
-                fail(String.format("Illegal downlink state for a set callback %s, latch count: %s", linkState.get(), set.getCount()));
-              }
-            case Synced:
-              if (set.getCount() == syncEvents.size() + events.size()) {
-                set.countDown();
-                assertEquals(last.get(), oldValue);
-                assertEquals(events.pollFirst(), newValue);
-                last.set(newValue);
-                break;
-              } else {
-                fail(String.format("Set callback called more than once in the synced state. Count: %s", set.getCount()));
-              }
-          }
-        })
-        .setOnSynced((value -> {
-          if (linkState.get() == LinkState.Linked && synced.getCount() == 1) {
-            linkState.set(LinkState.Synced);
-            synced.countDown();
+        case Synced:
+          if (event.getCount() == syncEvents.size() + events.size()) {
+            event.countDown();
+            assertEquals(events.peekFirst(), val);
+            break;
           } else {
-            fail(String.format("Illegal downlink state for a synced callback %s, latch count: %s", linkState.get(), synced.getCount()));
+            fail(String.format("Event callback called more than once in the synced state. Count: %s",
+                               event.getCount()));
           }
-        }))
-        .setOnUnlinked(() -> {
-          if (linkState.get() == LinkState.Synced && unlinked.getCount() == 1) {
-            linkState.set(LinkState.Unlinked);
-            unlinked.countDown();
+      }
+    }).setOnSet((oldValue, newValue) -> {
+      switch (linkState.get()) {
+        case Linked:
+          if (set.getCount() == syncEvents.size() + events.size()) {
+            set.countDown();
+            assertEquals(last.get(), oldValue);
+            assertEquals(syncEvents.pollFirst(), newValue);
+            last.set(newValue);
+            break;
           } else {
-            fail(String.format("Illegal downlink state for an unlinked callback %s, latch count: %s", linkState.get(), unlinked.getCount()));
+            fail(String.format("Illegal downlink state for a set callback %s, latch count: %s",
+                               linkState.get(),
+                               set.getCount()));
           }
-        });
+        case Synced:
+          if (set.getCount() == syncEvents.size() + events.size()) {
+            set.countDown();
+            assertEquals(last.get(), oldValue);
+            assertEquals(events.pollFirst(), newValue);
+            last.set(newValue);
+            break;
+          } else {
+            fail(String.format("Set callback called more than once in the synced state. Count: %s", set.getCount()));
+          }
+      }
+    }).setOnSynced((value -> {
+      if (linkState.get() == LinkState.Linked && synced.getCount() == 1) {
+        linkState.set(LinkState.Synced);
+        synced.countDown();
+      } else {
+        fail(String.format("Illegal downlink state for a synced callback %s, latch count: %s",
+                           linkState.get(),
+                           synced.getCount()));
+      }
+    })).setOnUnlinked(() -> {
+      if (linkState.get() == LinkState.Synced && unlinked.getCount() == 1) {
+        linkState.set(LinkState.Unlinked);
+        unlinked.countDown();
+      } else {
+        fail(String.format("Illegal downlink state for an unlinked callback %s, latch count: %s",
+                           linkState.get(),
+                           unlinked.getCount()));
+      }
+    });
 
-    long ptr = lifecycleTest(
-        lock,
-        input.toString(),
-        "host",
-        "node",
-        "lane",
-        state.wrapOnEvent(lifecycle.getOnEvent()),
-        lifecycle.getOnLinked(),
-        state.wrapOnSet(lifecycle.getOnSet()),
-        state.wrapOnSynced(lifecycle.getOnSynced()),
-        lifecycle.getOnUnlinked()
-    );
+    long ptr = lifecycleTest(lock,
+                             input.toString(),
+                             "host",
+                             "node",
+                             "lane",
+                             state.wrapOnEvent(lifecycle.getOnEvent()),
+                             lifecycle.getOnLinked(),
+                             state.wrapOnSet(lifecycle.getOnSet()),
+                             state.wrapOnSynced(lifecycle.getOnSynced()),
+                             lifecycle.getOnUnlinked());
 
     awaitLatch(linked, 5, "linked");
     awaitLatch(synced, 5, "synced");
@@ -259,35 +199,16 @@ class ValueDownlinkTest extends FfiTest {
 
   @Test
   void recordType() throws InterruptedException, SwimClientException {
-    runTestOk(
-        Envelope.class,
-        new ConcurrentLinkedDeque<>(List.of(new Envelope("node0", "node1"))),
-        new ConcurrentLinkedDeque<>(List.of(
-            new Envelope("node1", "lane1"),
-            new Envelope("node2", "lane2"),
-            new LaneAddressed("node3", "lane3", 1),
-            new LaneAddressed("node4", "lane4", 2)
-        ))
-    );
-  }
-
-  void awaitLatch(CountDownLatch latch, long time, String latchName) throws InterruptedException {
-    if (!latch.await(time, TimeUnit.SECONDS)) {
-      fail(String.format("%s latch elapsed before countdown reached", latchName));
-    }
-  }
-
-  void awaitTrigger(Trigger trigger, long time, String latchName) throws InterruptedException {
-    if (!trigger.awaitTrigger(time, TimeUnit.SECONDS)) {
-      fail(String.format("%s trigger elapsed before it was fired", latchName));
-    }
+    runTestOk(Envelope.class,
+              new ConcurrentLinkedDeque<>(List.of(new Envelope("node0", "node1"))),
+              new ConcurrentLinkedDeque<>(List.of(new Envelope("node1", "lane1"),
+                                                  new Envelope("node2", "lane2"),
+                                                  new LaneAddressed("node3", "lane3", 1),
+                                                  new LaneAddressed("node4", "lane4", 2))));
   }
 
   enum LinkState {
-    Init,
-    Linked,
-    Synced,
-    Unlinked
+    Init, Linked, Synced, Unlinked
   }
 
   @AutoForm
@@ -300,47 +221,11 @@ class ValueDownlinkTest extends FfiTest {
 
     @Override
     public String toString() {
-      return "Event{" +
-          "node='" + node + '\'' +
-          ", lane='" + lane + '\'' +
-          ", value=" + value +
-          '}';
+      return "Event{" + "node='" + node + '\'' + ", lane='" + lane + '\'' + ", value=" + value + '}';
     }
   }
 
-  private static class TestValueDownlink<T> extends ValueDownlink<T> {
-    private Runnable close;
-
-    TestValueDownlink(Trigger trigger, ValueDownlinkState<T> state) {
-      super(trigger, state);
-    }
-
-    public void close() {
-      close.run();
-    }
-
-    public void setClose(Runnable close) {
-      this.close = close;
-    }
-  }
-
-  private static class TestValueDownlinkBuilder<T> extends ValueDownlinkBuilderModel<T> {
-    private final Function<TestValueDownlinkBuilder<T>, TestValueDownlink<T>> builder;
-
-    public TestValueDownlinkBuilder(Class<T> formType, String host, String node, String lane, Function<TestValueDownlinkBuilder<T>, TestValueDownlink<T>> builder) {
-      super(formType, host, node, lane);
-      this.builder = builder;
-    }
-
-    @Override
-    public ValueDownlink<T> open() {
-      return builder.apply(this);
-    }
-  }
-
-  @AutoForm(subTypes = {
-      @AutoForm.Type(LaneAddressed.class)
-  })
+  @AutoForm(subTypes = {@AutoForm.Type(LaneAddressed.class)})
   public static class Envelope {
     public String node;
     public String lane;
@@ -387,8 +272,7 @@ class ValueDownlinkTest extends FfiTest {
     }
   }
 
-  private static native <T> long driveDownlink(
-      ValueDownlink<T> downlinkRef,
+  private static native <T> long driveDownlink(ValueDownlink<T> downlinkRef,
       Trigger stoppedBarrier,
       Trigger testBarrier,
       String host,
@@ -398,10 +282,7 @@ class ValueDownlinkTest extends FfiTest {
       OnLinked onLinked,
       Consumer<ByteBuffer> onSet,
       Consumer<ByteBuffer> onSynced,
-      OnUnlinked onUnlinked
-  );
-
-  private static native void dropSwimClient(long ptr);
+      OnUnlinked onUnlinked);
 
   @Test
   void testWithServer() throws InterruptedException {
@@ -412,64 +293,34 @@ class ValueDownlinkTest extends FfiTest {
     CountDownLatch unlinkedLatch = new CountDownLatch(1);
     Trigger ffiBarrier = new Trigger();
 
-    TestValueDownlinkBuilder<Integer> builder = new TestValueDownlinkBuilder<>(Integer.class, "ws://127.0.0.1", "node", "lane", (build) -> {
-      ValueDownlinkLifecycle<Integer> lifecycle = build.lifecycle;
-      ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(build.formType));
-      Trigger stoppedBarrier = new Trigger();
-      TestValueDownlink<Integer> downlink = new TestValueDownlink<>(null, state);
-
-      long ptr = driveDownlink(
-          downlink,
-          stoppedBarrier,
-          ffiBarrier,
-          build.host,
-          build.node,
-          build.lane,
-          state.wrapOnEvent(lifecycle.getOnEvent()),
-          lifecycle.getOnLinked(),
-          state.wrapOnSet(lifecycle.getOnSet()),
-          state.wrapOnSynced(lifecycle.getOnSynced()),
-          lifecycle.getOnUnlinked()
-      );
-
-      downlink.setClose(() -> dropSwimClient(ptr));
-
-      return downlink;
-    });
-
-    TestValueDownlink<Integer> downlink = (TestValueDownlink<Integer>) builder
-        .setOnEvent(event -> {
-          eventLatch.countDown();
-          assertEquals(15, event);
-        })
-        .setOnLinked(linkedLatch::countDown)
-        .setOnSet((oldValue, newValue) -> {
-          setLatch.countDown();
-          assertEquals(oldValue, 13);
-          assertEquals(newValue, 15);
-        }).setOnSynced(state -> {
-          syncedLatch.countDown();
-          assertEquals(state, 13);
-        })
-        .setOnUnlinked(unlinkedLatch::countDown);
+    ValueDownlinkLifecycle<Integer> lifecycle = new ValueDownlinkLifecycle<>();
+    lifecycle.setOnEvent(event -> {
+      eventLatch.countDown();
+      assertEquals(15, event);
+    }).setOnLinked(linkedLatch::countDown).setOnSet((oldValue, newValue) -> {
+      setLatch.countDown();
+      assertEquals(oldValue, 13);
+      assertEquals(newValue, 15);
+    }).setOnSynced(state -> {
+      syncedLatch.countDown();
+      assertEquals(state, 13);
+    }).setOnUnlinked(unlinkedLatch::countDown);
     ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(Integer.class));
-    CountDownLatch stoppedBarrier = new CountDownLatch(1);
+    Trigger stoppedBarrier = new Trigger();
 
     TestValueDownlink<Integer> valueDownlink = new TestValueDownlink<>(stoppedBarrier, state);
 
-    long ptr = driveDownlink(
-        valueDownlink,
-        stoppedBarrier,
-        ffiBarrier,
-        "ws://127.0.0.1/",
-        "node",
-        "lane",
-        state.wrapOnEvent(lifecycle.getOnEvent()),
-        lifecycle.getOnLinked(),
-        state.wrapOnSet(lifecycle.getOnSet()),
-        state.wrapOnSynced(lifecycle.getOnSynced()),
-        lifecycle.getOnUnlinked()
-    );
+    long ptr = driveDownlink(valueDownlink,
+                             stoppedBarrier,
+                             ffiBarrier,
+                             "ws://127.0.0.1/",
+                             "node",
+                             "lane",
+                             state.wrapOnEvent(lifecycle.getOnEvent()),
+                             lifecycle.getOnLinked(),
+                             state.wrapOnSet(lifecycle.getOnSet()),
+                             state.wrapOnSynced(lifecycle.getOnSynced()),
+                             lifecycle.getOnUnlinked());
 
     awaitLatch(linkedLatch, 10, "linkedLatch");
     awaitLatch(syncedLatch, 10, "syncedLatch");
@@ -477,7 +328,7 @@ class ValueDownlinkTest extends FfiTest {
     awaitLatch(setLatch, 10, "setLatch");
     awaitLatch(unlinkedLatch, 10, "unlinkedLatch");
 
-    ffiBarrier.trigger();
+    stoppedBarrier.trigger();
 
     assertEquals(0, linkedLatch.getCount());
     assertEquals(0, syncedLatch.getCount());
@@ -495,40 +346,27 @@ class ValueDownlinkTest extends FfiTest {
       ValueDownlink<Object> downlink = new ValueDownlink<>(null, null) {
       };
 
-      driveDownlink(
-          downlink,
-          new Trigger(),
-          barrier,
-          "swim.ai",
-          "",
-          "",
-          null, null, null, null, null
-      );
+      driveDownlink(downlink, new Trigger(), barrier, "swim.ai", "", "", null, null, null, null, null);
     }, "Failed to parse host URL: RelativeUrlWithoutBase");
   }
 
   @Test
   void testAwaitClosedOk() throws SwimClientException {
-    Trigger ffiBarrier = new Trigger();
+    ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(Integer.class));
+    Trigger stoppedBarrier = new Trigger();
+    TestValueDownlink<Integer> valueDownlink = new TestValueDownlink<>(stoppedBarrier, state);
 
-    TestValueDownlink<Integer> testDownlink = (TestValueDownlink<Integer>) new TestValueDownlinkBuilder<>(Integer.class, "ws://127.0.0.1", "node", "lane", (build) -> {
-      ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(build.formType));
-      Trigger stoppedBarrier = new Trigger();
-      TestValueDownlink<Integer> downlink = new TestValueDownlink<>(stoppedBarrier, state);
-
-    long ptr = driveDownlink(
-        valueDownlink,
-        stoppedBarrier,
-        null,
-        "ws://127.0.0.1",
-        "node",
-        "lane",
-        null,
-        null,
-        null,
-        null,
-        null
-    );
+    long ptr = driveDownlink(valueDownlink,
+                             stoppedBarrier,
+                             null,
+                             "ws://127.0.0.1",
+                             "node",
+                             "lane",
+                             null,
+                             null,
+                             null,
+                             null,
+                             null);
 
     try {
       valueDownlink.awaitStopped();
@@ -539,21 +377,21 @@ class ValueDownlinkTest extends FfiTest {
     }
   }
 
-  private static native <T> long driveDownlinkError(
-      ValueDownlink<T> downlinkRef,
+  private static native <T> long driveDownlinkError(ValueDownlink<T> downlinkRef,
       Trigger stoppedBarrier,
       Trigger testBarrier,
-      Consumer<ByteBuffer> onEvent
-  );
+      Consumer<ByteBuffer> onEvent);
 
   @Test
-  void testAwaitClosedError() throws SwimClientException {
+  void testAwaitClosedError() {
+    ValueDownlinkLifecycle<Integer> lifecycle = new ValueDownlinkLifecycle<>();
+    lifecycle.setOnEvent(event -> {
+    });
+
+    ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(Integer.class));
+    Trigger stoppedBarrier = new Trigger();
+    TestValueDownlink<Integer> valueDownlink = new TestValueDownlink<>(stoppedBarrier, state);
     Trigger ffiBarrier = new Trigger();
-    TestValueDownlink<Integer> testDownlink = (TestValueDownlink<Integer>) new TestValueDownlinkBuilder<>(Integer.class, "ws://127.0.0.1", "node", "lane", (build) -> {
-      ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(build.formType));
-      Trigger stoppedBarrier = new Trigger();
-      TestValueDownlink<Integer> downlink = new TestValueDownlink<>(stoppedBarrier, state);
-      ValueDownlinkLifecycle<Integer> lifecycle = build.lifecycle;
 
     long ptr = driveDownlinkError(valueDownlink, stoppedBarrier, ffiBarrier, state.wrapOnEvent(lifecycle.getOnEvent()));
 
@@ -567,83 +405,22 @@ class ValueDownlinkTest extends FfiTest {
 
       assertNotNull(cause);
       assertTrue(cause instanceof RuntimeException);
-      assertEquals("java.lang.RuntimeException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}", cause.getMessage());
+      assertEquals(
+          "java.lang.RuntimeException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}",
+          cause.getMessage());
     } finally {
       dropSwimClient(ptr);
     }
   }
 
-  @AutoForm
-  @AutoForm.Tag("event")
-  public static class Event {
-    public String node;
-    public String lane;
-    @AutoForm.Kind(FieldKind.Body)
-    public BigInteger value;
 
-    @Override
-    public String toString() {
-      return "Event{" +
-          "node='" + node + '\'' +
-          ", lane='" + lane + '\'' +
-          ", value=" + value +
-          '}';
+  public static class TestValueDownlink<T> extends ValueDownlink<T> {
+    TestValueDownlink(Trigger trigger, ValueDownlinkState<T> state) {
+      super(trigger, state);
     }
   }
 
-  private static class TestValueDownlink<T> extends ValueDownlink<T> {
-    TestValueDownlink(CountDownLatch stoppedBarrier, ValueDownlinkState<T> state) {
-      super(stoppedBarrier, state);
-    }
-  }
-
-  @AutoForm(subTypes = {
-      @AutoForm.Type(LaneAddressed.class)
-  })
-  public static class Envelope {
-    public String node;
-    public String lane;
-
-    public Envelope() {
-
-    }
-
-    public Envelope(String node, String lane) {
-      this.node = node;
-      this.lane = lane;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      Envelope envelope = (Envelope) o;
-      return Objects.equals(node, envelope.node) && Objects.equals(lane, envelope.lane);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(node, lane);
-    }
-  }
-
-  @AutoForm
-  public static class LaneAddressed extends Envelope {
-    @AutoForm.Kind(FieldKind.Body)
-    public int body;
-
-    public LaneAddressed() {
-
-    }
-
-    public LaneAddressed(String node, String lane, int body) {
-      super(node, lane);
-      this.body = body;
-    }
-  }
 
 }
+
+

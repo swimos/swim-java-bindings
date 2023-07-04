@@ -14,6 +14,7 @@
 
 package ai.swim.client.downlink;
 
+import ai.swim.concurrent.Trigger;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +32,12 @@ public abstract class FfiTest {
   public void awaitLatch(CountDownLatch latch, long time, String latchName) throws InterruptedException {
     if (!latch.await(time, TimeUnit.SECONDS)) {
       fail(String.format("%s latch elapsed before countdown reached", latchName));
+    }
+  }
+
+  public void awaitTrigger(Trigger trigger, long time, String latchName) throws InterruptedException {
+    if (!trigger.awaitTrigger(time, TimeUnit.SECONDS)) {
+      fail(String.format("%s trigger elapsed before it was fired", latchName));
     }
   }
 

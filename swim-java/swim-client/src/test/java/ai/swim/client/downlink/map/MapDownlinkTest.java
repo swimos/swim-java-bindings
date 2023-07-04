@@ -21,6 +21,7 @@ import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
+import ai.swim.concurrent.Trigger;
 import ai.swim.structure.Form;
 import ai.swim.structure.FormParser;
 import ai.swim.structure.Recon;
@@ -58,7 +59,7 @@ public class MapDownlinkTest extends FfiTest {
   ) throws SwimClientException;
 
   private static native long lifecycleTest(
-      CountDownLatch lock,
+      Trigger lock,
       String input,
       String host,
       String node,
@@ -140,7 +141,7 @@ public class MapDownlinkTest extends FfiTest {
 
   @Test
   void simpleOpen() throws InterruptedException, SwimClientException {
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     long ptr = lifecycleTest(
         lock,
         "",
@@ -157,13 +158,13 @@ public class MapDownlinkTest extends FfiTest {
         null
     );
 
-    awaitLatch(lock, 5, "downlink");
+    awaitTrigger(lock, 5, "downlink");
     dropRuntime(ptr);
   }
 
   @Test
   void lifecycleLinked() throws SwimClientException, InterruptedException {
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     CountDownLatch invoked = new CountDownLatch(1);
 
     long ptr = lifecycleTest(
@@ -182,14 +183,14 @@ public class MapDownlinkTest extends FfiTest {
         null
     );
 
-    awaitLatch(lock, 5, "downlink");
+    awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
     dropRuntime(ptr);
   }
 
   @Test
   void lifecycleSynced() throws SwimClientException, InterruptedException {
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     CountDownLatch invoked = new CountDownLatch(1);
 
     long ptr = lifecycleTest(
@@ -208,14 +209,14 @@ public class MapDownlinkTest extends FfiTest {
         null
     );
 
-    awaitLatch(lock, 5, "downlink");
+    awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
     dropRuntime(ptr);
   }
 
   @Test
   void lifecycleUpdate() throws SwimClientException, InterruptedException {
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     CountDownLatch invoked = new CountDownLatch(1);
 
     long ptr = lifecycleTest(
@@ -234,14 +235,14 @@ public class MapDownlinkTest extends FfiTest {
         null
     );
 
-    awaitLatch(lock, 5, "downlink");
+    awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
     dropRuntime(ptr);
   }
 
   @Test
   void lifecycleRemove() throws SwimClientException, InterruptedException {
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     CountDownLatch invoked = new CountDownLatch(1);
 
     long ptr = lifecycleTest(
@@ -260,14 +261,14 @@ public class MapDownlinkTest extends FfiTest {
         null
     );
 
-    awaitLatch(lock, 5, "downlink");
+    awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
     dropRuntime(ptr);
   }
 
   @Test
   void lifecycleClear() throws SwimClientException, InterruptedException {
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     CountDownLatch invoked = new CountDownLatch(1);
 
     long ptr = lifecycleTest(
@@ -286,14 +287,14 @@ public class MapDownlinkTest extends FfiTest {
         null
     );
 
-    awaitLatch(lock, 5, "downlink");
+    awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
     dropRuntime(ptr);
   }
 
   @Test
   void lifecycleUnlinked() throws SwimClientException, InterruptedException {
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     CountDownLatch invoked = new CountDownLatch(1);
 
     long ptr = lifecycleTest(
@@ -312,14 +313,14 @@ public class MapDownlinkTest extends FfiTest {
         null
     );
 
-    awaitLatch(lock, 5, "downlink");
+    awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
     dropRuntime(ptr);
   }
 
   @Test
   void lifecycleTake() throws SwimClientException, InterruptedException {
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     CountDownLatch invoked = new CountDownLatch(1);
 
     long ptr = lifecycleTest(
@@ -338,14 +339,14 @@ public class MapDownlinkTest extends FfiTest {
         null
     );
 
-    awaitLatch(lock, 5, "downlink");
+    awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
     dropRuntime(ptr);
   }
 
   @Test
   void lifecycleDrop() throws SwimClientException, InterruptedException {
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     CountDownLatch invoked = new CountDownLatch(1);
 
     long ptr = lifecycleTest(
@@ -364,7 +365,7 @@ public class MapDownlinkTest extends FfiTest {
         (a, b) -> invoked.countDown()
     );
 
-    awaitLatch(lock, 5, "downlink");
+    awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
     dropRuntime(ptr);
   }
@@ -394,7 +395,7 @@ public class MapDownlinkTest extends FfiTest {
 
     input.append("@unlinked(node:node,lane:lane)\n");
 
-    CountDownLatch lock = new CountDownLatch(1);
+    Trigger lock = new Trigger();
     AtomicReference<LinkState> linkState = new AtomicReference<>(LinkState.Init);
 
     CountDownLatch linked = new CountDownLatch(1);
@@ -477,7 +478,7 @@ public class MapDownlinkTest extends FfiTest {
     awaitLatch(remove, 5, "remove");
     awaitLatch(unlinked, 5, "unlinked");
     awaitLatch(clear, 5, "clear");
-    awaitLatch(lock, 10, "test lock");
+    awaitTrigger(lock, 10, "test lock");
 
     dropRuntime(ptr);
   }

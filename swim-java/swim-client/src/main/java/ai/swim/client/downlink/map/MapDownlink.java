@@ -15,6 +15,7 @@
 package ai.swim.client.downlink.map;
 
 import ai.swim.client.downlink.Downlink;
+import ai.swim.concurrent.Trigger;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -28,7 +29,7 @@ import java.util.concurrent.CountDownLatch;
  * @param <V> the type of the map's key.
  */
 public abstract class MapDownlink<K, V> extends Downlink<MapDownlinkState<K, V>> {
-  protected MapDownlink(CountDownLatch stoppedBarrier, MapDownlinkState<K, V> state) {
-    super(stoppedBarrier, state);
+  protected MapDownlink(Trigger trigger, MapDownlinkState<K, V> state) {
+    super(trigger, state);
   }
 }

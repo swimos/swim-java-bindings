@@ -15,6 +15,7 @@
 package ai.swim.client.downlink.value;
 
 import ai.swim.client.SwimClientException;
+import ai.swim.client.downlink.Downlink;
 import ai.swim.concurrent.Trigger;
 
 /**
@@ -26,7 +27,7 @@ import ai.swim.concurrent.Trigger;
  * @param <T> the type of the value.
  */
 public abstract class ValueDownlink<T> extends Downlink<ValueDownlinkState<T>> {
-  protected ValueDownlink(CountDownLatch stoppedBarrier, ValueDownlinkState<T> state) {
-    super(stoppedBarrier, state);
+  protected ValueDownlink(Trigger trigger, ValueDownlinkState<T> state) {
+    super(trigger, state);
   }
 }

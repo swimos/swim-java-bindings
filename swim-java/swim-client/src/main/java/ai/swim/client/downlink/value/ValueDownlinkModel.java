@@ -16,10 +16,10 @@ package ai.swim.client.downlink.value;
 
 import ai.swim.client.Handle;
 import ai.swim.client.SwimClientException;
-import ai.swim.concurrent.Trigger;
 import ai.swim.client.downlink.DownlinkConfig;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
+import ai.swim.concurrent.Trigger;
 import ai.swim.structure.Form;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
@@ -66,8 +66,7 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
           lifecycle.getOnLinked(),
           state.wrapOnSet(lifecycle.getOnSet()),
           state.wrapOnSynced(lifecycle.getOnSynced()),
-          lifecycle.getOnUnlinked()
-          );
+          lifecycle.getOnUnlinked());
     }
 
     return downlink;
@@ -91,8 +90,7 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
    * @param onUnlinked onUnlinked callback. If this is null, then it will not be invoked.
    * @param <T>        The type of the value.
    */
-  private static native <T> void open(
-      long handlePtr,
+  private static native <T> void open(long handlePtr,
       ValueDownlinkModel<T> downlink,
       byte[] config,
       Trigger trigger,
@@ -103,7 +101,6 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
       OnLinked onLinked,
       Consumer<ByteBuffer> onSet,
       Consumer<ByteBuffer> onSynced,
-      OnUnlinked onUnlinked
-  ) throws SwimClientException;
+      OnUnlinked onUnlinked) throws SwimClientException;
 
 }
