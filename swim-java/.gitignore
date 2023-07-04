@@ -7,4 +7,4 @@ out
 *.log
 *~
 
-swim.client/libs/*
+swim-client/libs/*

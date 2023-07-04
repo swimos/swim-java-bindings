@@ -17,7 +17,9 @@ package ai.swim.client;
 import ai.swim.client.downlink.map.MapDownlinkBuilder;
 import ai.swim.client.downlink.value.ValueDownlinkBuilder;
 import ai.swim.lang.ffi.AtomicDestructor;
+import ai.swim.lang.ffi.NativeLoader;
 import ai.swim.lang.ffi.NativeResource;
+import java.io.IOException;
 
 /**
  * A SwimClient class used for opening downlinks.
@@ -27,7 +29,11 @@ import ai.swim.lang.ffi.NativeResource;
  */
 public class SwimClient implements NativeResource {
   static {
-    System.loadLibrary("swim_client");
+    try {
+      NativeLoader.loadLibrary("swim_client");
+    } catch (IOException e) {
+      throw new ExceptionInInitializerError(e);
+    }
   }
 
   /**
@@ -55,6 +61,7 @@ public class SwimClient implements NativeResource {
   /**
    * Signals to the runtime that it should initiate a shutdown.
    */
+  @Override
   public void close() {
     if (!destructor.drop()) {
       throw new IllegalStateException("Already closed");
