@@ -15,26 +15,22 @@
 use std::num::NonZeroUsize;
 use std::panic;
 
-use bytebridge::ByteCodec;
 use bytes::BytesMut;
-use client_runtime::{ClientConfig, RemotePath};
+use client_runtime::{RemotePath, WebSocketConfig};
 use jni::objects::JString;
 use jni::sys::{jbyteArray, jobject};
 use jni::JNIEnv;
 use swim_api::downlink::Downlink;
 use url::Url;
 
+use bytebridge::ByteCodec;
 use jvm_sys::vm::set_panic_hook;
 use jvm_sys::vm::utils::new_global_ref;
 use jvm_sys::{jni_try, null_pointer_check_abort, parse_string};
 use swim_client_core::downlink::map::FfiMapDownlink;
-use jvm_sys::{jni_try, npch, parse_string};
-use ratchet::WebSocketConfig;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
 use swim_client_core::{client_fn, ClientHandle, SwimClient};
-use swim_client_core::{client_fn, ClientHandle, SwimClient};
-use url::Url;
 
 include!(concat!(env!("OUT_DIR"), "/out.rs"));
 
@@ -58,29 +54,30 @@ impl From<ClientConfig> for swim_client_core::ClientConfig {
         swim_client_core::ClientConfig {
             websocket: WebSocketConfig {
                 max_message_size: max_message_size as usize,
-            },
-            #[cfg(feature = "deflate")]
-            deflate: {
-                use ratchet_deflate::{Compression, DeflateConfig, WindowBits};
+                #[cfg(feature = "deflate")]
+                deflate_config: {
+                    use ratchet_deflate::{Compression, DeflateConfig, WindowBits};
 
-                DeflateConfig {
-                    server_max_window_bits: ratchet_deflate::WindowBits::try_from(
-                        _server_max_window_bits,
-                    )
-                    .unwrap(),
-                    client_max_window_bits: ratchet_deflate::WindowBits::try_from(
-                        _client_max_window_bits,
-                    )
-                    .unwrap(),
-                    request_server_no_context_takeover: _request_server_no_context_takeover,
-                    request_client_no_context_takeover: _request_client_no_context_takeover,
-                    accept_no_context_takeover: _accept_no_context_takeover,
-                    compression_level: Compression::new(_compression_level),
-                }
+                    Some(DeflateConfig {
+                        server_max_window_bits: ratchet_deflate::WindowBits::try_from(
+                            _server_max_window_bits,
+                        )
+                        .unwrap(),
+                        client_max_window_bits: ratchet_deflate::WindowBits::try_from(
+                            _client_max_window_bits,
+                        )
+                        .unwrap(),
+                        request_server_no_context_takeover: _request_server_no_context_takeover,
+                        request_client_no_context_takeover: _request_client_no_context_takeover,
+                        accept_no_context_takeover: _accept_no_context_takeover,
+                        compression_level: Compression::new(_compression_level),
+                    })
+                },
             },
             remote_buffer_size: into_non_zero(_remote_buffer_size),
             transport_buffer_size: into_non_zero(_transport_buffer_size),
             registration_buffer_size: into_non_zero(_registration_buffer_size),
+            interpret_frame_data: false,
         }
     }
 }

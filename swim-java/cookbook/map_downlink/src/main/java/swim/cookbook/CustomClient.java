@@ -18,6 +18,7 @@ import ai.swim.client.SwimClient;
 import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.map.MapDownlink;
 import ai.swim.client.downlink.map.MapDownlinkBuilder;
+import java.io.IOException;
 
 /**
  * An example application that demonstrates interacting with a Swim Value Lane.
@@ -28,7 +29,7 @@ final class CustomClient {
 
   }
 
-  public static void main(String[] args) throws SwimClientException {
+  public static void main(String[] args) throws SwimClientException, IOException {
     // Initialises the client runtime.
     MapDownlinkBuilder<Integer, String> builder;
     try (SwimClient client = SwimClient.open()) {

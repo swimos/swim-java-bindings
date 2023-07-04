@@ -1,6 +1,4 @@
-ext {
-    ext.moduleName = 'swim.lang.ffi'
-}
+ext.moduleName = 'swim-ffi'
 
 dependencies {
     implementation 'org.reflections:reflections:0.10.2'

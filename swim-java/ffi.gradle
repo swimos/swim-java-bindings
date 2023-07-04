@@ -118,6 +118,7 @@ sourceSets {
     main {
         java {
             srcDir 'src/main/java'
+            srcDir "${buildDir}/generated/main/java"
         }
         resources {
             srcDir 'libs'

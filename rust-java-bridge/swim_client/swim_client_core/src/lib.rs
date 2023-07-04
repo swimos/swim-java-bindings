@@ -13,10 +13,10 @@
 // limitations under the License.
 
 use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
+use client_runtime::RemotePath;
 use client_runtime::{
     start_runtime, DownlinkErrorKind, DownlinkRuntimeError, RawHandle, Transport,
 };
-use client_runtime::{ClientConfig, RemotePath};
 use jni::objects::{GlobalRef, JValue};
 use jni::JNIEnv;
 use jni::JavaVM;
@@ -44,11 +44,12 @@ use tokio::net::TcpStream;
 use tokio::runtime::{Builder, Handle, Runtime};
 use tokio::task::JoinHandle;
 
+pub use client_runtime::ClientConfig;
 use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
 use jvm_sys::vm::utils::VmExt;
 use jvm_sys::vm::{with_local_frame_null, SpannedError};
-pub use macros::*;
 
+pub use macros::*;
 pub mod downlink;
 mod macros;
 pub use macros::*;
