@@ -1,6 +1,6 @@
 apply from: '../project.gradle'
 
-description = 'Code corresponding to the Value Downlink cookbook'
+description = 'Code corresponding to the Map Downlink cookbook'
 ext.moduleName = 'swim.cookbook'
 mainClassName = 'swim.cookbook.BasicPlane'
 
