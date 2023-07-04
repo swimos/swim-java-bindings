@@ -1,5 +1,4 @@
 use std::io;
-use std::mem::size_of;
 
 use heck::AsLowerCamelCase;
 use proc_macro2::Span;
@@ -17,7 +16,7 @@ pub use writer::{JavaSourceWriter, JavaSourceWriterBuilder};
 
 use crate::bindings::java::models::{
     Block, Constraint, ConstraintKind, JavaField, JavaMethod, JavaType, PrimitiveJavaType,
-    AS_BYTES_METHOD, BUFFER_SIZE_VAR, BUFFER_VAR, JAVA_KEYWORDS, TEMP_VAR, TO_STRING_METHOD,
+    JAVA_KEYWORDS, PACKER_VAR, PACK_METHOD, TEMP_VAR, TO_STRING_METHOD,
 };
 use crate::bindings::java::writer::{ClassType, INDENTATION};
 use crate::bindings::{
@@ -108,32 +107,28 @@ impl ClassBinding {
     /// of an enumeration constant.
     fn byte_transposition_method(fields: &[JavaField], ordinal: Option<u8>) -> JavaMethod {
         let method = JavaMethod::new(
-            AS_BYTES_METHOD,
-            JavaType::Array(PrimitiveJavaType::Byte {
-                unsigned: false,
-                nonzero: false,
-            }),
+            PACK_METHOD,
+            JavaType::Void,
             ordinal.as_ref().map(|_| "@Override".to_string()),
         )
-        .add_documentation("Returns a byte array representation of the current configuration.");
+        .add_documentation("Returns a byte array representation of the current configuration.")
+        .add_arg(PACKER_VAR, JavaType::Object("MessagePacker".to_string()))
+        .add_throws("IOException");
 
-        let mut transposition = Block::of_statement(format!(
-            "java.nio.ByteBuffer {} = java.nio.ByteBuffer.allocate({})",
-            BUFFER_VAR, BUFFER_SIZE_VAR
-        ))
-        .add_statement(format!(
-            "{}.order(java.nio.ByteOrder.LITTLE_ENDIAN)",
-            BUFFER_VAR
-        ));
-        let mut block = Block::of_statement(format!("int {} = 0", BUFFER_SIZE_VAR));
-        let mut size = match ordinal {
-            Some(i) => {
-                transposition =
-                    transposition.add_statement(format!("{}.put((byte) {})", BUFFER_VAR, i));
-                size_of::<u8>()
-            }
-            None => 0,
+        let mut transposition = match ordinal {
+            Some(idx) => Block::of_statement(format!(
+                "{}.packExtensionTypeHeader((byte) 1, 1)",
+                PACKER_VAR
+            ))
+            .add_statement(format!("{}.packInt({idx})", PACKER_VAR)),
+            None => Block::default(),
         };
+
+        transposition = transposition.add_statement(format!(
+            "{}.packArrayHeader({})",
+            PACKER_VAR,
+            fields.len()
+        ));
 
         for field in fields {
             let JavaField { name, ty, .. } = field;
@@ -143,40 +138,28 @@ impl ClassBinding {
                     unreachable!("Bug: field type set to void")
                 }
                 JavaType::Primitive(ty) => {
-                    size += ty.size_of();
                     let name = format!("this.{name}");
                     transposition = transposition.add_statement(put_primitive(ty, &name));
                 }
                 JavaType::String => {
-                    block =
-                        block.add_statement(format!("{} += {}.length()", BUFFER_SIZE_VAR, name));
                     transposition = transposition
-                        .add_statement(format!("{}.putInt(this.{}.length())", BUFFER_VAR, name))
-                        .add_statement(format!(
-                            "{}.put(this.{}.getBytes(java.nio.charset.StandardCharsets.UTF_8))",
-                            BUFFER_VAR, name
-                        ));
+                        .add_statement(format!("{}.packString(this.{})", PACKER_VAR, name));
                 }
                 JavaType::Array(ty) => {
-                    block = block.add_statement(format!(
-                        "{} += ({}.length * {})",
-                        BUFFER_SIZE_VAR,
-                        name,
-                        ty.size_of()
-                    ));
                     transposition = transposition
-                        .add_statement(format!("{}.putInt(this.{}.length)", BUFFER_VAR, name))
+                        .add_statement(format!("{}.packInt(this.{}.length)", PACKER_VAR, name))
                         .add_line(format!("for ({} {} : this.{}) {{", ty, TEMP_VAR, name))
                         .add_statement(format!("{INDENTATION}{}", put_primitive(ty, TEMP_VAR)))
                         .add_line("}");
                 }
+                JavaType::Object(_) => {
+                    transposition =
+                        transposition.add_statement(format!("{}.pack({})", name, PACKER_VAR));
+                }
             }
         }
 
-        let body = block
-            .add_statement(format!("{} += {}", BUFFER_SIZE_VAR, size))
-            .extend(transposition.add_statement(format!("return {}.array()", BUFFER_VAR)));
-        method.set_block(body)
+        method.set_block(transposition)
     }
 
     fn to_string_method(name: &str, fields: &[JavaField]) -> JavaMethod {
@@ -213,22 +196,22 @@ impl ClassBinding {
 fn put_primitive(ty: &PrimitiveJavaType, name: &str) -> String {
     match ty {
         PrimitiveJavaType::Byte { .. } => {
-            format!("{}.put({})", BUFFER_VAR, name)
+            format!("{}.packByte({})", PACKER_VAR, name)
         }
         PrimitiveJavaType::Int { .. } => {
-            format!("{}.putInt({})", BUFFER_VAR, name)
+            format!("{}.packInt({})", PACKER_VAR, name)
         }
         PrimitiveJavaType::Long { .. } => {
-            format!("{}.putLong({})", BUFFER_VAR, name)
+            format!("{}.packLong({})", PACKER_VAR, name)
         }
         PrimitiveJavaType::Float => {
-            format!("{}.putFloat({})", BUFFER_VAR, name)
+            format!("{}.packFloat({})", PACKER_VAR, name)
         }
         PrimitiveJavaType::Double => {
-            format!("{}.putDouble({})", BUFFER_VAR, name)
+            format!("{}.packDouble({})", PACKER_VAR, name)
         }
         PrimitiveJavaType::Boolean => {
-            format!("{}.put((byte) ({} ? 1 : 0))", BUFFER_VAR, name)
+            format!("{}.packBoolean({})", PACKER_VAR, name)
         }
     }
 }
@@ -259,16 +242,11 @@ impl AbstractClassBinding {
         let mut class_writer =
             file_writer.begin_class(name.clone(), documentation, ClassType::Abstract)?;
 
-        let as_bytes_method = JavaMethod::new(
-            AS_BYTES_METHOD,
-            JavaType::Array(PrimitiveJavaType::Byte {
-                unsigned: false,
-                nonzero: false,
-            }),
-            None,
-        )
-        .add_documentation("Returns a byte array representation of the current configuration.")
-        .set_abstract();
+        let pack_method = JavaMethod::new(PACK_METHOD, JavaType::Void, None)
+            .add_documentation("Pack a byte representation of the current configuration.")
+            .add_arg(PACKER_VAR, JavaType::Object("MessagePacker".to_string()))
+            .add_throws("IOException")
+            .set_abstract();
 
         let to_string_method = JavaMethod::new(
             TO_STRING_METHOD,
@@ -278,7 +256,7 @@ impl AbstractClassBinding {
         .set_abstract();
 
         class_writer.write_method(to_string_method)?;
-        class_writer.write_method(as_bytes_method)?;
+        class_writer.write_method(pack_method)?;
         class_writer.end_class()?;
 
         // We defer writing the variants here in case the file writer is writing to STDOUT. We want
@@ -614,7 +592,7 @@ impl<'ast> Visit<'ast> for ClassBuilder {
                 .ok_or_else(|| Error::new(span, "Tuple fields are not supported"))
                 .map(|i| AsLowerCamelCase(i.to_string()).to_string())?;
             let (name, properties) =
-                derive_field_properties(name, field.span(), infer_docs, ty, &field.attrs)?;
+                derive_field_properties(name, field.span(), infer_docs, ty.clone(), &field.attrs)?;
             let default_value = match properties.default_value {
                 Some(ty) => ty,
                 None => ty.default_value(),

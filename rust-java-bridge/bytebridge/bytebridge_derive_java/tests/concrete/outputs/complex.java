@@ -2,6 +2,9 @@
 /// ANY CHANGES MADE MAY BE LOST.
 package ai.swim;
 
+import org.msgpack.core.MessagePacker;
+import java.io.IOException;
+
 public class Test {
 
   /**
@@ -254,21 +257,17 @@ public class Test {
   /**
    * Returns a byte array representation of the current configuration.
    */
-  public byte[] asBytes() {
-    int __buf__size = 0;
-    __buf__size += 40;
-    java.nio.ByteBuffer __buf = java.nio.ByteBuffer.allocate(__buf__size);
-    __buf.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-    __buf.putInt(this.runtimeEmptyTimeout);
-    __buf.putLong(this.runtimeAttachmentQueueSize);
-    __buf.put((byte) (this.runtimeAbortOnBadFrames ? 1 : 0));
-    __buf.putLong(this.runtimeRemoteBufferSize);
-    __buf.putLong(this.runtimeDownlinkBufferSize);
-    __buf.put((byte) (this.downlinkEventsWhenNotSynced ? 1 : 0));
-    __buf.put((byte) (this.downlinkTerminateOnUnlinked ? 1 : 0));
-    __buf.putLong(this.downlinkBufferSize);
-    __buf.put((byte) (this.keepLinked ? 1 : 0));
-    return __buf.array();
+  public void pack(MessagePacker __packer) throws IOException {
+    __packer.packArrayHeader(9);
+    __packer.packInt(this.runtimeEmptyTimeout);
+    __packer.packLong(this.runtimeAttachmentQueueSize);
+    __packer.packBoolean(this.runtimeAbortOnBadFrames);
+    __packer.packLong(this.runtimeRemoteBufferSize);
+    __packer.packLong(this.runtimeDownlinkBufferSize);
+    __packer.packBoolean(this.downlinkEventsWhenNotSynced);
+    __packer.packBoolean(this.downlinkTerminateOnUnlinked);
+    __packer.packLong(this.downlinkBufferSize);
+    __packer.packBoolean(this.keepLinked);
   }
 
   @Override

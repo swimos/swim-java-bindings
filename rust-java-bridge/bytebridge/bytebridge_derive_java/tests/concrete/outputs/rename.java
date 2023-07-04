@@ -2,6 +2,9 @@
 /// ANY CHANGES MADE MAY BE LOST.
 package ai.swim;
 
+import org.msgpack.core.MessagePacker;
+import java.io.IOException;
+
 public class Superclass {
 
   private byte fieldA = 0;
@@ -59,14 +62,10 @@ public class Superclass {
   /**
    * Returns a byte array representation of the current configuration.
    */
-  public byte[] asBytes() {
-    int __buf__size = 0;
-    __buf__size += 5;
-    java.nio.ByteBuffer __buf = java.nio.ByteBuffer.allocate(__buf__size);
-    __buf.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-    __buf.put(this.fieldA);
-    __buf.putInt(this.member_field_b);
-    return __buf.array();
+  public void pack(MessagePacker __packer) throws IOException {
+    __packer.packArrayHeader(2);
+    __packer.packByte(this.fieldA);
+    __packer.packInt(this.member_field_b);
   }
 
   @Override

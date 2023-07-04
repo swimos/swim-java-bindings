@@ -15,22 +15,27 @@ fn expand(input: DeriveInput, external: bool) -> Result<TokenStream, Error> {
     let ty_ident = &input.ident;
     let repr = derive_byte_transformations(&input, external)?;
 
-    let try_from_bytes = TryFromBytes(&repr);
+    let try_from_reader = TryFromReader(&repr);
     let to_bytes = ToBytes(&repr);
     let ident = format_ident!("_");
 
     let tokens = quote! {
         const #ident: () = {
             impl bytebridge::ByteCodec for #ty_ident {
-                fn try_from_bytes(bytes: &mut bytebridge::BytesMut) -> Result<Self, bytebridge::FromBytesError>
+                fn try_from_reader<R>(reader: &mut R) -> Result<Self, bytebridge::FromBytesError>
                 where
-                    Self: Sized
+                    Self: Sized,
+                    R: std::io::Read
                 {
-                    #try_from_bytes
+                    #try_from_reader
                 }
 
-                fn to_bytes(&self, bytes: &mut bytebridge::BytesMut) {
+                fn to_bytes<W>(&self, writer: &mut W) -> Result<(), std::io::Error>
+                where
+                    W: std::io::Write
+                {
                     #to_bytes
+                    Ok(())
                 }
             }
         };
@@ -61,7 +66,7 @@ fn derive_byte_transformations(item: &DeriveInput, external: bool) -> Result<Byt
             })?,
         })),
         Data::Enum(data) => {
-            let lim = u8::MAX as usize;
+            let lim = i8::MAX as usize;
             if data.variants.len() > lim {
                 return Err(Error::new_spanned(
                     &data.variants,
@@ -106,8 +111,8 @@ enum ByteRepr<'a> {
     Enum(EnumRepr<'a>),
 }
 
-struct TryFromBytes<'v, 'a>(&'v ByteRepr<'a>);
-impl<'v, 'a> TryFromBytes<'v, 'v> {
+struct TryFromReader<'v, 'a>(&'v ByteRepr<'a>);
+impl<'v, 'a> TryFromReader<'v, 'v> {
     fn fold_fields(fields: &[Field<'a>]) -> TokenStream {
         fields.iter().fold(TokenStream::new(), |tokens, field| {
             let Field {
@@ -124,25 +129,31 @@ impl<'v, 'a> TryFromBytes<'v, 'v> {
             quote! {
                 #tokens
                 #attrs
-                #ident: <#ty as bytebridge::ByteCodec>::try_from_bytes(bytes)?,
+                #ident: <#ty as bytebridge::ByteCodec>::try_from_reader(reader)?,
             }
         })
     }
 }
 
-impl<'v, 'a> ToTokens for TryFromBytes<'v, 'a> {
+impl<'v, 'a> ToTokens for TryFromReader<'v, 'a> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let TryFromBytes(inner) = self;
+        let TryFromReader(inner) = self;
         match inner {
             ByteRepr::Struct(repr) => {
                 let StructRepr { ident, fields } = repr;
-                let fields = TryFromBytes::fold_fields(fields);
-                let try_from_bytes = quote! {
+                let len = fields.len() as u32;
+                let fields = TryFromReader::fold_fields(fields);
+                let try_from_reader = quote! {
+                    let __repr_len: u32 = #len;
+                    if __repr_len != bytebridge::read_array_len(reader)? {
+                        return Err(bytebridge::FromBytesError::Invalid(format!("Expected an array of len: {}", __repr_len)));
+                    }
+
                     Ok(#ident {
                         #fields
                     })
                 };
-                try_from_bytes.to_tokens(tokens);
+                try_from_reader.to_tokens(tokens);
             }
             ByteRepr::Enum(repr) => {
                 let EnumRepr {
@@ -154,15 +165,21 @@ impl<'v, 'a> ToTokens for TryFromBytes<'v, 'a> {
                     TokenStream::new(),
                     |tokens, (idx, variant)| {
                         // this is safe as we've previously checked the number of variants
-                        let idx = u8::try_from(idx).expect("Too many variants");
+                        let idx = i8::try_from(idx).expect("Too many variants");
                         let Variant {
                             ident: variant_ident,
                             fields,
                         } = variant;
-                        let fields = TryFromBytes::fold_fields(fields);
+                        let len = fields.len() as u32;
+                        let fields = TryFromReader::fold_fields(fields);
                         quote! {
                             #tokens
                             #idx => {
+                                let __repr_len: u32 = #len;
+                                if __repr_len != bytebridge::read_array_len(reader)? {
+                                    return Err(bytebridge::FromBytesError::Invalid(format!("Expected an array of len: {}", __repr_len)));
+                                }
+
                                 Ok(#enum_ident::#variant_ident {
                                     #fields
                                 })
@@ -171,15 +188,13 @@ impl<'v, 'a> ToTokens for TryFromBytes<'v, 'a> {
                     },
                 );
 
-                let try_from_bytes = quote! {
-                    bytebridge::has_size_of::<u8>(&bytes)?;
-
-                    match <u8 as bytebridge::ByteCodec>::try_from_bytes(bytes)? {
+                let try_from_reader = quote! {
+                    match bytebridge::read_ordinal(reader)? {
                         #arms
                         n => Err(bytebridge::FromBytesError::UnknownEnumVariant(n)),
                     }
                 };
-                try_from_bytes.to_tokens(tokens);
+                try_from_reader.to_tokens(tokens);
             }
         }
     }
@@ -221,7 +236,7 @@ impl<'v, 'a> ToBytes<'v, 'a> {
             quote! {
                 #tokens
                 #attrs
-                bytebridge::ByteCodec::to_bytes(#ident, bytes);
+                bytebridge::ByteCodec::to_bytes(#ident, writer)?;
             }
         })
     }
@@ -234,9 +249,11 @@ impl<'v, 'a> ToTokens for ToBytes<'v, 'a> {
             ByteRepr::Struct(repr) => {
                 let StructRepr { ident, fields } = repr;
                 let destructed = ToBytes::destruct(ident, fields);
+                let len = fields.len() as u32;
                 let fields = ToBytes::fold_fields(fields);
                 let to_bytes = quote! {
                     let #destructed = self;
+                    bytebridge::write_array_len(writer, #len)?;
                     #fields
                 };
                 to_bytes.to_tokens(tokens);
@@ -255,15 +272,17 @@ impl<'v, 'a> ToTokens for ToBytes<'v, 'a> {
                             fields,
                         } = variant;
                         let destructed = ToBytes::destruct(variant_ident, fields);
+                        let len = fields.len() as u32;
                         let fields = ToBytes::fold_fields(fields);
 
                         // this is safe as we've previously checked the number of variants
-                        let idx = u8::try_from(idx).expect("Too many variants");
+                        let idx = i8::try_from(idx).expect("Too many variants");
 
                         quote! {
                             #tokens
                             #enum_ident::#destructed => {
-                                bytebridge::BufMut::put_u8(bytes, #idx);
+                                bytebridge::write_ordinal(writer, #idx)?;
+                                bytebridge::write_array_len(writer, #len)?;
                                 #fields
                             },
                         }

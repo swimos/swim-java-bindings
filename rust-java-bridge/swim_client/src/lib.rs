@@ -42,21 +42,15 @@ impl From<ClientConfig> for swim_client_core::ClientConfig {
     fn from(config: ClientConfig) -> Self {
         let ClientConfig {
             max_message_size,
-            remote_buffer_size,
-            transport_buffer_size,
-            registration_buffer_size,
-            #[cfg(feature = "deflate")]
-            server_max_window_bits,
-            #[cfg(feature = "deflate")]
-            client_max_window_bits,
-            #[cfg(feature = "deflate")]
-            request_server_no_context_takeover,
-            #[cfg(feature = "deflate")]
-            request_client_no_context_takeover,
-            #[cfg(feature = "deflate")]
-            accept_no_context_takeover,
-            #[cfg(feature = "deflate")]
-            compression_level,
+            remote_buffer_size: _remote_buffer_size,
+            transport_buffer_size: _transport_buffer_size,
+            registration_buffer_size: _registration_buffer_size,
+            server_max_window_bits: _server_max_window_bits,
+            client_max_window_bits: _client_max_window_bits,
+            request_server_no_context_takeover: _request_server_no_context_takeover,
+            request_client_no_context_takeover: _request_client_no_context_takeover,
+            accept_no_context_takeover: _accept_no_context_takeover,
+            compression_level: _compression_level,
         } = config;
 
         let into_non_zero = |val: u32| unsafe { NonZeroUsize::new_unchecked(val as usize) };
@@ -71,22 +65,22 @@ impl From<ClientConfig> for swim_client_core::ClientConfig {
 
                 DeflateConfig {
                     server_max_window_bits: ratchet_deflate::WindowBits::try_from(
-                        server_max_window_bits,
+                        _server_max_window_bits,
                     )
                     .unwrap(),
                     client_max_window_bits: ratchet_deflate::WindowBits::try_from(
-                        client_max_window_bits,
+                        _client_max_window_bits,
                     )
                     .unwrap(),
-                    request_server_no_context_takeover,
-                    request_client_no_context_takeover,
-                    accept_no_context_takeover,
-                    compression_level: Compression::new(compression_level),
+                    request_server_no_context_takeover: _request_server_no_context_takeover,
+                    request_client_no_context_takeover: _request_client_no_context_takeover,
+                    accept_no_context_takeover: _accept_no_context_takeover,
+                    compression_level: Compression::new(_compression_level),
                 }
             },
-            remote_buffer_size: into_non_zero(remote_buffer_size),
-            transport_buffer_size: into_non_zero(transport_buffer_size),
-            registration_buffer_size: into_non_zero(registration_buffer_size),
+            remote_buffer_size: into_non_zero(_remote_buffer_size),
+            transport_buffer_size: into_non_zero(_transport_buffer_size),
+            registration_buffer_size: into_non_zero(_registration_buffer_size),
         }
     }
 }

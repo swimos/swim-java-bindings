@@ -13,9 +13,9 @@ use syn::spanned::Spanned;
 use syn::{Error, Lit, LitInt, PathArguments};
 
 pub const BUFFER_SIZE_VAR: &str = "__buf__size";
-pub const BUFFER_VAR: &str = "__buf";
+pub const PACKER_VAR: &str = "__packer";
 pub const TEMP_VAR: &str = "__elem_";
-pub const AS_BYTES_METHOD: &str = "asBytes";
+pub const PACK_METHOD: &str = "pack";
 pub const TO_STRING_METHOD: &str = "toString";
 
 lazy_static! {
@@ -75,19 +75,20 @@ lazy_static! {
             "volatile",
             "while",
             BUFFER_SIZE_VAR,
-            AS_BYTES_METHOD,
+            PACK_METHOD,
             TEMP_VAR,
         ])
     };
 }
 
 /// Discriminate between primitive Java types and arrays.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum JavaType {
     Void,
     String,
     Primitive(PrimitiveJavaType),
     Array(PrimitiveJavaType),
+    Object(String),
 }
 
 impl JavaType {
@@ -97,6 +98,7 @@ impl JavaType {
             JavaType::String => JavaType::String,
             JavaType::Primitive(ty) => JavaType::Primitive(*ty),
             JavaType::Array(ty) => JavaType::Primitive(*ty),
+            JavaType::Object(ty) => JavaType::Object(ty.clone()),
         }
     }
 
@@ -190,6 +192,9 @@ impl Display for JavaType {
             JavaType::String => {
                 write!(f, "String")
             }
+            JavaType::Object(ty) => {
+                write!(f, "{ty}")
+            }
         }
     }
 }
@@ -267,6 +272,7 @@ impl JavaType {
             JavaType::Array(arr) => {
                 format!("new {}[] {{}}", arr)
             }
+            JavaType::Object(_) => "null".to_string(),
         }
     }
 
@@ -372,7 +378,7 @@ impl JavaType {
                 Lit::Str(lit) => Ok(lit.into_token_stream().to_string()),
                 lit => type_mismatch(JavaType::String, span, lit),
             },
-            (ty, def) => type_mismatch(*ty, span, def),
+            (ty, def) => type_mismatch(ty.clone(), span, def),
         }
     }
 }
@@ -815,6 +821,7 @@ pub struct JavaMethod {
     pub r#abstract: bool,
     pub body: Block,
     pub annotation: Option<String>,
+    pub throws: Vec<String>,
 }
 
 impl JavaMethod {
@@ -837,6 +844,7 @@ impl JavaMethod {
             r#abstract: false,
             body: Block::default(),
             annotation,
+            throws: vec![],
         }
     }
 
@@ -858,6 +866,14 @@ impl JavaMethod {
         self
     }
 
+    pub fn add_arg(mut self, name: impl ToString, ty: JavaType) -> JavaMethod {
+        self.args.push(JavaMethodParameter {
+            name: name.to_string(),
+            ty,
+        });
+        self
+    }
+
     /// Infers a Java Method getter from the provided field.
     pub fn getter_for(field: JavaField) -> JavaMethod {
         let documentation = Documentation::for_getter(field.name.clone(), field.default_value());
@@ -871,7 +887,13 @@ impl JavaMethod {
             r#abstract: false,
             body,
             annotation: None,
+            throws: vec![],
         }
+    }
+
+    pub fn add_throws(mut self, name: impl ToString) -> JavaMethod {
+        self.throws.push(name.to_string());
+        self
     }
 
     /// Infers a Java Method setter from the provided field.
@@ -887,7 +909,7 @@ impl JavaMethod {
         constraint.apply_to_docs(&name, &mut documentation);
 
         let body = constraint
-            .as_block(&name, ty)
+            .as_block(&name, ty.clone())
             .add_statement(format!("this.{name} = {name}"));
         let arg = JavaMethodParameter::from_field(name.as_str(), ty);
 
@@ -899,6 +921,7 @@ impl JavaMethod {
             r#abstract: false,
             body,
             annotation: None,
+            throws: vec![],
         }
     }
 }
