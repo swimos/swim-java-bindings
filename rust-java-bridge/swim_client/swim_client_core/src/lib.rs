@@ -53,8 +53,6 @@ pub mod downlink;
 mod macros;
 pub use macros::*;
 
-const REMOTE_BUFFER_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(64) };
-
 pub type SharedVm = Arc<JavaVM>;
 
 pub struct SwimClient {
