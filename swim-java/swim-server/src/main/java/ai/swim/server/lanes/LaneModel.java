@@ -7,7 +7,7 @@ import java.util.UUID;
 public abstract class LaneModel implements LaneItem {
   public abstract void dispatch(ByteBuffer buffer);
 
-  public abstract byte[] sync(UUID remote);
+  public abstract void sync(UUID remote);
 
   public abstract void init(ByteBuffer buffer);
 }

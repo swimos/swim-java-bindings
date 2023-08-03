@@ -20,11 +20,13 @@ public class ValueState<T> implements State {
   private T state;
   private boolean dirty;
   private final List<T> events;
+  private final List<UUID> syncRequests;
 
   public ValueState(Form<T> form, StateCollector collector) {
     this.form = form;
     this.collector = collector;
     events = new ArrayList<>();
+    syncRequests = new ArrayList<>();
   }
 
   public T set(T to) {
@@ -47,6 +49,21 @@ public class ValueState<T> implements State {
 
   @Override
   public WriteResult writeInto(Bytes bytes) {
+    ListIterator<UUID> syncIter = syncRequests.listIterator();
+
+    while (syncIter.hasNext()) {
+      UUID remote = syncIter.next();
+
+      try {
+        write(bytes, LaneResponse.syncEvent(remote, state));
+        write(bytes, LaneResponse.synced(remote));
+      } catch (BufferOverflowException ignored) {
+        return WriteResult.DataStillAvailable;
+      }
+
+      syncIter.remove();
+    }
+
     if (dirty) {
       ListIterator<T> iter = events.listIterator();
 
@@ -70,21 +87,9 @@ public class ValueState<T> implements State {
   }
 
   @Override
-  public byte[] syncInto(UUID uuid) {
-    Bytes bytes = new Bytes();
-
-    try {
-      bytes.writeByte((byte) 0);
-      if (state != null) {
-        write(bytes, LaneResponse.syncEvent(uuid, state));
-      }
-      write(bytes, LaneResponse.synced(uuid));
-      bytes.writeByte(WriteResult.Done.statusCode(), 0);
-    } catch (BufferOverflowException ignored) {
-      bytes.writeByte(WriteResult.DataStillAvailable.statusCode(), 0);
-    }
-
-    return bytes.getArray();
+  public void sync(UUID uuid) {
+    syncRequests.add(uuid);
+    collector.add(this);
   }
 
 }

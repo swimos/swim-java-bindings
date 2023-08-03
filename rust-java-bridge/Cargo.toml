@@ -40,6 +40,7 @@ tracing = "0.1"
 tracing-subscriber = "0.2.11"
 tracing-futures = "0.2"
 rand = "0.8.5"
+uuid = "1.2"
 
 [workspace.dependencies.ratchet]
 package = "ratchet_rs"

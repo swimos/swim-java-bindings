@@ -23,13 +23,8 @@ public class AgentModel implements Agent {
   }
 
   public byte[] sync(String laneUri, long uuidMsb, long uuidLsb) {
-    return lanes.get(laneUri).sync(new UUID(uuidMsb, uuidLsb));
-  }
-
-  enum WriteResult {
-    NoDataAvailable,
-    MoreDataAvailable,
-
+    lanes.get(laneUri).sync(new UUID(uuidMsb, uuidLsb));
+    return flushState();
   }
 
   public byte[] flushState(){

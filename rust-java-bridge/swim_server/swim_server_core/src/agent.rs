@@ -45,6 +45,7 @@ use tokio::task::spawn_blocking;
 use tokio_util::codec::{BytesCodec, Decoder, Encoder, FramedRead, FramedWrite};
 use tracing::{debug, error, info, trace};
 use tracing_subscriber::fmt::init;
+use uuid::Uuid;
 
 use bytebridge::{ByteCodec, FromBytesError};
 use jvm_sys::vm::method::{
@@ -142,6 +143,18 @@ impl JavaAgentRef {
         })
     }
 
+    fn sync(
+        &self,
+        env: &JNIEnv,
+        lane_name: &GlobalRef,
+        remote: Uuid,
+    ) -> Result<Vec<u8>, JavaError> {
+        let JavaAgentRef { agent_obj, vtable } = self;
+        with_local_frame_null(env, None, || {
+            vtable.sync(env, agent_obj.as_obj(), lane_name.as_obj(), remote)
+        })
+    }
+
     fn init(&self, env: &JNIEnv, lane_name: &GlobalRef, msg: JByteBuffer) -> Result<(), JavaError> {
         let JavaAgentRef { agent_obj, vtable } = self;
         with_local_frame_null(env, None, || {
@@ -160,6 +173,7 @@ pub struct JavaAgentVTable {
     did_start: InitialisedJavaObjectMethod,
     did_stop: InitialisedJavaObjectMethod,
     dispatch: InitialisedJavaObjectMethod,
+    sync: InitialisedJavaObjectMethod,
     init: InitialisedJavaObjectMethod,
     flush_state: InitialisedJavaObjectMethod,
 }
@@ -174,6 +188,11 @@ impl JavaAgentVTable {
         "dispatch",
         "(Ljava/lang/String;Ljava/nio/ByteBuffer;)[B",
     );
+    const SYNC: JavaObjectMethodDef = JavaObjectMethodDef::new(
+        "ai/swim/server/agent/AgentModel",
+        "sync",
+        "(Ljava/lang/String;JJ)[B",
+    );
     const INIT: JavaObjectMethodDef = JavaObjectMethodDef::new(
         "ai/swim/server/agent/AgentModel",
         "init",
@@ -187,6 +206,7 @@ impl JavaAgentVTable {
             did_start: resolver.resolve(env, Self::DID_START),
             did_stop: resolver.resolve(env, Self::DID_STOP),
             dispatch: resolver.resolve(env, Self::DISPATCH),
+            sync: resolver.resolve(env, Self::SYNC),
             init: resolver.resolve(env, Self::INIT),
             flush_state: resolver.resolve(env, Self::FLUSH_STATE),
         }
@@ -211,6 +231,24 @@ impl JavaAgentVTable {
             env,
             agent_obj,
             &[lane_ref.into(), msg.into()],
+        )
+    }
+
+    fn sync(
+        &self,
+        env: &JNIEnv,
+        agent_obj: JObject,
+        lane_ref: JObject,
+        remote: Uuid,
+    ) -> Result<Vec<u8>, JavaError> {
+        let (msb, lsb) = remote.as_u64_pair();
+        let msb: i64 = msb.try_into().expect("UUID MSB overflow");
+        let lsb: i64 = lsb.try_into().expect("UUID LSB overflow");
+
+        self.sync.object().array::<ByteArray>().invoke(
+            env,
+            agent_obj,
+            &[lane_ref.into(), msb.into(), lsb.into()],
         )
     }
 
@@ -635,6 +673,7 @@ async fn handle_request(
     let TaggedLaneRequest { lane_type, request } = request;
     match request {
         LaneRequest::Command(mut msg) => {
+            trace!("Received a command request");
             let result = {
                 let env = context.vm.expect_env();
                 let buffer = unsafe { env.new_direct_byte_buffer_exact(&mut msg) }?;
@@ -647,7 +686,7 @@ async fn handle_request(
                         LaneType::Value => {
                             trace!("Handling lane response");
 
-                            handle_response(context, agent_ref, ret, lane_writer).await?;
+                            handle_lane_response(context, agent_ref, ret, lane_writer).await?;
                         }
                         LaneType::Map => {
                             unimplemented!()
@@ -659,10 +698,27 @@ async fn handle_request(
                 Err(e) => panic_any(e),
             }
         }
-        LaneRequest::Sync(_remote_id) => {
-            unimplemented!()
+        LaneRequest::Sync(remote_id) => {
+            trace!("Received a sync request");
+
+            let result = {
+                let env = context.vm.expect_env();
+                jni_call(&env, || agent_ref.sync(&env, &lane_name_ref, remote_id))
+            };
+
+            match result {
+                Ok(ret) => {
+                    handle_lane_response(context, agent_ref, ret, lane_writer).await?;
+                }
+                Err(e) => panic_any(e),
+            }
+
+            Ok(())
         }
-        LaneRequest::InitComplete => Ok(()),
+        LaneRequest::InitComplete => {
+            trace!("Received a notification that an initialisation has completed");
+            Ok(())
+        }
     }
 }
 
@@ -738,7 +794,7 @@ enum ExecutionStep {
     MoreDataAvailable,
 }
 
-async fn handle_response(
+async fn handle_lane_response(
     ctx: &FfiContext,
     agent_ref: &JavaAgentRef,
     mut returned_value: Vec<u8>,
@@ -769,17 +825,6 @@ async fn handle_response(
             return Ok(());
         }
     }
-}
-
-#[test]
-fn t() {
-    let mut encoder = ValueLaneResponseEncoder::new(WithLenReconEncoder);
-    let mut buf = BytesMut::new();
-    encoder
-        .encode(LaneResponse::StandardEvent(13), &mut buf)
-        .unwrap();
-    println!("{:?}", buf.as_ref());
-    println!("{}", buf.remaining());
 }
 
 enum LaneReaderCodec {
@@ -934,10 +979,6 @@ impl Stream for LaneReader {
 
 #[derive(Debug)]
 enum RuntimeEvent {
-    // WriteComplete {
-    //     writer: ItemWriter,
-    //     result: Result<(), std::io::Error>,
-    // },
     Request { id: u64, request: TaggedLaneRequest },
     RequestError { id: u64, error: FrameIoError },
 }

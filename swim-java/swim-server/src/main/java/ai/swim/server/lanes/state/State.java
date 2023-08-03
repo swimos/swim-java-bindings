@@ -7,5 +7,5 @@ import java.util.UUID;
 public interface State {
   WriteResult writeInto(Bytes bytes);
 
-  byte[] syncInto(UUID uuid);
+  void sync(UUID uuid);
 }

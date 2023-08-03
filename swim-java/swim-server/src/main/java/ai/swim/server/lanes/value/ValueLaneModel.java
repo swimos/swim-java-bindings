@@ -43,8 +43,8 @@ public final class ValueLaneModel<T> extends LaneModel {
   }
 
   @Override
-  public byte[] sync( UUID remote) {
-    return state.syncInto(remote);
+  public void sync( UUID remote) {
+     state.sync(remote);
   }
 
   @Override
