@@ -24,10 +24,10 @@ import ai.swim.recon.models.state.Action;
 import ai.swim.recon.models.state.ParseEvent;
 import ai.swim.recon.models.state.PushAttrNewRec;
 import org.junit.jupiter.api.Test;
-
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReconParserPartsTest {
 
@@ -68,8 +68,16 @@ class ReconParserPartsTest {
   @Test
   void attrsDone() {
     attrOkDoneTest("@attrName()", new ParserTransition(ReadEvent.startAttribute("attrName"), Action.pushAttr()));
-    attrOkDoneTest("@attrName{}", new ParserTransition(ReadEvent.startAttribute("attrName"), ReadEvent.endAttribute(), new ParseEvent(ParseState.AfterAttr)));
-    attrOkDoneTest("@attrName", new ParserTransition(ReadEvent.startAttribute("attrName"), ReadEvent.endAttribute(), new ParseEvent(ParseState.AfterAttr)));
+    attrOkDoneTest(
+        "@attrName{}",
+        new ParserTransition(ReadEvent.startAttribute("attrName"),
+                             ReadEvent.endAttribute(),
+                             new ParseEvent(ParseState.AfterAttr)));
+    attrOkDoneTest(
+        "@attrName",
+        new ParserTransition(ReadEvent.startAttribute("attrName"),
+                             ReadEvent.endAttribute(),
+                             new ParseEvent(ParseState.AfterAttr)));
   }
 
   void attrsContTest(String input, ParserTransition expected) {
@@ -96,8 +104,16 @@ class ReconParserPartsTest {
   @Test
   void attrsCont() {
     attrsContTest("@attrName(", new ParserTransition(ReadEvent.startAttribute("attrName"), Action.pushAttr()));
-    attrsContTest("@attrName{", new ParserTransition(ReadEvent.startAttribute("attrName"), ReadEvent.endAttribute(), new ParseEvent(ParseState.AfterAttr)));
-    attrsContTest("@attrName", new ParserTransition(ReadEvent.startAttribute("attrName"), ReadEvent.endAttribute(), new ParseEvent(ParseState.AfterAttr)));
+    attrsContTest(
+        "@attrName{",
+        new ParserTransition(ReadEvent.startAttribute("attrName"),
+                             ReadEvent.endAttribute(),
+                             new ParseEvent(ParseState.AfterAttr)));
+    attrsContTest(
+        "@attrName",
+        new ParserTransition(ReadEvent.startAttribute("attrName"),
+                             ReadEvent.endAttribute(),
+                             new ParseEvent(ParseState.AfterAttr)));
   }
 
   @Test
@@ -105,7 +121,9 @@ class ReconParserPartsTest {
     Parser<ParserTransition> parser = ReconParserParts.parseAfterAttr();
     parser = parser.feed(Input.string(")"));
     assertTrue(parser.isDone());
-    assertEquals(parser.bind(), new ParserTransition(ReadEvent.startBody(), ReadEvent.endRecord(), Action.popAfterItem()));
+    assertEquals(
+        parser.bind(),
+        new ParserTransition(ReadEvent.startBody(), ReadEvent.endRecord(), Action.popAfterItem()));
   }
 
   void parseNotAfterItemExec(String input, ParserTransition expected) {
@@ -118,10 +136,18 @@ class ReconParserPartsTest {
 
   @Test
   void parseNotAfterItemTest() {
-    parseNotAfterItemExec(":1, b:2)3", new ParserTransition(ReadEvent.extant(), ReadEvent.slot(), new ParseEvent(ParseState.RecordBodySlot)));
+    parseNotAfterItemExec(
+        ":1, b:2)3",
+        new ParserTransition(ReadEvent.extant(),
+                             ReadEvent.slot(),
+                             new ParseEvent(ParseState.RecordBodySlot)));
     parseNotAfterItemExec("}", new ParserTransition(ReadEvent.endRecord(), Action.popAfterItem()));
-    parseNotAfterItemExec("\"abc\"", new ParserTransition(ReadEvent.text("abc"), new ParseEvent(ParseState.RecordBodyAfterValue)));
-    parseNotAfterItemExec("@inner()", new ParserTransition(ReadEvent.startAttribute("inner"), new PushAttrNewRec(true)));
+    parseNotAfterItemExec(
+        "\"abc\"",
+        new ParserTransition(ReadEvent.text("abc"), new ParseEvent(ParseState.RecordBodyAfterValue)));
+    parseNotAfterItemExec(
+        "@inner()",
+        new ParserTransition(ReadEvent.startAttribute("inner"), new PushAttrNewRec(true)));
   }
 
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -165,9 +191,13 @@ class ReconParserPartsTest {
 
   @Test
   void parseSlotValueTest() {
-    parseSlotValueExec("1, b:2)3", new ParserTransition(ReadEvent.number(1), new ParseEvent(ParseState.AttrBodyAfterSlot)));
+    parseSlotValueExec(
+        "1, b:2)3",
+        new ParserTransition(ReadEvent.number(1), new ParseEvent(ParseState.AttrBodyAfterSlot)));
     parseSlotValueExec("2)3", new ParserTransition(ReadEvent.number(2), new ParseEvent(ParseState.AttrBodyAfterSlot)));
-    parseSlotValueExec("abcd, c:4)", new ParserTransition(ReadEvent.text("abcd"), new ParseEvent(ParseState.AttrBodyAfterSlot)));
+    parseSlotValueExec(
+        "abcd, c:4)",
+        new ParserTransition(ReadEvent.text("abcd"), new ParseEvent(ParseState.AttrBodyAfterSlot)));
     parseSlotValueExec("{e:4, f:5})", new ParserTransition(ReadEvent.startBody(), Action.pushBody()));
   }
 

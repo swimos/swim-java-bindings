@@ -39,8 +39,8 @@ public class RecognizerTypeInitializer implements TypeInitializer {
   private final ModelInspector inspector;
 
   public RecognizerTypeInitializer(ProcessingEnvironment environment,
-                                   RecognizerNameFormatter nameFormatter,
-                                   ModelInspector inspector) {
+      RecognizerNameFormatter nameFormatter,
+      ModelInspector inspector) {
     this.environment = environment;
     this.nameFormatter = nameFormatter;
     this.inspector = inspector;
@@ -121,10 +121,11 @@ public class RecognizerTypeInitializer implements TypeInitializer {
     CodeBlock classTy = CodeBlock.of("(Class<$T>) (Class<?>) Object.class", initializedComponentType.getMirror());
     return new InitializedType(
         model.getType(),
-        CodeBlock.of("new $T($L, $L)",
-                     className,
-                     classTy,
-                     initializedComponentType.getInitializer()));
+        CodeBlock.of(
+            "new $T($L, $L)",
+            className,
+            classTy,
+            initializedComponentType.getInitializer()));
   }
 
   @Override
@@ -205,7 +206,7 @@ public class RecognizerTypeInitializer implements TypeInitializer {
         switch (ty.getKind()) {
           case DECLARED:
             typeArgumentModels.add(this.inspector.getOrInspect((TypeElement) ty, environment)
-                                                 .instantiate(this, inConstructor));
+                                       .instantiate(this, inConstructor));
             break;
           case TYPEVAR:
             typeArgumentModels.add(this.untyped(ty, inConstructor));
@@ -218,11 +219,11 @@ public class RecognizerTypeInitializer implements TypeInitializer {
 
       if (typeArgumentModels.size() != 0) {
         typeParameters = typeArgumentModels.stream()
-                                           .map(ty -> String.format(
-                                               "%s.from(() -> %s)",
-                                               ty.getMirror().toString(),
-                                               ty.getInitializer()))
-                                           .collect(Collectors.joining(", "));
+            .map(ty -> String.format(
+                "%s.from(() -> %s)",
+                ty.getMirror().toString(),
+                ty.getInitializer()))
+            .collect(Collectors.joining(", "));
       }
 
       typeParameters = typeParameters.isBlank() ? "" : ", " + typeParameters;
@@ -233,10 +234,11 @@ public class RecognizerTypeInitializer implements TypeInitializer {
 //    } else {
       return new InitializedType(
           type,
-          CodeBlock.of("getProxy().lookup((Class<$T>) (Class<?>) $T.class $L)",
-                       declaredType,
-                       erasure,
-                       typeParameters));
+          CodeBlock.of(
+              "getProxy().lookup((Class<$T>) (Class<?>) $T.class $L)",
+              declaredType,
+              erasure,
+              typeParameters));
 //    }
     } else {
       return new InitializedType(type, CodeBlock.of("getProxy().lookup($T.class)", type, erasure));

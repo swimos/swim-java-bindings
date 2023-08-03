@@ -36,12 +36,12 @@ macro_rules! jni_try {
         $crate::jni_try!($env, $class, $msg, $expr, ())
     }};
     ($env:ident, $msg:tt, $expr:expr $(,)?) => {
-        $crate::jni_try!($env, "ai/swim/client/SwimClientException", $msg, $expr, ())
+        $crate::jni_try!($env, "java/lang/RuntimeException", $msg, $expr, ())
     };
     ($env:ident, $msg:tt, $expr:expr, $ret:expr $(,)?) => {
         $crate::jni_try!(
             $env,
-            "ai/swim/client/SwimClientException",
+            "java/lang/RuntimeException",
             $msg,
             $expr,
             $ret
@@ -184,16 +184,16 @@ where
 
     match env.exception_check() {
         Ok(true) => {
-            let _r = write!(writer, "Unhandled exception. Printing and clearing it");
+            let _r = write!(writer, "Unhandled exception. Printing and clearing it\n");
             describe(
                 &mut writer,
                 env.exception_describe(),
-                "Failed to print exception",
+                "Failed to print exception\n",
             );
             describe(
                 &mut writer,
                 env.exception_clear(),
-                "Failed to clear exception",
+                "Failed to clear exception\n",
             );
         }
         Ok(false) => {}

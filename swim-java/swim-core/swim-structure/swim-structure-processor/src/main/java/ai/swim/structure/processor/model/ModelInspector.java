@@ -100,12 +100,6 @@ import static ai.swim.structure.processor.Utils.isSubType;
  * derived. If this functionality is required, then a form must be manually implemented.
  */
 public class ModelInspector {
-  /**
-   * Type map between a type mirror and its derived model representation.
-   * <p>
-   * A type mirror may be a mirror from a {@code TypeElement} or a field's {@code TypeMirror}.
-   */
-  private final HashMap<TypeMirror, Model> models;
   private static final Map<String, CoreTypeSpec<?>> CORE_TYPES = new HashMap<>();
 
   static {
@@ -131,12 +125,239 @@ public class ModelInspector {
     putType(BigDecimal.class, CoreTypeModel.Kind.BigDecimal, null);
   }
 
+  /**
+   * Type map between a type mirror and its derived model representation.
+   * <p>
+   * A type mirror may be a mirror from a {@code TypeElement} or a field's {@code TypeMirror}.
+   */
+  private final HashMap<TypeMirror, Model> models;
+
+  public ModelInspector() {
+    models = new HashMap<>();
+  }
+
   private static <T> void putType(Class<T> clazz, CoreTypeModel.Kind kind, T defaultValue) {
     CORE_TYPES.put(clazz.getCanonicalName(), new CoreTypeSpec<>(clazz, kind, defaultValue));
   }
 
-  public ModelInspector() {
-    models = new HashMap<>();
+  /**
+   * Attempts to resolve a known library model; primitives, array types, list and map types.
+   *
+   * @param environment the current processing environment.
+   * @param inspector   for resolving nested types.
+   * @param element     to inspect.
+   * @param type        of the element.
+   * @return a resolved model or null if resolution failed.
+   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
+   */
+  public static Model getLibraryModel(ProcessingEnvironment environment,
+      ModelInspector inspector,
+      Element element,
+      TypeMirror type) {
+    CoreTypeSpec<?> model = CORE_TYPES.get(type.toString());
+    if (model != null) {
+      return CoreTypeModel.from(environment, type, element, model);
+    } else {
+      TypeKind typeKind = type.getKind();
+      if (typeKind == TypeKind.ARRAY) {
+        return fromArray(environment, inspector, element, (ArrayType) type);
+      } else if (typeKind == TypeKind.DECLARED) {
+        return tryFromDeclared(environment, element, inspector, (DeclaredType) type);
+      } else {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * Attempts to resolve a model from {@code type}. This may be a boxed primitive type, a known library type, a list or
+   * map type.
+   *
+   * @param environment the current processing environment.
+   * @param element     to resolve.
+   * @param type        of the element.
+   * @return a resolved model or null.
+   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
+   */
+  private static Model tryFromDeclared(ProcessingEnvironment environment,
+      Element element,
+      ModelInspector inspector,
+      DeclaredType type) {
+    Types typeUtils = environment.getTypeUtils();
+    Elements elementUtils = environment.getElementUtils();
+
+    if (isSubType(environment, type, Collection.class)) {
+      List<? extends TypeMirror> typeArguments = type.getTypeArguments();
+
+      if (typeArguments.size() != 1) {
+        throw new IllegalArgumentException("Attempted to build a generic type from " + typeArguments.size() + " type parameters where 1 was required");
+      }
+
+      UnrolledType unrolledType = unrollType(environment, element, inspector, typeArguments.get(0));
+      TypeElement containerType = elementUtils.getTypeElement(List.class.getCanonicalName());
+      DeclaredType typedContainer = typeUtils.getDeclaredType(containerType, unrolledType.typeMirror);
+      PackageElement packageElement = elementUtils.getPackageElement(List.class.getCanonicalName());
+
+      return new ParameterisedTypeModel(
+          typedContainer,
+          element,
+          packageElement,
+          ParameterisedTypeModel.Mapping.List,
+          unrolledType.model);
+    } else if (isSubType(environment, type, Map.class)) {
+      List<? extends TypeMirror> typeArguments = type.getTypeArguments();
+
+      if (typeArguments.size() != 2) {
+        throw new IllegalArgumentException("Attempted to build a generic type from " + typeArguments.size() + " type parameters where 2 are required");
+      }
+
+      UnrolledType unrolledKey = unrollType(environment, element, inspector, typeArguments.get(0));
+      UnrolledType unrolledValue = unrollType(environment, element, inspector, typeArguments.get(1));
+
+      TypeElement containerType = elementUtils.getTypeElement(Map.class.getCanonicalName());
+      DeclaredType typedContainer = typeUtils.getDeclaredType(
+          containerType,
+          unrolledKey.typeMirror,
+          unrolledValue.typeMirror);
+      PackageElement packageElement = elementUtils.getPackageElement(Map.class.getCanonicalName());
+
+      return new ParameterisedTypeModel(
+          typedContainer,
+          element,
+          packageElement,
+          ParameterisedTypeModel.Mapping.Map,
+          unrolledKey.model,
+          unrolledValue.model);
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Resolves an array type from {@code arrayType}. If the component type is declared then the component type will be
+   * resolved through the inspector, if it is a type var then an untyped model is returned, otherwise, it will be
+   * unresolved.
+   *
+   * @param environment the current processing environment.
+   * @param inspector   for resolving the component type if it is declared.
+   * @param element     to resolve.
+   * @param arrayType   of the element.
+   * @return a resolved model.
+   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
+   */
+  private static Model fromArray(ProcessingEnvironment environment,
+      ModelInspector inspector,
+      Element element,
+      ArrayType arrayType) {
+    TypeMirror componentType = arrayType.getComponentType();
+    Model componentModel = getLibraryModel(environment, inspector, element, componentType);
+
+    if (componentModel == null && componentType.getKind() == TypeKind.DECLARED) {
+      componentModel = inspector.getOrInspect((TypeElement) componentType, environment);
+      return new ArrayLibraryModel(
+          element.asType(),
+          element,
+          componentType,
+          componentModel,
+          componentModel.getDeclaredPackage());
+    } else if (componentType.getKind() == TypeKind.TYPEVAR) {
+      return new ArrayLibraryModel(
+          element.asType(),
+          element,
+          componentType,
+          new UntypedModel(componentType, element, null),
+          null);
+    } else {
+      Elements elementUtils = environment.getElementUtils();
+      return new ArrayLibraryModel(
+          element.asType(),
+          element,
+          componentType,
+          new UnresolvedModel(componentType, element, elementUtils.getPackageOf(element)),
+          null);
+    }
+  }
+
+  /**
+   * Resolves a type parameter. If {@code typeMirror} is a declared type, then model resolution is attempted on it, if it
+   * is a type variable then an {@link UntypedModel} is returned, if it is a wildcard type then it's bounds are removed
+   * and a new {@link TypeMirror} is built. I.e, if the {@link TypeMirror} represents {@code List<? super Map<Integer, String}
+   * then a new type is built for {@code List<Map<Integer, String>>}.
+   *
+   * @param environment the current processing environment.
+   * @param element     being processed.
+   * @param inspector   for resolving the component types.
+   * @param typeMirror  to unroll.
+   * @return a resolved model.
+   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
+   */
+  private static UnrolledType unrollType(ProcessingEnvironment environment,
+      Element element,
+      ModelInspector inspector,
+      TypeMirror typeMirror) {
+    switch (typeMirror.getKind()) {
+      case DECLARED:
+        DeclaredType declaredType = (DeclaredType) typeMirror;
+        return new UnrolledType(
+            typeMirror,
+            inspector.getOrInspect(typeMirror, declaredType.asElement(), environment, null));
+      case TYPEVAR:
+        return new UnrolledType(typeMirror, new UntypedModel(typeMirror, element, null));
+      case WILDCARD:
+        WildcardType wildcardType = (WildcardType) typeMirror;
+        return unrollBoundedType(
+            environment,
+            element,
+            inspector,
+            wildcardType.getExtendsBound(),
+            wildcardType.getSuperBound());
+      default:
+        throw new AssertionError("Unrolled type: " + typeMirror.getKind());
+    }
+  }
+
+  /**
+   * Removes either an upper or lower bound from a wildcard type if it contains any and returns a {@link UnrolledType}
+   * containing a new {@link TypeMirror} for the type and a resolved {@link Model} .
+   * <p>
+   * I.e, if the {@link TypeMirror} represents {@code List<? super Map<Integer, String} then a new type is built for
+   * {@code List<Map<Integer, String>>}.
+   *
+   * @param environment the current processing environment.
+   * @param element     being processed.
+   * @param inspector   for resolving the component types.
+   * @param lowerBound  {@link TypeMirror} of the lower bound.
+   * @param upperBound  {@link TypeMirror} of the upper bound.
+   * @return a resolved model.
+   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
+   */
+  private static UnrolledType unrollBoundedType(ProcessingEnvironment environment,
+      Element element,
+      ModelInspector inspector,
+      TypeMirror lowerBound,
+      TypeMirror upperBound) {
+    TypeMirror bound = lowerBound;
+
+    if (bound == null || bound.getKind() == TypeKind.NULL) {
+      bound = upperBound;
+    } else if (upperBound != null && upperBound.getKind() != TypeKind.NULL) {
+      throw new InvalidModelException("cannot derive a generic field that contains both a lower & upper bound");
+    }
+
+    Elements elementUtils = environment.getElementUtils();
+
+    if (bound == null) {
+      TypeElement objectTypeElement = elementUtils.getTypeElement(Object.class.getCanonicalName());
+      PackageElement packageElement = elementUtils.getPackageElement(Object.class.getCanonicalName());
+      return new UnrolledType(
+          objectTypeElement.asType(),
+          new UntypedModel(objectTypeElement.asType(), element, packageElement));
+    } else {
+      // We need to retype the model here so that the new, unrolled, type is shifted up a level. I.e, if the type that
+      // we're unrolling is List<? extends Number> then the new model is List<Number> and that is now the element's
+      // type; this will then be propagated up to the callee when they retype the field itself.
+      return unrollType(environment, element, inspector, bound);
+    }
   }
 
   /**
@@ -802,227 +1023,6 @@ public class ModelInspector {
     interfaceModel.setSubTypes(subTypeElements);
 
     return interfaceModel;
-  }
-
-  /**
-   * Attempts to resolve a known library model; primitives, array types, list and map types.
-   *
-   * @param environment the current processing environment.
-   * @param inspector   for resolving nested types.
-   * @param element     to inspect.
-   * @param type        of the element.
-   * @return a resolved model or null if resolution failed.
-   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
-   */
-  public static Model getLibraryModel(ProcessingEnvironment environment,
-      ModelInspector inspector,
-      Element element,
-      TypeMirror type) {
-    CoreTypeSpec<?> model = CORE_TYPES.get(type.toString());
-    if (model != null) {
-      return CoreTypeModel.from(environment, type, element, model);
-    } else {
-      TypeKind typeKind = type.getKind();
-      if (typeKind == TypeKind.ARRAY) {
-        return fromArray(environment, inspector, element, (ArrayType) type);
-      } else if (typeKind == TypeKind.DECLARED) {
-        return tryFromDeclared(environment, element, inspector, (DeclaredType) type);
-      } else {
-        return null;
-      }
-    }
-  }
-
-
-  /**
-   * Attempts to resolve a model from {@code type}. This may be a boxed primitive type, a known library type, a list or
-   * map type.
-   *
-   * @param environment the current processing environment.
-   * @param element     to resolve.
-   * @param type        of the element.
-   * @return a resolved model or null.
-   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
-   */
-  private static Model tryFromDeclared(ProcessingEnvironment environment,
-      Element element,
-      ModelInspector inspector,
-      DeclaredType type) {
-    Types typeUtils = environment.getTypeUtils();
-    Elements elementUtils = environment.getElementUtils();
-
-    if (isSubType(environment, type, Collection.class)) {
-      List<? extends TypeMirror> typeArguments = type.getTypeArguments();
-
-      if (typeArguments.size() != 1) {
-        throw new IllegalArgumentException("Attempted to build a generic type from " + typeArguments.size() + " type parameters where 1 was required");
-      }
-
-      UnrolledType unrolledType = unrollType(environment, element, inspector, typeArguments.get(0));
-      TypeElement containerType = elementUtils.getTypeElement(List.class.getCanonicalName());
-      DeclaredType typedContainer = typeUtils.getDeclaredType(containerType, unrolledType.typeMirror);
-      PackageElement packageElement = elementUtils.getPackageElement(List.class.getCanonicalName());
-
-      return new ParameterisedTypeModel(
-          typedContainer,
-          element,
-          packageElement,
-          ParameterisedTypeModel.Mapping.List,
-          unrolledType.model);
-    } else if (isSubType(environment, type, Map.class)) {
-      List<? extends TypeMirror> typeArguments = type.getTypeArguments();
-
-      if (typeArguments.size() != 2) {
-        throw new IllegalArgumentException("Attempted to build a generic type from " + typeArguments.size() + " type parameters where 2 are required");
-      }
-
-      UnrolledType unrolledKey = unrollType(environment, element, inspector, typeArguments.get(0));
-      UnrolledType unrolledValue = unrollType(environment, element, inspector, typeArguments.get(1));
-
-      TypeElement containerType = elementUtils.getTypeElement(Map.class.getCanonicalName());
-      DeclaredType typedContainer = typeUtils.getDeclaredType(
-          containerType,
-          unrolledKey.typeMirror,
-          unrolledValue.typeMirror);
-      PackageElement packageElement = elementUtils.getPackageElement(Map.class.getCanonicalName());
-
-      return new ParameterisedTypeModel(
-          typedContainer,
-          element,
-          packageElement,
-          ParameterisedTypeModel.Mapping.Map,
-          unrolledKey.model,
-          unrolledValue.model);
-    } else {
-      return null;
-    }
-  }
-
-  /**
-   * Resolves an array type from {@code arrayType}. If the component type is declared then the component type will be
-   * resolved through the inspector, if it is a type var then an untyped model is returned, otherwise, it will be
-   * unresolved.
-   *
-   * @param environment the current processing environment.
-   * @param inspector   for resolving the component type if it is declared.
-   * @param element     to resolve.
-   * @param arrayType   of the element.
-   * @return a resolved model.
-   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
-   */
-  private static Model fromArray(ProcessingEnvironment environment,
-      ModelInspector inspector,
-      Element element,
-      ArrayType arrayType) {
-    TypeMirror componentType = arrayType.getComponentType();
-    Model componentModel = getLibraryModel(environment, inspector, element, componentType);
-
-    if (componentModel == null && componentType.getKind() == TypeKind.DECLARED) {
-      componentModel = inspector.getOrInspect((TypeElement) componentType, environment);
-      return new ArrayLibraryModel(
-          element.asType(),
-          element,
-          componentType,
-          componentModel,
-          componentModel.getDeclaredPackage());
-    } else if (componentType.getKind() == TypeKind.TYPEVAR) {
-      return new ArrayLibraryModel(
-          element.asType(),
-          element,
-          componentType,
-          new UntypedModel(componentType, element, null),
-          null);
-    } else {
-      Elements elementUtils = environment.getElementUtils();
-      return new ArrayLibraryModel(
-          element.asType(),
-          element,
-          componentType,
-          new UnresolvedModel(componentType, element, elementUtils.getPackageOf(element)),
-          null);
-    }
-  }
-
-  /**
-   * Resolves a type parameter. If {@code typeMirror} is a declared type, then model resolution is attempted on it, if it
-   * is a type variable then an {@link UntypedModel} is returned, if it is a wildcard type then it's bounds are removed
-   * and a new {@link TypeMirror} is built. I.e, if the {@link TypeMirror} represents {@code List<? super Map<Integer, String}
-   * then a new type is built for {@code List<Map<Integer, String>>}.
-   *
-   * @param environment the current processing environment.
-   * @param element     being processed.
-   * @param inspector   for resolving the component types.
-   * @param typeMirror  to unroll.
-   * @return a resolved model.
-   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
-   */
-  private static UnrolledType unrollType(ProcessingEnvironment environment,
-      Element element,
-      ModelInspector inspector,
-      TypeMirror typeMirror) {
-    switch (typeMirror.getKind()) {
-      case DECLARED:
-        DeclaredType declaredType = (DeclaredType) typeMirror;
-        return new UnrolledType(
-            typeMirror,
-            inspector.getOrInspect(typeMirror, declaredType.asElement(), environment, null));
-      case TYPEVAR:
-        return new UnrolledType(typeMirror, new UntypedModel(typeMirror, element, null));
-      case WILDCARD:
-        WildcardType wildcardType = (WildcardType) typeMirror;
-        return unrollBoundedType(
-            environment,
-            element,
-            inspector,
-            wildcardType.getExtendsBound(),
-            wildcardType.getSuperBound());
-      default:
-        throw new AssertionError("Unrolled type: " + typeMirror.getKind());
-    }
-  }
-
-  /**
-   * Removes either an upper or lower bound from a wildcard type if it contains any and returns a {@link UnrolledType}
-   * containing a new {@link TypeMirror} for the type and a resolved {@link Model} .
-   * <p>
-   * I.e, if the {@link TypeMirror} represents {@code List<? super Map<Integer, String} then a new type is built for
-   * {@code List<Map<Integer, String>>}.
-   *
-   * @param environment the current processing environment.
-   * @param element     being processed.
-   * @param inspector   for resolving the component types.
-   * @param lowerBound  {@link TypeMirror} of the lower bound.
-   * @param upperBound  {@link TypeMirror} of the upper bound.
-   * @return a resolved model.
-   * @throws InvalidModelException if the model or a model in its type hierarchy was invalid.
-   */
-  private static UnrolledType unrollBoundedType(ProcessingEnvironment environment,
-      Element element,
-      ModelInspector inspector,
-      TypeMirror lowerBound,
-      TypeMirror upperBound) {
-    TypeMirror bound = lowerBound;
-
-    if (bound == null || bound.getKind() == TypeKind.NULL) {
-      bound = upperBound;
-    } else if (upperBound != null && upperBound.getKind() != TypeKind.NULL) {
-      throw new InvalidModelException("cannot derive a generic field that contains both a lower & upper bound");
-    }
-
-    Elements elementUtils = environment.getElementUtils();
-
-    if (bound == null) {
-      TypeElement objectTypeElement = elementUtils.getTypeElement(Object.class.getCanonicalName());
-      PackageElement packageElement = elementUtils.getPackageElement(Object.class.getCanonicalName());
-      return new UnrolledType(
-          objectTypeElement.asType(),
-          new UntypedModel(objectTypeElement.asType(), element, packageElement));
-    } else {
-      // We need to retype the model here so that the new, unrolled, type is shifted up a level. I.e, if the type that
-      // we're unrolling is List<? extends Number> then the new model is List<Number> and that is now the element's
-      // type; this will then be propagated up to the callee when they retype the field itself.
-      return unrollType(environment, element, inspector, bound);
-    }
   }
 
   private static class UnrolledType {

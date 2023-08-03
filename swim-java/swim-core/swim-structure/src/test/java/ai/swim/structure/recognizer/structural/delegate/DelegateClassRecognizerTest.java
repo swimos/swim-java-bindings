@@ -8,10 +8,8 @@ import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.proxy.RecognizerProxy;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Objects;
-
 import static ai.swim.structure.RecognizerTestUtil.runTest;
 import static ai.swim.structure.recognizer.structural.delegate.HeaderRecognizer.headerBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +31,7 @@ class DelegateClassRecognizerTest {
         ReadEvent.startBody(),
         ReadEvent.text("string"),
         ReadEvent.endRecord()
-    );
+                                    );
 
     Prop obj = runTest(recognizer, events);
     assertEquals(obj, new Prop(1, "b", "string"));
@@ -145,8 +143,11 @@ class DelegateClassRecognizerTest {
           }
           return null;
         }
-    );
-    private RecognizingBuilder<String> bBuilder = new FieldRecognizingBuilder<>(RecognizerProxy.getProxy().lookup(String.class).asBodyRecognizer());
+                                                                        );
+    private RecognizingBuilder<String> bBuilder = new FieldRecognizingBuilder<>(RecognizerProxy
+                                                                                    .getProxy()
+                                                                                    .lookup(String.class)
+                                                                                    .asBodyRecognizer());
 
     @Override
     public boolean feedIndexed(int index, ReadEvent event) {

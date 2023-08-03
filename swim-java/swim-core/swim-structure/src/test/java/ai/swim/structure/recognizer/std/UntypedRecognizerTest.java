@@ -3,11 +3,11 @@ package ai.swim.structure.recognizer.std;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
 import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UntypedRecognizerTest {
 
@@ -79,9 +79,9 @@ class UntypedRecognizerTest {
 
   @Test
   void testBlob() {
-    Recognizer<byte[]> recognizer = ScalarRecognizer.BLOB.feedEvent(ReadEvent.blob(new byte[]{1, 2, 3}));
+    Recognizer<byte[]> recognizer = ScalarRecognizer.BLOB.feedEvent(ReadEvent.blob(new byte[] {1, 2, 3}));
     assertTrue(recognizer.isDone());
-    assertArrayEquals(recognizer.bind(), new byte[]{1, 2, 3});
+    assertArrayEquals(recognizer.bind(), new byte[] {1, 2, 3});
 
     runTestErr(ScalarRecognizer.BLOB.feedEvent(ReadEvent.endAttribute()));
   }
@@ -101,7 +101,9 @@ class UntypedRecognizerTest {
   @Test
   void testBigInteger() {
     runTestOk(ScalarRecognizer.BIG_INTEGER.feedEvent(ReadEvent.number(1L)), BigInteger.valueOf(1L));
-    runTestOk(ScalarRecognizer.BIG_INTEGER.feedEvent(ReadEvent.number(Long.MAX_VALUE)), BigInteger.valueOf(Long.MAX_VALUE));
+    runTestOk(
+        ScalarRecognizer.BIG_INTEGER.feedEvent(ReadEvent.number(Long.MAX_VALUE)),
+        BigInteger.valueOf(Long.MAX_VALUE));
     runTestOk(ScalarRecognizer.BIG_INTEGER.feedEvent(ReadEvent.number(123)), BigInteger.valueOf(123L));
     runTestOk(ScalarRecognizer.BIG_INTEGER.feedEvent(ReadEvent.number(BigInteger.TEN)), BigInteger.TEN);
     runTestOk(ScalarRecognizer.BIG_INTEGER.feedEvent(ReadEvent.number(BigDecimal.TEN)), BigInteger.TEN);

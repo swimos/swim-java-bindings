@@ -16,7 +16,6 @@ package ai.swim.structure.writer.proxy;
 
 import ai.swim.structure.TypeParameter;
 import ai.swim.structure.writer.Writable;
-
 import java.util.function.Supplier;
 
 /**

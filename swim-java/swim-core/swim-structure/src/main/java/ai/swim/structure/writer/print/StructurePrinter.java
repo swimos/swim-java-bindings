@@ -14,10 +14,14 @@
 
 package ai.swim.structure.writer.print;
 
-import ai.swim.structure.writer.*;
+import ai.swim.structure.writer.BodyWriter;
+import ai.swim.structure.writer.HeaderWriter;
+import ai.swim.structure.writer.StringUtils;
+import ai.swim.structure.writer.StructuralWriter;
+import ai.swim.structure.writer.SuppressingWriter;
+import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.header.WritableHeader;
 import ai.swim.structure.writer.print.strategy.PrintStrategy;
-
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;

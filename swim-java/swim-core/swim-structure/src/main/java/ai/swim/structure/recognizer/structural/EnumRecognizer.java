@@ -28,7 +28,10 @@ public class EnumRecognizer<T extends Enum<T>> extends Recognizer<T> {
         }
       }
 
-      return Recognizer.error(new RuntimeException(String.format("'%s' is not a variant of %s", variant, clazz.getCanonicalName())));
+      return Recognizer.error(new RuntimeException(String.format(
+          "'%s' is not a variant of %s",
+          variant,
+          clazz.getCanonicalName())));
     } else if (this.state == State.EndAttribute && event.isEndAttribute()) {
       this.state = State.StartBody;
       return this;

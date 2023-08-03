@@ -53,28 +53,30 @@ public final class MapDownlinkModel<K, V> extends MapDownlink<K, V> {
       Class<V> valueType,
       MapDownlinkLifecycle<K, V> lifecycle,
       DownlinkConfig downlinkConfig) throws SwimClientException {
-    MapDownlinkState<K, V> state = new MapDownlinkState<>(Form.forClass(keyType),
-                                                          Form.forClass(valueType),
-                                                          lifecycle.getOnRemove());
+    MapDownlinkState<K, V> state = new MapDownlinkState<>(
+        Form.forClass(keyType),
+        Form.forClass(valueType),
+        lifecycle.getOnRemove());
     Trigger trigger = new Trigger();
     MapDownlinkModel<K, V> downlink = new MapDownlinkModel<>(trigger, state);
 
     try {
-      open(handle.get(),
-           downlink,
-           downlinkConfig.toArray(),
-           trigger,
-           host,
-           node,
-           lane,
-           lifecycle.getOnLinked(),
-           state.wrapOnSynced(lifecycle.getOnSynced()),
-           state.wrapOnUpdate(lifecycle.getOnUpdate()),
-           state.wrapOnRemove(lifecycle.getOnRemove()),
-           state.wrapOnClear(lifecycle.getOnClear()),
-           lifecycle.getOnUnlinked(),
-           state.take(),
-           state.drop());
+      open(
+          handle.get(),
+          downlink,
+          downlinkConfig.toArray(),
+          trigger,
+          host,
+          node,
+          lane,
+          lifecycle.getOnLinked(),
+          state.wrapOnSynced(lifecycle.getOnSynced()),
+          state.wrapOnUpdate(lifecycle.getOnUpdate()),
+          state.wrapOnRemove(lifecycle.getOnRemove()),
+          state.wrapOnClear(lifecycle.getOnClear()),
+          lifecycle.getOnUnlinked(),
+          state.take(),
+          state.drop());
     } finally {
       handle.drop();
     }

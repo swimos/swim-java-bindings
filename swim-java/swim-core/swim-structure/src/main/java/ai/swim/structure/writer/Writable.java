@@ -19,7 +19,6 @@ import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.print.strategy.PrettyPrintStrategy;
 import ai.swim.structure.writer.print.strategy.PrintStrategy;
 import ai.swim.structure.writer.value.ValueStructuralWriter;
-
 import java.io.StringWriter;
 
 /**
@@ -66,9 +65,9 @@ public interface Writable<F> {
   /**
    * Returns a Recon representation of {@code value} using the provided {@link PrintStrategy}.
    */
-  default String print(Writable<F> writable, F value, PrintStrategy printStrategy) {
+  default String print(F value, PrintStrategy printStrategy) {
     StringWriter stringWriter = new StringWriter();
-    Recon.printRecon(stringWriter, writable, value, printStrategy);
+    Recon.printRecon(stringWriter, this, value, printStrategy);
     return stringWriter.toString();
   }
 
@@ -76,21 +75,21 @@ public interface Writable<F> {
    * Returns an inline Recon representation of {@code value}.
    */
   default String asReconString(F value) {
-    return print(this, value, PrintStrategy.STANDARD);
+    return print(value, PrintStrategy.STANDARD);
   }
 
   /**
    * Returns a Recon representation of {@code value}.
    */
   default String asCompactReconString(F value) {
-    return print(this, value, PrintStrategy.COMPACT);
+    return print(value, PrintStrategy.COMPACT);
   }
 
   /**
    * Returns a pretty Recon representation of {@code value}.
    */
   default String asPrettyReconString(F value) {
-    return print(this, value, new PrettyPrintStrategy());
+    return print(value, new PrettyPrintStrategy());
   }
 
 }

@@ -26,7 +26,6 @@ import ai.swim.structure.writer.std.ScalarWriters;
 import ai.swim.structure.writer.value.ValueStructuralWritable;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -68,13 +67,19 @@ public class WriterProxy {
     writers.put(char[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forChar));
     writers.put(long[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forLong));
     writers.put(short[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forShort));
-    writers.put(boolean[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forBoolean));
+    writers.put(
+        boolean[].class,
+        WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forBoolean));
     writers.put(float[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forFloat));
-    writers.put(double[].class, WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forDouble));
+    writers.put(
+        double[].class,
+        WriterFactory.buildFrom(int[].class, Writable.class, ArrayStructuralWritable::forDouble));
     writers.put(Integer.class, WriterFactory.buildFrom(Integer.class, Writable.class, () -> ScalarWriters.INTEGER));
     writers.put(Integer.TYPE, WriterFactory.buildFrom(Integer.TYPE, Writable.class, () -> ScalarWriters.INTEGER));
     writers.put(String.class, WriterFactory.buildFrom(String.class, Writable.class, () -> ScalarWriters.STRING));
-    writers.put(Character.class, WriterFactory.buildFrom(Character.class, Writable.class, () -> ScalarWriters.CHARACTER));
+    writers.put(
+        Character.class,
+        WriterFactory.buildFrom(Character.class, Writable.class, () -> ScalarWriters.CHARACTER));
     writers.put(Character.TYPE, WriterFactory.buildFrom(Character.TYPE, Writable.class, () -> ScalarWriters.CHARACTER));
     writers.put(Long.class, WriterFactory.buildFrom(Long.class, Writable.class, () -> ScalarWriters.LONG));
     writers.put(Long.TYPE, WriterFactory.buildFrom(Long.TYPE, Writable.class, () -> ScalarWriters.LONG));
@@ -89,16 +94,32 @@ public class WriterProxy {
     writers.put(Float.TYPE, WriterFactory.buildFrom(Float.TYPE, Writable.class, () -> ScalarWriters.FLOAT));
     writers.put(Double.class, WriterFactory.buildFrom(Double.class, Writable.class, () -> ScalarWriters.DOUBLE));
     writers.put(Double.TYPE, WriterFactory.buildFrom(Double.TYPE, Writable.class, () -> ScalarWriters.DOUBLE));
-    writers.put(byte[].class, WriterFactory.buildFrom(byte[].class, Writable.class, () -> ScalarWriters.PRIMITIVE_BLOB));
+    writers.put(
+        byte[].class,
+        WriterFactory.buildFrom(byte[].class, Writable.class, () -> ScalarWriters.PRIMITIVE_BLOB));
     writers.put(Number.class, WriterFactory.buildFrom(Number.class, Writable.class, () -> ScalarWriters.NUMBER));
-    writers.put(BigInteger.class, WriterFactory.buildFrom(BigInteger.class, Writable.class, () -> ScalarWriters.BIG_INTEGER));
-    writers.put(BigDecimal.class, WriterFactory.buildFrom(BigDecimal.class, Writable.class, () -> ScalarWriters.BIG_DECIMAL));
-    writers.put(AtomicInteger.class, WriterFactory.buildFrom(AtomicInteger.class, Writable.class, () -> ScalarWriters.ATOMIC_INTEGER));
-    writers.put(AtomicLong.class, WriterFactory.buildFrom(AtomicLong.class, Writable.class, () -> ScalarWriters.ATOMIC_LONG));
-    writers.put(AtomicBoolean.class, WriterFactory.buildFrom(AtomicBoolean.class, Writable.class, () -> ScalarWriters.ATOMIC_BOOLEAN));
-    writers.put(Value.class, WriterFactory.buildFrom(Value.class, StructuralWritable.class, ValueStructuralWritable::new));
+    writers.put(
+        BigInteger.class,
+        WriterFactory.buildFrom(BigInteger.class, Writable.class, () -> ScalarWriters.BIG_INTEGER));
+    writers.put(
+        BigDecimal.class,
+        WriterFactory.buildFrom(BigDecimal.class, Writable.class, () -> ScalarWriters.BIG_DECIMAL));
+    writers.put(
+        AtomicInteger.class,
+        WriterFactory.buildFrom(AtomicInteger.class, Writable.class, () -> ScalarWriters.ATOMIC_INTEGER));
+    writers.put(
+        AtomicLong.class,
+        WriterFactory.buildFrom(AtomicLong.class, Writable.class, () -> ScalarWriters.ATOMIC_LONG));
+    writers.put(
+        AtomicBoolean.class,
+        WriterFactory.buildFrom(AtomicBoolean.class, Writable.class, () -> ScalarWriters.ATOMIC_BOOLEAN));
+    writers.put(
+        Value.class,
+        WriterFactory.buildFrom(Value.class, StructuralWritable.class, ValueStructuralWritable::new));
     writers.put(Map.class, WriterFactory.buildFrom(Map.class, MapStructuralWritable.class, MapStructuralWritable::new));
-    writers.put(Collection.class, WriterFactory.buildFrom(Collection.class, ListStructuralWritable.class, ListStructuralWritable::new));
+    writers.put(
+        Collection.class,
+        WriterFactory.buildFrom(Collection.class, ListStructuralWritable.class, ListStructuralWritable::new));
 
     loadFromClassPath(writers);
 
@@ -115,13 +136,14 @@ public class WriterProxy {
       Class<?> targetClass = annotation.value();
 
       if (!Writable.class.isAssignableFrom(clazz)) {
-        String error = String.format("%s is annotated with @%s(%s.class) but %s does not extend %s",
+        String error = String.format(
+            "%s is annotated with @%s(%s.class) but %s does not extend %s",
             clazz.getCanonicalName(),
             AutoloadedWriter.class.getSimpleName(),
             targetClass.getCanonicalName(),
             clazz.getCanonicalName(),
             Writable.class.getSimpleName()
-        );
+                                    );
         throw new RuntimeException(error);
       }
 
@@ -137,14 +159,18 @@ public class WriterProxy {
           try {
             return (Writable<?>) constructor.newInstance();
           } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(String.format("Failed to create a new instance of writable '%s'", clazz.getCanonicalName()), e);
+            throw new RuntimeException(String.format(
+                "Failed to create a new instance of writable '%s'",
+                clazz.getCanonicalName()), e);
           }
         };
         // safety: checked that the class is assignable above
         Class<Writable<?>> typedClass = (Class<Writable<?>>) clazz;
         writers.put(targetClass, WriterFactory.buildFromAny(clazz, typedClass, supplier));
       } catch (NoSuchMethodException e) {
-        throw new RuntimeException(String.format("Writable '%s' does not contain a zero-arg constructor", clazz.getCanonicalName()), e);
+        throw new RuntimeException(String.format(
+            "Writable '%s' does not contain a zero-arg constructor",
+            clazz.getCanonicalName()), e);
       }
     }
   }
@@ -319,7 +345,9 @@ public class WriterProxy {
    * @param <E>           the type that the {@code Writable} produces.
    * @param <W>           the type of the {@code Writable}.
    */
-  public <E, W extends Writable<E>> void register(Class<E> clazz, Class<W> writableClass, Supplier<Writable<?>> supplier) {
+  public <E, W extends Writable<E>> void register(Class<E> clazz,
+      Class<W> writableClass,
+      Supplier<Writable<?>> supplier) {
     writers.put(clazz, WriterFactory.buildFrom(clazz, writableClass, supplier));
   }
 

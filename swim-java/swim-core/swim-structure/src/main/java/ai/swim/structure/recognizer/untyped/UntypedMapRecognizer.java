@@ -2,7 +2,6 @@ package ai.swim.structure.recognizer.untyped;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
-
 import java.util.HashMap;
 import java.util.Map;
 

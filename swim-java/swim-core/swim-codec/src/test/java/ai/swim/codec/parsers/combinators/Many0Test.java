@@ -3,16 +3,16 @@ package ai.swim.codec.parsers.combinators;
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import static ai.swim.codec.LambdaParser.lambda;
 import static ai.swim.codec.parsers.MapReduce.mapReduce;
 import static ai.swim.codec.parsers.combinators.Many0.many0;
 import static ai.swim.codec.parsers.text.EqChar.eqChar;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Many0Test {
 

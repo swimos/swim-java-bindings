@@ -16,7 +16,6 @@ package ai.swim.codec;
 
 import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
-
 import static ai.swim.codec.Parser.preceded;
 import static ai.swim.codec.parsers.OptParser.opt;
 import static ai.swim.codec.parsers.number.NumberParser.numericLiteral;

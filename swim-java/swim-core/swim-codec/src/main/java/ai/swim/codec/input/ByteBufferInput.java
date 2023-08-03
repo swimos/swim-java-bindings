@@ -15,7 +15,6 @@
 package ai.swim.codec.input;
 
 import ai.swim.codec.location.Location;
-
 import java.nio.ByteBuffer;
 
 public class ByteBufferInput extends Input {
@@ -122,7 +121,9 @@ public class ByteBufferInput extends Input {
       this.data = byteInput.data.position(byteInput.offset);
       this.offset = byteInput.offset;
     } else {
-      throw new UnsupportedOperationException("Cannot extend a StringInput from a: " + input.getClass().getCanonicalName());
+      throw new UnsupportedOperationException("Cannot extend a StringInput from a: " + input
+          .getClass()
+          .getCanonicalName());
     }
   }
 }

@@ -52,4 +52,14 @@ public class NativeLoader {
   private static boolean isOs(String os) {
     return OS_NAME.startsWith(os);
   }
+
+  public static void loadLibraries(String... libraries) throws IOException {
+    if (libraries == null) {
+      throw new NullPointerException();
+    }
+
+    for (String library : libraries) {
+      NativeLoader.loadLibrary(library);
+    }
+  }
 }

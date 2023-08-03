@@ -16,7 +16,6 @@ package ai.swim.codec.parsers.number;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
-
 import static ai.swim.codec.parsers.text.StringParser.decodeDigit;
 import static ai.swim.codec.parsers.text.StringParser.isDigit;
 

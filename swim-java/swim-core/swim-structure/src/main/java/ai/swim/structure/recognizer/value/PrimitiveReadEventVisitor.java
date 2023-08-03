@@ -16,7 +16,6 @@ package ai.swim.structure.recognizer.value;
 
 import ai.swim.recon.event.ReadEventVisitor;
 import ai.swim.structure.value.Value;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 

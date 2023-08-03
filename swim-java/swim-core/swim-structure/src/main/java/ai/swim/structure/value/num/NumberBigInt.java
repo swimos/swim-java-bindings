@@ -15,7 +15,6 @@
 package ai.swim.structure.value.num;
 
 import ai.swim.structure.writer.PrimitiveWriter;
-
 import java.math.BigInteger;
 import java.util.Objects;
 

@@ -19,7 +19,6 @@ import ai.swim.structure.writer.print.StructurePrinter;
 import ai.swim.structure.writer.print.strategy.PrettyPrintStrategy;
 import ai.swim.structure.writer.print.strategy.PrintStrategy;
 import ai.swim.structure.writer.proxy.WriterProxy;
-
 import java.io.StringWriter;
 import java.io.Writer;
 

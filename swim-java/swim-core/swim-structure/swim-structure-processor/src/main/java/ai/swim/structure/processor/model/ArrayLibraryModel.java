@@ -20,7 +20,11 @@ public class ArrayLibraryModel extends Model {
    * @param componentModel a model for the array's elements.
    * @param packageElement of the component type. I.e, java.lang.Integer.
    */
-  public ArrayLibraryModel(TypeMirror type, Element element, TypeMirror componentType, Model componentModel, PackageElement packageElement) {
+  public ArrayLibraryModel(TypeMirror type,
+      Element element,
+      TypeMirror componentType,
+      Model componentModel,
+      PackageElement packageElement) {
     super(type, element, packageElement);
     this.componentType = componentType;
     this.componentModel = componentModel;

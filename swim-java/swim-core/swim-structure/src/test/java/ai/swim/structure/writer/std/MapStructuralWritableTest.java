@@ -19,11 +19,9 @@ import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.value.ValueStructuralWriter;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -50,10 +48,10 @@ class MapStructuralWritableTest {
                 Item.of(Value.of("c"), Value.of(3)),
                 Item.of(Value.of("d"), Value.of(4)),
                 Item.of(Value.of("e"), Value.of(5))
-            )
-        ),
+                   )
+                     ),
         value
-    );
+                );
   }
 
   @Test
@@ -72,8 +70,8 @@ class MapStructuralWritableTest {
             Item.of(Value.of("a"), Value.ofItems(List.of(Item.valueItem(1), Item.valueItem(2), Item.valueItem(3)))),
             Item.of(Value.of("b"), Value.ofItems(List.of(Item.valueItem(4), Item.valueItem(5), Item.valueItem(6)))),
             Item.of(Value.of("c"), Value.ofItems(List.of(Item.valueItem(7), Item.valueItem(8), Item.valueItem(9))))
-        )),
+                             )),
         actual
-    );
+                );
   }
 }

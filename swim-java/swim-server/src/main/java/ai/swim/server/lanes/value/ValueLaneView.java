@@ -1,16 +1,23 @@
 package ai.swim.server.lanes.value;
 
+import ai.swim.server.lanes.LaneView;
 import ai.swim.server.lanes.lifecycle.OnEvent;
 import ai.swim.server.lanes.lifecycle.OnSet;
 import ai.swim.structure.Form;
 
-public final class ValueLaneView<T> implements ValueLane<T> {
+public final class ValueLaneView<T> extends LaneView implements ValueLane<T> {
+  private final Form<T> form;
   private OnSet<T> onSet;
   private OnEvent<T> onEvent;
-  private final Form<T> form;
+  private ValueLaneModel<T> model;
 
   public ValueLaneView(Form<T> form) {
     this.form = form;
+  }
+
+  @SuppressWarnings("unchecked")
+  public void setModel(ValueLaneModel<?> model) {
+    this.model = (ValueLaneModel<T>) model;
   }
 
   @Override
@@ -31,36 +38,33 @@ public final class ValueLaneView<T> implements ValueLane<T> {
   }
 
   @Override
-  public void trace(Object message) {
-    throw new AssertionError();
+  public void onSet(T oldValue, T newValue) {
+    if (onSet != null) {
+      onSet.onSet(oldValue, newValue);
+    }
   }
 
   @Override
-  public void debug(Object message) {
-    throw new AssertionError();
+  public void onEvent(T value) {
+    if (onEvent != null) {
+      onEvent.onEvent(value);
+    }
   }
 
   @Override
-  public void info(Object message) {
-    throw new AssertionError();
+  public void set(T to) {
+    if (model != null) {
+      model.set(to);
+    }
   }
 
   @Override
-  public void warn(Object message) {
-    throw new AssertionError();
+  public T get() {
+    if (model != null) {
+      return model.get();
+    } else {
+      return null;
+    }
   }
 
-  @Override
-  public void error(Object message) {
-    throw new AssertionError();
-  }
-
-  @Override
-  public void fail(Object message) {
-    throw new AssertionError();
-  }
-
-  public Form<T> getForm() {
-    return form;
-  }
 }

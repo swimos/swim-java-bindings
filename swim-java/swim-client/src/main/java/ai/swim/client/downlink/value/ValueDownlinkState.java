@@ -24,7 +24,6 @@ import ai.swim.codec.input.Input;
 import ai.swim.structure.Form;
 import ai.swim.structure.FormParser;
 import ai.swim.structure.recognizer.RecognizerException;
-
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 

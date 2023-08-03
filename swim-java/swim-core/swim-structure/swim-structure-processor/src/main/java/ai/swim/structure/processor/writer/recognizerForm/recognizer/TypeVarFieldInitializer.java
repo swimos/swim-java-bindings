@@ -18,12 +18,10 @@ import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import com.squareup.javapoet.CodeBlock;
-
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.FIELD_RECOGNIZING_BUILDER_CLASS;
 
 /**
@@ -48,6 +46,10 @@ public class TypeVarFieldInitializer extends Emitter {
     TypeElement fieldRecognizingBuilder = elementUtils.getTypeElement(FIELD_RECOGNIZING_BUILDER_CLASS);
     DeclaredType typedBuilder = typeUtils.getDeclaredType(fieldRecognizingBuilder, fieldModel.type());
 
-    return CodeBlock.builder().add("new $T($L.build())", typedBuilder, context.getFormatter().typeParameterName(fieldModel.type().toString())).build().toString();
+    return CodeBlock
+        .builder()
+        .add("new $T($L.build())", typedBuilder, context.getFormatter().typeParameterName(fieldModel.type().toString()))
+        .build()
+        .toString();
   }
 }

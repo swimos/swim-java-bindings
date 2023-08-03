@@ -17,7 +17,6 @@ package ai.swim.structure.writer.std;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.proxy.WriterTypeParameter;
-
 import java.util.List;
 
 /**

@@ -1,7 +1,6 @@
 package ai.swim.structure.processor.schema;
 
 import ai.swim.structure.processor.model.FieldModel;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

@@ -47,16 +47,12 @@ use tokio::task::JoinHandle;
 pub use client_runtime::ClientConfig;
 use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
 use jvm_sys::vm::utils::VmExt;
-use jvm_sys::vm::{with_local_frame_null, SpannedError};
+use jvm_sys::vm::{with_local_frame_null, SharedVm, SpannedError};
 
 pub use macros::*;
 pub mod downlink;
 mod macros;
 pub use macros::*;
-
-const REMOTE_BUFFER_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(64) };
-
-pub type SharedVm = Arc<JavaVM>;
 
 pub struct SwimClient {
     error_mode: ErrorHandlingConfig,
@@ -303,7 +299,7 @@ fn spawn_monitor(
 }
 
 fn notify_stopped(env: &JNIEnv, stopped_barrier: GlobalRef) {
-    let mut countdown = JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
+    let countdown = JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
         .initialise(env)
         .expect("Failed to initialise countdown latch method");
 

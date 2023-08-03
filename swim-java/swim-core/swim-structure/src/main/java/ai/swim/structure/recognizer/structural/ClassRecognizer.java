@@ -7,7 +7,6 @@ import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.structural.tag.EnumerationTagSpec;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import ai.swim.structure.recognizer.structural.tag.TagSpec;
-
 import java.util.BitSet;
 
 public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
@@ -18,7 +17,11 @@ public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
   protected int index;
   protected State state;
 
-  protected ClassRecognizer(TagSpec tagSpec, RecognizingBuilder<T> builder, int fieldCount, IndexFn<Key> indexFn, State state) {
+  protected ClassRecognizer(TagSpec tagSpec,
+      RecognizingBuilder<T> builder,
+      int fieldCount,
+      IndexFn<Key> indexFn,
+      State state) {
     this.tagSpec = tagSpec;
     this.builder = builder;
     this.bitSet = new BitSet(fieldCount);
@@ -71,7 +74,9 @@ public abstract class ClassRecognizer<State, Key, T> extends Recognizer<T> {
 
     if (this.tagSpec.isFixed()) {
       FixedTagSpec fixedTag = (FixedTagSpec) this.tagSpec;
-      return Recognizer.error(new RuntimeException(String.format("Expected an attribute with a name of \"%s\"", fixedTag.getTag())));
+      return Recognizer.error(new RuntimeException(String.format(
+          "Expected an attribute with a name of \"%s\"",
+          fixedTag.getTag())));
     } else {
       return Recognizer.error(new RuntimeException("Expected an attribute"));
     }

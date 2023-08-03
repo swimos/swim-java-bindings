@@ -17,7 +17,6 @@ package ai.swim.structure.processor;
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.JavaFileObjects;
 import org.junit.jupiter.api.Test;
-
 import static com.google.testing.compile.CompilationSubject.assertThat;
 import static com.google.testing.compile.Compiler.javac;
 
@@ -38,7 +37,8 @@ public class TestProcessor {
   @Test
   void tagOnEnumRoot() {
     assertThat(compile("TagOnEnumRoot.java"))
-        .hadErrorContaining("ai.swim.structure.annotations.AutoForm.Tag cannot be used on enumerations, only on constants");
+        .hadErrorContaining(
+            "ai.swim.structure.annotations.AutoForm.Tag cannot be used on enumerations, only on constants");
   }
 
   @Test
@@ -68,7 +68,8 @@ public class TestProcessor {
   @Test
   void badSetter() {
     assertThat(compile("BadSetter.java"))
-        .hadErrorContaining("setter for field 'a' accepts an incorrect type. Cause: Expected type: 'float', found: 'int'");
+        .hadErrorContaining(
+            "setter for field 'a' accepts an incorrect type. Cause: Expected type: 'float', found: 'int'");
   }
 
   @Test
@@ -116,7 +117,8 @@ public class TestProcessor {
   @Test
   void badSubType4() {
     assertThat(compile("BadSubType4.java"))
-        .hadErrorContaining("Class extends from 'BadSubType4.Parent' that is not annotated with @AutoForm. Either annotate it or manually implement a form");
+        .hadErrorContaining(
+            "Class extends from 'BadSubType4.Parent' that is not annotated with @AutoForm. Either annotate it or manually implement a form");
   }
 
   @Test

@@ -26,8 +26,14 @@ import ai.swim.structure.processor.writer.recognizerForm.builder.FieldInitialize
 import ai.swim.structure.processor.writer.recognizerForm.builder.header.HeaderIndexFn;
 import ai.swim.structure.processor.writer.recognizerForm.recognizer.Recognizer;
 import ai.swim.structure.processor.writer.recognizerForm.recognizer.TypeVarFieldInitializer;
-import com.squareup.javapoet.*;
-
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
@@ -39,7 +45,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import static ai.swim.structure.processor.writer.WriterUtils.typeParametersToTypeVariable;
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.RECOGNIZING_BUILDER_CLASS;
 import static ai.swim.structure.processor.writer.recognizerForm.RecognizerFormWriter.writeGenericRecognizerConstructor;
@@ -51,7 +56,10 @@ public class ClassBuilder extends Builder {
 
   private final Recognizer.Transposition transposition;
 
-  public ClassBuilder(ClassLikeModel model, PartitionedFields fields, RecognizerContext context, Recognizer.Transposition transposition) {
+  public ClassBuilder(ClassLikeModel model,
+      PartitionedFields fields,
+      RecognizerContext context,
+      Recognizer.Transposition transposition) {
     super(model, fields, context);
     this.transposition = transposition;
   }
@@ -86,7 +94,10 @@ public class ClassBuilder extends Builder {
     if (partitionedFields.hasHeaderFields()) {
       RecognizerNameFormatter formatter = context.getFormatter();
       HashSet<TypeMirror> headerTypeParameters = partitionedFields.headerSpec.typeParameters();
-      String typeParameters = headerTypeParameters.stream().map(ty -> formatter.typeParameterName(ty.toString())).collect(Collectors.joining(", "));
+      String typeParameters = headerTypeParameters
+          .stream()
+          .map(ty -> formatter.typeParameterName(ty.toString()))
+          .collect(Collectors.joining(", "));
 
       /*
        Build header builder. E.g:
@@ -113,12 +124,12 @@ public class ClassBuilder extends Builder {
           typeParameters,
           partitionedFields.headerSpec.headerFields.size(),
           new HeaderIndexFn(partitionedFields, context)
-      ));
+                           ));
     }
 
     return new ArrayList<>(List.of(builder.addParameters(parameters)
-        .addCode(body.build())
-        .build()));
+                                       .addCode(body.build())
+                                       .build()));
   }
 
   @Override
@@ -138,7 +149,10 @@ public class ClassBuilder extends Builder {
    */
   private CodeBlock initialiseTypeVarField(RecognizerContext context, FieldModel fieldModel) {
     String fieldBuilderName = context.getFormatter().fieldBuilderName(fieldModel.getName().toString());
-    return CodeBlock.builder().addStatement("this.$L = $L", fieldBuilderName, new TypeVarFieldInitializer(context, fieldModel)).build();
+    return CodeBlock
+        .builder()
+        .addStatement("this.$L = $L", fieldBuilderName, new TypeVarFieldInitializer(context, fieldModel))
+        .build();
   }
 
   private CodeBlock initialiseParameterisedField(RecognizerContext context, FieldModel fieldModel) {
@@ -166,7 +180,12 @@ public class ClassBuilder extends Builder {
     TypeName targetType = ClassName.bestGuess(formatter.headerClassName());
 
     if (!headerTypeParameters.isEmpty()) {
-      targetType = ParameterizedTypeName.get((ClassName) targetType, headerTypeParameters.stream().map(TypeName::get).collect(Collectors.toList()).toArray(TypeName[]::new));
+      targetType = ParameterizedTypeName.get((ClassName) targetType,
+                                             headerTypeParameters
+                                                 .stream()
+                                                 .map(TypeName::get)
+                                                 .collect(Collectors.toList())
+                                                 .toArray(TypeName[]::new));
     }
 
     ClassName recognizingBuilder = ClassName.get(elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS));
@@ -176,7 +195,7 @@ public class ClassBuilder extends Builder {
         typedBuilder,
         formatter.headerBuilderFieldName(),
         Modifier.PRIVATE
-    ).build();
+                            ).build();
   }
 
   @Override

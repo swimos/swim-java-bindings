@@ -1,8 +1,12 @@
 package ai.swim.structure.processor.model;
 
 import ai.swim.structure.processor.writer.Writer;
-
-import javax.lang.model.element.*;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeMirror;
 import java.io.IOException;
 import java.util.ArrayList;

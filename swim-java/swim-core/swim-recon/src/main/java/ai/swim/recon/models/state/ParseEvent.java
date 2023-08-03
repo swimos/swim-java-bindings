@@ -15,7 +15,6 @@
 package ai.swim.recon.models.state;
 
 import ai.swim.recon.models.ParseState;
-
 import java.util.Objects;
 
 public class ParseEvent extends Action {

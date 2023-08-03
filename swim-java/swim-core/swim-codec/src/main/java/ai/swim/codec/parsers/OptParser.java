@@ -16,7 +16,6 @@ package ai.swim.codec.parsers;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
-
 import java.util.Optional;
 
 public class OptParser<T> extends Parser<Optional<T>> {

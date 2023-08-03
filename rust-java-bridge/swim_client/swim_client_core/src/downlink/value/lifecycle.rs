@@ -18,7 +18,8 @@ use jni::sys::jobject;
 use jni::JNIEnv;
 use jvm_sys::EnvExt;
 
-use crate::downlink::vtable::{void_fn, JavaMethod, CONSUMER_ACCEPT, ON_LINKED, ON_UNLINKED};
+use crate::downlink::vtable::{CONSUMER_ACCEPT, ON_LINKED, ON_UNLINKED};
+use jvm_sys::vm::method::{void_fn, JavaCallback};
 use jvm_sys::vm::{jni_call, SpannedError};
 
 pub struct ValueDownlinkLifecycle {
@@ -88,11 +89,11 @@ impl ValueDownlinkLifecycle {
 }
 
 pub struct ValueDownlinkVTable {
-    on_linked: JavaMethod,
-    on_synced: JavaMethod,
-    on_event: JavaMethod,
-    on_set: JavaMethod,
-    on_unlinked: JavaMethod,
+    on_linked: JavaCallback,
+    on_synced: JavaCallback,
+    on_event: JavaCallback,
+    on_set: JavaCallback,
+    on_unlinked: JavaCallback,
 }
 
 impl ValueDownlinkVTable {
@@ -105,11 +106,11 @@ impl ValueDownlinkVTable {
         on_unlinked: jobject,
     ) -> Result<ValueDownlinkVTable, Error> {
         Ok(ValueDownlinkVTable {
-            on_linked: JavaMethod::for_method(&env, on_linked, ON_LINKED)?,
-            on_synced: JavaMethod::for_method(&env, on_synced, CONSUMER_ACCEPT)?,
-            on_event: JavaMethod::for_method(&env, on_event, CONSUMER_ACCEPT)?,
-            on_set: JavaMethod::for_method(&env, on_set, CONSUMER_ACCEPT)?,
-            on_unlinked: JavaMethod::for_method(&env, on_unlinked, ON_UNLINKED)?,
+            on_linked: JavaCallback::for_method(&env, on_linked, ON_LINKED)?,
+            on_synced: JavaCallback::for_method(&env, on_synced, CONSUMER_ACCEPT)?,
+            on_event: JavaCallback::for_method(&env, on_event, CONSUMER_ACCEPT)?,
+            on_set: JavaCallback::for_method(&env, on_set, CONSUMER_ACCEPT)?,
+            on_unlinked: JavaCallback::for_method(&env, on_unlinked, ON_UNLINKED)?,
         })
     }
 

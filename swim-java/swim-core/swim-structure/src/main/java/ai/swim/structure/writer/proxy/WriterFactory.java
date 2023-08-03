@@ -18,7 +18,6 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.recognizer.RecognizerException;
 import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.Writable;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.function.Supplier;
@@ -49,7 +48,10 @@ class WriterFactory<T> {
    */
   private final Class<T> targetClass;
 
-  WriterFactory(Supplier<Writable<?>> supplier, Constructor<Writable<?>> typedConstructor, boolean isStructural, Class<T> targetClass) {
+  WriterFactory(Supplier<Writable<?>> supplier,
+      Constructor<Writable<?>> typedConstructor,
+      boolean isStructural,
+      Class<T> targetClass) {
     this.supplier = supplier;
     this.typedConstructor = typedConstructor;
     this.isStructural = isStructural;
@@ -67,7 +69,9 @@ class WriterFactory<T> {
    * @return a factory for {@code Writable<T>}.
    */
   @SuppressWarnings("unchecked")
-  public static <T, W extends Writable<T>> WriterFactory<T> buildFrom(Class<T> targetClass, Class<W> writerClass, Supplier<Writable<?>> supplier) {
+  public static <T, W extends Writable<T>> WriterFactory<T> buildFrom(Class<T> targetClass,
+      Class<W> writerClass,
+      Supplier<Writable<?>> supplier) {
     Constructor<Writable<?>> typedConstructor = null;
     boolean isStructural = false;
 
@@ -93,7 +97,9 @@ class WriterFactory<T> {
    * @return a factory for {@code Writable<T>}.
    */
   @SuppressWarnings({"rawtypes", "unchecked"})
-  public static WriterFactory buildFromAny(Class<?> targetClass, Class<? extends Writable> clazz, Supplier<Writable<?>> supplier) {
+  public static WriterFactory buildFromAny(Class<?> targetClass,
+      Class<? extends Writable> clazz,
+      Supplier<Writable<?>> supplier) {
     return buildFrom(targetClass, clazz, supplier);
   }
 

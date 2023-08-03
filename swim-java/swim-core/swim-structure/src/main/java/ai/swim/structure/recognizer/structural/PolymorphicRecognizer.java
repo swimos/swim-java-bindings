@@ -2,11 +2,9 @@ package ai.swim.structure.recognizer.structural;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class PolymorphicRecognizer<T> extends StructuralRecognizer<T> {
 

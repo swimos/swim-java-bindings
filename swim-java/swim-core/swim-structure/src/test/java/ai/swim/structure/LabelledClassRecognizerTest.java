@@ -6,7 +6,6 @@ import ai.swim.structure.recognizer.structural.labelled.LabelledClassRecognizer;
 import ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,20 +92,24 @@ class LabelledClassRecognizerTest {
     private Recognizer<InnerPropClass> recognizer;
 
     public InnerClassRecognizer() {
-      this.recognizer = new LabelledClassRecognizer<>(new FixedTagSpec(InnerPropClass.class.getSimpleName()), new InnerPropClassBuilder(), 2, (key) -> {
-        if (key.isItem()) {
-          LabelledFieldKey.ItemFieldKey itemFieldKey = (LabelledFieldKey.ItemFieldKey) key;
-          switch (itemFieldKey.getName()) {
-            case "a":
-              return 0;
-            case "b":
-              return 1;
-            default:
-              throw new RuntimeException("Unexpected key: " + key);
-          }
-        }
-        return null;
-      });
+      this.recognizer = new LabelledClassRecognizer<>(
+          new FixedTagSpec(InnerPropClass.class.getSimpleName()),
+          new InnerPropClassBuilder(),
+          2,
+          (key) -> {
+            if (key.isItem()) {
+              LabelledFieldKey.ItemFieldKey itemFieldKey = (LabelledFieldKey.ItemFieldKey) key;
+              switch (itemFieldKey.getName()) {
+                case "a":
+                  return 0;
+                case "b":
+                  return 1;
+                default:
+                  throw new RuntimeException("Unexpected key: " + key);
+              }
+            }
+            return null;
+          });
     }
 
     @Override
@@ -259,20 +262,24 @@ class LabelledClassRecognizerTest {
     public Recognizer<OuterPropClass> recognizer;
 
     public OuterClassRecognizer() {
-      this.recognizer = new LabelledClassRecognizer<>(new FixedTagSpec(OuterPropClass.class.getSimpleName()), new OuterPropClassBuilder(), 2, (key) -> {
-        if (key.isItem()) {
-          LabelledFieldKey.ItemFieldKey itemFieldKey = (LabelledFieldKey.ItemFieldKey) key;
-          switch (itemFieldKey.getName()) {
-            case "c":
-              return 0;
-            case "d":
-              return 1;
-            default:
-              throw new RuntimeException("Unexpected key: " + key);
-          }
-        }
-        return null;
-      });
+      this.recognizer = new LabelledClassRecognizer<>(
+          new FixedTagSpec(OuterPropClass.class.getSimpleName()),
+          new OuterPropClassBuilder(),
+          2,
+          (key) -> {
+            if (key.isItem()) {
+              LabelledFieldKey.ItemFieldKey itemFieldKey = (LabelledFieldKey.ItemFieldKey) key;
+              switch (itemFieldKey.getName()) {
+                case "c":
+                  return 0;
+                case "d":
+                  return 1;
+                default:
+                  throw new RuntimeException("Unexpected key: " + key);
+              }
+            }
+            return null;
+          });
     }
 
     private OuterClassRecognizer(Recognizer<OuterPropClass> recognizer) {

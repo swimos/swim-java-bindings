@@ -27,7 +27,6 @@ import ai.swim.structure.Form;
 import ai.swim.structure.FormParser;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerException;
-
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;

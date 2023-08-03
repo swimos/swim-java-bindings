@@ -183,7 +183,7 @@ client_fn! {
             .unwrap();
         let vm = handle.vm();
 
-        let mut countdown =
+        let  countdown =
             JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
                 .initialise(&env)
                 .unwrap();
@@ -284,12 +284,12 @@ client_fn! {
             .unwrap();
         let vm = handle.vm();
 
-        let mut countdown =
+        let  countdown =
             JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
                 .initialise(&env)
                 .unwrap();
 
-        let mut countdown_latch =
+        let  countdown_latch =
             move |env: &JNIEnv, global_ref| match countdown.invoke(env, &global_ref, &[]) {
                 Ok(_) => {}
                 Err(Error::JavaException) => {

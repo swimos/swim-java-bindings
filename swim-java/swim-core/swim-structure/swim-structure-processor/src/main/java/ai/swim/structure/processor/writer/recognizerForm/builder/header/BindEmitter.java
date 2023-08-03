@@ -22,7 +22,6 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
-
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -67,7 +66,9 @@ public class BindEmitter extends Emitter {
     if (typeParameters.isEmpty()) {
       classType = ClassName.bestGuess(formatter.headerCanonicalName());
     } else {
-      classType = ParameterizedTypeName.get(ClassName.bestGuess(formatter.headerCanonicalName()), typeParameters.toArray(TypeName[]::new));
+      classType = ParameterizedTypeName.get(
+          ClassName.bestGuess(formatter.headerCanonicalName()),
+          typeParameters.toArray(TypeName[]::new));
     }
 
     CodeBlock.Builder body = CodeBlock.builder();

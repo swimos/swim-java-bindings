@@ -12,14 +12,21 @@ import ai.swim.recon.models.state.ParseEvent;
 import ai.swim.recon.models.state.PushAttrNewRec;
 import ai.swim.recon.result.ParseResult;
 import ai.swim.recon.result.ResultError;
-
-import java.util.*;
-
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
 import static ai.swim.codec.Parser.preceded;
 import static ai.swim.codec.parsers.combinators.Alt.alt;
 import static ai.swim.codec.parsers.text.Multispace0.multispace0;
 import static ai.swim.codec.parsers.text.StringExt.space0;
-import static ai.swim.recon.ReconParserParts.*;
+import static ai.swim.recon.ReconParserParts.parseAfterAttr;
+import static ai.swim.recon.ReconParserParts.parseAfterSlot;
+import static ai.swim.recon.ReconParserParts.parseAfterValue;
+import static ai.swim.recon.ReconParserParts.parseInit;
+import static ai.swim.recon.ReconParserParts.parseNotAfterItem;
+import static ai.swim.recon.ReconParserParts.parseSlotValue;
 
 /**
  * An incremental recon parser.
@@ -39,7 +46,12 @@ public final class ReconParser {
     this.clearIfNone = false;
   }
 
-  private ReconParser(Input input, Deque<ParseState> state, Parser<ParserTransition> current, PendingEvents pending, boolean complete, boolean clearIfNone) {
+  private ReconParser(Input input,
+      Deque<ParseState> state,
+      Parser<ParserTransition> current,
+      PendingEvents pending,
+      boolean complete,
+      boolean clearIfNone) {
     this.input = input;
     this.state = state;
     this.current = current;
@@ -61,7 +73,7 @@ public final class ReconParser {
           }
         },
         preceded(multispace0(), parseInit())
-    );
+              );
   }
 
   /**

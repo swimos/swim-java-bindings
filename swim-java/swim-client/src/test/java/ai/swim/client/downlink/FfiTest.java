@@ -17,7 +17,6 @@ package ai.swim.client.downlink;
 import ai.swim.concurrent.Trigger;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class FfiTest {

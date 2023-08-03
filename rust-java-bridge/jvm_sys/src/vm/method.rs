@@ -12,11 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use jni::errors::Error as JError;
 use jni::errors::Error::WrongJValueType;
-use jni::objects::{JMethodID, JObject, JString, JValue};
+use jni::errors::{Error as JError, Error};
+use jni::objects::{GlobalRef, JMethodID, JObject, JString, JValue};
 use jni::signature::TypeSignature;
+use jni::sys::jobject;
 use jni::JNIEnv;
+use parking_lot::Mutex;
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+use std::marker::PhantomData;
+use std::sync::Arc;
+
+use crate::vm::utils::new_global_ref;
+use crate::vm::with_local_frame_null;
 
 /// An initialised Java Object Method mirror that contains a parsed type signature and a method
 /// ID.
@@ -43,7 +52,7 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
     type Output = JValue<'j>;
 
     fn invoke<O>(
-        &mut self,
+        &self,
         env: &'j JNIEnv,
         object: O,
         args: &[JValue<'j>],
@@ -65,7 +74,17 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+impl From<(&'static str, &'static str, &'static str)> for JavaObjectMethodDef {
+    fn from(value: (&'static str, &'static str, &'static str)) -> Self {
+        JavaObjectMethodDef {
+            class: value.0,
+            name: value.1,
+            signature: value.2,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct JavaObjectMethodDef {
     class: &'static str,
     name: &'static str,
@@ -83,18 +102,6 @@ impl JavaObjectMethodDef {
             name,
             signature,
         }
-    }
-
-    pub const fn class(&self) -> &str {
-        self.class
-    }
-
-    pub const fn name(&self) -> &str {
-        self.name
-    }
-
-    pub const fn signature(&self) -> &str {
-        self.signature
     }
 
     pub fn initialise(&self, env: &JNIEnv) -> Result<InitialisedJavaObjectMethod, JError> {
@@ -115,9 +122,10 @@ impl JavaObjectMethodDef {
 }
 
 pub trait JavaObjectMethod<'j> {
-    type Output: 'j;
+    type Output;
+
     fn invoke<O>(
-        &mut self,
+        &self,
         env: &'j JNIEnv,
         object: O,
         args: &[JValue<'j>],
@@ -127,32 +135,57 @@ pub trait JavaObjectMethod<'j> {
 }
 
 pub trait JavaMethodExt<'j>: JavaObjectMethod<'j> {
-    fn string<'m>(&'m mut self) -> MoldString<'m, Self>
+    fn string<'m>(&'m self) -> MoldString<'m, Self>
     where
         Self: Sized,
     {
         MoldString { method: self }
     }
 
-    fn void<'m>(&'m mut self) -> MoldVoid<'m, Self>
+    fn void<'m>(&'m self) -> MoldVoid<'m, Self>
     where
         Self: Sized,
     {
         MoldVoid { method: self }
     }
 
-    fn null<'m>(&'m mut self) -> MoldNull<'m, Self>
+    fn null<'m>(&'m self) -> MoldNull<'m, Self>
     where
         Self: Sized,
     {
         MoldNull { method: self }
+    }
+
+    fn object<'m>(&'m self) -> MoldObject<'m, Self>
+    where
+        Self: Sized,
+    {
+        MoldObject { method: self }
+    }
+
+    fn global_ref<'m>(&'m self) -> MoldGlobalRef<'m, Self>
+    where
+        Self: Sized,
+    {
+        MoldGlobalRef { method: self }
+    }
+
+    fn array<'m, A>(&'m self) -> MoldArray<'m, Self, A>
+    where
+        Self: Sized,
+        A: JavaArrayType,
+    {
+        MoldArray {
+            method: self,
+            _at: PhantomData::default(),
+        }
     }
 }
 
 impl<'j, M> JavaMethodExt<'j> for M where M: JavaObjectMethod<'j> {}
 
 pub struct MoldString<'m, M> {
-    method: &'m mut M,
+    method: &'m M,
 }
 
 impl<'j, 'm, M> JavaObjectMethod<'j> for MoldString<'m, M>
@@ -162,7 +195,7 @@ where
     type Output = String;
 
     fn invoke<O>(
-        &mut self,
+        &self,
         env: &'j JNIEnv,
         object: O,
         args: &[JValue<'j>],
@@ -181,7 +214,7 @@ where
 }
 
 pub struct MoldVoid<'m, M> {
-    method: &'m mut M,
+    method: &'m M,
 }
 
 impl<'j, 'm, M> JavaObjectMethod<'j> for MoldVoid<'m, M>
@@ -191,7 +224,7 @@ where
     type Output = ();
 
     fn invoke<O>(
-        &mut self,
+        &self,
         env: &'j JNIEnv,
         object: O,
         args: &[JValue<'j>],
@@ -205,7 +238,7 @@ where
 }
 
 pub struct Mold<'m, 'j: 'm, M, T> {
-    method: &'m mut M,
+    method: &'m M,
     func: fn(&JNIEnv<'j>, JValue<'j>) -> Result<T, JError>,
 }
 
@@ -217,7 +250,7 @@ where
     type Output = T;
 
     fn invoke<O>(
-        &mut self,
+        &self,
         env: &'j JNIEnv,
         object: O,
         args: &[JValue<'j>],
@@ -232,7 +265,7 @@ where
 }
 
 pub struct MoldNull<'m, M> {
-    method: &'m mut M,
+    method: &'m M,
 }
 
 impl<'m, 'j, M> JavaObjectMethod<'j> for MoldNull<'m, M>
@@ -242,7 +275,7 @@ where
     type Output = ();
 
     fn invoke<O>(
-        &mut self,
+        &self,
         env: &'j JNIEnv,
         object: O,
         args: &[JValue<'j>],
@@ -260,6 +293,199 @@ where
                 JValue::Object(ptr).type_name(),
             )),
             Err(e) => Err(e),
+        }
+    }
+}
+
+pub struct MoldObject<'m, M> {
+    method: &'m M,
+}
+
+impl<'m, 'j, M> JavaObjectMethod<'j> for MoldObject<'m, M>
+where
+    M: JavaObjectMethod<'j, Output = JValue<'j>>,
+{
+    type Output = JObject<'j>;
+
+    fn invoke<O>(
+        &self,
+        env: &'j JNIEnv,
+        object: O,
+        args: &[JValue<'j>],
+    ) -> Result<Self::Output, JError>
+    where
+        O: Into<JObject<'j>>,
+    {
+        let MoldObject { method } = self;
+        let value = method.invoke(env, object, args)?;
+
+        match value.l() {
+            Ok(ptr) if ptr.is_null() => Err(WrongJValueType(
+                "JObject == null",
+                JValue::Object(ptr).type_name(),
+            )),
+            Ok(ptr) => Ok(ptr),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+pub struct MoldGlobalRef<'m, M> {
+    method: &'m M,
+}
+
+impl<'m, 'j, M> JavaObjectMethod<'j> for MoldGlobalRef<'m, M>
+where
+    M: JavaObjectMethod<'j, Output = JObject<'j>>,
+{
+    type Output = GlobalRef;
+
+    fn invoke<O>(
+        &self,
+        env: &'j JNIEnv,
+        object: O,
+        args: &[JValue<'j>],
+    ) -> Result<Self::Output, JError>
+    where
+        O: Into<JObject<'j>>,
+    {
+        let MoldGlobalRef { method } = self;
+        let value = method.invoke(env, object, args)?;
+        env.new_global_ref(value)
+    }
+}
+
+pub trait JavaArrayType {
+    type ArrayType;
+
+    fn mold(env: &JNIEnv, obj: JObject) -> Result<Self::ArrayType, JError>;
+}
+
+pub struct ByteArray;
+
+impl JavaArrayType for ByteArray {
+    type ArrayType = Vec<u8>;
+
+    fn mold(env: &JNIEnv, obj: JObject) -> Result<Self::ArrayType, Error> {
+        env.convert_byte_array(obj.into_raw())
+    }
+}
+
+pub struct MoldArray<'m, M, A> {
+    method: &'m M,
+    _at: PhantomData<A>,
+}
+
+impl<'m, 'j, M, A> JavaObjectMethod<'j> for MoldArray<'m, M, A>
+where
+    M: JavaObjectMethod<'j, Output = JObject<'j>>,
+    A: JavaArrayType,
+{
+    type Output = A::ArrayType;
+
+    fn invoke<O>(
+        &self,
+        env: &'j JNIEnv,
+        object: O,
+        args: &[JValue<'j>],
+    ) -> Result<Self::Output, JError>
+    where
+        O: Into<JObject<'j>>,
+    {
+        let MoldArray { method, .. } = self;
+        let value = method.invoke(env, object, args)?;
+        A::mold(env, value)
+    }
+}
+
+/// A Java callback that invokes an optionally-null functional interface.
+pub struct JavaCallback {
+    /// A pointer to the functional interface.
+    ptr: Option<GlobalRef>,
+    /// The method definition/signature.
+    def: MethodDefinition,
+}
+
+#[derive(Debug)]
+pub enum MethodDefinition {
+    Unit(JavaObjectMethodDef),
+    Init(InitialisedJavaObjectMethod),
+}
+
+impl JavaCallback {
+    pub fn for_method(
+        env: &JNIEnv,
+        ptr: jobject,
+        method: JavaObjectMethodDef,
+    ) -> Result<JavaCallback, Error> {
+        Ok(JavaCallback {
+            ptr: new_global_ref(env, ptr)?,
+            def: MethodDefinition::Unit(method),
+        })
+    }
+
+    pub fn execute<'j, F>(&mut self, env: &'j JNIEnv, f: F) -> Result<(), Error>
+    where
+        F: FnOnce(&mut InitialisedJavaObjectMethod, JObject) -> Result<(), Error>,
+    {
+        let JavaCallback { ptr, def } = self;
+        match ptr {
+            Some(ptr) => match def {
+                MethodDefinition::Unit(inner) => {
+                    let mut initialised = inner.initialise(env)?;
+                    let result =
+                        with_local_frame_null(env, None, || f(&mut initialised, ptr.as_obj()));
+                    *def = MethodDefinition::Init(initialised);
+                    result
+                }
+                MethodDefinition::Init(inner) => {
+                    with_local_frame_null(env, None, || f(inner, ptr.as_obj()))
+                }
+            },
+            None => Ok(()),
+        }
+    }
+}
+
+pub fn void_fn(env: &JNIEnv, ptr: &mut JavaCallback, args: &[JValue<'_>]) -> Result<(), Error> {
+    ptr.execute(env, |init, obj| init.void().invoke(env, obj, args))
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct MethodResolver {
+    inner: Arc<Mutex<ResolverInner>>,
+}
+
+impl MethodResolver {
+    pub fn resolve(
+        &self,
+        env: &JNIEnv,
+        def: impl Into<JavaObjectMethodDef>,
+    ) -> InitialisedJavaObjectMethod {
+        let guard = &mut *self.inner.lock();
+        guard.resolve(env, def.into())
+    }
+}
+
+#[derive(Debug, Default)]
+struct ResolverInner {
+    resolved: HashMap<JavaObjectMethodDef, InitialisedJavaObjectMethod>,
+}
+
+impl ResolverInner {
+    pub fn resolve(
+        &mut self,
+        env: &JNIEnv,
+        def: JavaObjectMethodDef,
+    ) -> InitialisedJavaObjectMethod {
+        match self.resolved.entry(def) {
+            Entry::Occupied(entry) => entry.get().clone(),
+            Entry::Vacant(entry) => {
+                let initialised = def
+                    .initialise(env)
+                    .expect("Failed to initialise Java Object Method Definition");
+                entry.insert(initialised).clone()
+            }
         }
     }
 }

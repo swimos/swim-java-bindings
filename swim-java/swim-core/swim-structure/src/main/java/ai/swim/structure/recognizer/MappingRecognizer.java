@@ -1,7 +1,6 @@
 package ai.swim.structure.recognizer;
 
 import ai.swim.recon.event.ReadEvent;
-
 import java.util.function.Function;
 
 public class MappingRecognizer<I, O> extends Recognizer<O> {

@@ -15,10 +15,8 @@
 package ai.swim.client.downlink.map;
 
 import org.junit.jupiter.api.Test;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MapDownlinkStateTest {
@@ -27,7 +25,7 @@ class MapDownlinkStateTest {
   void drop() {
     HashMap<String, String> init = new HashMap<>(Map.of(
         "a", "a", "b", "b", "c", "c"
-    ));
+                                                       ));
     HashMap<String, String> removed = new HashMap<>();
     MapDownlinkState<String, String> state = new MapDownlinkState<>(null, null, (key, map, value) -> {
       removed.put(key, value);
@@ -44,7 +42,7 @@ class MapDownlinkStateTest {
   void take() {
     HashMap<String, String> init = new HashMap<>(Map.of(
         "a", "a", "b", "b", "c", "c", "d", "d", "e", "e"
-    ));
+                                                       ));
     HashMap<String, String> removed = new HashMap<>();
     MapDownlinkState<String, String> state = new MapDownlinkState<>(null, null, (key, map, value) -> {
       removed.put(key, value);

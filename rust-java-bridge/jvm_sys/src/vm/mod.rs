@@ -15,15 +15,23 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::io::Write;
+use std::ops::Deref;
 use std::panic::{panic_any, Location};
+use std::sync::Arc;
 use std::{fmt, panic};
 
 use jni::errors::JniError;
-use jni::objects::{GlobalRef, JObject, JString, JValue};
-use jni::JNIEnv;
+use jni::objects::{GlobalRef, JObject, JString, JThrowable, JValue};
+use jni::{JNIEnv, JavaVM};
 
 pub mod method;
 pub mod utils;
+
+pub type SharedVm = Arc<JavaVM>;
+
+const EXCEPTION_MSG: &str = "Failed to get exception message";
+const CAUSE_MSG: &str = "Failed to get exception cause";
+const STACK_TRACE_MSG: &str = "Failed to get stacktrace";
 
 enum ErrorDiscriminant {
     Exception,
@@ -141,7 +149,13 @@ where
     match (f)() {
         Ok(o) => Ok(o),
         Err(e) => match ErrorDiscriminant::from(&e) {
-            ErrorDiscriminant::Exception => Err(handle_exception(Location::caller(), env)),
+            ErrorDiscriminant::Exception => {
+                let throwable = env
+                    .exception_occurred()
+                    .expect("Failed to check if an exception has occurred");
+                env.exception_clear().expect("Failed to clear exception");
+                Err(handle_exception(throwable, Location::caller(), env))
+            }
             ErrorDiscriminant::Bug => {
                 panic!("Failed to execute JNI function. Cause: {:?}", e)
             }
@@ -152,18 +166,129 @@ where
     }
 }
 
-#[inline(never)]
-fn handle_exception(location: &'static Location, env: &JNIEnv) -> SpannedError {
-    const EXCEPTION_MSG: &str = "Failed to get exception message";
-    const CAUSE_MSG: &str = "Failed to get exception cause";
-    const STACK_TRACE_MSG: &str = "Failed to get stacktrace";
+pub enum JniErrorKind<E> {
+    Spanned(SpannedError),
+    Custom(E),
+}
 
+pub trait JavaExceptionHandler {
+    type Err;
+
+    fn inspect(
+        &self,
+        env: &JNIEnv,
+        throwable: JThrowable,
+    ) -> Result<Option<Self::Err>, jni::errors::Error>;
+}
+
+pub struct IsTypeOfExceptionHandler {
+    ty: &'static str,
+}
+
+impl IsTypeOfExceptionHandler {
+    pub fn new(ty: &'static str) -> IsTypeOfExceptionHandler {
+        IsTypeOfExceptionHandler { ty }
+    }
+}
+
+impl JavaExceptionHandler for IsTypeOfExceptionHandler {
+    type Err = String;
+
+    fn inspect(
+        &self,
+        env: &JNIEnv,
+        throwable: JThrowable,
+    ) -> Result<Option<Self::Err>, jni::errors::Error> {
+        let class = env.find_class(self.ty)?;
+        let is_assignable_from = env
+            .call_method(
+                throwable,
+                "isAssignableFrom",
+                "()Z",
+                &[JValue::Object(class.deref().clone())],
+            )?
+            .z()?;
+
+        if is_assignable_from {
+            Ok(Some(get_exception_message(env, throwable)))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+#[track_caller]
+pub fn fallible_jni_call<O, F, I>(
+    env: &JNIEnv,
+    exception_handler: I,
+    mut call: F,
+) -> Result<O, JniErrorKind<I::Err>>
+where
+    F: FnMut() -> Result<O, jni::errors::Error>,
+    I: JavaExceptionHandler,
+{
+    match (call)() {
+        Ok(o) => Ok(o),
+        Err(e) => match ErrorDiscriminant::from(&e) {
+            ErrorDiscriminant::Exception => {
+                let throwable = env
+                    .exception_occurred()
+                    .expect("Failed to check if an exception has occurred");
+                env.exception_clear().expect("Failed to clear exception");
+
+                with_local_frame_null(env, None, || {
+                    match exception_handler
+                        .inspect(env, throwable.clone())
+                        .expect("Failed inspect exception")
+                    {
+                        Some(e) => Err(JniErrorKind::Custom(e)),
+                        None => Err(JniErrorKind::Spanned(handle_exception(
+                            throwable,
+                            Location::caller(),
+                            env,
+                        ))),
+                    }
+                })
+            }
+            ErrorDiscriminant::Bug => {
+                panic!("Failed to execute JNI function. Cause: {:?}", e)
+            }
+            ErrorDiscriminant::Detached => {
+                unreachable!("Attempted to use a detached JNI interface")
+            }
+        },
+    }
+}
+
+fn get_exception_message(env: &JNIEnv, throwable: JThrowable) -> String {
+    let message = env
+        .call_method(throwable, "getMessage", "()Ljava/lang/String;", &[])
+        .expect(EXCEPTION_MSG);
+
+    match message.l() {
+        Ok(obj) => match env.get_string(JString::from(obj)) {
+            Ok(java_str) => java_str.to_str().expect(STACK_TRACE_MSG).to_string(),
+            Err(jni::errors::Error::NullPtr(_)) => "".to_string(),
+            Err(e) => {
+                panic!("{}: {:?}", EXCEPTION_MSG, e)
+            }
+        },
+        Err(_) => unreachable!(
+            "getMessage returned an incorrect type. Expected an object, got: {}",
+            message.type_name()
+        ),
+    }
+}
+
+#[inline(never)]
+fn handle_exception(
+    throwable: JThrowable,
+    location: &'static Location,
+    env: &JNIEnv,
+) -> SpannedError {
     // Unpack the exception's cause and message so that they can be returned to the callee to be
     // re-thrown as a SwimClientException.
     with_local_frame_null(env, None, || {
-        let throwable = env.exception_occurred().expect(EXCEPTION_MSG);
-        env.exception_clear().expect("Failed to clear exception");
-
         let cause = env
             .call_method(throwable, "getCause", "()Ljava/lang/Throwable;", &[])
             .expect(CAUSE_MSG);
@@ -177,29 +302,13 @@ fn handle_exception(location: &'static Location, env: &JNIEnv) -> SpannedError {
         env.exception_clear().expect("Failed to clear exception");
 
         // Fetch message in case the error handler wants to use it as part of a panic message.
-        let message = env
-            .call_method(throwable, "getMessage", "()Ljava/lang/String;", &[])
-            .expect(EXCEPTION_MSG);
-
-        let message_string = match message.l() {
-            Ok(obj) => match env.get_string(JString::from(obj)) {
-                Ok(java_str) => java_str.to_str().expect(STACK_TRACE_MSG).to_string(),
-                Err(jni::errors::Error::NullPtr(_)) => "".to_string(),
-                Err(e) => {
-                    panic!("{}: {:?}", EXCEPTION_MSG, e)
-                }
-            },
-            Err(_) => unreachable!(
-                "getMessage returned an incorrect type. Expected an object, got: {}",
-                message.type_name()
-            ),
-        };
+        let message_string = get_exception_message(env, throwable);
 
         // Get the first few lines of the stack trace in case the panic handler wants to use it as part
         // of a panic message.
         let stack_trace_obj = env
             .call_static_method(
-                "ai/swim/client/Utils",
+                "ai/swim/lang/ffi/ExceptionUtils",
                 "stackTraceString",
                 "(Ljava/lang/Throwable;)Ljava/lang/String;",
                 &[throwable.into()],

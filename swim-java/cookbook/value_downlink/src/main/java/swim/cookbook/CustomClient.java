@@ -35,10 +35,11 @@ final class CustomClient {
 
       // Here we create a ValueDownlinkBuilder to a host running at "warp://localhost:9001/" an agent of "unit/foo" and a
       // value lane of "lane" - which corresponds to UnitAgent#intLane.
-      ValueDownlinkBuilder<Integer> builder = client.valueDownlink("warp://localhost:9001/",
-                                                                   "unit/foo",
-                                                                   "lane",
-                                                                   Integer.class);
+      ValueDownlinkBuilder<Integer> builder = client.valueDownlink(
+          "warp://localhost:9001/",
+          "unit/foo",
+          "lane",
+          Integer.class);
 
       // Using this builder, we can register callbacks that will be invoked for the various lifecycle events that occur
       // when running the downlink.

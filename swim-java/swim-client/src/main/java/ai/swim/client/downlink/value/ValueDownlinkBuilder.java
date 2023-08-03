@@ -22,7 +22,6 @@ import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnSet;
 import ai.swim.client.lifecycle.OnSynced;
 import ai.swim.client.lifecycle.OnUnlinked;
-
 import java.util.Objects;
 
 public class ValueDownlinkBuilder<T> {

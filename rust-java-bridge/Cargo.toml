@@ -16,6 +16,8 @@ members = [
 ]
 
 [workspace.dependencies]
+bytebridge = { path = "bytebridge/bytebridge" }
+jvm_sys = { path = "jvm_sys" }
 jni = "0.20.0"
 tokio = "1.1.1"
 tokio-util = "0.7.4"
@@ -31,10 +33,13 @@ quote = "1.0.3"
 paste = "1.0.11"
 heck = "0.4.1"
 lazy_static = "1.4.0"
-ratchet_deflate = "0.4.0"
+ratchet_deflate = { version = "0.4.0", path = "../../ratchet/ratchet_deflate"}
 byteorder = "1.4"
 rmp = "0.8"
+tracing-subscriber = "0.3.17"
+rand = "0.8.5"
 
 [workspace.dependencies.ratchet]
 package = "ratchet_rs"
 version = "0.4.0"
+path = "../../ratchet/ratchet_rs"

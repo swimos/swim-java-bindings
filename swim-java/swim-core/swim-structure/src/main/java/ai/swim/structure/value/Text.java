@@ -15,7 +15,6 @@
 package ai.swim.structure.value;
 
 import ai.swim.structure.writer.PrimitiveWriter;
-
 import java.util.Objects;
 
 public class Text extends PrimitiveValue {

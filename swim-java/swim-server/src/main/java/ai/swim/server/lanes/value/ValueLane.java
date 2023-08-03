@@ -11,4 +11,12 @@ public interface ValueLane<T> extends Lane {
   ValueLaneView<T> onSet(OnSet<T> onSet);
 
   ValueLaneView<T> onEvent(OnEvent<T> onEvent);
+
+  void onSet(T oldValue, T newValue);
+
+  void onEvent(T value);
+
+  void set(T to);
+
+  T get();
 }

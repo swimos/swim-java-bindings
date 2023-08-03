@@ -17,8 +17,6 @@ package ai.swim.client.downlink.map;
 import ai.swim.client.downlink.Downlink;
 import ai.swim.concurrent.Trigger;
 
-import java.util.concurrent.CountDownLatch;
-
 /**
  * A Swim Map Downlink representation. A MapDownlink synchronizes a shared real-time value with a remote map lane
  * and provides lifecycle callbacks that may be registered to be notified of certain events.

@@ -52,10 +52,9 @@ where
         let env = vm.expect_env();
 
         let _guard = env.lock_obj(&global_ref).expect("Failed to enter monitor");
-        let mut countdown =
-            JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
-                .initialise(&env)
-                .unwrap();
+        let countdown = JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
+            .initialise(&env)
+            .unwrap();
 
         match countdown.invoke(&env, &global_ref, &[]) {
             Ok(_) => {}

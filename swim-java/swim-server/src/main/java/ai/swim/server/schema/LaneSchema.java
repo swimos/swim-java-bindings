@@ -1,13 +1,14 @@
-package ai.swim.server.agent.schema;
+package ai.swim.server.schema;
 
-import java.lang.reflect.Field;
+import org.msgpack.core.MessageBufferPacker;
+import java.io.IOException;
 import java.util.Objects;
 
-public class LaneSpec {
+public class LaneSchema {
   private final boolean isTransient;
   private final LaneKind laneKind;
 
-  public LaneSpec(boolean isTransient, LaneKind laneKind) {
+  public LaneSchema(boolean isTransient, LaneKind laneKind) {
     this.isTransient = isTransient;
     this.laneKind = laneKind;
   }
@@ -22,7 +23,7 @@ public class LaneSpec {
 
   @Override
   public String toString() {
-    return "LaneSpec{" +
+    return "LaneSchema{" +
         "isTransient=" + isTransient +
         ", laneKind=" + laneKind +
         '}';
@@ -36,12 +37,18 @@ public class LaneSpec {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LaneSpec laneSpec = (LaneSpec) o;
-    return isTransient == laneSpec.isTransient && laneKind == laneSpec.laneKind;
+    LaneSchema laneSchema = (LaneSchema) o;
+    return isTransient == laneSchema.isTransient && laneKind == laneSchema.laneKind;
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(isTransient, laneKind);
+  }
+
+  public void pack(MessageBufferPacker packer) throws IOException {
+    packer.packArrayHeader(2);
+    packer.packBoolean(isTransient);
+    laneKind.pack(packer);
   }
 }

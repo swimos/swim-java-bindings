@@ -7,11 +7,9 @@ import ai.swim.structure.processor.writer.Writer;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
-
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.PackageElement;
 import java.io.IOException;
-
 import static ai.swim.structure.processor.writer.writerForm.Lookups.WRITER_PROXY;
 
 public class WriterFormWriter implements Writer {
@@ -23,13 +21,21 @@ public class WriterFormWriter implements Writer {
 
   @Override
   public void writeClass(ClassLikeModel model) throws IOException {
-    WriterContext context = WriterContext.build(model.getElement(), environment, model.getJavaClassName(), model.getDeclaredPackage());
+    WriterContext context = WriterContext.build(
+        model.getElement(),
+        environment,
+        model.getJavaClassName(),
+        model.getDeclaredPackage());
     TypeSpec typeSpec;
 
     if (model.isAbstract()) {
       typeSpec = new AbstractClassWriter(model.getElement(), context, model.getSubTypes()).build();
     } else {
-      typeSpec = new ConcreteClassWriter(model.getElement(), context, model, PartitionedFields.buildFrom(model.getFields())).build();
+      typeSpec = new ConcreteClassWriter(
+          model.getElement(),
+          context,
+          model,
+          PartitionedFields.buildFrom(model.getFields())).build();
     }
 
     writeTypeSpec(typeSpec, model.getDeclaredPackage());
@@ -37,7 +43,11 @@ public class WriterFormWriter implements Writer {
 
   @Override
   public void writeInterface(InterfaceModel model) throws IOException {
-    WriterContext context = WriterContext.build(model.getElement(), environment, model.getJavaClassName(), model.getDeclaredPackage());
+    WriterContext context = WriterContext.build(
+        model.getElement(),
+        environment,
+        model.getJavaClassName(),
+        model.getDeclaredPackage());
     TypeSpec typeSpec = new AbstractClassWriter(model.getElement(), context, model.getSubTypes()).build();
 
     writeTypeSpec(typeSpec, model.getDeclaredPackage());

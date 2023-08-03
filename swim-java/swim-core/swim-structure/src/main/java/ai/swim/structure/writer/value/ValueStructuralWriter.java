@@ -17,7 +17,6 @@ package ai.swim.structure.writer.value;
 import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.HeaderWriter;
 import ai.swim.structure.writer.StructuralWriter;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 

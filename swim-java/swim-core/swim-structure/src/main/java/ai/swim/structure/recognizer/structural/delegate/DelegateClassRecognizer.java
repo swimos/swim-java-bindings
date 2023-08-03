@@ -9,7 +9,10 @@ import ai.swim.structure.recognizer.structural.IndexFn;
 import ai.swim.structure.recognizer.structural.tag.TagSpec;
 
 public class DelegateClassRecognizer<T> extends ClassRecognizer<DelegateClassRecognizer.State, OrdinalFieldKey, T> {
-  public DelegateClassRecognizer(TagSpec tagSpec, RecognizingBuilder<T> builder, int fieldCount, IndexFn<OrdinalFieldKey> indexFn) {
+  public DelegateClassRecognizer(TagSpec tagSpec,
+      RecognizingBuilder<T> builder,
+      int fieldCount,
+      IndexFn<OrdinalFieldKey> indexFn) {
     super(tagSpec, builder, fieldCount, indexFn, State.Init);
   }
 

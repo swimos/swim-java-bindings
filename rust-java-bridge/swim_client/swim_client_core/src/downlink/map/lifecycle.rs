@@ -18,12 +18,11 @@ use jni::sys::{jint, jobject};
 use jni::JNIEnv;
 use jvm_sys::EnvExt;
 
-use jvm_sys::vm::method::{JavaMethodExt, JavaObjectMethod};
+use jvm_sys::vm::method::{void_fn, JavaCallback, JavaMethodExt, JavaObjectMethod};
 use jvm_sys::vm::{jni_call, SpannedError};
 
 use crate::downlink::vtable::{
-    void_fn, JavaMethod, BI_CONSUMER_ACCEPT, CONSUMER_ACCEPT, ON_LINKED, ON_UNLINKED, ROUTINE_EXEC,
-    TRI_CONSUMER_ACCEPT,
+    BI_CONSUMER_ACCEPT, CONSUMER_ACCEPT, ON_LINKED, ON_UNLINKED, ROUTINE_EXEC, TRI_CONSUMER_ACCEPT,
 };
 
 struct BoolWrapper {
@@ -142,14 +141,14 @@ impl MapDownlinkLifecycle {
 }
 
 pub struct MapDownlinkVTable {
-    on_linked: JavaMethod,
-    on_synced: JavaMethod,
-    on_update: JavaMethod,
-    on_remove: JavaMethod,
-    on_clear: JavaMethod,
-    on_unlinked: JavaMethod,
-    take: JavaMethod,
-    drop: JavaMethod,
+    on_linked: JavaCallback,
+    on_synced: JavaCallback,
+    on_update: JavaCallback,
+    on_remove: JavaCallback,
+    on_clear: JavaCallback,
+    on_unlinked: JavaCallback,
+    take: JavaCallback,
+    drop: JavaCallback,
 }
 
 impl MapDownlinkVTable {
@@ -165,14 +164,14 @@ impl MapDownlinkVTable {
         drop: jobject,
     ) -> Result<MapDownlinkVTable, Error> {
         Ok(MapDownlinkVTable {
-            on_linked: JavaMethod::for_method(&env, on_linked, ON_LINKED)?,
-            on_synced: JavaMethod::for_method(&env, on_synced, ROUTINE_EXEC)?,
-            on_update: JavaMethod::for_method(&env, on_update, TRI_CONSUMER_ACCEPT)?,
-            on_remove: JavaMethod::for_method(&env, on_remove, BI_CONSUMER_ACCEPT)?,
-            on_clear: JavaMethod::for_method(&env, on_clear, CONSUMER_ACCEPT)?,
-            on_unlinked: JavaMethod::for_method(&env, on_unlinked, ON_UNLINKED)?,
-            take: JavaMethod::for_method(&env, take, BI_CONSUMER_ACCEPT)?,
-            drop: JavaMethod::for_method(&env, drop, BI_CONSUMER_ACCEPT)?,
+            on_linked: JavaCallback::for_method(&env, on_linked, ON_LINKED)?,
+            on_synced: JavaCallback::for_method(&env, on_synced, ROUTINE_EXEC)?,
+            on_update: JavaCallback::for_method(&env, on_update, TRI_CONSUMER_ACCEPT)?,
+            on_remove: JavaCallback::for_method(&env, on_remove, BI_CONSUMER_ACCEPT)?,
+            on_clear: JavaCallback::for_method(&env, on_clear, CONSUMER_ACCEPT)?,
+            on_unlinked: JavaCallback::for_method(&env, on_unlinked, ON_UNLINKED)?,
+            take: JavaCallback::for_method(&env, take, BI_CONSUMER_ACCEPT)?,
+            drop: JavaCallback::for_method(&env, drop, BI_CONSUMER_ACCEPT)?,
         })
     }
 

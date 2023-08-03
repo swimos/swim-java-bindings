@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai.swim.client;
+package ai.swim.lang.ffi;
 
-public class Utils {
+public class ExceptionUtils {
   public static String stackTraceString(Throwable exception) {
     if (exception == null) {
       return "";

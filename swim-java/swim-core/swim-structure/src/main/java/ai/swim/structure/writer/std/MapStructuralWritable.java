@@ -21,7 +21,6 @@ import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.proxy.WriterProxy;
 import ai.swim.structure.writer.proxy.WriterTypeParameter;
-
 import java.util.Map;
 
 /**

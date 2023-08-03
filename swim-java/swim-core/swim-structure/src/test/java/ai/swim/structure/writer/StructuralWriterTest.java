@@ -14,15 +14,17 @@
 
 package ai.swim.structure.writer;
 
-import ai.swim.structure.value.*;
+import ai.swim.structure.value.Attr;
+import ai.swim.structure.value.Item;
+import ai.swim.structure.value.Record;
+import ai.swim.structure.value.Text;
+import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.header.Header;
 import ai.swim.structure.writer.std.ScalarWriters;
 import ai.swim.structure.writer.value.ValueStructuralWriter;
 import org.junit.jupiter.api.Test;
-
 import java.util.Collections;
 import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -39,8 +41,8 @@ class StructuralWriterTest {
         List.of(
             Item.of(Value.of("a"), Value.of(1)),
             Item.of(Value.of("b"), Value.of(2L))
-        )
-    );
+               )
+                               );
 
     assertEquals(expected, actual);
   }
@@ -54,7 +56,7 @@ class StructuralWriterTest {
     Record expected = Record.of(
         List.of(Attr.ofAttr("Prop", Record.of(Collections.emptyList(), List.of(Item.of(Text.of("a"), Value.of(1)))))),
         List.of(Item.of(Value.of(2L)))
-    );
+                               );
 
     assertEquals(expected, actual);
   }
@@ -68,7 +70,7 @@ class StructuralWriterTest {
     Record expected = Record.of(
         List.of(Attr.ofAttr("Prop", Value.of(1))),
         List.of(Item.of(Text.of("b"), Value.of(2L)))
-    );
+                               );
 
     assertEquals(expected, actual);
   }
@@ -85,8 +87,8 @@ class StructuralWriterTest {
         List.of(
             Value.ofItem(Value.of("gen"), Value.of(13)),
             Value.ofItem(Value.of("key"), Value.of("value"))
-        )
-    );
+               )
+                              );
 
     assertEquals(expected, actual);
   }

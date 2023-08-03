@@ -18,7 +18,10 @@ public abstract class SimpleRecognizer<T> extends Recognizer<T> {
     } else {
       T value = feed(event);
       if (value == null) {
-        return Recognizer.error(new RuntimeException(String.format(String.format("Found '%s', expected: '%s'", event, type))));
+        return Recognizer.error(new RuntimeException(String.format(String.format(
+            "Found '%s', expected: '%s'",
+            event,
+            type))));
       } else {
         return Recognizer.done(value, this);
       }

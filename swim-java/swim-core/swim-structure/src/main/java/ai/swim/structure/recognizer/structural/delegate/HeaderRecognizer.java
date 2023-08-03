@@ -7,7 +7,6 @@ import ai.swim.structure.RecognizingBuilder;
 import ai.swim.structure.recognizer.FirstOf;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.structural.IndexFn;
-
 import java.util.BitSet;
 import java.util.function.Supplier;
 
@@ -20,7 +19,11 @@ public class HeaderRecognizer<T> extends Recognizer<T> {
   private State state;
   private int index;
 
-  public HeaderRecognizer(boolean hasBody, boolean flattened, RecognizingBuilder<T> builder, int slotCount, IndexFn<HeaderFieldKey> indexFn) {
+  public HeaderRecognizer(boolean hasBody,
+      boolean flattened,
+      RecognizingBuilder<T> builder,
+      int slotCount,
+      IndexFn<HeaderFieldKey> indexFn) {
     this.hasBody = hasBody;
     this.flattened = flattened;
     this.builder = builder;
@@ -30,7 +33,10 @@ public class HeaderRecognizer<T> extends Recognizer<T> {
     this.state = flattened ? !hasBody ? State.BetweenSlots : State.ExpectingBody : State.Init;
   }
 
-  public static <T> RecognizingBuilder<T> headerBuilder(boolean hasBody, Supplier<RecognizingBuilder<T>> builder, int numSlots, IndexFn<HeaderFieldKey> indexFn) {
+  public static <T> RecognizingBuilder<T> headerBuilder(boolean hasBody,
+      Supplier<RecognizingBuilder<T>> builder,
+      int numSlots,
+      IndexFn<HeaderFieldKey> indexFn) {
     return new FieldRecognizingBuilder<>(new FirstOf<>(
         new HeaderRecognizer<>(hasBody, true, builder.get(), numSlots, indexFn),
         new HeaderRecognizer<>(hasBody, false, builder.get(), numSlots, indexFn)
@@ -142,7 +148,12 @@ public class HeaderRecognizer<T> extends Recognizer<T> {
   @Override
   public Recognizer<T> reset() {
     int fieldCount = this.bitSet.size();
-    return new HeaderRecognizer<>(this.hasBody, this.flattened, this.builder.reset(), !this.hasBody ? fieldCount : fieldCount - 1, this.indexFn);
+    return new HeaderRecognizer<>(
+        this.hasBody,
+        this.flattened,
+        this.builder.reset(),
+        !this.hasBody ? fieldCount : fieldCount - 1,
+        this.indexFn);
   }
 
   enum State {

@@ -16,7 +16,6 @@ package ai.swim.codec.parsers.text;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
-
 import static ai.swim.codec.parsers.combinators.Chain.chain;
 import static ai.swim.codec.parsers.combinators.Peek.peek;
 import static ai.swim.codec.parsers.text.EqChar.eqChar;

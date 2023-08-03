@@ -15,7 +15,6 @@
 package ai.swim.structure.processor.model;
 
 import ai.swim.structure.processor.writer.Writer;
-
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import java.io.IOException;

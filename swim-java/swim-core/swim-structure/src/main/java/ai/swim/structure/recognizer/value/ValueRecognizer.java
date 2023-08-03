@@ -18,9 +18,12 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadStartAttribute;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerException;
-import ai.swim.structure.value.*;
+import ai.swim.structure.value.Item;
+import ai.swim.structure.value.Record;
+import ai.swim.structure.value.Text;
+import ai.swim.structure.value.Value;
+import ai.swim.structure.value.ValueItem;
 import ai.swim.util.Either;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;

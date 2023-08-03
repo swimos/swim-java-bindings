@@ -9,4 +9,13 @@ crate-type = ["cdylib"]
 [dependencies]
 swim_server_core = { path = "../swim_server_core" }
 jvm_sys = { path = "../../jvm_sys" }
+bytebridge = { workspace = true }
 jni = { workspace = true }
+bytes = { workspace = true }
+rmp = { workspace = true }
+rand = { workspace = true }
+swim_server_app = { path = "../../../swim-rust/server/swim_server_app"}
+
+base64 = "0.21.2"
+tokio = { workspace = true, features = ["rt-multi-thread", "io-util", "macros"] }
+ratchet = { workspace = true }

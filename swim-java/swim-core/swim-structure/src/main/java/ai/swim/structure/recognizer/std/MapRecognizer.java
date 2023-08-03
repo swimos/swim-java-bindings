@@ -18,7 +18,6 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.structural.StructuralRecognizer;
-
 import java.util.HashMap;
 import java.util.Map;
 

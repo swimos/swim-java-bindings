@@ -14,7 +14,6 @@
 
 package ai.swim.client.downlink.value;
 
-import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.Downlink;
 import ai.swim.concurrent.Trigger;
 

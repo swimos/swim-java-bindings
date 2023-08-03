@@ -18,7 +18,6 @@ package ai.swim.structure.recognizer.std.collections;
 import ai.swim.structure.recognizer.FirstOf;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.SimpleAttrBodyRecognizer;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;

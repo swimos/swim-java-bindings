@@ -24,8 +24,13 @@ import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerNameFormatter;
 import ai.swim.structure.processor.writer.recognizerForm.builder.Builder;
 import ai.swim.structure.processor.writer.recognizerForm.builder.FieldInitializer;
-import com.squareup.javapoet.*;
-
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.TypeVariableName;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
@@ -36,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.FIELD_RECOGNIZING_BUILDER_CLASS;
 
 /**
@@ -46,7 +50,10 @@ import static ai.swim.structure.processor.writer.recognizerForm.Lookups.FIELD_RE
 public class HeaderBuilder extends Builder {
   private final List<TypeVariableName> typeParameters;
 
-  public HeaderBuilder(ClassLikeModel model, PartitionedFields partitionedFields, RecognizerContext context, List<TypeVariableName> typeParameters) {
+  public HeaderBuilder(ClassLikeModel model,
+      PartitionedFields partitionedFields,
+      RecognizerContext context,
+      List<TypeVariableName> typeParameters) {
     super(model, partitionedFields, context);
     this.typeParameters = typeParameters;
   }

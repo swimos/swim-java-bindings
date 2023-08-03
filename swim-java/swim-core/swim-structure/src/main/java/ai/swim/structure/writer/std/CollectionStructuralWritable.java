@@ -19,7 +19,6 @@ import ai.swim.structure.writer.StructuralWritable;
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.proxy.WriterProxy;
-
 import java.util.Collection;
 
 /**

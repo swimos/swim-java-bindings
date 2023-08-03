@@ -6,8 +6,11 @@ import ai.swim.structure.processor.model.ModelInspector;
 import ai.swim.structure.processor.writer.Writer;
 import ai.swim.structure.processor.writer.recognizerForm.recognizer.PolymorphicRecognizer;
 import ai.swim.structure.processor.writer.recognizerForm.recognizer.Recognizer;
-import com.squareup.javapoet.*;
-
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
@@ -17,7 +20,6 @@ import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.RECOGNIZER_PROXY;
 
 public class RecognizerFormWriter implements Writer {
@@ -29,7 +31,8 @@ public class RecognizerFormWriter implements Writer {
     this.inspector = inspector;
   }
 
-  public static List<ParameterSpec> writeGenericRecognizerConstructor(List<? extends TypeParameterElement> typeParameters, RecognizerContext context) {
+  public static List<ParameterSpec> writeGenericRecognizerConstructor(List<? extends TypeParameterElement> typeParameters,
+      RecognizerContext context) {
     Types typeUtils = context.getTypeUtils();
     Elements elementUtils = context.getElementUtils();
 
@@ -38,7 +41,11 @@ public class RecognizerFormWriter implements Writer {
 
     for (TypeParameterElement typeParameter : typeParameters) {
       DeclaredType typed = typeUtils.getDeclaredType(typeParameterElement, typeParameter.asType());
-      parameters.add(ParameterSpec.builder(TypeName.get(typed), context.getFormatter().typeParameterName(typeParameter.toString())).build());
+      parameters.add(ParameterSpec
+                         .builder(
+                             TypeName.get(typed),
+                             context.getFormatter().typeParameterName(typeParameter.toString()))
+                         .build());
     }
 
     return parameters;
@@ -46,13 +53,23 @@ public class RecognizerFormWriter implements Writer {
 
   @Override
   public void writeClass(ClassLikeModel model) throws IOException {
-    RecognizerContext context = RecognizerContext.build(model.getElement(), environment, inspector, model.getJavaClassName(), model.getDeclaredPackage());
+    RecognizerContext context = RecognizerContext.build(
+        model.getElement(),
+        environment,
+        inspector,
+        model.getJavaClassName(),
+        model.getDeclaredPackage());
     Recognizer.writeRecognizer(model, context);
   }
 
   @Override
   public void writeInterface(InterfaceModel model) throws IOException {
-    RecognizerContext context = RecognizerContext.build(model.getElement(), environment, inspector, model.getJavaClassName(), model.getDeclaredPackage());
+    RecognizerContext context = RecognizerContext.build(
+        model.getElement(),
+        environment,
+        inspector,
+        model.getJavaClassName(),
+        model.getDeclaredPackage());
     TypeSpec typeSpec = PolymorphicRecognizer.buildPolymorphicRecognizer(context, model.getSubTypes())
         .build();
     JavaFile javaFile = JavaFile.builder(model.getDeclaredPackage().getQualifiedName().toString(), typeSpec)

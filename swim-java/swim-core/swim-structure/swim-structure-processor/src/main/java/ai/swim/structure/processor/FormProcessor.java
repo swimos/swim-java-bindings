@@ -21,7 +21,6 @@ import ai.swim.structure.processor.model.StructuralModel;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerFormWriter;
 import ai.swim.structure.processor.writer.writerForm.WriterFormWriter;
 import com.google.auto.service.AutoService;
-
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
@@ -50,7 +49,11 @@ public class FormProcessor extends AbstractProcessor {
       AutoForm autoForm = element.getAnnotation(AutoForm.class);
 
       if (!element.getKind().isClass() && !element.getKind().isInterface()) {
-        this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, element + " cannot be annotated with @" + AutoForm.class.getSimpleName() + ". It may only be used on classes, enums and interfaces");
+        this.processingEnv
+            .getMessager()
+            .printMessage(
+                Diagnostic.Kind.ERROR,
+                element + " cannot be annotated with @" + AutoForm.class.getSimpleName() + ". It may only be used on classes, enums and interfaces");
         return true;
       }
 

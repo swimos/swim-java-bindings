@@ -2,7 +2,9 @@ package ai.swim.server.agent;
 
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
+import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.lanes.value.ValueLaneView;
+import ai.swim.server.plane.AbstractPlane;
 
 class AgentTest {
 
@@ -13,5 +15,11 @@ class AgentTest {
         .onSet((oldValue, newValue) -> System.out.println("On set"))
         .onEvent((value) -> System.out.println("On event"));
   }
+
+  private static class TestPlane extends AbstractPlane {
+    @SwimRoute("test/:id")
+    private TestAgent agent;
+  }
+
 
 }

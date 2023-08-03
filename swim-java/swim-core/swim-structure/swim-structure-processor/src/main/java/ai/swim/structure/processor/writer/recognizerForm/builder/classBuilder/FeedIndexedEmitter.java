@@ -20,7 +20,6 @@ import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerNameFormatter;
 import com.squareup.javapoet.CodeBlock;
-
 import java.util.List;
 
 /**

@@ -1,7 +1,6 @@
 package ai.swim.structure.processor.writer;
 
 import ai.swim.structure.processor.model.TypeInitializer;
-
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.util.Elements;

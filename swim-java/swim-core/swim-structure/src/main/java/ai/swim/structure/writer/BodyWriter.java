@@ -16,7 +16,6 @@ package ai.swim.structure.writer;
 
 import ai.swim.structure.writer.proxy.WriterProxy;
 import ai.swim.structure.writer.std.ScalarWriters;
-
 import java.util.Objects;
 
 /**
