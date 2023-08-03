@@ -22,3 +22,5 @@ byteorder = { workspace = true }
 rmp = { workspace = true }
 tokio-util = { workspace = true, features = ["codec"] }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tracing = { workspace = true }
+tracing-futures = { workspace = true }

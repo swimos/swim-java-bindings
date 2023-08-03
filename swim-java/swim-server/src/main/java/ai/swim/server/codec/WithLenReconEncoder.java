@@ -17,7 +17,8 @@ public class WithLenReconEncoder<V, T extends Writable<V>> implements Encoder<V>
   @Override
   public void encode(V target, Bytes dst) {
     int startIdx = dst.remaining();
-    dst.writeInteger(0);
+    dst.writeLong(0);
+    int startLen = dst.remaining();
 
     OutputStreamWriter writer = new OutputStreamWriter(dst.outputStream(), StandardCharsets.UTF_8);
     writable.writeInto(target, new StructurePrinter(writer, PrintStrategy.COMPACT));
@@ -28,6 +29,6 @@ public class WithLenReconEncoder<V, T extends Writable<V>> implements Encoder<V>
       throw new EncoderException(e);
     }
 
-    dst.writeInteger(dst.remaining() - startIdx, startIdx);
+    dst.writeLong(dst.remaining() - startLen, startIdx);
   }
 }

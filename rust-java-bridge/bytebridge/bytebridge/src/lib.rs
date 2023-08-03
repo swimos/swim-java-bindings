@@ -134,10 +134,7 @@ where
                 Err(FromBytesError::Invalid(format!("Invalid extension: {ty}")))
             }
         }
-        m => {
-            println!("Hereeee");
-            Err(FromBytesError::InvalidMarker(m))
-        }
+        m => Err(FromBytesError::InvalidMarker(m)),
     }
 }
 

@@ -51,10 +51,14 @@ server_fn! {
         };
 
         let task = async move {
-            let (handle, task) = run_server(env.get_java_vm().unwrap(), unsafe { JObject::from_raw(plane_obj) }, spec).await;
+            let (mut handle, task) = run_server(env.get_java_vm().unwrap(), unsafe { JObject::from_raw(plane_obj) }, spec).await;
             let server_task = tokio::spawn(task);
-            let gen_task = tokio::spawn(gen_task(handle));
-            let (_a,_b) = join!(server_task, gen_task);
+
+            println!("{}",handle.bound_addr().await.unwrap());
+            server_task.await.unwrap();
+            // let gen_task = tokio::spawn(gen_task(handle));
+
+            // let (_a,_b) = join!(server_task, gen_task);
         };
         tokio::runtime::Builder::new_multi_thread()
             .enable_all()

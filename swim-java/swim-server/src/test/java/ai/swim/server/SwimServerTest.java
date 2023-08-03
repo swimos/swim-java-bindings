@@ -7,11 +7,18 @@ import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
 import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.annotations.Transient;
+import ai.swim.server.codec.Bytes;
+import ai.swim.server.codec.WithLenReconEncoder;
+import ai.swim.server.lanes.models.response.LaneResponse;
+import ai.swim.server.lanes.models.response.LaneResponseEncoder;
 import ai.swim.server.lanes.value.ValueLane;
 import ai.swim.server.plane.AbstractPlane;
 import ai.swim.server.schema.PlaneSchema;
+import ai.swim.structure.recognizer.std.ScalarRecognizer;
+import ai.swim.structure.writer.std.ScalarWriters;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
+import java.util.Arrays;
 
 class SwimServerTest {
 
@@ -31,7 +38,7 @@ class SwimServerTest {
     forPlane(planeSchema.bytes());
   }
 
-  //  @Test
+    @Test
   void testRun() throws IOException {
     TestSwimServer.forPlane(TestPlane.class).runServer();
   }

@@ -225,6 +225,20 @@ public class Bytes {
   }
 
   /**
+   * Writes a long in big endian format starting from the provided offset.
+   */
+  public void writeLong(long l, int startAt) {
+    writeByte((byte) ((l >> 56) & 0xff), startAt);
+    writeByte((byte) ((l >> 48) & 0xff), startAt + 1);
+    writeByte((byte) ((l >> 40) & 0xff), startAt + 2);
+    writeByte((byte) ((l >> 32) & 0xff), startAt + 3);
+    writeByte((byte) ((l >> 24) & 0xff), startAt + 4);
+    writeByte((byte) ((l >> 16) & 0xff), startAt + 5);
+    writeByte((byte) ((l >> 8) & 0xff), startAt + 6);
+    writeByte((byte) (l & 0xff), startAt + 7);
+  }
+
+  /**
    * Writes a byte.
    */
   public void writeByte(byte b) {
