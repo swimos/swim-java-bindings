@@ -18,12 +18,12 @@ use std::panic;
 use bytebridge::ByteCodec;
 use bytes::BytesMut;
 use client_runtime::RemotePath;
-use jni::objects::JString;
+use jni::objects::{JObject, JString};
 use jni::sys::{jbyteArray, jobject};
-use jvm_sys::vm::set_panic_hook;
-use jvm_sys::vm::utils::new_global_ref;
-use jvm_sys::{jni_try, npch, parse_string};
+use jvm_sys::env::JavaEnv;
+use jvm_sys::{jni_try, npch};
 use ratchet::WebSocketConfig;
+use std::str::FromStr;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
 use swim_client_core::{client_fn, ClientHandle, SwimClient};
@@ -96,13 +96,12 @@ client_fn! {
             ClientConfig::try_from_bytes(&mut config_bytes).map(Into::into),
             std::ptr::null_mut()
         };
+        let env = JavaEnv::new(env);
 
         let client = Box::leak(Box::new(SwimClient::new(
-            env.get_java_vm().expect("Failed to get Java VM"),
+            env,
             config
         )));
-
-        set_panic_hook();
 
         client
     }
@@ -171,61 +170,34 @@ client_fn! {
     ) {
         npch!(env, handle, stopped_barrier, downlink_ref, config);
 
-        let mut config_bytes = jni_try! {
-            env,
-            "Failed to parse configuration array",
-            env.convert_byte_array(config).map(BytesMut::from_iter)
-        };
-
-        let config = jni_try! {
-            env,
-            "Invalid config",
-            DownlinkConfigurations::try_from_bytes(&mut config_bytes,&env)
-        };
-
         let handle = unsafe { &*handle };
-        let downlink = jni_try! {
-            env,
-            "Failed to create downlink",
-            FfiValueDownlink::create(
-                handle.vm(),
-                on_event,
-                on_linked,
-                on_set,
-                on_synced,
-                on_unlinked,
-                handle.error_mode(),
-            ),
-        };
+        let env = handle.env();
 
-        let make_global_ref = |obj, name| {
-            // this closure is only called with arguments that have already had a null check
-            // performed, so the unwrap is safe
-            new_global_ref(&env, obj)
-                .unwrap_or_else(|_| panic!(
-                    "Failed to create new global reference for {}",
-                    name
-                ))
-                .unwrap()
-        };
+        let mut config_bytes = env.with_env(|scope| {
+            BytesMut::from_iter(scope.convert_byte_array(config))
+        });
+        let config = DownlinkConfigurations::try_from_bytes(&mut config_bytes,&env);
+        let downlink = FfiValueDownlink::create(
+            handle.env(),
+            on_event,
+            on_linked,
+            on_set,
+            on_synced,
+            on_unlinked,
+        );
 
-        let host = jni_try! {
-            env,
-            "Failed to parse host URL",
-            Url::try_from(parse_string!(env, host).as_str())
-        };
+        env.with_env_throw("ai/swim/client/SwimClientException",move  |scope| {
+            let host = Url::from_str(scope.get_rust_string(host).as_str())?;
+            let node = scope.get_rust_string(node);
+            let lane = scope.get_rust_string(lane);
 
-        let node = parse_string!(env, node);
-        let lane = parse_string!(env, lane);
-
-        jni_try! {
             handle.spawn_value_downlink(
                 config,
-                make_global_ref(downlink_ref, "downlink object"),
-                make_global_ref(stopped_barrier, "stopped barrier"),
+                scope.new_global_ref(unsafe{JObject::from_raw(downlink_ref)}),
+                scope.new_global_ref(unsafe {JObject::from_raw(stopped_barrier)}),
                 downlink,
                 RemotePath::new(host.to_string(), node, lane)
-            ),
-        };
+            );
+        });
     }
 }

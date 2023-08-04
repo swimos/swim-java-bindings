@@ -14,11 +14,12 @@
 
 extern crate core;
 
-use jni::errors::Result as JniResult;
+pub use jni::errors::Result as JniResult;
 
-// pub mod bytes;
+pub mod env;
 mod macros;
+pub mod method;
 pub mod util;
-pub mod vm;
+
 pub use macros::*;
 pub use paste;

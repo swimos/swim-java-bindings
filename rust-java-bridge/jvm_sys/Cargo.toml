@@ -8,3 +8,5 @@ jni = { workspace = true }
 tokio = { workspace = true, features = ["io-util"] }
 bytes = { workspace = true }
 paste = { workspace = true }
+parking_lot = { workspace = true, features = ["send_guard"] }
+static_assertions = { workspace = true }

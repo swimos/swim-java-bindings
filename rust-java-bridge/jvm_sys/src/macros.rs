@@ -60,32 +60,6 @@ macro_rules! jni_try {
     };
 }
 
-#[macro_export]
-macro_rules! parse_string {
-    ($env:ident, $string:tt, $ret:expr) => {{
-        let env_ref = $env;
-        let string = $string;
-        let err = format!("Failed to parse {}", stringify!(name));
-
-        let java_string = jni_try! {
-            env_ref,
-            err,
-            env_ref.get_string(string),
-            $ret
-        };
-        jni_try! {
-            env_ref,
-            err,
-            java_string.to_str(),
-            $ret
-        }
-        .to_string()
-    }};
-    ($env:ident, $string:tt) => {{
-        $crate::parse_string!($env, $string, ())
-    }};
-}
-
 /// Macro for defining functions that are invoked across an FFI boundary and need to be able to
 /// catch an unwind and throw an exception instead of resuming the unwind. Ideally, crates that have
 /// functions that will be invoked by Java, should reimplement this macro with the $exception_class

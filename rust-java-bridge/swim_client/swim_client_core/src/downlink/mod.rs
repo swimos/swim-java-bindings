@@ -12,12 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use swim_api::error::DownlinkTaskError;
-
 use bytes::{Buf, BytesMut};
-use jni::JNIEnv;
-use jvm_sys::jni_try;
-use jvm_sys::vm::SpannedError;
+use jvm_sys::env::{JavaEnv, StringError};
 use std::mem::size_of;
 use std::num::NonZeroUsize;
 use std::time::Duration;
@@ -27,60 +23,6 @@ use swim_runtime::downlink::{DownlinkOptions, DownlinkRuntimeConfig};
 const CONFIG_LEN: usize = size_of::<u64>() * 5 + size_of::<u8>() * 4;
 
 pub mod value;
-
-#[derive(Copy, Clone, Debug)]
-pub enum ErrorHandlingConfig {
-    Ignore,
-    Report,
-    Abort,
-}
-
-impl ErrorHandlingConfig {
-    pub fn as_handler(&self) -> Box<dyn FfiFailureHandler> {
-        match self {
-            ErrorHandlingConfig::Report => Box::new(ReportingHandler),
-            ErrorHandlingConfig::Abort => Box::new(AbortingHandler),
-            ErrorHandlingConfig::Ignore => Box::new(SinkingHandler),
-        }
-    }
-}
-
-pub trait FfiFailureHandler: Send + Sync {
-    fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError>;
-}
-
-impl FfiFailureHandler for Box<dyn FfiFailureHandler> {
-    fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError> {
-        (**self).on_failure(err)
-    }
-}
-
-struct AbortingHandler;
-impl FfiFailureHandler for AbortingHandler {
-    fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError> {
-        #[cold]
-        #[inline(never)]
-        fn abort(err: SpannedError) -> ! {
-            err.panic()
-        }
-
-        abort(err);
-    }
-}
-
-struct ReportingHandler;
-impl FfiFailureHandler for ReportingHandler {
-    fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError> {
-        Err(DownlinkTaskError::Custom(Box::new(err)))
-    }
-}
-
-struct SinkingHandler;
-impl FfiFailureHandler for SinkingHandler {
-    fn on_failure(&self, _err: SpannedError) -> Result<(), DownlinkTaskError> {
-        Ok(())
-    }
-}
 
 /// A wrapper around a downlink runtime configuration, downlink configuration and downlink options
 /// that can be parsed from a Java-provided byte array of the following format:
@@ -113,13 +55,10 @@ impl Default for DownlinkConfigurations {
 
 impl DownlinkConfigurations {
     #[allow(clippy::result_unit_err)]
-    pub fn try_from_bytes(buf: &mut BytesMut, env: &JNIEnv) -> Result<DownlinkConfigurations, ()> {
-        Ok(jni_try!(
-            env,
-            "Failed to parse downlink configuration",
-            Self::from_bytes_internal(buf),
-            Err(())
-        ))
+    pub fn try_from_bytes(buf: &mut BytesMut, env: &JavaEnv) -> DownlinkConfigurations {
+        env.with_env_expect(|_| {
+            DownlinkConfigurations::from_bytes_internal(buf).map_err(StringError)
+        })
     }
 
     // Split into its own function for testing.

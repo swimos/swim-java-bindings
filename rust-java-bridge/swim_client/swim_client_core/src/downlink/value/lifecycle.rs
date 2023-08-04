@@ -13,11 +13,8 @@
 // limitations under the License.
 
 use bytes::BytesMut;
-use jni::errors::Error;
 use jni::sys::jobject;
-use jni::JNIEnv;
-
-use jvm_sys::vm::{jni_call, SpannedError};
+use jvm_sys::env::JavaEnv;
 
 use crate::downlink::value::vtable::ValueDownlinkVTable;
 
@@ -27,14 +24,14 @@ pub struct ValueDownlinkLifecycle {
 
 impl ValueDownlinkLifecycle {
     pub fn from_parts(
-        env: &JNIEnv,
+        env: &JavaEnv,
         on_event: jobject,
         on_linked: jobject,
         on_set: jobject,
         on_synced: jobject,
         on_unlinked: jobject,
-    ) -> Result<ValueDownlinkLifecycle, Error> {
-        Ok(ValueDownlinkLifecycle {
+    ) -> ValueDownlinkLifecycle {
+        ValueDownlinkLifecycle {
             vtable: ValueDownlinkVTable::new(
                 env,
                 on_event,
@@ -42,47 +39,32 @@ impl ValueDownlinkLifecycle {
                 on_set,
                 on_synced,
                 on_unlinked,
-            )?,
-        })
+            ),
+        }
     }
 
-    pub fn on_linked(&mut self, env: &JNIEnv) -> Result<(), SpannedError> {
+    pub fn on_linked(&mut self, env: &JavaEnv) {
         let ValueDownlinkLifecycle { vtable } = self;
-        jni_call(env, || vtable.on_linked(env))
+        vtable.on_linked(env)
     }
 
-    pub fn on_synced(
-        &mut self,
-        env: &JNIEnv,
-        value: &mut Vec<u8>,
-        _ret: &mut BytesMut,
-    ) -> Result<(), SpannedError> {
+    pub fn on_synced(&mut self, env: &JavaEnv, value: &mut Vec<u8>, _ret: &mut BytesMut) {
         let ValueDownlinkLifecycle { vtable } = self;
-        jni_call(env, || vtable.on_synced(env, value))
+        vtable.on_synced(env, value)
     }
 
-    pub fn on_event(
-        &mut self,
-        env: &JNIEnv,
-        value: &mut Vec<u8>,
-        _ret: &mut BytesMut,
-    ) -> Result<(), SpannedError> {
+    pub fn on_event(&mut self, env: &JavaEnv, value: &mut Vec<u8>, _ret: &mut BytesMut) {
         let ValueDownlinkLifecycle { vtable } = self;
-        jni_call(env, || vtable.on_event(env, value))
+        vtable.on_event(env, value)
     }
 
-    pub fn on_set(
-        &mut self,
-        env: &JNIEnv,
-        value: &mut Vec<u8>,
-        _ret: &mut BytesMut,
-    ) -> Result<(), SpannedError> {
+    pub fn on_set(&mut self, env: &JavaEnv, value: &mut Vec<u8>, _ret: &mut BytesMut) {
         let ValueDownlinkLifecycle { vtable } = self;
-        jni_call(env, || vtable.on_set(env, value))
+        vtable.on_set(env, value)
     }
 
-    pub fn on_unlinked(&mut self, env: &JNIEnv) -> Result<(), SpannedError> {
+    pub fn on_unlinked(&mut self, env: &JavaEnv) {
         let ValueDownlinkLifecycle { vtable } = self;
-        jni_call(env, || vtable.on_unlinked(env))
+        vtable.on_unlinked(env)
     }
 }

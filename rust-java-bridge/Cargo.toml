@@ -31,6 +31,7 @@ lazy_static = "1.4.0"
 ratchet_deflate = "0.4.0"
 byteorder = "1.4"
 rmp = "0.8"
+static_assertions = "1.1.0"
 
 [workspace.dependencies.ratchet]
 package = "ratchet_rs"
