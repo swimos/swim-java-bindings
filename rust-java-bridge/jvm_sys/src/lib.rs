@@ -20,6 +20,7 @@ pub mod env;
 mod macros;
 pub mod method;
 pub mod util;
+pub mod vtable;
 
 pub use macros::*;
 pub use paste;

@@ -17,23 +17,6 @@ ext {
     debug_dir = target_dir.concat('/debug')
     release_dir = target_dir.concat('/release')
 }
-//
-//graalvmNative {
-//    binaries {
-//        main {
-//            compileRust(true)
-//            def library_path = '-Djava.library.path='.concat(bridge_dir)
-//            runtimeArgs.add(library_path)
-//        }
-//        test {
-//            compileRust(false)
-//            buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
-//
-//            def library_path = '-Djava.library.path='.concat(bridge_dir)
-//            runtimeArgs.add(library_path)
-//        }
-//    }
-//}
 
 test {
     def library_path = '-Djava.library.path='.concat(debug_dir)
@@ -78,31 +61,23 @@ def compileRust(release) {
     }
 }
 
+def compileRustDebug = tasks.register('compileRustDebug') {
+    compileRust(false)
+}
+
 compileTestJava {
-    doFirst {
+    doLast {
         compileRust(false)
     }
 }
 
 assemble {
-    doFirst {
+    doLast {
         compileRust(true)
     }
 }
 
-task cleanRust {
-    doFirst {
-        exec {
-            println "Cleaning swim-rust sources"
-            workingDir(bridge_dir)
-            commandLine 'cargo', 'clean'
-        }
-    }
-}
-
-clean {
-    dependsOn(cleanRust)
-}
+check.dependsOn compileRustDebug
 
 application {
     def library_path = '-Djava.library.path='.concat(release_dir)

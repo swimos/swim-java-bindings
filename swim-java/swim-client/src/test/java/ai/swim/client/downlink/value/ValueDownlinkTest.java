@@ -22,6 +22,7 @@ import ai.swim.structure.Form;
 import ai.swim.structure.Recon;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
+import ai.swim.structure.recognizer.RecognizerException;
 import org.junit.jupiter.api.Test;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -583,9 +584,9 @@ class ValueDownlinkTest {
       Throwable cause = e.getCause();
 
       assertNotNull(cause);
-      assertTrue(cause instanceof RuntimeException);
+      assertTrue(cause instanceof RecognizerException);
       assertEquals(
-          "java.lang.RuntimeException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}",
+          "ai.swim.structure.recognizer.RecognizerException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}",
           cause.getMessage());
     } finally {
       testDownlink.close();

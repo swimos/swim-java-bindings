@@ -44,6 +44,7 @@ use tokio::runtime::{Builder, Handle, Runtime};
 use tokio::task::JoinHandle;
 
 use jvm_sys::method::JavaMethodExt;
+use jvm_sys::vtable::CountdownLatch;
 pub use macros::*;
 
 use crate::downlink::value::FfiValueDownlink;
@@ -257,7 +258,6 @@ fn spawn_monitor(
         let result = receiver
             .await
             .map_err(|_| DownlinkRuntimeError::new(DownlinkErrorKind::Terminated));
-
         match result {
             Ok(arc_result) => {
                 if let Err(e) = arc_result.as_ref() {
@@ -273,7 +273,7 @@ fn spawn_monitor(
 
 fn notify_stopped(env: &JavaEnv, stopped_barrier: GlobalRef) {
     env.with_env(|scope| {
-        let countdown = scope.resolve(("java/util/concurrent/CountDownLatch", "countDown", "()V"));
+        let countdown = scope.resolve(CountdownLatch::COUNTDOWN);
         scope.invoke(countdown.v(), &stopped_barrier, &[]);
     });
 }

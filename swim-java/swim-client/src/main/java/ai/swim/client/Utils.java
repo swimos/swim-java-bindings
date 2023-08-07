@@ -14,8 +14,6 @@
 
 package ai.swim.client;
 
-import java.util.Arrays;
-
 public class Utils {
   public static String stackTraceString(Throwable exception) {
     if (exception == null) {
@@ -40,6 +38,11 @@ public class Utils {
     }
 
     return builder.toString();
+  }
+
+  public static void flushOutputStreams() {
+    System.out.flush();
+    System.err.flush();
   }
 
 }

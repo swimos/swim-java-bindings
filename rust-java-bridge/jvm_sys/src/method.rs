@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::env::Scope;
+use crate::env::{JavaExceptionHandler, Scope};
 use jni::errors::Error as JError;
 use jni::errors::Error::WrongJValueType;
 use jni::objects::{GlobalRef, JMethodID, JObject, JString, JValue};
@@ -34,28 +34,29 @@ pub struct InitialisedJavaObjectMethod {
 impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
     type Output = JValue<'j>;
 
-    fn invoke<'s, O>(
+    fn invoke<'s, H, O>(
         &self,
+        handler: &H,
         scope: &'s Scope,
         object: O,
         args: &[JValue<'j>],
-    ) -> Result<Self::Output, JError>
+    ) -> Result<Self::Output, H::Err>
     where
+        H: JavaExceptionHandler,
         O: Into<JObject<'j>>,
         's: 'j,
     {
         let InitialisedJavaObjectMethod {
             signature,
             method_id,
-            ..
         } = self;
 
         if signature.args.len() != args.len() {
-            return Err(JError::InvalidArgList(signature.as_ref().clone()));
+            scope.fatal_error(JError::InvalidArgList(signature.as_ref().clone()));
         }
 
         let args = args.iter().map(|v| v.to_jni()).collect::<Vec<_>>();
-        Ok(scope.call_method_unchecked(object, *method_id, signature.ret.clone(), &args))
+        scope.call_method_unchecked(handler, object, *method_id, signature.ret.clone(), &args)
     }
 }
 
@@ -121,13 +122,15 @@ impl JavaObjectMethodDef {
 pub trait JavaObjectMethod<'j> {
     type Output;
 
-    fn invoke<'s, O>(
+    fn invoke<'s, H, O>(
         &self,
+        handler: &H,
         scope: &'s Scope,
         object: O,
         args: &[JValue<'j>],
-    ) -> Result<Self::Output, JError>
+    ) -> Result<Self::Output, H::Err>
     where
+        H: JavaExceptionHandler,
         O: Into<JObject<'j>>,
         's: 'j;
 }
@@ -189,6 +192,16 @@ pub trait JavaMethodExt<'j>: JavaObjectMethod<'j> {
 
 impl<'j, M> JavaMethodExt<'j> for M where M: JavaObjectMethod<'j> {}
 
+fn mold<F, O>(scope: &Scope, f: F) -> O
+where
+    F: FnOnce() -> Result<O, JError>,
+{
+    match f() {
+        Ok(o) => o,
+        Err(e) => scope.fatal_error(format!("Unexpected return type: {}", e)),
+    }
+}
+
 pub struct MoldString<'m, M> {
     method: &'m M,
 }
@@ -199,18 +212,20 @@ where
 {
     type Output = String;
 
-    fn invoke<'s, O>(
+    fn invoke<'s, H, O>(
         &self,
+        handler: &H,
         scope: &'s Scope,
         object: O,
         args: &[JValue<'j>],
-    ) -> Result<Self::Output, JError>
+    ) -> Result<Self::Output, H::Err>
     where
+        H: JavaExceptionHandler,
         O: Into<JObject<'j>>,
         's: 'j,
     {
         let MoldString { method } = self;
-        let value = method.l().invoke(scope, object, args)?;
+        let value = method.l().invoke(handler, scope, object, args)?;
         Ok(scope.get_rust_string(JString::from(value)))
     }
 }
@@ -225,18 +240,21 @@ where
 {
     type Output = ();
 
-    fn invoke<'s, O>(
+    fn invoke<'s, H, O>(
         &self,
+        handler: &H,
         scope: &'s Scope,
         object: O,
         args: &[JValue<'j>],
-    ) -> Result<Self::Output, JError>
+    ) -> Result<Self::Output, H::Err>
     where
+        H: JavaExceptionHandler,
         O: Into<JObject<'j>>,
         's: 'j,
     {
         let MoldVoid { method } = self;
-        method.invoke(scope, object, args)?.v()
+        let val = method.invoke(handler, scope, object, args)?;
+        Ok(mold(scope, || val.v()))
     }
 }
 
@@ -250,27 +268,29 @@ where
 {
     type Output = ();
 
-    fn invoke<'s, O>(
+    fn invoke<'s, H, O>(
         &self,
+        handler: &H,
         scope: &'s Scope,
         object: O,
         args: &[JValue<'j>],
-    ) -> Result<Self::Output, JError>
+    ) -> Result<Self::Output, H::Err>
     where
+        H: JavaExceptionHandler,
         O: Into<JObject<'j>>,
         's: 'j,
     {
         let MoldNull { method } = self;
-        let value = method.invoke(scope, object, args)?;
+        let value = method.invoke(handler, scope, object, args)?;
 
-        match value.l() {
+        Ok(mold(scope, || match value.l() {
             Ok(ptr) if ptr.is_null() => Ok(()),
             Ok(ptr) => Err(WrongJValueType(
                 "JObject != null",
                 JValue::Object(ptr).type_name(),
             )),
             Err(e) => Err(e),
-        }
+        }))
     }
 }
 
@@ -284,27 +304,29 @@ where
 {
     type Output = JObject<'j>;
 
-    fn invoke<'s, O>(
+    fn invoke<'s, H, O>(
         &self,
+        handler: &H,
         scope: &'s Scope,
         object: O,
         args: &[JValue<'j>],
-    ) -> Result<Self::Output, JError>
+    ) -> Result<Self::Output, H::Err>
     where
+        H: JavaExceptionHandler,
         O: Into<JObject<'j>>,
         's: 'j,
     {
         let MoldObject { method } = self;
-        let value = method.invoke(scope, object, args)?;
+        let value = method.invoke(handler, scope, object, args)?;
 
-        match value.l() {
+        Ok(mold(scope, || match value.l() {
             Ok(ptr) if ptr.is_null() => Err(WrongJValueType(
                 "JObject == null",
                 JValue::Object(ptr).type_name(),
             )),
             Ok(ptr) => Ok(ptr),
             Err(e) => Err(e),
-        }
+        }))
     }
 }
 
@@ -318,20 +340,22 @@ where
 {
     type Output = bool;
 
-    fn invoke<'s, O>(
+    fn invoke<'s, H, O>(
         &self,
+        handler: &H,
         scope: &'s Scope,
         object: O,
         args: &[JValue<'j>],
-    ) -> Result<Self::Output, JError>
+    ) -> Result<Self::Output, H::Err>
     where
+        H: JavaExceptionHandler,
         O: Into<JObject<'j>>,
         's: 'j,
     {
         let MoldBool { method } = self;
-        let value = method.invoke(scope, object, args)?;
+        let value = method.invoke(handler, scope, object, args)?;
 
-        value.z()
+        Ok(mold(scope, || value.z()))
     }
 }
 
@@ -345,18 +369,20 @@ where
 {
     type Output = GlobalRef;
 
-    fn invoke<'s, O>(
+    fn invoke<'s, H, O>(
         &self,
+        handler: &H,
         scope: &'s Scope,
         object: O,
         args: &[JValue<'j>],
-    ) -> Result<Self::Output, JError>
+    ) -> Result<Self::Output, H::Err>
     where
+        H: JavaExceptionHandler,
         O: Into<JObject<'j>>,
         's: 'j,
     {
         let MoldGlobalRef { method } = self;
-        let value = method.invoke(scope, object, args)?;
+        let value = method.invoke(handler, scope, object, args)?;
         Ok(scope.new_global_ref(value))
     }
 }
@@ -364,7 +390,7 @@ where
 pub trait JavaArrayType {
     type ArrayType;
 
-    fn mold(scope: &Scope, obj: JObject) -> Result<Self::ArrayType, JError>;
+    fn mold(scope: &Scope, obj: JObject) -> Self::ArrayType;
 }
 
 pub struct ByteArray;
@@ -372,8 +398,8 @@ pub struct ByteArray;
 impl JavaArrayType for ByteArray {
     type ArrayType = Vec<u8>;
 
-    fn mold(scope: &Scope, obj: JObject) -> Result<Self::ArrayType, JError> {
-        Ok(scope.convert_byte_array(obj.into_raw()))
+    fn mold(scope: &Scope, obj: JObject) -> Self::ArrayType {
+        scope.convert_byte_array(obj.into_raw())
     }
 }
 
@@ -389,18 +415,20 @@ where
 {
     type Output = A::ArrayType;
 
-    fn invoke<'s, O>(
+    fn invoke<'s, H, O>(
         &self,
+        handler: &H,
         scope: &'s Scope,
         object: O,
         args: &[JValue<'j>],
-    ) -> Result<Self::Output, JError>
+    ) -> Result<Self::Output, H::Err>
     where
+        H: JavaExceptionHandler,
         O: Into<JObject<'j>>,
         's: 'j,
     {
         let MoldArray { method, .. } = self;
-        let value = method.invoke(scope, object, args)?;
-        A::mold(scope, value)
+        let value = method.invoke(handler, scope, object, args)?;
+        Ok(A::mold(scope, value))
     }
 }

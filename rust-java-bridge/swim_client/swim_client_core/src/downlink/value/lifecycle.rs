@@ -15,6 +15,7 @@
 use bytes::BytesMut;
 use jni::sys::jobject;
 use jvm_sys::env::JavaEnv;
+use swim_api::error::DownlinkTaskError;
 
 use crate::downlink::value::vtable::ValueDownlinkVTable;
 
@@ -43,27 +44,42 @@ impl ValueDownlinkLifecycle {
         }
     }
 
-    pub fn on_linked(&mut self, env: &JavaEnv) {
+    pub fn on_linked(&mut self, env: &JavaEnv) -> Result<(), DownlinkTaskError> {
         let ValueDownlinkLifecycle { vtable } = self;
         vtable.on_linked(env)
     }
 
-    pub fn on_synced(&mut self, env: &JavaEnv, value: &mut Vec<u8>, _ret: &mut BytesMut) {
+    pub fn on_synced(
+        &mut self,
+        env: &JavaEnv,
+        value: &mut Vec<u8>,
+        _ret: &mut BytesMut,
+    ) -> Result<(), DownlinkTaskError> {
         let ValueDownlinkLifecycle { vtable } = self;
         vtable.on_synced(env, value)
     }
 
-    pub fn on_event(&mut self, env: &JavaEnv, value: &mut Vec<u8>, _ret: &mut BytesMut) {
+    pub fn on_event(
+        &mut self,
+        env: &JavaEnv,
+        value: &mut Vec<u8>,
+        _ret: &mut BytesMut,
+    ) -> Result<(), DownlinkTaskError> {
         let ValueDownlinkLifecycle { vtable } = self;
         vtable.on_event(env, value)
     }
 
-    pub fn on_set(&mut self, env: &JavaEnv, value: &mut Vec<u8>, _ret: &mut BytesMut) {
+    pub fn on_set(
+        &mut self,
+        env: &JavaEnv,
+        value: &mut Vec<u8>,
+        _ret: &mut BytesMut,
+    ) -> Result<(), DownlinkTaskError> {
         let ValueDownlinkLifecycle { vtable } = self;
         vtable.on_set(env, value)
     }
 
-    pub fn on_unlinked(&mut self, env: &JavaEnv) {
+    pub fn on_unlinked(&mut self, env: &JavaEnv) -> Result<(), DownlinkTaskError> {
         let ValueDownlinkLifecycle { vtable } = self;
         vtable.on_unlinked(env)
     }

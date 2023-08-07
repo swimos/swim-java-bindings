@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::num::NonZeroUsize;
-use std::panic;
-
 use bytebridge::ByteCodec;
 use bytes::BytesMut;
 use client_runtime::RemotePath;
 use jni::objects::{JObject, JString};
 use jni::sys::{jbyteArray, jobject};
 use jvm_sys::env::JavaEnv;
+use jvm_sys::env::StringError;
 use jvm_sys::{jni_try, npch};
 use ratchet::WebSocketConfig;
+use std::num::NonZeroUsize;
+use std::panic;
 use std::str::FromStr;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
 use swim_client_core::{client_fn, ClientHandle, SwimClient};
+use url::ParseError;
 use url::Url;
 
 include!(concat!(env!("OUT_DIR"), "/out.rs"));
@@ -176,7 +177,13 @@ client_fn! {
         let mut config_bytes = env.with_env(|scope| {
             BytesMut::from_iter(scope.convert_byte_array(config))
         });
-        let config = DownlinkConfigurations::try_from_bytes(&mut config_bytes,&env);
+        let config = match env.with_env_throw("ai/swim/client/SwimClientException",|_| {
+            DownlinkConfigurations::try_from_bytes(&mut config_bytes).map_err(StringError)
+        }) {
+            Ok(config) => config,
+            Err(_) => return,
+        };
+
         let downlink = FfiValueDownlink::create(
             handle.env(),
             on_event,
@@ -186,18 +193,21 @@ client_fn! {
             on_unlinked,
         );
 
-        env.with_env_throw("ai/swim/client/SwimClientException",move  |scope| {
+        let (host,node,lane) = env.with_env_throw("ai/swim/client/SwimClientException",move  |scope| {
             let host = Url::from_str(scope.get_rust_string(host).as_str())?;
             let node = scope.get_rust_string(node);
             let lane = scope.get_rust_string(lane);
+            Ok::<(Url,String,String),ParseError>((host,node,lane))
+        }).unwrap();
 
+        env.with_env(|scope| {
             handle.spawn_value_downlink(
                 config,
                 scope.new_global_ref(unsafe{JObject::from_raw(downlink_ref)}),
                 scope.new_global_ref(unsafe {JObject::from_raw(stopped_barrier)}),
                 downlink,
                 RemotePath::new(host.to_string(), node, lane)
-            );
+            ).unwrap();
         });
     }
 }

@@ -20,6 +20,7 @@ use tokio::runtime::{Builder, Runtime};
 
 use jvm_sys::env::JavaEnv;
 use jvm_sys::method::JavaMethodExt;
+use jvm_sys::vtable::CountdownLatch;
 
 /// Creates a new multi-threaded Tokio runtime and spawns 'fut' on to it. A monitor task is spawned
 /// that waits for 'fut' to complete and then notifies 'barrier' that the task has completed; this
@@ -46,8 +47,7 @@ where
 
         env.with_env(|scope| {
             let _guard = scope.lock_obj(&global_ref);
-            let method =
-                scope.initialise(("java/util/concurrent/CountDownLatch", "countDown", "()V"));
+            let method = scope.initialise(CountdownLatch::COUNTDOWN);
 
             scope.invoke(method.v(), &global_ref, &[]);
             if r.is_err() {

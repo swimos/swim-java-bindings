@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use jni::errors::Error;
-use jni::objects::{GlobalRef, JObject, JValue};
+use jni::objects::{GlobalRef, JObject, JThrowable, JValue};
 use jni::sys::jobject;
-use jvm_sys::env::{JavaEnv, Scope};
+use jvm_sys::env::{IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler, Scope};
+use swim_api::error::DownlinkTaskError;
 
 use jvm_sys::method::{
     InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
 };
+use jvm_sys::vtable::Consumer;
 
 struct JavaMethod {
     ptr: Option<GlobalRef>,
@@ -41,12 +42,33 @@ impl JavaMethod {
         JavaMethod { ptr, def }
     }
 
-    pub fn execute<'j>(&mut self, scope: &Scope, args: &[JValue<'j>]) -> Result<(), Error> {
+    #[track_caller]
+    pub fn execute<'j, H>(
+        &mut self,
+        handler: &H,
+        scope: &Scope,
+        args: &[JValue<'j>],
+    ) -> Result<(), H::Err>
+    where
+        H: JavaExceptionHandler,
+    {
         let JavaMethod { ptr, def } = self;
         match ptr {
-            Some(ptr) => def.v().invoke(scope, ptr.as_obj(), args),
+            Some(ptr) => def.v().invoke(handler, scope, ptr.as_obj(), args),
             None => Ok(()),
         }
+    }
+}
+
+struct ExceptionHandler(IsTypeOfExceptionHandler);
+
+impl JavaExceptionHandler for ExceptionHandler {
+    type Err = DownlinkTaskError;
+
+    fn inspect(&self, scope: &Scope, throwable: JThrowable) -> Option<Self::Err> {
+        self.0
+            .inspect(scope, throwable)
+            .map(|e| DownlinkTaskError::Custom(Box::new(e)))
     }
 }
 
@@ -56,6 +78,7 @@ pub struct ValueDownlinkVTable {
     on_event: JavaMethod,
     on_set: JavaMethod,
     on_unlinked: JavaMethod,
+    handler: ExceptionHandler,
 }
 
 impl ValueDownlinkVTable {
@@ -63,11 +86,6 @@ impl ValueDownlinkVTable {
         JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnLinked", "onLinked", "()V");
     const ON_UNLINKED: JavaObjectMethodDef =
         JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnUnlinked", "onUnlinked", "()V");
-    const CONSUMER_ACCEPT: JavaObjectMethodDef = JavaObjectMethodDef::new(
-        "java/util/function/Consumer",
-        "accept",
-        "(Ljava/lang/Object;)V",
-    );
 
     pub fn new(
         env: &JavaEnv,
@@ -79,39 +97,68 @@ impl ValueDownlinkVTable {
     ) -> ValueDownlinkVTable {
         ValueDownlinkVTable {
             on_linked: JavaMethod::for_method(env, on_linked, Self::ON_LINKED),
-            on_synced: JavaMethod::for_method(env, on_synced, Self::CONSUMER_ACCEPT),
-            on_event: JavaMethod::for_method(env, on_event, Self::CONSUMER_ACCEPT),
-            on_set: JavaMethod::for_method(env, on_set, Self::CONSUMER_ACCEPT),
+            on_synced: JavaMethod::for_method(env, on_synced, Consumer::ACCEPT),
+            on_event: JavaMethod::for_method(env, on_event, Consumer::ACCEPT),
+            on_set: JavaMethod::for_method(env, on_set, Consumer::ACCEPT),
             on_unlinked: JavaMethod::for_method(env, on_unlinked, Self::ON_UNLINKED),
+            handler: ExceptionHandler(IsTypeOfExceptionHandler::new(
+                env,
+                "ai/swim/client/downlink/DownlinkException",
+            )),
         }
     }
 
-    pub fn on_linked(&mut self, env: &JavaEnv) {
-        env.with_env_expect(|scope| self.on_linked.execute(&scope, &[]))
+    pub fn on_linked(&mut self, env: &JavaEnv) -> Result<(), DownlinkTaskError> {
+        let ValueDownlinkVTable {
+            on_linked, handler, ..
+        } = self;
+        env.with_env(|scope| on_linked.execute(handler, &scope, &[]))
     }
 
-    pub fn on_synced(&mut self, env: &JavaEnv, value: &mut Vec<u8>) {
-        env.with_env_expect(|scope| {
+    pub fn on_synced(
+        &mut self,
+        env: &JavaEnv,
+        value: &mut Vec<u8>,
+    ) -> Result<(), DownlinkTaskError> {
+        let ValueDownlinkVTable {
+            on_synced, handler, ..
+        } = self;
+        env.with_env(|scope| {
             let buffer = unsafe { scope.new_direct_byte_buffer_exact(value) };
-            self.on_synced.execute(&scope, &[buffer.into()])
+            on_synced.execute(handler, &scope, &[buffer.into()])
         })
     }
 
-    pub fn on_event(&mut self, env: &JavaEnv, value: &mut Vec<u8>) {
-        env.with_env_expect(|scope| {
+    pub fn on_event(
+        &mut self,
+        env: &JavaEnv,
+        value: &mut Vec<u8>,
+    ) -> Result<(), DownlinkTaskError> {
+        let ValueDownlinkVTable {
+            on_event, handler, ..
+        } = self;
+        env.with_env(|scope| {
             let buffer = unsafe { scope.new_direct_byte_buffer_exact(value) };
-            self.on_event.execute(&scope, &[buffer.into()])
+            on_event.execute(handler, &scope, &[buffer.into()])
         })
     }
 
-    pub fn on_set(&mut self, env: &JavaEnv, value: &mut Vec<u8>) {
-        env.with_env_expect(|scope| {
+    pub fn on_set(&mut self, env: &JavaEnv, value: &mut Vec<u8>) -> Result<(), DownlinkTaskError> {
+        let ValueDownlinkVTable {
+            on_set, handler, ..
+        } = self;
+        env.with_env(|scope| {
             let buffer = unsafe { scope.new_direct_byte_buffer_exact(value) };
-            self.on_set.execute(&scope, &[buffer.into()])
+            on_set.execute(handler, &scope, &[buffer.into()])
         })
     }
 
-    pub fn on_unlinked(&mut self, env: &JavaEnv) {
-        env.with_env_expect(|scope| self.on_unlinked.execute(&scope, &[]))
+    pub fn on_unlinked(&mut self, env: &JavaEnv) -> Result<(), DownlinkTaskError> {
+        let ValueDownlinkVTable {
+            on_unlinked,
+            handler,
+            ..
+        } = self;
+        env.with_env(|scope| on_unlinked.execute(handler, &scope, &[]))
     }
 }

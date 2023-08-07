@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use bytes::{Buf, BytesMut};
-use jvm_sys::env::{JavaEnv, StringError};
 use std::mem::size_of;
 use std::num::NonZeroUsize;
 use std::time::Duration;
@@ -54,15 +53,7 @@ impl Default for DownlinkConfigurations {
 }
 
 impl DownlinkConfigurations {
-    #[allow(clippy::result_unit_err)]
-    pub fn try_from_bytes(buf: &mut BytesMut, env: &JavaEnv) -> DownlinkConfigurations {
-        env.with_env_expect(|_| {
-            DownlinkConfigurations::from_bytes_internal(buf).map_err(StringError)
-        })
-    }
-
-    // Split into its own function for testing.
-    fn from_bytes_internal(buf: &mut BytesMut) -> Result<DownlinkConfigurations, String> {
+    pub fn try_from_bytes(buf: &mut BytesMut) -> Result<DownlinkConfigurations, String> {
         if buf.len() != CONFIG_LEN {
             return Err("Invalid buffer length".to_string());
         };
@@ -135,7 +126,7 @@ mod test {
         buf.put_u8(0b11); // downlink options
 
         let config =
-            DownlinkConfigurations::from_bytes_internal(&mut buf).expect("Expected a valid config");
+            DownlinkConfigurations::try_from_bytes(&mut buf).expect("Expected a valid config");
         assert_eq!(
             config,
             DownlinkConfigurations {
@@ -170,7 +161,7 @@ mod test {
         buf.put_u8(0);
 
         assert_eq!(
-            DownlinkConfigurations::from_bytes_internal(&mut buf).unwrap_err(),
+            DownlinkConfigurations::try_from_bytes(&mut buf).unwrap_err(),
             "Invalid non-zero integer: 0"
         );
     }
@@ -189,7 +180,7 @@ mod test {
         buf.put_u8(0b111);
 
         assert_eq!(
-            DownlinkConfigurations::from_bytes_internal(&mut buf).unwrap_err(),
+            DownlinkConfigurations::try_from_bytes(&mut buf).unwrap_err(),
             "Invalid downlink options bits: 111"
         );
     }
@@ -198,7 +189,7 @@ mod test {
     fn parse_invalid_length() {
         let mut buf = BytesMut::new();
         assert_eq!(
-            DownlinkConfigurations::from_bytes_internal(&mut buf).unwrap_err(),
+            DownlinkConfigurations::try_from_bytes(&mut buf).unwrap_err(),
             "Invalid buffer length"
         );
 
@@ -207,7 +198,7 @@ mod test {
             buf.set_len(123);
         }
         assert_eq!(
-            DownlinkConfigurations::from_bytes_internal(&mut buf).unwrap_err(),
+            DownlinkConfigurations::try_from_bytes(&mut buf).unwrap_err(),
             "Invalid buffer length"
         );
     }

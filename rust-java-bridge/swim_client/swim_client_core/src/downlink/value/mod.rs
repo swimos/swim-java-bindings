@@ -114,13 +114,13 @@ async fn run_ffi_value_downlink(
         match result? {
             DownlinkNotification::Linked => {
                 if matches!(&state, LinkState::Unlinked) {
-                    lifecycle.on_linked(&env);
+                    lifecycle.on_linked(&env)?;
                     state = LinkState::Linked(None);
                 }
             }
             DownlinkNotification::Synced => match state {
                 LinkState::Linked(Some(mut data)) => {
-                    lifecycle.on_synced(&env, &mut data, &mut ffi_buffer);
+                    lifecycle.on_synced(&env, &mut data, &mut ffi_buffer)?;
                     state = LinkState::Synced;
                 }
                 _ => {
@@ -132,20 +132,20 @@ async fn run_ffi_value_downlink(
                 match &mut state {
                     LinkState::Linked(value) => {
                         if events_when_not_synced {
-                            lifecycle.on_event(&env, &mut data, &mut ffi_buffer);
-                            lifecycle.on_set(&env, &mut data, &mut ffi_buffer);
+                            lifecycle.on_event(&env, &mut data, &mut ffi_buffer)?;
+                            lifecycle.on_set(&env, &mut data, &mut ffi_buffer)?;
                         }
                         *value = Some(data);
                     }
                     LinkState::Synced => {
-                        lifecycle.on_event(&env, &mut data, &mut ffi_buffer);
-                        lifecycle.on_set(&env, &mut data, &mut ffi_buffer);
+                        lifecycle.on_event(&env, &mut data, &mut ffi_buffer)?;
+                        lifecycle.on_set(&env, &mut data, &mut ffi_buffer)?;
                     }
                     LinkState::Unlinked => {}
                 }
             }
             DownlinkNotification::Unlinked => {
-                lifecycle.on_unlinked(&env);
+                lifecycle.on_unlinked(&env)?;
                 if terminate_on_unlinked {
                     break;
                 } else {

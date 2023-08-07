@@ -22,7 +22,6 @@ use client_runtime::{RemotePath, Transport};
 use fixture::{MockClientConnections, MockWs, Server, WsAction};
 use futures_util::future::try_join3;
 use futures_util::SinkExt;
-use jni::errors::Error;
 use jni::objects::{JObject, JString};
 use jni::sys::{jbyteArray, jobject};
 use swim_api::downlink::{Downlink, DownlinkConfig};
@@ -38,11 +37,14 @@ use tokio::io::{duplex, AsyncReadExt};
 use tokio::runtime::Builder;
 use tokio::runtime::Runtime;
 use tokio_util::codec::FramedWrite;
+use url::ParseError;
 use url::Url;
 
 use jvm_sys::env::JavaEnv;
-use jvm_sys::method::{JavaObjectMethod, JavaObjectMethodDef};
-use jvm_sys::{jni_try, jvm_tryf};
+use jvm_sys::env::StringError;
+use jvm_sys::jni_try;
+use jvm_sys::method::JavaMethodExt;
+use jvm_sys::vtable::CountdownLatch;
 use jvm_sys_tests::run_test;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
@@ -247,45 +249,71 @@ client_fn! {
             DEFAULT_BUFFER_SIZE,
         );
         let handle = client.handle();
+
         let downlink = FfiValueDownlink::create(
-                handle.env(),
-                on_event,
-                on_linked,
-                on_set,
-                on_synced,
-                on_unlinked,
-            );
-        env.with_env_expect(|scope| {
-            let host = Url::try_from(scope.get_rust_string(host).as_str());
+            handle.env(),
+            on_event,
+            on_linked,
+            on_set,
+            on_synced,
+            on_unlinked,
+        );
+
+        let parse_result = env.with_env_throw("ai/swim/client/SwimClientException", |scope| {
+            let host = Url::try_from(scope.get_rust_string(host).as_str())?;
             let node = scope.get_rust_string(node);
             let lane = scope.get_rust_string(lane);
 
-            handle.spawn_value_downlink(
-                Default::default(),
-                scope.new_global_ref(unsafe{JObject::from_raw(downlink_ref)}),
-                scope.new_global_ref(unsafe{JObject::from_raw( stopped_barrier_ref)}),
-                downlink,
-                RemotePath::new(host.to_string(), node.clone(), lane.clone())
-            )?;
-
-            let async_runtime = handle.tokio_handle();
-            let barrier_global_ref = scope
-                .new_global_ref(unsafe { JObject::from_raw(barrier) });
-
-            let countdown= scope.initialise(("java/util/concurrent/CountDownLatch", "countDown", "()V"));
-
-            let _jh = async_runtime.spawn(async move {
-                let mut lane_peer = server.lane_for(node, lane);
-                lane_peer.await_link().await;
-                lane_peer.await_sync(13).await;
-                lane_peer.send_event(15).await;
-                lane_peer.send_unlinked().await;
-
-                scope.invoke(countdown.v(),&barrier_global_ref, &[]);
-            });
+            Ok::<_, ParseError>((host,node,lane))
         });
 
-        Box::leak(Box::new(client))
+        match parse_result {
+            Ok((host,node,lane)) => {
+                let spawn_result = env.with_env(|scope| {
+                   handle.spawn_value_downlink(
+                        Default::default(),
+                        scope.new_global_ref(unsafe { JObject::from_raw(downlink_ref) }),
+                        scope.new_global_ref(unsafe { JObject::from_raw( stopped_barrier_ref) }),
+                        downlink,
+                        RemotePath::new(host.to_string(), node.clone(), lane.clone())
+                    )
+                });
+
+                match spawn_result {
+                    Ok(()) => {
+                        env.with_env(|scope| {
+                            let async_runtime = handle.tokio_handle();
+                            let barrier_global_ref = scope
+                                .new_global_ref(unsafe { JObject::from_raw(barrier) });
+                            let countdown= scope.initialise(CountdownLatch::COUNTDOWN);
+                            let scoped_env = env.clone();
+
+                            let handle = async_runtime.spawn(async move {
+                                let mut lane_peer = server.lane_for(node, lane);
+                                lane_peer.await_link().await;
+                                lane_peer.await_sync(13).await;
+                                lane_peer.send_event(15).await;
+                                lane_peer.send_unlinked().await;
+
+                                scoped_env.with_env(|local_scope| {
+                                    local_scope.invoke(countdown.v(),&barrier_global_ref, &[]);
+                                });
+                            });
+
+                            std::mem::forget(handle);
+                        });
+
+                        Box::leak(Box::new(client))
+                    },
+                    Err(()) => {
+                        std::ptr::null_mut()
+                    }
+                }
+            },
+            Err(_) => {
+                std::ptr::null_mut()
+            }
+        }
     }
 }
 
@@ -305,11 +333,12 @@ client_fn! {
     downlink_value_ValueDownlinkTest_driveDownlinkError(
         env,
         _class,
-        downlink_ref: jobject,
-        stopped_barrier_ref: jobject,
-        barrier: jobject,
+        downlink_ref: JObject,
+        stopped_barrier_ref: JObject,
+        barrier: JObject,
         on_event: jobject,
     ) -> SwimClient {
+        let env = JavaEnv::new(env);
         let runtime = Builder::new_multi_thread()
             .enable_all()
             .build()
@@ -318,65 +347,58 @@ client_fn! {
         let (transport, mut server) = create_io();
         let client = SwimClient::with_transport(
             runtime,
-            env.get_java_vm().expect("Failed to get Java VM"),
+            env.clone(),
             transport,
             DEFAULT_BUFFER_SIZE,
             DEFAULT_BUFFER_SIZE,
         );
         let handle = client.handle();
-        let downlink = jni_try! {
-            env,
-            "Failed to create downlink",
-            FfiValueDownlink::create(
-                handle.env(),
-                on_event,
-                null_mut(),
-                null_mut(),
-                null_mut(),
-                null_mut(),
-            ),
-            std::ptr::null_mut()
-        };
+        let downlink = FfiValueDownlink::create(
+            handle.env(),
+            on_event,
+            null_mut(),
+            null_mut(),
+            null_mut(),
+            null_mut(),
+        );
 
-        jni_try! {
+        let spawn_result = env.with_env(|scope| {
+            let downlink_gr = scope.new_global_ref(downlink_ref);
+            let stopped_barrier_gr = scope.new_global_ref(stopped_barrier_ref);
+
             handle.spawn_value_downlink(
                 Default::default(),
-                make_global_ref(&env, downlink_ref, "downlink object reference"),
-                make_global_ref(&env, stopped_barrier_ref, "stopped barrier"),
+                downlink_gr,
+                stopped_barrier_gr,
                 downlink,
                 RemotePath::new("ws://127.0.0.1", "node", "lane")
-            )
-        };
-
-        let async_runtime = handle.tokio_handle();
-        let barrier_global_ref = env
-            .new_global_ref(unsafe { JObject::from_raw(barrier) })
-            .unwrap();
-        let vm = handle.env();
-
-        let countdown =
-            JavaObjectMethodDef::new("java/util/concurrent/CountDownLatch", "countDown", "()V")
-                .initialise(&env)
-                .unwrap();
-
-        let _jh = async_runtime.spawn(async move {
-            let mut lane_peer = server.lane_for("node", "lane");
-            lane_peer.await_link().await;
-            lane_peer.await_sync(13).await;
-            lane_peer.send_event(Value::text("blah")).await;
-            let env = get_env_shared(&vm).unwrap();
-
-            match countdown.invoke(&env, &barrier_global_ref, &[]) {
-                Ok(_) => {}
-                Err(Error::JavaException) => {
-                    let throwable = env.exception_occurred().unwrap();
-                    jvm_tryf!(env, env.throw(throwable));
-                }
-                Err(e) => env.fatal_error(&e.to_string()),
-            }
+            ).map(|_| {
+                scope.new_global_ref(barrier)
+            })
         });
 
-        Box::leak(Box::new(client))
+        match spawn_result {
+            Ok(barrier_gr) => {
+                let async_runtime = handle.tokio_handle();
+                let handle = async_runtime.spawn(async move {
+                    let countdown = env.initialise(CountdownLatch::COUNTDOWN);
+                    let mut lane_peer = server.lane_for("node", "lane");
+
+                    lane_peer.await_link().await;
+                    lane_peer.await_sync(13).await;
+                    lane_peer.send_event(Value::text("blah")).await;
+
+                    env.with_env(|scope|{
+                        scope.invoke(countdown.v(), &barrier_gr, &[])
+                    });
+                });
+                std::mem::forget(handle);
+                Box::leak(Box::new(client))
+            },
+            Err(()) => {
+                std::ptr::null_mut()
+            }
+        }
     }
 }
 
@@ -392,6 +414,9 @@ client_fn! {
             env.convert_byte_array(config).map(BytesMut::from_iter)
         };
 
-        let _r = DownlinkConfigurations::try_from_bytes(&mut config_bytes, &env);
+        let env = JavaEnv::new(env);
+        let _r = env.with_env_throw("ai/swim/client/SwimClientException", |_| {
+           DownlinkConfigurations::try_from_bytes(&mut config_bytes).map_err(StringError)
+        });
     }
 }
