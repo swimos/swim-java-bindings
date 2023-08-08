@@ -49,7 +49,7 @@ where
 
     runtime.spawn(async move {
         let r = join_handle.await;
-        let env = vm.expect_env();
+        let env = vm.env_or_abort();
 
         let _guard = env.lock_obj(&global_ref).expect("Failed to enter monitor");
         let countdown = JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")

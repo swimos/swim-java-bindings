@@ -34,11 +34,11 @@ pub async fn run_server(
     plane_obj: JObject<'_>,
     plane_spec: PlaneSpec,
 ) -> (ServerHandle, BoxFuture<'static, ()>) {
-    let filter = EnvFilter::default().add_directive(LevelFilter::TRACE.into());
-    tracing_subscriber::fmt().with_env_filter(filter).init();
+    // let filter = EnvFilter::default().add_directive(LevelFilter::TRACE.into());
+    // tracing_subscriber::fmt().with_env_filter(filter).init();
 
     let vm = Arc::new(vm);
-    let env = vm.expect_env();
+    let env = vm.env_or_abort();
     let PlaneSpec { name, agent_specs } = plane_spec;
 
     let mut server = ServerBuilder::with_plane_name(name.as_str()).with_in_memory_store();

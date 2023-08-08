@@ -80,7 +80,7 @@ fn lifecycle_test<'a, D>(
 where
     D: Downlink + Send + 'static,
 {
-    let env = vm.expect_env();
+    let env = vm.env_or_abort();
     let host = env.get_string(host).unwrap();
     let node = env.get_string(node).unwrap();
     let lane = env.get_string(lane).unwrap();

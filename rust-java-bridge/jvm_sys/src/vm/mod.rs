@@ -142,11 +142,11 @@ pub enum InvocationError {
 }
 
 #[track_caller]
-pub fn jni_call<O, F>(env: &JNIEnv, mut f: F) -> Result<O, SpannedError>
+pub fn jni_call<O, F>(env: &JNIEnv, f: F) -> Result<O, SpannedError>
 where
-    F: FnMut() -> Result<O, jni::errors::Error>,
+    F: FnOnce() -> Result<O, jni::errors::Error>,
 {
-    match (f)() {
+    with_local_frame_null(env, None, || match (f)() {
         Ok(o) => Ok(o),
         Err(e) => match ErrorDiscriminant::from(&e) {
             ErrorDiscriminant::Exception => {
@@ -163,7 +163,7 @@ where
                 unreachable!("Attempted to use a detached JNI interface")
             }
         },
-    }
+    })
 }
 
 pub enum JniErrorKind<E> {
@@ -221,10 +221,10 @@ impl JavaExceptionHandler for IsTypeOfExceptionHandler {
 pub fn fallible_jni_call<O, F, I>(
     env: &JNIEnv,
     exception_handler: I,
-    mut call: F,
+    call: F,
 ) -> Result<O, JniErrorKind<I::Err>>
 where
-    F: FnMut() -> Result<O, jni::errors::Error>,
+    F: FnOnce() -> Result<O, jni::errors::Error>,
     I: JavaExceptionHandler,
 {
     match (call)() {

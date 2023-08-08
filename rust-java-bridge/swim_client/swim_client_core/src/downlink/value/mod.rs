@@ -153,7 +153,7 @@ async fn run_ffi_value_downlink(
     let mut ffi_buffer = BytesMut::new();
 
     while let Some(result) = framed_read.next().await {
-        let env = vm.expect_env();
+        let env = vm.env_or_abort();
         match result? {
             DownlinkNotification::Linked => {
                 if matches!(&state, LinkState::Unlinked) {

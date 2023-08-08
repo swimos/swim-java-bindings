@@ -193,7 +193,7 @@ client_fn! {
             lane_peer.await_link().await;
             lane_peer.await_sync(vec![13]).await;
             lane_peer.send_event(Value::text("blah")).await;
-            let env = vm.expect_env();
+            let env = vm.env_or_abort();
 
             match countdown.invoke(&env, &barrier_global_ref, &[]) {
                 Ok(_) => {}
@@ -306,7 +306,7 @@ client_fn! {
             lane_peer.send_event(15).await;
             lane_peer.send_unlinked().await;
 
-            let env = vm.expect_env();
+            let env = vm.env_or_abort();
             countdown_latch(&env, barrier_global_ref);
         });
 

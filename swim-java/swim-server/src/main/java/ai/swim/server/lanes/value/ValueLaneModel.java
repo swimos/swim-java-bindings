@@ -28,6 +28,7 @@ public final class ValueLaneModel<T> extends LaneModel {
   public void dispatch(ByteBuffer buffer) {
     Parser<T> parser = new FormParser<>(form.reset());
     parser = parser.feed(Input.byteBuffer(buffer));
+
     if (parser.isDone()) {
       T newValue = parser.bind();
       T oldValue = state.set(newValue);
@@ -43,8 +44,8 @@ public final class ValueLaneModel<T> extends LaneModel {
   }
 
   @Override
-  public void sync( UUID remote) {
-     state.sync(remote);
+  public void sync(UUID remote) {
+    state.sync(remote);
   }
 
   @Override
@@ -73,4 +74,5 @@ public final class ValueLaneModel<T> extends LaneModel {
   public void set(T to) {
     state.set(to);
   }
+
 }

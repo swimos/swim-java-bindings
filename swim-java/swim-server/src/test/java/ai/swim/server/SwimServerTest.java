@@ -7,18 +7,11 @@ import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
 import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.annotations.Transient;
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.WithLenReconEncoder;
-import ai.swim.server.lanes.models.response.LaneResponse;
-import ai.swim.server.lanes.models.response.LaneResponseEncoder;
 import ai.swim.server.lanes.value.ValueLane;
 import ai.swim.server.plane.AbstractPlane;
 import ai.swim.server.schema.PlaneSchema;
-import ai.swim.structure.recognizer.std.ScalarRecognizer;
-import ai.swim.structure.writer.std.ScalarWriters;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
-import java.util.Arrays;
 
 class SwimServerTest {
 
@@ -38,19 +31,31 @@ class SwimServerTest {
     forPlane(planeSchema.bytes());
   }
 
-    @Test
+  @Test
   void testRun() throws IOException {
     TestSwimServer.forPlane(TestPlane.class).runServer();
   }
 
   @SwimAgent("agentName")
   private static class TestAgent extends AbstractAgent {
+    private int events;
+    private long start;
+
     @Transient
     @SwimLane("laneUri")
     private final ValueLane<Integer> lane = valueLane(Integer.class).onEvent((ev) -> {
-      System.out.println("Java agent on event: " + ev);
+      long now = System.nanoTime();
+      if (now - start > 1_000_000_000) {
+        start = now;
+        System.out.println(events);
+        events = 0;
+      } else {
+        events += 1;
+      }
+
+//      System.out.println("Java agent on event: " + ev);
     }).onSet(((oldValue, newValue) -> {
-      System.out.println("Java agent on set. Old: " + oldValue + ", new: " + newValue);
+//      System.out.println("Java agent on set. Old: " + oldValue + ", new: " + newValue);
     }));
 
     @Override

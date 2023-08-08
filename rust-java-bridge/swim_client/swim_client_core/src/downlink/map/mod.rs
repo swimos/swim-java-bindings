@@ -56,7 +56,7 @@ impl FfiMapDownlink {
         drop: jobject,
         error_mode: ErrorHandlingConfig,
     ) -> Result<FfiMapDownlink, Error> {
-        let env = vm.expect_env();
+        let env = vm.env_or_abort();
         let lifecycle = MapDownlinkLifecycle::from_parts(
             &env,
             on_linked,
@@ -161,7 +161,7 @@ async fn run_ffi_map_downlink(
     let mut framed_read = FramedRead::new(input, MapDlNotDecoder::default());
 
     while let Some(result) = framed_read.next().await {
-        let env = vm.expect_env();
+        let env = vm.env_or_abort();
 
         match result? {
             DownlinkNotification::Linked => {

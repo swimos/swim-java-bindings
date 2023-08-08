@@ -42,6 +42,7 @@ use swim_utilities::routing::route_uri::RouteUri;
 use tokio::io::AsyncWriteExt;
 use tokio::select;
 use tokio::task::spawn_blocking;
+use tokio::time::Instant;
 use tokio_util::codec::{BytesCodec, Decoder, Encoder, FramedRead, FramedWrite};
 use tracing::{debug, error, info, trace};
 use tracing_subscriber::fmt::init;
@@ -52,7 +53,7 @@ use jvm_sys::vm::method::{
     ByteArray, InitialisedJavaObjectMethod, JavaCallback, JavaMethodExt, JavaObjectMethod,
     JavaObjectMethodDef, MethodDefinition, MethodResolver,
 };
-use jvm_sys::vm::utils::VmExt;
+use jvm_sys::vm::utils::{UnwrapOrPanic, VmExt};
 use jvm_sys::vm::{
     fallible_jni_call, jni_call, set_panic_hook, with_local_frame_null, IsTypeOfExceptionHandler,
     JniErrorKind, SharedVm, SpannedError,
@@ -306,11 +307,9 @@ impl Agent for FfiAgentDef {
             spec,
             agent_factory,
         } = self;
-        let env = ffi_context.vm.expect_env();
-        let java_agent = match jni_call(&env, || agent_factory.agent_for(&env, route.as_str())) {
-            Ok(obj) => obj,
-            Err(e) => panic_any(e),
-        };
+        let env = ffi_context.vm.env_or_abort();
+        let java_agent =
+            jni_call(&env, || agent_factory.agent_for(&env, route.as_str())).unwrap_or_panic();
 
         let ffi_context = ffi_context.clone();
         let spec = spec.clone();
@@ -357,11 +356,15 @@ async fn initialize_agent(
     let mut item_writers = HashMap::new();
 
     {
-        let env = ffi_context.vm.expect_env();
+        let env = ffi_context.vm.env_or_abort();
 
         for (idx, uri) in lane_specs.keys().enumerate() {
-            let uri_string = env.new_string(uri.as_str()).unwrap();
-            let uri_global_ref = env.new_global_ref(uri_string).unwrap();
+            let uri_string = env
+                .new_string(uri.as_str())
+                .expect("Failed to create JString");
+            let uri_global_ref = env
+                .new_global_ref(uri_string)
+                .expect("Failed to create global reference");
             lane_name_lookup.insert(
                 idx as u64,
                 LaneName {
@@ -391,7 +394,6 @@ async fn initialize_agent(
                 lane_readers.push(LaneReader::value(idx, rx));
                 item_writers.insert(idx, tx);
             } else {
-                println!("Lane conf: {:?}", lane_conf);
                 init_tasks.push(run_lane_initializer(
                     ffi_context.clone(),
                     JavaValueLikeLaneInitializer::new(
@@ -511,13 +513,10 @@ impl JavaItemInitializer for JavaValueLikeLaneInitializer {
         let lane_name = lane_name.clone();
 
         Box::pin(async move {
-            println!("Value lane init wait");
             match try_last(stream).await? {
                 Some(mut body) => {
-                    println!("Init with: {:?}", body.as_ref());
-
                     let FfiContext { vm, .. } = context;
-                    let env = vm.expect_env();
+                    let env = vm.env_or_abort();
                     let agent_ptr = agent_obj.as_obj();
                     let buf = unsafe { env.new_direct_byte_buffer_exact(&mut body).unwrap() };
 
@@ -526,10 +525,7 @@ impl JavaItemInitializer for JavaValueLikeLaneInitializer {
                         .unwrap();
                     Ok(())
                 }
-                None => {
-                    println!("Nothing to init with");
-                    Ok(())
-                }
+                None => Ok(()),
             }
         })
     }
@@ -548,12 +544,10 @@ where
     D: Decoder<Item = BytesMut> + Send + 'static,
     FrameIoError: From<D::Error>,
 {
-    println!("run_lane_initializer");
     let (mut tx, mut rx) = io;
     let stream = init_stream(&mut rx, decoder);
     match initializer.initialize(context, stream).await {
         Ok(()) => {
-            println!("Init ok");
             let mut writer = FramedWrite::new(&mut tx, StoreInitializedCodec);
             writer
                 .send(StoreInitialized)
@@ -565,10 +559,7 @@ where
                     id,
                 })
         }
-        Err(e) => {
-            println!("Init error");
-            Err(e)
-        }
+        Err(e) => Err(e),
     }
 }
 
@@ -605,7 +596,7 @@ impl FfiAgentTask {
         info!("Running agent");
         {
             info!("Invoking Java agent did start lifecycle event");
-            let env = ffi_context.vm.expect_env();
+            let env = ffi_context.vm.env_or_abort();
             java_agent.did_start(&env).unwrap();
         }
 
@@ -653,7 +644,7 @@ impl FfiAgentTask {
         }
 
         {
-            let env = ffi_context.vm.expect_env();
+            let env = ffi_context.vm.env_or_abort();
             java_agent.did_stop(&env).unwrap();
         }
 
@@ -675,9 +666,11 @@ async fn handle_request(
         LaneRequest::Command(mut msg) => {
             trace!("Received a command request");
             let result = {
-                let env = context.vm.expect_env();
-                let buffer = unsafe { env.new_direct_byte_buffer_exact(&mut msg) }?;
+                let env = context.vm.env_or_abort();
+
                 trace!("Invoking Java agent dispatch method");
+
+                let buffer = unsafe { env.new_direct_byte_buffer_exact(&mut msg) }?;
                 jni_call(&env, || agent_ref.dispatch(&env, &lane_name_ref, buffer))
             };
             match result {
@@ -702,7 +695,7 @@ async fn handle_request(
             trace!("Received a sync request");
 
             let result = {
-                let env = context.vm.expect_env();
+                let env = context.vm.env_or_abort();
                 jni_call(&env, || agent_ref.sync(&env, &lane_name_ref, remote_id))
             };
 
@@ -721,50 +714,6 @@ async fn handle_request(
         }
     }
 }
-
-struct AgentResponseDecoder<D> {
-    fin: Option<bool>,
-    delegate: LaneResponseDecoder<D>,
-}
-
-impl<D> AgentResponseDecoder<D> {
-    fn new(delegate: D) -> AgentResponseDecoder<D> {
-        AgentResponseDecoder {
-            fin: None,
-            delegate: LaneResponseDecoder::new(delegate),
-        }
-    }
-}
-
-impl<D> Decoder for AgentResponseDecoder<D>
-where
-    D: Decoder<Item = BytesMut>,
-    D::Error: Into<FrameIoError>,
-{
-    type Item = ExecutionStep;
-    type Error = FrameIoError;
-
-    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
-        // let AgentResponseDecoder { fin, delegate } = self;
-        // let remaining = src.remaining();
-        //
-        //
-        //
-        // if remaining < size_of::<i64>() {
-        //     Ok(Some(ExecutionStep::Complete))
-        // } else {
-        //     let len = src.get_i64() as usize;
-        //
-        //     if src.remaining() < len {
-        //         Ok(None)
-        //     } else {
-        //         Ok(Some(src.split_to(len)))
-        //     }
-        // }
-        unimplemented!()
-    }
-}
-
 enum FfiAgentError {
     Java(JavaError),
     Decode(FrameIoError),
@@ -788,12 +737,6 @@ impl From<FrameIoError> for FfiAgentError {
     }
 }
 
-enum ExecutionStep {
-    Yielded(BytesMut),
-    Complete,
-    MoreDataAvailable,
-}
-
 async fn handle_lane_response(
     ctx: &FfiContext,
     agent_ref: &JavaAgentRef,
@@ -805,12 +748,10 @@ async fn handle_lane_response(
             return Ok(());
         }
 
-        let (int_parts, rest) = returned_value.split_at(size_of::<i32>());
-        println!("Int parts: {:?}", int_parts);
-        println!("Rest: {:?}", rest);
+        let now = Instant::now();
 
+        let (int_parts, rest) = returned_value.split_at(size_of::<i32>());
         let len = i32::from_be_bytes(int_parts.try_into().unwrap()) as usize;
-        println!("Len: {}", len);
 
         lane_writer.write_all(&rest[0..len]).await?;
 
@@ -818,7 +759,7 @@ async fn handle_lane_response(
 
         if more_data[0] == 1u8 {
             debug!("Agent has specified that there is more data to fetch");
-            let env = ctx.vm.expect_env();
+            let env = ctx.vm.env_or_abort();
             returned_value = agent_ref.flush_state(&env)?;
         } else {
             debug!("Agent response decode complete");

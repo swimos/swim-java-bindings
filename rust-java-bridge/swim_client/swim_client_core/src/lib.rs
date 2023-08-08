@@ -260,7 +260,7 @@ impl ClientHandle {
             }
             Err(e) => {
                 // any errors will have already been logged by the runtime
-                let env = vm.expect_env();
+                let env = vm.env_or_abort();
                 env.throw_new(
                     "java/lang/Exception",
                     format!("Failed to spawn downlink: {:?}", e),
@@ -283,7 +283,7 @@ fn spawn_monitor(
         let result = receiver
             .await
             .map_err(|_| DownlinkRuntimeError::new(DownlinkErrorKind::Terminated));
-        let env = vm.expect_env();
+        let env = vm.env_or_abort();
 
         match result {
             Ok(arc_result) => {

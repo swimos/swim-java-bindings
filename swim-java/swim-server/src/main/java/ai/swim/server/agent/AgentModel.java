@@ -32,7 +32,6 @@ public class AgentModel implements Agent {
   }
 
   public void init(String laneUri, ByteBuffer from) {
-    System.out.println("Java init: " + laneUri);
     lanes.get(laneUri).init(from);
   }
 

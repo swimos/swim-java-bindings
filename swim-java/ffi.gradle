@@ -18,7 +18,7 @@ ext {
 }
 
 test {
-    def library_path = '-Djava.library.path='.concat(debug_dir)
+    def library_path = '-Djava.library.path='.concat(release_dir)
     jvmArgs library_path
     useJUnitPlatform()
 

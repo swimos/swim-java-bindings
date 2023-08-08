@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::panic::panic_any;
+use std::process::abort;
 use std::sync::Arc;
 
 use jni::errors::{Error, JniError};
@@ -19,14 +21,30 @@ use jni::objects::{GlobalRef, JObject};
 use jni::sys::jobject;
 use jni::{JNIEnv, JavaVM};
 
+use crate::vm::SpannedError;
 use crate::JniResult;
 
 pub trait VmExt {
     fn get_env(&self) -> JniResult<JNIEnv>;
 
-    fn expect_env(&self) -> JNIEnv {
-        self.get_env()
-            .expect("Failed to get JNI environment interface")
+    fn env_or_abort(&self) -> JNIEnv {
+        match self.get_env() {
+            Ok(env) => env,
+            Err(_) => abort(),
+        }
+    }
+}
+
+pub trait UnwrapOrPanic<O> {
+    fn unwrap_or_panic(self) -> O;
+}
+
+impl<O> UnwrapOrPanic<O> for Result<O, SpannedError> {
+    fn unwrap_or_panic(self) -> O {
+        match self {
+            Ok(o) => o,
+            Err(e) => panic_any(e),
+        }
     }
 }
 

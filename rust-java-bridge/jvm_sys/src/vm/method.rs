@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+use std::marker::PhantomData;
+use std::sync::Arc;
+
 use jni::errors::Error::WrongJValueType;
 use jni::errors::{Error as JError, Error};
 use jni::objects::{GlobalRef, JMethodID, JObject, JString, JValue};
@@ -19,10 +24,6 @@ use jni::signature::TypeSignature;
 use jni::sys::jobject;
 use jni::JNIEnv;
 use parking_lot::Mutex;
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
-use std::marker::PhantomData;
-use std::sync::Arc;
 
 use crate::vm::utils::new_global_ref;
 use crate::vm::with_local_frame_null;
