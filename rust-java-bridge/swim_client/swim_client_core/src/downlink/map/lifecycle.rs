@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use jni::errors::Error;
-use jni::objects::{GlobalRef, JValue};
 use jni::sys::{jint, jobject};
 use jni::JNIEnv;
 use jvm_sys::EnvExt;
@@ -22,28 +21,12 @@ use jvm_sys::vm::method::{JavaMethodExt, JavaObjectMethod};
 use jvm_sys::vm::{jni_call, SpannedError};
 
 use crate::downlink::vtable::{
-    void_fn, JavaMethod, BI_CONSUMER_ACCEPT, CONSUMER_ACCEPT, ON_LINKED, ON_UNLINKED, ROUTINE_EXEC,
-    TRI_CONSUMER_ACCEPT,
+    void_fn, JavaMethod, DISPATCH_DROP, DISPATCH_ON_CLEAR, DISPATCH_ON_REMOVE, DISPATCH_ON_UPDATE,
+    DISPATCH_TAKE, ON_LINKED, ON_UNLINKED, ROUTINE_EXEC,
 };
-
-struct BoolWrapper {
-    bool_true: GlobalRef,
-    bool_false: GlobalRef,
-}
-
-impl BoolWrapper {
-    fn boolean_for(&self, b: bool) -> &GlobalRef {
-        if b {
-            &self.bool_true
-        } else {
-            &self.bool_false
-        }
-    }
-}
 
 pub struct MapDownlinkLifecycle {
     vtable: MapDownlinkVTable,
-    wrapper: BoolWrapper,
 }
 
 impl MapDownlinkLifecycle {
@@ -58,14 +41,6 @@ impl MapDownlinkLifecycle {
         take: jobject,
         drop: jobject,
     ) -> Result<MapDownlinkLifecycle, Error> {
-        let true_field =
-            env.get_static_field("java/lang/Boolean", "TRUE", "Ljava/lang/Boolean;")?;
-        let bool_true = env.new_global_ref(true_field.l()?)?;
-
-        let false_field =
-            env.get_static_field("java/lang/Boolean", "FALSE", "Ljava/lang/Boolean;")?;
-        let bool_false = env.new_global_ref(false_field.l()?)?;
-
         Ok(MapDownlinkLifecycle {
             vtable: MapDownlinkVTable::new(
                 env,
@@ -78,10 +53,6 @@ impl MapDownlinkLifecycle {
                 take,
                 drop,
             )?,
-            wrapper: BoolWrapper {
-                bool_true,
-                bool_false,
-            },
         })
     }
 
@@ -102,9 +73,9 @@ impl MapDownlinkLifecycle {
         mut value: Vec<u8>,
         dispatch: bool,
     ) -> Result<(), SpannedError> {
-        let MapDownlinkLifecycle { vtable, wrapper } = self;
+        let MapDownlinkLifecycle { vtable } = self;
         jni_call(env, || {
-            vtable.on_update(env, &mut key, &mut value, wrapper.boolean_for(dispatch))
+            vtable.on_update(env, &mut key, &mut value, dispatch)
         })
     }
 
@@ -114,15 +85,13 @@ impl MapDownlinkLifecycle {
         mut key: Vec<u8>,
         dispatch: bool,
     ) -> Result<(), SpannedError> {
-        let MapDownlinkLifecycle { vtable, wrapper } = self;
-        jni_call(env, || {
-            vtable.on_remove(env, &mut key, wrapper.boolean_for(dispatch))
-        })
+        let MapDownlinkLifecycle { vtable } = self;
+        jni_call(env, || vtable.on_remove(env, &mut key, dispatch))
     }
 
     pub fn on_clear(&mut self, env: &JNIEnv, dispatch: bool) -> Result<(), SpannedError> {
-        let MapDownlinkLifecycle { vtable, wrapper } = self;
-        jni_call(env, || vtable.on_clear(env, wrapper.boolean_for(dispatch)))
+        let MapDownlinkLifecycle { vtable } = self;
+        jni_call(env, || vtable.on_clear(env, dispatch))
     }
 
     pub fn on_unlinked(&mut self, env: &JNIEnv) -> Result<(), SpannedError> {
@@ -131,13 +100,13 @@ impl MapDownlinkLifecycle {
     }
 
     pub fn take(&mut self, env: &JNIEnv, n: jint, dispatch: bool) -> Result<(), SpannedError> {
-        let MapDownlinkLifecycle { vtable, wrapper } = self;
-        jni_call(env, || vtable.take(env, n, wrapper.boolean_for(dispatch)))
+        let MapDownlinkLifecycle { vtable } = self;
+        jni_call(env, || vtable.take(env, n, dispatch))
     }
 
     pub fn drop(&mut self, env: &JNIEnv, n: jint, dispatch: bool) -> Result<(), SpannedError> {
-        let MapDownlinkLifecycle { vtable, wrapper } = self;
-        jni_call(env, || vtable.drop(env, n, wrapper.boolean_for(dispatch)))
+        let MapDownlinkLifecycle { vtable } = self;
+        jni_call(env, || vtable.drop(env, n, dispatch))
     }
 }
 
@@ -167,12 +136,12 @@ impl MapDownlinkVTable {
         Ok(MapDownlinkVTable {
             on_linked: JavaMethod::for_method(&env, on_linked, ON_LINKED)?,
             on_synced: JavaMethod::for_method(&env, on_synced, ROUTINE_EXEC)?,
-            on_update: JavaMethod::for_method(&env, on_update, TRI_CONSUMER_ACCEPT)?,
-            on_remove: JavaMethod::for_method(&env, on_remove, BI_CONSUMER_ACCEPT)?,
-            on_clear: JavaMethod::for_method(&env, on_clear, CONSUMER_ACCEPT)?,
+            on_update: JavaMethod::for_method(&env, on_update, DISPATCH_ON_UPDATE)?,
+            on_remove: JavaMethod::for_method(&env, on_remove, DISPATCH_ON_REMOVE)?,
+            on_clear: JavaMethod::for_method(&env, on_clear, DISPATCH_ON_CLEAR)?,
             on_unlinked: JavaMethod::for_method(&env, on_unlinked, ON_UNLINKED)?,
-            take: JavaMethod::for_method(&env, take, BI_CONSUMER_ACCEPT)?,
-            drop: JavaMethod::for_method(&env, drop, BI_CONSUMER_ACCEPT)?,
+            take: JavaMethod::for_method(&env, take, DISPATCH_TAKE)?,
+            drop: JavaMethod::for_method(&env, drop, DISPATCH_DROP)?,
         })
     }
 
@@ -189,7 +158,7 @@ impl MapDownlinkVTable {
         env: &JNIEnv,
         key: &mut Vec<u8>,
         value: &mut Vec<u8>,
-        dispatch: &GlobalRef,
+        dispatch: bool,
     ) -> Result<(), Error> {
         let key = unsafe { env.new_direct_byte_buffer_exact(key)? };
         let value = unsafe { env.new_direct_byte_buffer_exact(value) }?;
@@ -200,17 +169,12 @@ impl MapDownlinkVTable {
         )
     }
 
-    fn on_remove(
-        &mut self,
-        env: &JNIEnv,
-        key: &mut Vec<u8>,
-        dispatch: &GlobalRef,
-    ) -> Result<(), Error> {
+    fn on_remove(&mut self, env: &JNIEnv, key: &mut Vec<u8>, dispatch: bool) -> Result<(), Error> {
         let buffer = unsafe { env.new_direct_byte_buffer_exact(key) }?;
         void_fn(env, &mut self.on_remove, &[buffer.into(), dispatch.into()])
     }
 
-    fn on_clear(&mut self, env: &JNIEnv, dispatch: &GlobalRef) -> Result<(), Error> {
+    fn on_clear(&mut self, env: &JNIEnv, dispatch: bool) -> Result<(), Error> {
         void_fn(env, &mut self.on_clear, &[dispatch.into()])
     }
 
@@ -218,26 +182,15 @@ impl MapDownlinkVTable {
         void_fn(env, &mut self.on_unlinked, &[])
     }
 
-    fn take(&mut self, env: &JNIEnv, n: jint, dispatch: &GlobalRef) -> Result<(), Error> {
+    fn take(&mut self, env: &JNIEnv, n: jint, dispatch: bool) -> Result<(), Error> {
         self.take.execute(env, |init, obj| {
-            let cnt = value_of_int(env, n)?;
-            init.void().invoke(env, obj, &[cnt, dispatch.into()])
+            init.void().invoke(env, obj, &[n.into(), dispatch.into()])
         })
     }
 
-    fn drop(&mut self, env: &JNIEnv, n: jint, dispatch: &GlobalRef) -> Result<(), Error> {
+    fn drop(&mut self, env: &JNIEnv, n: jint, dispatch: bool) -> Result<(), Error> {
         self.drop.execute(env, |init, obj| {
-            let cnt = value_of_int(env, n)?;
-            init.void().invoke(env, obj, &[cnt, dispatch.into()])
+            init.void().invoke(env, obj, &[n.into(), dispatch.into()])
         })
     }
-}
-
-fn value_of_int<'l>(env: &'l JNIEnv, n: jint) -> Result<JValue<'l>, Error> {
-    env.call_static_method(
-        "java/lang/Integer",
-        "valueOf",
-        "(I)Ljava/lang/Integer;",
-        &[n.into()],
-    )
 }

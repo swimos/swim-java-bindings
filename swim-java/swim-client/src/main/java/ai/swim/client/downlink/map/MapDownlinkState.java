@@ -15,7 +15,11 @@
 package ai.swim.client.downlink.map;
 
 import ai.swim.client.downlink.DownlinkException;
-import ai.swim.client.downlink.TriConsumer;
+import ai.swim.client.downlink.map.dispatch.DispatchDrop;
+import ai.swim.client.downlink.map.dispatch.DispatchOnClear;
+import ai.swim.client.downlink.map.dispatch.DispatchOnRemove;
+import ai.swim.client.downlink.map.dispatch.DispatchOnUpdate;
+import ai.swim.client.downlink.map.dispatch.DispatchTake;
 import ai.swim.client.lifecycle.OnClear;
 import ai.swim.client.lifecycle.OnRemove;
 import ai.swim.client.lifecycle.OnSynced;
@@ -27,14 +31,11 @@ import ai.swim.structure.Form;
 import ai.swim.structure.FormParser;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerException;
-
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 class MapDownlinkState<K, V> {
   private static final int DEFAULT_MAP_SIZE = 16;
@@ -54,7 +55,7 @@ class MapDownlinkState<K, V> {
     this.state = init;
   }
 
-  TriConsumer<ByteBuffer, ByteBuffer, Boolean> wrapOnUpdate(OnUpdate<K, V> onUpdate) {
+  DispatchOnUpdate wrapOnUpdate(OnUpdate<K, V> onUpdate) {
     return (keyBuffer, valueBuffer, dispatch) -> {
       K key;
       V value;
@@ -91,7 +92,7 @@ class MapDownlinkState<K, V> {
     }
   }
 
-  BiConsumer<ByteBuffer, Boolean> wrapOnRemove(OnRemove<K, V> onRemove) {
+  DispatchOnRemove wrapOnRemove(OnRemove<K, V> onRemove) {
     return (keyBuffer, dispatch) -> {
       K key;
       try {
@@ -115,7 +116,7 @@ class MapDownlinkState<K, V> {
   /**
    * Wraps the provided on clear interface so that it is invoked with a read-only view of the map's current state.
    */
-  Consumer<Boolean> wrapOnClear(OnClear<K, V> onClear) {
+  DispatchOnClear wrapOnClear(OnClear<K, V> onClear) {
     return (dispatch) -> {
       if (dispatch && onClear != null) {
         try {
@@ -131,7 +132,7 @@ class MapDownlinkState<K, V> {
   /**
    * Dispatches a take operation on the map; this is more efficient than repeated FFI calls for each remove operation.
    */
-  BiConsumer<Integer, Boolean> take() {
+  DispatchTake take() {
     return (n, dispatch) -> {
       Iterator<Map.Entry<K, V>> entries = state.entrySet().iterator();
       HashMap<K, V> newState = new HashMap<>(Math.min(state.size() - n, DEFAULT_MAP_SIZE));
@@ -165,7 +166,7 @@ class MapDownlinkState<K, V> {
   /**
    * Dispatches a drop operation on the map; this is more efficient than repeated FFI calls for each remove operation.
    */
-  BiConsumer<Integer, Boolean> drop() {
+  DispatchDrop drop() {
     return (n, dispatch) -> {
       Iterator<Map.Entry<K, V>> entries = state.entrySet().iterator();
       HashMap<K, V> newState = new HashMap<>(Math.min(state.size() - n, DEFAULT_MAP_SIZE));

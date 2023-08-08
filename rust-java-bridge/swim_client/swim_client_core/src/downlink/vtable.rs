@@ -32,15 +32,30 @@ pub const CONSUMER_ACCEPT: JavaObjectMethodDef = JavaObjectMethodDef::new(
     "accept",
     "(Ljava/lang/Object;)V",
 );
-pub const BI_CONSUMER_ACCEPT: JavaObjectMethodDef = JavaObjectMethodDef::new(
-    "java/util/function/BiConsumer",
-    "accept",
-    "(Ljava/lang/Object;Ljava/lang/Object;)V",
+pub const DISPATCH_ON_UPDATE: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchOnUpdate",
+    "onUpdate",
+    "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Z)V",
 );
-pub const TRI_CONSUMER_ACCEPT: JavaObjectMethodDef = JavaObjectMethodDef::new(
-    "ai/swim/client/downlink/TriConsumer",
-    "accept",
-    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V",
+pub const DISPATCH_ON_REMOVE: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchOnRemove",
+    "onRemove",
+    "(Ljava/nio/ByteBuffer;Z)V",
+);
+pub const DISPATCH_ON_CLEAR: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchOnClear",
+    "onClear",
+    "(Z)V",
+);
+pub const DISPATCH_TAKE: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchTake",
+    "take",
+    "(IZ)V",
+);
+pub const DISPATCH_DROP: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchDrop",
+    "drop",
+    "(IZ)V",
 );
 pub const ROUTINE_EXEC: JavaObjectMethodDef =
     JavaObjectMethodDef::new("ai/swim/client/downlink/map/Routine", "exec", "()V");

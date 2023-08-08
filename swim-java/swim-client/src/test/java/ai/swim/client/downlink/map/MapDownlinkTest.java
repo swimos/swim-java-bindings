@@ -17,6 +17,11 @@ package ai.swim.client.downlink.map;
 import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.FfiTest;
 import ai.swim.client.downlink.TriConsumer;
+import ai.swim.client.downlink.map.dispatch.DispatchDrop;
+import ai.swim.client.downlink.map.dispatch.DispatchOnClear;
+import ai.swim.client.downlink.map.dispatch.DispatchOnRemove;
+import ai.swim.client.downlink.map.dispatch.DispatchOnUpdate;
+import ai.swim.client.downlink.map.dispatch.DispatchTake;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.codec.Parser;
@@ -50,12 +55,12 @@ public class MapDownlinkTest extends FfiTest {
   private static native void callbackTest(
       OnLinked onLinked,
       Routine onSynced,
-      TriConsumer<ByteBuffer, ByteBuffer, Boolean> onUpdate,
-      BiConsumer<ByteBuffer, Boolean> onRemove,
-      Consumer<Boolean> onClear,
+      DispatchOnUpdate onUpdate,
+      DispatchOnRemove onRemove,
+      DispatchOnClear onClear,
       OnUnlinked onUnlinked,
-      BiConsumer<Integer, Boolean> take,
-      BiConsumer<Integer, Boolean> drop
+      DispatchTake take,
+      DispatchDrop drop
   ) throws SwimClientException;
 
   private static native long lifecycleTest(
@@ -66,12 +71,12 @@ public class MapDownlinkTest extends FfiTest {
       String lane,
       OnLinked onLinked,
       Routine onSynced,
-      TriConsumer<ByteBuffer, ByteBuffer, Boolean> onUpdate,
-      BiConsumer<ByteBuffer, Boolean> onRemove,
-      Consumer<Boolean> onClear,
+      DispatchOnUpdate onUpdate,
+      DispatchOnRemove onRemove,
+      DispatchOnClear onClear,
       OnUnlinked onUnlinked,
-      BiConsumer<Integer, Boolean> take,
-      BiConsumer<Integer, Boolean> drop
+      DispatchTake take,
+      DispatchDrop drop
   ) throws SwimClientException;
 
   String parseString(ByteBuffer buffer) {
