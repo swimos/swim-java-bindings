@@ -57,7 +57,6 @@ public class SwimClient implements NativeResource {
     }
   }
 
-
   private static native long startClient(byte[] config);
 
   private static native long shutdownClient(long runtime);
