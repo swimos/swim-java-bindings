@@ -6,8 +6,9 @@ ext.nativeProperties = new Properties();
 ext.nativeProperties.load(file(project.projectDir.absolutePath + "/native.properties").newReader())
 
 ext {
+    ext.moduleName = 'swim.client'
+
     bridge_dir = "../../rust-java-bridge"
-    client_dir = bridge_dir.concat('/swim_client')
     target_dir = bridge_dir.concat('/target')
 
     if (DefaultNativePlatform.currentOperatingSystem.isMacOsX()) {
@@ -17,23 +18,6 @@ ext {
     debug_dir = target_dir.concat('/debug')
     release_dir = target_dir.concat('/release')
 }
-//
-//graalvmNative {
-//    binaries {
-//        main {
-//            compileRust(true)
-//            def library_path = '-Djava.library.path='.concat(bridge_dir)
-//            runtimeArgs.add(library_path)
-//        }
-//        test {
-//            compileRust(false)
-//            buildArgs.add('--initialize-at-build-time=org.junit.platform.launcher.TestIdentifier')
-//
-//            def library_path = '-Djava.library.path='.concat(bridge_dir)
-//            runtimeArgs.add(library_path)
-//        }
-//    }
-//}
 
 test {
     def library_path = '-Djava.library.path='.concat(debug_dir)
@@ -112,6 +96,8 @@ application {
 dependencies {
     api project(':swim-codec')
     api project(':swim-recon')
+    api project(':swim-concurrent')
+    api project(':swim-lang-ffi')
 
     implementation project(':swim-structure')
     annotationProcessor project(':swim-structure-processor')

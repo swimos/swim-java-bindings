@@ -43,7 +43,7 @@ class CollectionRecognizerTest {
   @Test
   void testArray() {
     Integer[] actual = runTest(new ArrayRecognizer<>(Integer.class, ScalarRecognizer.INTEGER), events());
-    assertArrayEquals(actual, new Integer[] {1, 2, 3});
+    assertArrayEquals(actual, new Integer[]{1, 2, 3});
   }
 
 }

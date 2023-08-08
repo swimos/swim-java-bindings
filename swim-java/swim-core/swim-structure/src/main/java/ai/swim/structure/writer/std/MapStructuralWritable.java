@@ -24,6 +24,12 @@ import ai.swim.structure.writer.proxy.WriterTypeParameter;
 
 import java.util.Map;
 
+/**
+ * A {@code Writable} for writing objects that extend {@code Map<K, V>}.
+ *
+ * @param <K> the type of the {@code Map}'s keys.
+ * @param <V> the type of the {@code Map}'s values.
+ */
 public class MapStructuralWritable<K, V> implements StructuralWritable<Map<K, V>> {
   private Writable<K> kWriter;
   private Writable<V> vWriter;

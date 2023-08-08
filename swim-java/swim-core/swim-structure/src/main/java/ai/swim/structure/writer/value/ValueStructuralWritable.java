@@ -14,18 +14,8 @@
 
 package ai.swim.structure.writer.value;
 
-import ai.swim.structure.value.Attr;
-import ai.swim.structure.value.Item;
-import ai.swim.structure.value.PrimitiveValue;
-import ai.swim.structure.value.Record;
-import ai.swim.structure.value.Slot;
-import ai.swim.structure.value.Value;
-import ai.swim.structure.value.ValueItem;
-import ai.swim.structure.writer.BodyWriter;
-import ai.swim.structure.writer.HeaderWriter;
-import ai.swim.structure.writer.StructuralWritable;
-import ai.swim.structure.writer.StructuralWriter;
-import ai.swim.structure.writer.WriterException;
+import ai.swim.structure.value.*;
+import ai.swim.structure.writer.*;
 
 public class ValueStructuralWritable implements StructuralWritable<Value> {
   @Override

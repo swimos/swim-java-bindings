@@ -14,11 +14,7 @@
 
 package ai.swim.structure.writer;
 
-import ai.swim.structure.value.Attr;
-import ai.swim.structure.value.Item;
-import ai.swim.structure.value.Record;
-import ai.swim.structure.value.Text;
-import ai.swim.structure.value.Value;
+import ai.swim.structure.value.*;
 import ai.swim.structure.writer.header.Header;
 import ai.swim.structure.writer.std.ScalarWriters;
 import ai.swim.structure.writer.value.ValueStructuralWriter;

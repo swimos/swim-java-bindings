@@ -142,11 +142,6 @@ public class DownlinkConfig {
     return this;
   }
 
-  /**
-   *
-   * @param b
-   * @return
-   */
   private static byte booleanToByte(boolean b) {
     return (byte) (b ? 1 : 0);
   }

@@ -14,8 +14,6 @@
 
 package ai.swim.client;
 
-import java.util.Arrays;
-
 public class Utils {
   public static String stackTraceString(Throwable exception) {
     if (exception == null) {

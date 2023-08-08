@@ -14,7 +14,8 @@
 
 package ai.swim.client;
 
-public class SwimClientException extends Exception{
+
+public class SwimClientException extends Exception {
   public SwimClientException() {
   }
 

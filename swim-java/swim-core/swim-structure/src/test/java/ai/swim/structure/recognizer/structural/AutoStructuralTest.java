@@ -13,9 +13,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -1042,9 +1039,6 @@ public class AutoStructuralTest {
     public boolean e;
     public Boolean eE;
     public String f;
-    public AtomicBoolean g;
-    public AtomicInteger h;
-    public AtomicLong i;
     public char j;
     public Character jJ;
     public BigInteger k;

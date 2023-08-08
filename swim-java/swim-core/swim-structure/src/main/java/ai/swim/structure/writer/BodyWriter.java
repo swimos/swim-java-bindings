@@ -19,25 +19,80 @@ import ai.swim.structure.writer.std.ScalarWriters;
 
 import java.util.Objects;
 
+/**
+ * Interface for defining how body items should be written in to {@code T}.
+ *
+ * @param <T> the type this writer produces.
+ */
 public interface BodyWriter<T> {
+
+  /**
+   * Writes a slot into the body.
+   *
+   * @param keyWriter   an interpreter for {@code key}.
+   * @param key         of the slot.
+   * @param valueWriter an interpreter for {@code value}.
+   * @param value       of the slot.
+   * @param <K>         the type of the key.
+   * @param <V>         the type of the value.
+   * @return this.
+   */
   <K, V> BodyWriter<T> writeSlot(Writable<K> keyWriter, K key, Writable<V> valueWriter, V value);
 
+  /**
+   * Writes a slot into the body.
+   *
+   * @param key   of the slot.
+   * @param value of the slot.
+   * @param <K>   the type of the key.
+   * @param <V>   the type of the value.
+   * @return this.
+   */
   default <K, V> BodyWriter<T> writeSlot(K key, V value) {
     Writable<K> keyWriter = WriterProxy.getProxy().lookupObject(key);
     Writable<V> valueWriter = WriterProxy.getProxy().lookupObject(value);
     return writeSlot(keyWriter, key, valueWriter, value);
   }
 
+  /**
+   * Writes a slot into the body.
+   *
+   * @param keyWriter an interpreter for {@code key}.
+   * @param key       of the slot.
+   * @param value     of the slot.
+   * @param <K>       the type of the key.
+   * @param <V>       the type of the value.
+   * @return this.
+   */
   default <K, V> BodyWriter<T> writeSlot(Writable<K> keyWriter, K key, V value) {
     Writable<V> valueWriter = WriterProxy.getProxy().lookupObject(value);
     return writeSlot(keyWriter, key, valueWriter, value);
   }
 
+  /**
+   * Writes a slot into the body.
+   *
+   * @param key         of the slot.
+   * @param valueWriter an interpreter for {@code value}.
+   * @param value       of the slot.
+   * @param <K>         the type of the key.
+   * @param <V>         the type of the value.
+   * @return this.
+   */
   default <K, V> BodyWriter<T> writeSlot(K key, Writable<V> valueWriter, V value) {
     Writable<K> keyWriter = WriterProxy.getProxy().lookupObject(key);
     return writeSlot(keyWriter, key, valueWriter, value);
   }
 
+  /**
+   * Writes a slot into the body.
+   *
+   * @param key         of the slot.
+   * @param valueWriter an interpreter for {@code value}.
+   * @param value       of the slot.
+   * @param <V>         the type of the value.
+   * @return this.
+   */
   default <V> BodyWriter<T> writeSlot(String key, Writable<V> valueWriter, V value) {
     if (valueWriter == null) {
       return writeSlot(ScalarWriters.STRING, key, value);
@@ -46,12 +101,30 @@ public interface BodyWriter<T> {
     }
   }
 
+  /**
+   * Writes a value into the body.
+   *
+   * @param writer an interpreter for {@code value}.
+   * @param value  of the slot.
+   * @param <V>    the type of the value.
+   * @return this.
+   */
   <V> BodyWriter<T> writeValue(Writable<V> writer, V value);
 
+  /**
+   * Writes a value into the body.
+   *
+   * @param value of the slot.
+   * @param <V>   the type of the value.
+   * @return this.
+   */
   default <V> BodyWriter<T> writeValue(V value) {
     Writable<V> valueWriter = WriterProxy.getProxy().lookupObject(Objects.requireNonNull(value));
     return writeValue(valueWriter, value);
   }
 
+  /**
+   * Finish writing the body and attempt to bind a value.
+   */
   T done();
 }

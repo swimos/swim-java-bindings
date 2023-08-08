@@ -23,12 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,7 +54,7 @@ class WriterProxyTest {
     assertEquals(WriterProxy.getProxy().lookup(Double.class), ScalarWriters.DOUBLE);
     assertEquals(WriterProxy.getProxy().lookup(Double.TYPE), ScalarWriters.DOUBLE);
     assertEquals(WriterProxy.getProxy().lookup(byte[].class), ScalarWriters.PRIMITIVE_BLOB);
-    assertEquals(WriterProxy.getProxy().lookup(BigInteger.class), ScalarWriters.BIG_INT);
+    assertEquals(WriterProxy.getProxy().lookup(BigInteger.class), ScalarWriters.BIG_INTEGER);
     assertEquals(WriterProxy.getProxy().lookup(BigDecimal.class), ScalarWriters.BIG_DECIMAL);
     assertEquals(WriterProxy.getProxy().lookup(Value.class).getClass(), ValueStructuralWritable.class);
     assertEquals(WriterProxy.getProxy().lookup(AtomicInteger.class), ScalarWriters.ATOMIC_INTEGER);

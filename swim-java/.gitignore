@@ -6,3 +6,5 @@ build
 out
 *.log
 *~
+
+swim.client/libs/*

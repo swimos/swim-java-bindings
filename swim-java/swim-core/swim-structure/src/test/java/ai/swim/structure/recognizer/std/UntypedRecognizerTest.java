@@ -7,9 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class UntypedRecognizerTest {
 
@@ -81,9 +79,9 @@ class UntypedRecognizerTest {
 
   @Test
   void testBlob() {
-    Recognizer<byte[]> recognizer = ScalarRecognizer.BLOB.feedEvent(ReadEvent.blob(new byte[] {1, 2, 3}));
+    Recognizer<byte[]> recognizer = ScalarRecognizer.BLOB.feedEvent(ReadEvent.blob(new byte[]{1, 2, 3}));
     assertTrue(recognizer.isDone());
-    assertArrayEquals(recognizer.bind(), new byte[] {1, 2, 3});
+    assertArrayEquals(recognizer.bind(), new byte[]{1, 2, 3});
 
     runTestErr(ScalarRecognizer.BLOB.feedEvent(ReadEvent.endAttribute()));
   }
