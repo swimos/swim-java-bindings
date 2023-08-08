@@ -13,14 +13,17 @@
 // limitations under the License.
 
 use jni::errors::Error;
-use jni::sys::{ jint, jobject};
+use jni::sys::{jint, jobject};
 use jni::JNIEnv;
 use jvm_sys::EnvExt;
 
 use jvm_sys::vm::method::{JavaMethodExt, JavaObjectMethod};
 use jvm_sys::vm::{jni_call, SpannedError};
 
-use crate::downlink::vtable::{void_fn, JavaMethod,   ON_LINKED, ON_UNLINKED, ROUTINE_EXEC, DISPATCH_ON_UPDATE, DISPATCH_ON_REMOVE, DISPATCH_ON_CLEAR, DISPATCH_TAKE, DISPATCH_DROP};
+use crate::downlink::vtable::{
+    void_fn, JavaMethod, DISPATCH_DROP, DISPATCH_ON_CLEAR, DISPATCH_ON_REMOVE, DISPATCH_ON_UPDATE,
+    DISPATCH_TAKE, ON_LINKED, ON_UNLINKED, ROUTINE_EXEC,
+};
 
 pub struct MapDownlinkLifecycle {
     vtable: MapDownlinkVTable,
@@ -83,9 +86,7 @@ impl MapDownlinkLifecycle {
         dispatch: bool,
     ) -> Result<(), SpannedError> {
         let MapDownlinkLifecycle { vtable } = self;
-        jni_call(env, || {
-            vtable.on_remove(env, &mut key, dispatch)
-        })
+        jni_call(env, || vtable.on_remove(env, &mut key, dispatch))
     }
 
     pub fn on_clear(&mut self, env: &JNIEnv, dispatch: bool) -> Result<(), SpannedError> {
@@ -157,7 +158,7 @@ impl MapDownlinkVTable {
         env: &JNIEnv,
         key: &mut Vec<u8>,
         value: &mut Vec<u8>,
-        dispatch:bool,
+        dispatch: bool,
     ) -> Result<(), Error> {
         let key = unsafe { env.new_direct_byte_buffer_exact(key)? };
         let value = unsafe { env.new_direct_byte_buffer_exact(value) }?;
@@ -168,12 +169,7 @@ impl MapDownlinkVTable {
         )
     }
 
-    fn on_remove(
-        &mut self,
-        env: &JNIEnv,
-        key: &mut Vec<u8>,
-        dispatch:bool,
-    ) -> Result<(), Error> {
+    fn on_remove(&mut self, env: &JNIEnv, key: &mut Vec<u8>, dispatch: bool) -> Result<(), Error> {
         let buffer = unsafe { env.new_direct_byte_buffer_exact(key) }?;
         void_fn(env, &mut self.on_remove, &[buffer.into(), dispatch.into()])
     }

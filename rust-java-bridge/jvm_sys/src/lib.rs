@@ -15,8 +15,9 @@
 extern crate core;
 
 use jni::errors::Result as JniResult;
-use jni::objects::JByteBuffer;
+use jni::objects::{JByteBuffer, JObject, JValue};
 use jni::JNIEnv;
+use std::marker::PhantomData;
 
 mod macros;
 pub mod util;
@@ -24,18 +25,38 @@ pub mod vm;
 pub use macros::*;
 pub use paste;
 
-pub trait EnvExt<'a> {
-    unsafe fn new_direct_byte_buffer_exact(
-        &'a self,
-        buf: &mut Vec<u8>,
-    ) -> JniResult<JByteBuffer<'a>>;
+pub trait EnvExt<'e> {
+    unsafe fn new_direct_byte_buffer_exact<'b>(
+        &'e self,
+        buf: &'b mut Vec<u8>,
+    ) -> JniResult<ByteBufferGuard<'b>>
+    where
+        'e: 'b;
 }
 
-impl<'a> EnvExt<'a> for JNIEnv<'a> {
-    unsafe fn new_direct_byte_buffer_exact(
-        &'a self,
-        buf: &mut Vec<u8>,
-    ) -> JniResult<JByteBuffer<'a>> {
+impl<'e> EnvExt<'e> for JNIEnv<'e> {
+    unsafe fn new_direct_byte_buffer_exact<'b>(
+        &'e self,
+        buf: &'b mut Vec<u8>,
+    ) -> JniResult<ByteBufferGuard<'b>>
+    where
+        'e: 'b,
+    {
         self.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len())
+            .map(move |buffer| ByteBufferGuard {
+                _buf: Default::default(),
+                buffer,
+            })
+    }
+}
+
+pub struct ByteBufferGuard<'b> {
+    _buf: PhantomData<&'b mut Vec<u8>>,
+    buffer: JByteBuffer<'b>,
+}
+
+impl<'b> From<ByteBufferGuard<'b>> for JValue<'b> {
+    fn from(value: ByteBufferGuard<'b>) -> Self {
+        unsafe { JValue::Object(JObject::from_raw(value.buffer.into_raw())) }
     }
 }
