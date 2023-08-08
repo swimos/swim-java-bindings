@@ -14,7 +14,10 @@
 
 package ai.swim.client;
 
+import ai.swim.client.downlink.map.MapDownlinkBuilder;
 import ai.swim.client.downlink.value.ValueDownlinkBuilder;
+import ai.swim.lang.ffi.AtomicDestructor;
+import ai.swim.lang.ffi.NativeResource;
 
 /**
  * A SwimClient class used for opening downlinks.
@@ -22,7 +25,7 @@ import ai.swim.client.downlink.value.ValueDownlinkBuilder;
  * This class is **not** thread safe. If shared access is required then synchronization must be performed, or it must be
  * placed behind a lock.
  */
-public class SwimClient {
+public class SwimClient implements NativeResource {
   static {
     System.loadLibrary("swim_client");
   }
@@ -31,14 +34,11 @@ public class SwimClient {
    * A pointer to the native SwimClient instance.
    */
   private final long runtime;
-  /**
-   * Flag indicating whether this SwimClient has already initiated a shutdown. Used to prevent a double free.
-   */
-  private boolean running;
+  private final AtomicDestructor destructor;
 
   private SwimClient(long ptr) {
     this.runtime = ptr;
-    this.running = true;
+    this.destructor = new AtomicDestructor(this, () -> shutdownClient(ptr));
   }
 
   /**
@@ -56,24 +56,38 @@ public class SwimClient {
    * Signals to the runtime that it should initiate a shutdown.
    */
   public void close() {
-    if (!running) {
+    if (!destructor.drop()) {
       throw new IllegalStateException("Already closed");
-    } else {
-      shutdownClient(runtime);
-      running = false;
     }
   }
 
   /**
    * Creates a new value downlink builder.
-   * @param host      The URl of the host to open the connection to.
-   * @param node      The node URI to downlink to.
-   * @param lane      The lane URI to downlink to.
-   * @param formType  A form class representing the structure of the downlink's value.
-   * @return          A value downlink builder.
-   * @param <T>       The type of the downlink's value.
+   *
+   * @param host     The URl of the host to open the connection to.
+   * @param node     The node URI to downlink to.
+   * @param lane     The lane URI to downlink to.
+   * @param formType A form class representing the structure of the downlink's value.
+   * @param <T>      The type of the downlink's value.
+   * @return A value downlink builder.
    */
   public <T> ValueDownlinkBuilder<T> valueDownlink(String host, String node, String lane, Class<T> formType) {
     return new ValueDownlinkBuilder<>(Handle.create(runtime), formType, host, node, lane);
+  }
+
+  /**
+   * Creates a new map downlink builder.
+   *
+   * @param host      The URl of the host to open the connection to.
+   * @param node      The node URI to downlink to.
+   * @param lane      The lane URI to downlink to.
+   * @param keyForm   A form class representing the structure of the downlink's key.
+   * @param valueForm A form class representing the structure of the downlink's value.
+   * @param <K>       The type of the downlink's key.
+   * @param <V>       The type of the downlink's value.
+   * @return A map downlink builder.
+   */
+  public <K, V> MapDownlinkBuilder<K, V> mapDownlink(String host, String node, String lane, Class<K> keyForm, Class<V> valueForm) {
+    return new MapDownlinkBuilder<>(Handle.create(runtime), keyForm, valueForm, host, node, lane);
   }
 }

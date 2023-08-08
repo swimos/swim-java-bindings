@@ -6,8 +6,9 @@ ext.nativeProperties = new Properties();
 ext.nativeProperties.load(file(project.projectDir.absolutePath + "/native.properties").newReader())
 
 ext {
+    ext.moduleName = 'swim.client'
+
     bridge_dir = "../../rust-java-bridge"
-    client_dir = bridge_dir.concat('/swim_client')
     target_dir = bridge_dir.concat('/target')
 
     if (DefaultNativePlatform.currentOperatingSystem.isMacOsX()) {
@@ -96,6 +97,7 @@ dependencies {
     api project(':swim-codec')
     api project(':swim-recon')
     api project(':swim-concurrent')
+    api project(':swim-lang-ffi')
 
     implementation project(':swim-structure')
     annotationProcessor project(':swim-structure-processor')

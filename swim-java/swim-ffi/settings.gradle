@@ -1,0 +1,4 @@
+rootProject.name = 'swim-ffi'
+
+include 'swim.lang.ffi'
+project(':swim.lang.ffi').name = 'swim-lang-ffi'

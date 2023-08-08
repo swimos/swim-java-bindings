@@ -24,3 +24,7 @@ project(':swim-core/swim-util').name = 'swim-util'
 
 include('swim-core/swim-concurrent')
 project(':swim-core/swim-concurrent').name = 'swim-concurrent'
+
+include 'swim.lang.ffi'
+project(':swim.lang.ffi').projectDir = file('swim-ffi/swim.lang.ffi')
+project(':swim.lang.ffi').name = 'swim-lang-ffi'

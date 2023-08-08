@@ -31,6 +31,10 @@ public class DownlinkConfig {
   private boolean keepLinked = true;
   private boolean keepSynced = true;
 
+  private static byte booleanToByte(boolean b) {
+    return (byte) (b ? 1 : 0);
+  }
+
   /**
    * Sets the duration that the runtime may be inactive for before it shuts down; a runtime is considered inactive if
    * it has no consumers.
@@ -132,10 +136,6 @@ public class DownlinkConfig {
   public DownlinkConfig setKeepSynced(boolean keepSynced) {
     this.keepSynced = keepSynced;
     return this;
-  }
-
-  private static byte booleanToByte(boolean b) {
-    return (byte) (b ? 1 : 0);
   }
 
   /**

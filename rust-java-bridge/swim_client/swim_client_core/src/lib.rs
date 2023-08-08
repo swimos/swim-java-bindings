@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::num::NonZeroUsize;
-use std::sync::Arc;
-
-pub use client_runtime::ClientConfig;
-use client_runtime::RemotePath;
+use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
 use client_runtime::{
     start_runtime, DownlinkErrorKind, DownlinkRuntimeError, RawHandle, Transport,
 };
+use client_runtime::{ClientConfig, RemotePath};
 use jni::objects::{GlobalRef, JValue};
 use jni::JNIEnv;
 use jni::JavaVM;
@@ -28,6 +25,9 @@ use ratchet::deflate::{DeflateConfig, DeflateExtProvider};
 #[cfg(not(feature = "deflate"))]
 use ratchet::NoExtProvider;
 use ratchet::WebSocketStream;
+use std::num::NonZeroUsize;
+use std::sync::Arc;
+use swim_api::downlink::Downlink;
 use swim_api::error::DownlinkTaskError;
 use swim_runtime::net::dns::Resolver;
 #[cfg(not(feature = "tls"))]
@@ -49,11 +49,11 @@ use jvm_sys::vm::utils::VmExt;
 use jvm_sys::vm::{with_local_frame_null, SpannedError};
 pub use macros::*;
 
-use crate::downlink::value::{FfiValueDownlink, SharedVm};
-use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
-
 pub mod downlink;
 mod macros;
+pub use macros::*;
+
+pub type SharedVm = Arc<JavaVM>;
 
 pub struct SwimClient {
     error_mode: ErrorHandlingConfig,
@@ -85,6 +85,7 @@ impl SwimClient {
             stop_rx,
             transport,
             transport_buffer_size,
+            false,
         );
 
         let runtime_handle = runtime.handle();
@@ -116,14 +117,20 @@ impl SwimClient {
             remote_buffer_size,
             transport_buffer_size,
             registration_buffer_size,
-            #[cfg(feature = "deflate")]
-            deflate,
+            ..
         } = config;
 
         #[cfg(feature = "deflate")]
-        let websockets = build_websockets(websocket, deflate);
+        let websockets = build_websockets(
+            ratchet::WebSocketConfig {
+                max_message_size: websocket.max_message_size,
+            },
+            websocket.deflate_config,
+        );
         #[cfg(not(feature = "deflate"))]
-        let websockets = build_websockets(websocket);
+        let websockets = build_websockets(ratchet::WebSocketConfig {
+            max_message_size: websocket.max_message_size,
+        });
 
         let transport = Transport::new(
             build_networking(runtime.handle()),
@@ -215,14 +222,17 @@ impl ClientHandle {
     }
 
     #[allow(clippy::result_unit_err)]
-    pub fn spawn_value_downlink(
+    pub fn spawn_downlink<D>(
         &self,
         config: DownlinkConfigurations,
         downlink_ref: GlobalRef,
         stopped_barrier: GlobalRef,
-        downlink: FfiValueDownlink,
+        downlink: D,
         path: RemotePath,
-    ) -> Result<(), ()> {
+    ) -> Result<(), ()>
+    where
+        D: Downlink + Send + Sync + 'static,
+    {
         let ClientHandle {
             vm,
             tokio_handle,

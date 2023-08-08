@@ -26,7 +26,10 @@ use swim_runtime::downlink::{DownlinkOptions, DownlinkRuntimeConfig};
 
 const CONFIG_LEN: usize = size_of::<u64>() * 5 + size_of::<u8>() * 4;
 
+mod decoder;
+pub mod map;
 pub mod value;
+mod vtable;
 
 #[derive(Copy, Clone, Debug)]
 pub enum ErrorHandlingConfig {
