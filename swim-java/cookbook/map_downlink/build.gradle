@@ -1,0 +1,11 @@
+apply from: '../project.gradle'
+
+description = 'Code corresponding to the Map Downlink cookbook'
+ext.moduleName = 'swim.cookbook'
+mainClassName = 'swim.cookbook.BasicPlane'
+
+tasks.register('runClient', JavaExec) {
+    group = "application"
+    classpath sourceSets.main.runtimeClasspath
+    mainClassName = "swim.cookbook.CustomClient"
+}

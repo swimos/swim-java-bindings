@@ -28,3 +28,11 @@ project(':swim-core/swim-concurrent').name = 'swim-concurrent'
 include 'swim.lang.ffi'
 project(':swim.lang.ffi').projectDir = file('swim-ffi/swim.lang.ffi')
 project(':swim.lang.ffi').name = 'swim-lang-ffi'
+
+include 'value_downlink'
+project(':value_downlink').projectDir = file('cookbook/value_downlink')
+project(':value_downlink').name = 'value_downlink'
+
+include 'map_downlink'
+project(':map_downlink').projectDir = file('cookbook/map_downlink')
+project(':map_downlink').name = 'map_downlink'
