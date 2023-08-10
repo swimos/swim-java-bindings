@@ -31,7 +31,7 @@ final class CustomClient {
 
   public static void main(String[] args) throws SwimClientException, IOException {
     // Initialises the client runtime.
-    try (SwimClient client = SwimClient.open()) {
+    try (SwimClient client = SwimClien.open()) {
 
       // Here we create a ValueDownlinkBuilder to a host running at "warp://localhost:9001/" an agent of "unit/foo" and a
       // value lane of "lane" - which corresponds to UnitAgent#intLane.

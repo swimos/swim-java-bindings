@@ -5,6 +5,7 @@ use std::convert::Infallible;
 use std::error::Error as StdError;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::marker::PhantomData;
 use std::panic::Location;
 use std::process::abort;
 use std::sync::Arc;
@@ -118,22 +119,6 @@ pub struct Scope<'l> {
 }
 
 impl<'l> Scope<'l> {
-    // #[doc(hidden)]
-    // pub(crate) fn call_method_unchecked<O, T>(
-    //     &self,
-    //     obj: O,
-    //     method_id: T,
-    //     ret: ReturnType,
-    //     args: &[jvalue],
-    // ) -> JValue<'l>
-    // where
-    //     O: Into<JObject<'l>>,
-    //     T: Desc<'l, JMethodID>,
-    // {
-    //     let Scope { vm, env, .. } = self;
-    //     system_call(vm, || env.call_method_unchecked(obj, method_id, ret, args))
-    // }
-
     #[doc(hidden)]
     pub(crate) fn call_method_unchecked<H, O, T>(
         &self,
@@ -327,14 +312,31 @@ impl<'l> Scope<'l> {
         system_call(vm, || env.convert_byte_array(array))
     }
 
-    pub unsafe fn new_direct_byte_buffer_exact<B>(&self, buf: &mut B) -> JByteBuffer<'l>
+    pub unsafe fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b>
     where
         B: BufPtr,
+        'l: 'b,
     {
         let Scope { vm, env, .. } = self;
-        system_call(vm, || {
+        let buffer = system_call(vm, || {
             env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len())
-        })
+        });
+        ByteBufferGuard {
+            _buf: Default::default(),
+            buffer,
+        }
+    }
+}
+
+/// Guard that binds the lifetime of the JByteBuffer to the backing data.
+pub struct ByteBufferGuard<'b> {
+    _buf: PhantomData<&'b mut Vec<u8>>,
+    buffer: JByteBuffer<'b>,
+}
+
+impl<'b> From<ByteBufferGuard<'b>> for JValue<'b> {
+    fn from(value: ByteBufferGuard<'b>) -> Self {
+        unsafe { JValue::Object(JObject::from_raw(value.buffer.into_raw())) }
     }
 }
 
@@ -410,7 +412,12 @@ fn abort_unexpected_sys_exception(vm: Arc<JavaVM>) -> ! {
 
 /// Flushes Java output streams to ensure that any exception messages have been printed.
 fn flush_output_streams(env: &JNIEnv) {
-    let r = env.call_static_method("ai/swim/client/Utils", "flushOutputStreams", "()V", &[]);
+    let r = env.call_static_method(
+        "ai/swim/lang/ffi/ExceptionUtils",
+        "flushOutputStreams",
+        "()V",
+        &[],
+    );
     if r.is_err() {
         eprintln!("Failed to flush Java output streams");
     }
@@ -458,6 +465,7 @@ impl JavaExceptionHandler for AbortingHandler {
     }
 }
 
+#[derive(Debug)]
 pub struct IsTypeOfExceptionHandler {
     method: InitialisedJavaObjectMethod,
     class: GlobalRef,
@@ -567,7 +575,7 @@ fn handle_exception(
     scope.exception_clear();
 
     let stack_trace_obj = scope.call_static_method(
-        "ai/swim/client/Utils",
+        "ai/swim/lang/ffi/ExceptionUtils",
         "stackTraceString",
         "(Ljava/lang/Throwable;)Ljava/lang/String;",
         &[throwable.into()],

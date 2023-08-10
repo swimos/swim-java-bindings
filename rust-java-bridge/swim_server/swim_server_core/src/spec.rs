@@ -11,8 +11,7 @@ use swim_api::meta::lane::LaneKind;
 use swim_utilities::routing::route_uri::RouteUri;
 
 use bytebridge::{ByteCodec, FromBytesError};
-use jvm_sys::vm::method::JavaObjectMethodDef;
-use jvm_sys::vm::SharedVm;
+use jvm_sys::method::JavaObjectMethodDef;
 
 struct AgentVTable {
     on_start: JavaObjectMethodDef,

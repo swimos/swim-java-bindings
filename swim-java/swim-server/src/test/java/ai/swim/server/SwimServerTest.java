@@ -38,24 +38,12 @@ class SwimServerTest {
 
   @SwimAgent("agentName")
   private static class TestAgent extends AbstractAgent {
-    private int events;
-    private long start;
-
     @Transient
     @SwimLane("laneUri")
     private final ValueLane<Integer> lane = valueLane(Integer.class).onEvent((ev) -> {
-      long now = System.nanoTime();
-      if (now - start > 1_000_000_000) {
-        start = now;
-        System.out.println(events);
-        events = 0;
-      } else {
-        events += 1;
-      }
-
-//      System.out.println("Java agent on event: " + ev);
+      System.out.println("Java agent on event: " + ev);
     }).onSet(((oldValue, newValue) -> {
-//      System.out.println("Java agent on set. Old: " + oldValue + ", new: " + newValue);
+      System.out.println("Java agent on set. Old: " + oldValue + ", new: " + newValue);
     }));
 
     @Override

@@ -12,8 +12,8 @@ use tokio::join;
 use tokio::net::TcpStream;
 
 use jvm_sys::bridge::JniByteCodec;
+use jvm_sys::env::JavaEnv;
 use jvm_sys::null_pointer_check_abort;
-use jvm_sys::vm::set_panic_hook;
 use swim_server_core::spec::PlaneSpec;
 use swim_server_core::{run_server, server_fn};
 
@@ -24,6 +24,8 @@ server_fn! {
         config: jbyteArray
     ) {
         null_pointer_check_abort!(env, config);
+
+        let env = JavaEnv::new(env);
 
         let spec = match PlaneSpec::try_from_jbyte_array(&env, config) {
             Ok(spec) => spec,
@@ -43,7 +45,7 @@ server_fn! {
     )  {
         null_pointer_check_abort!(env, config);
 
-        set_panic_hook();
+        let env = JavaEnv::new(env);
 
         let spec = match PlaneSpec::try_from_jbyte_array::<()>(&env, config) {
             Ok(spec) => spec,
@@ -51,14 +53,14 @@ server_fn! {
         };
 
         let task = async move {
-            let (mut handle, task) = run_server(env.get_java_vm().unwrap(), unsafe { JObject::from_raw(plane_obj) }, spec).await;
+            let (mut handle, task) = run_server(env, unsafe { JObject::from_raw(plane_obj) }, spec).await;
             let server_task = tokio::spawn(task);
 
-            println!("{}",handle.bound_addr().await.unwrap());
-            server_task.await.unwrap();
-            // let gen_task = tokio::spawn(gen_task(handle));
+            // println!("{}",handle.bound_addr().await.unwrap());
+            // server_task.await.unwrap();
+            let gen_task = tokio::spawn(gen_task(handle));
 
-            // let (_a,_b) = join!(server_task, gen_task);
+            let (_a,_b) = join!(server_task, gen_task);
         };
         tokio::runtime::Builder::new_multi_thread()
             .enable_all()
@@ -69,6 +71,7 @@ server_fn! {
 }
 
 async fn gen_task(mut handle: ServerHandle) {
+    println!("Spaned gen task");
     let addr = handle.bound_addr().await.unwrap();
 
     println!("{}", addr.ip());

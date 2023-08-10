@@ -47,25 +47,30 @@ pub trait ByteCodec {
 }
 
 /// Unrecoverable errors produced when attempting to decode an object from its byte representation.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum FromBytesError {
+    #[error("An invalid marker was read: `{0:?}`")]
     InvalidMarker(Marker),
     /// An invalid UTF-8 encoding was read.
+    #[error("Invalid UTF-8: `{0}`")]
     Utf8(String),
     /// An invalid boolean value was read.
+    #[error("An invalid boolean was read: `{0}`")]
     Bool(u8),
     /// There was insufficient data in the buffer.
+    #[error("Insufficient data")]
     InsufficientData,
     /// Unknown enum variant was read.
+    #[error("An invalid enumeration variant was read: `{0}`")]
     UnknownEnumVariant(i8),
     /// Integer value overflowed target type
+    #[error("Integer value overflowed target type: `{0}`")]
     NumberOverflow(String),
     /// Invalid data was read. The String contains the error's cause.
+    #[error("{0}`")]
     Invalid(String),
-    Io {
-        kind: ErrorKind,
-        message: String,
-    },
+    #[error("IO error: {kind}: {message}")]
+    Io { kind: ErrorKind, message: String },
 }
 
 impl FromBytesError {

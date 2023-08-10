@@ -19,7 +19,7 @@ use futures_util::future::BoxFuture;
 use futures_util::stream::{unfold, BoxStream, FuturesUnordered, SelectAll};
 use futures_util::{FutureExt, SinkExt};
 use jni::errors::{Error as JavaError, JniError};
-use jni::objects::{GlobalRef, JByteBuffer, JObject, JValue};
+use jni::objects::{GlobalRef, JByteBuffer, JObject, JThrowable, JValue};
 use jni::JNIEnv;
 use swim_api::agent::{Agent, AgentConfig, AgentContext, AgentInitResult, LaneConfig, UplinkKind};
 use swim_api::error::{AgentInitError, AgentTaskError, FrameIoError};
@@ -49,16 +49,12 @@ use tracing_subscriber::fmt::init;
 use uuid::Uuid;
 
 use bytebridge::{ByteCodec, FromBytesError};
-use jvm_sys::vm::method::{
-    ByteArray, InitialisedJavaObjectMethod, JavaCallback, JavaMethodExt, JavaObjectMethod,
-    JavaObjectMethodDef, MethodDefinition, MethodResolver,
+use jvm_sys::env::{
+    ByteBufferGuard, IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler, MethodResolver, Scope,
 };
-use jvm_sys::vm::utils::{UnwrapOrPanic, VmExt};
-use jvm_sys::vm::{
-    fallible_jni_call, jni_call, set_panic_hook, with_local_frame_null, IsTypeOfExceptionHandler,
-    JniErrorKind, SharedVm, SpannedError,
+use jvm_sys::method::{
+    ByteArray, InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
 };
-use jvm_sys::EnvExt;
 
 use crate::spec::{AgentSpec, LaneKindRepr, LaneSpec};
 use crate::FfiContext;
@@ -66,6 +62,19 @@ use crate::FfiContext;
 type LaneCodec<T> = FramedRead<ByteReader, LaneRequestDecoder<T>>;
 type ValueReaderCodec = LaneCodec<WithLengthBytesCodec>;
 type MapReaderCodec = LaneCodec<MapMessageDecoder<RawMapOperationDecoder>>;
+
+#[derive(Debug)]
+struct ExceptionHandler(IsTypeOfExceptionHandler);
+
+impl JavaExceptionHandler for ExceptionHandler {
+    type Err = AgentTaskError;
+
+    fn inspect(&self, scope: &Scope, throwable: JThrowable) -> Option<Self::Err> {
+        self.0
+            .inspect(scope, throwable)
+            .map(|e| AgentTaskError::UserCodeError(Box::new(e)))
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct AgentFactory {
@@ -81,32 +90,29 @@ impl AgentFactory {
         "(Ljava/lang/String;)Lai/swim/server/agent/Agent;",
     );
 
-    pub fn new(env: &JNIEnv, factory: GlobalRef, resolver: MethodResolver) -> AgentFactory {
+    pub fn new(env: &JavaEnv, factory: GlobalRef) -> AgentFactory {
         AgentFactory {
-            new_agent_method: resolver.resolve(env, Self::NEW_AGENT),
+            new_agent_method: env.initialise(Self::NEW_AGENT),
             factory,
-            vtable: Arc::new(JavaAgentVTable::initialise(env, resolver)),
+            vtable: Arc::new(JavaAgentVTable::initialise(env)),
         }
     }
 
-    pub fn agent_for(&self, env: &JNIEnv, uri: impl AsRef<str>) -> Result<JavaAgentRef, JavaError> {
+    pub fn agent_for(&self, env: &JavaEnv, uri: impl AsRef<str>) -> JavaAgentRef {
         let AgentFactory {
             new_agent_method,
             factory,
             vtable,
         } = self;
-        let java_uri = env.new_string(uri.as_ref())?;
 
-        with_local_frame_null(env, None, || {
-            let result = new_agent_method.object().global_ref().invoke(
-                env,
+        env.with_env(|scope| {
+            let java_uri = scope.new_string(uri.as_ref());
+            let obj_ref = scope.invoke(
+                new_agent_method.l().global_ref(),
                 factory.as_obj(),
                 &[JValue::Object(java_uri.deref().clone())],
             );
-            match result {
-                Ok(obj_ref) => Ok(JavaAgentRef::new(obj_ref, vtable.clone())),
-                Err(e) => Err(e),
-            }
+            JavaAgentRef::new(obj_ref, vtable.clone())
         })
     }
 }
@@ -122,50 +128,50 @@ impl JavaAgentRef {
         JavaAgentRef { agent_obj, vtable }
     }
 
-    fn did_start(&self, env: &JNIEnv) -> Result<(), JavaError> {
+    fn did_start(&self, env: &JavaEnv) -> Result<(), AgentTaskError> {
         let JavaAgentRef { agent_obj, vtable } = self;
-        with_local_frame_null(env, None, || vtable.did_start(env, agent_obj.as_obj()))
+        env.with_env(|scope| vtable.did_start(&scope, agent_obj.as_obj()))
     }
 
-    fn did_stop(&self, env: &JNIEnv) -> Result<(), JavaError> {
+    fn did_stop(&self, env: &JavaEnv) -> Result<(), AgentTaskError> {
         let JavaAgentRef { agent_obj, vtable } = self;
-        with_local_frame_null(env, None, || vtable.did_stop(env, agent_obj.as_obj()))
+        env.with_env(|scope| vtable.did_stop(&scope, agent_obj.as_obj()))
     }
 
     fn dispatch(
         &self,
-        env: &JNIEnv,
+        env: &JavaEnv,
         lane_name: &GlobalRef,
-        msg: JByteBuffer,
-    ) -> Result<Vec<u8>, JavaError> {
+        mut msg: BytesMut,
+    ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentRef { agent_obj, vtable } = self;
-        with_local_frame_null(env, None, || {
-            vtable.dispatch(env, agent_obj.as_obj(), lane_name.as_obj(), msg)
+        env.with_env(|scope| {
+            let buffer = unsafe { scope.new_direct_byte_buffer_exact(&mut msg) };
+            vtable.dispatch(&scope, agent_obj.as_obj(), lane_name.as_obj(), buffer)
         })
     }
 
     fn sync(
         &self,
-        env: &JNIEnv,
+        env: &JavaEnv,
         lane_name: &GlobalRef,
         remote: Uuid,
-    ) -> Result<Vec<u8>, JavaError> {
+    ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentRef { agent_obj, vtable } = self;
-        with_local_frame_null(env, None, || {
-            vtable.sync(env, agent_obj.as_obj(), lane_name.as_obj(), remote)
+        env.with_env(|scope| vtable.sync(&scope, agent_obj.as_obj(), lane_name.as_obj(), remote))
+    }
+
+    fn init(&self, env: &JavaEnv, lane_name: &GlobalRef, mut msg: BytesMut) {
+        let JavaAgentRef { agent_obj, vtable } = self;
+        env.with_env(|scope| {
+            let buffer = unsafe { scope.new_direct_byte_buffer_exact(&mut msg) };
+            vtable.init(&scope, agent_obj.as_obj(), lane_name.as_obj(), buffer)
         })
     }
 
-    fn init(&self, env: &JNIEnv, lane_name: &GlobalRef, msg: JByteBuffer) -> Result<(), JavaError> {
+    fn flush_state(&self, env: &JavaEnv) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentRef { agent_obj, vtable } = self;
-        with_local_frame_null(env, None, || {
-            vtable.init(env, agent_obj.as_obj(), lane_name.as_obj(), msg)
-        })
-    }
-
-    fn flush_state(&self, env: &JNIEnv) -> Result<Vec<u8>, JavaError> {
-        let JavaAgentRef { agent_obj, vtable } = self;
-        with_local_frame_null(env, None, || vtable.flush_state(env, agent_obj.as_obj()))
+        env.with_env(|scope| vtable.flush_state(&scope, agent_obj.as_obj()))
     }
 }
 
@@ -177,6 +183,7 @@ pub struct JavaAgentVTable {
     sync: InitialisedJavaObjectMethod,
     init: InitialisedJavaObjectMethod,
     flush_state: InitialisedJavaObjectMethod,
+    handler: ExceptionHandler,
 }
 
 impl JavaAgentVTable {
@@ -202,34 +209,48 @@ impl JavaAgentVTable {
     const FLUSH_STATE: JavaObjectMethodDef =
         JavaObjectMethodDef::new("ai/swim/server/agent/AgentModel", "flushState", "()[B");
 
-    fn initialise(env: &JNIEnv, resolver: MethodResolver) -> JavaAgentVTable {
+    fn initialise(env: &JavaEnv) -> JavaAgentVTable {
         JavaAgentVTable {
-            did_start: resolver.resolve(env, Self::DID_START),
-            did_stop: resolver.resolve(env, Self::DID_STOP),
-            dispatch: resolver.resolve(env, Self::DISPATCH),
-            sync: resolver.resolve(env, Self::SYNC),
-            init: resolver.resolve(env, Self::INIT),
-            flush_state: resolver.resolve(env, Self::FLUSH_STATE),
+            did_start: env.initialise(Self::DID_START),
+            did_stop: env.initialise(Self::DID_STOP),
+            dispatch: env.initialise(Self::DISPATCH),
+            sync: env.initialise(Self::SYNC),
+            init: env.initialise(Self::INIT),
+            flush_state: env.initialise(Self::FLUSH_STATE),
+            handler: ExceptionHandler(IsTypeOfExceptionHandler::new(
+                env,
+                "ai/swim/server/agent/AgentException",
+            )),
         }
     }
 
-    fn did_start(&self, env: &JNIEnv, agent_obj: JObject) -> Result<(), JavaError> {
-        self.did_start.void().invoke(env, agent_obj, &[])
+    fn did_start(&self, scope: &Scope, agent_obj: JObject) -> Result<(), AgentTaskError> {
+        let JavaAgentVTable {
+            did_start, handler, ..
+        } = self;
+        did_start.v().invoke(handler, scope, agent_obj, &[])
     }
 
-    fn did_stop(&self, env: &JNIEnv, agent_obj: JObject) -> Result<(), JavaError> {
-        self.did_stop.void().invoke(env, agent_obj, &[])
+    fn did_stop(&self, scope: &Scope, agent_obj: JObject) -> Result<(), AgentTaskError> {
+        let JavaAgentVTable {
+            did_stop, handler, ..
+        } = self;
+        did_stop.v().invoke(handler, scope, agent_obj, &[])
     }
 
     fn dispatch(
         &self,
-        env: &JNIEnv,
+        scope: &Scope,
         agent_obj: JObject,
         lane_ref: JObject,
-        msg: JByteBuffer,
-    ) -> Result<Vec<u8>, JavaError> {
-        self.dispatch.object().array::<ByteArray>().invoke(
-            env,
+        msg: ByteBufferGuard,
+    ) -> Result<Vec<u8>, AgentTaskError> {
+        let JavaAgentVTable {
+            dispatch, handler, ..
+        } = self;
+        dispatch.l().array::<ByteArray>().invoke(
+            handler,
+            scope,
             agent_obj,
             &[lane_ref.into(), msg.into()],
         )
@@ -237,39 +258,50 @@ impl JavaAgentVTable {
 
     fn sync(
         &self,
-        env: &JNIEnv,
+        scope: &Scope,
         agent_obj: JObject,
         lane_ref: JObject,
         remote: Uuid,
-    ) -> Result<Vec<u8>, JavaError> {
-        let (msb, lsb) = remote.as_u64_pair();
-        let msb: i64 = msb.try_into().expect("UUID MSB overflow");
-        let lsb: i64 = lsb.try_into().expect("UUID LSB overflow");
+    ) -> Result<Vec<u8>, AgentTaskError> {
+        let JavaAgentVTable { sync, handler, .. } = self;
+        let try_into = |num: u64| -> Result<i64, AgentTaskError> {
+            match num.try_into() {
+                Ok(n) => Ok(n),
+                Err(_) => {
+                    return Err(AgentTaskError::DeserializationFailed(
+                        ReadError::NumberOutOfRange,
+                    ))
+                }
+            }
+        };
 
-        self.sync.object().array::<ByteArray>().invoke(
-            env,
+        let (msb, lsb) = remote.as_u64_pair();
+        let msb = try_into(msb)?;
+        let lsb = try_into(lsb)?;
+
+        sync.l().array::<ByteArray>().invoke(
+            handler,
+            scope,
             agent_obj,
             &[lane_ref.into(), msb.into(), lsb.into()],
         )
     }
 
-    fn flush_state(&self, env: &JNIEnv, agent_obj: JObject) -> Result<Vec<u8>, JavaError> {
-        self.flush_state
-            .object()
+    fn flush_state(&self, scope: &Scope, agent_obj: JObject) -> Result<Vec<u8>, AgentTaskError> {
+        let JavaAgentVTable {
+            flush_state,
+            handler,
+            ..
+        } = self;
+        flush_state
+            .l()
             .array::<ByteArray>()
-            .invoke(env, agent_obj, &[])
+            .invoke(handler, scope, agent_obj, &[])
     }
 
-    fn init(
-        &self,
-        env: &JNIEnv,
-        agent_obj: JObject,
-        lane_ref: JObject,
-        msg: JByteBuffer,
-    ) -> Result<(), JavaError> {
-        self.init
-            .void()
-            .invoke(env, agent_obj, &[lane_ref.into(), msg.into()])
+    fn init(&self, scope: &Scope, agent_obj: JObject, lane_ref: JObject, msg: ByteBufferGuard) {
+        let JavaAgentVTable { init, .. } = self;
+        scope.invoke(init.v(), agent_obj, &[lane_ref.into(), msg.into()])
     }
 }
 
@@ -307,10 +339,8 @@ impl Agent for FfiAgentDef {
             spec,
             agent_factory,
         } = self;
-        let env = ffi_context.vm.env_or_abort();
-        let java_agent =
-            jni_call(&env, || agent_factory.agent_for(&env, route.as_str())).unwrap_or_panic();
 
+        let java_agent = agent_factory.agent_for(&ffi_context.env, route.as_str());
         let ffi_context = ffi_context.clone();
         let spec = spec.clone();
 
@@ -355,16 +385,12 @@ async fn initialize_agent(
     let mut lane_readers = SelectAll::new();
     let mut item_writers = HashMap::new();
 
-    {
-        let env = ffi_context.vm.env_or_abort();
+    let env = ffi_context.env.clone();
 
+    env.with_env(|scope| {
         for (idx, uri) in lane_specs.keys().enumerate() {
-            let uri_string = env
-                .new_string(uri.as_str())
-                .expect("Failed to create JString");
-            let uri_global_ref = env
-                .new_global_ref(uri_string)
-                .expect("Failed to create global reference");
+            let uri_string = scope.new_string(uri.as_str());
+            let uri_global_ref = scope.new_global_ref(uri_string);
             lane_name_lookup.insert(
                 idx as u64,
                 LaneName {
@@ -373,7 +399,7 @@ async fn initialize_agent(
                 },
             );
         }
-    }
+    });
 
     for (idx, (uri, spec)) in lane_specs.into_iter().enumerate() {
         let idx = idx as u64;
@@ -425,7 +451,7 @@ async fn initialize_agent(
                     item_writers.insert(id, tx);
                 }
             }
-            Err(e) => panic!("{:?}", e),
+            Err(e) => return Err(AgentInitError::LaneInitializationFailure(e)),
         }
     }
 
@@ -507,22 +533,10 @@ impl JavaItemInitializer for JavaValueLikeLaneInitializer {
             agent_obj,
             lane_name,
         } = self;
-        let JavaAgentRef { agent_obj, vtable } = agent_obj;
-        let agent_obj = agent_obj.clone();
-        let agent_vtable = vtable.clone();
-        let lane_name = lane_name.clone();
-
         Box::pin(async move {
             match try_last(stream).await? {
-                Some(mut body) => {
-                    let FfiContext { vm, .. } = context;
-                    let env = vm.env_or_abort();
-                    let agent_ptr = agent_obj.as_obj();
-                    let buf = unsafe { env.new_direct_byte_buffer_exact(&mut body).unwrap() };
-
-                    agent_vtable
-                        .init(&env, agent_ptr, lane_name.as_obj(), buf)
-                        .unwrap();
+                Some(body) => {
+                    agent_obj.init(&context.env, lane_name, body);
                     Ok(())
                 }
                 None => Ok(()),
@@ -594,11 +608,9 @@ impl FfiAgentTask {
         } = self;
 
         info!("Running agent");
-        {
-            info!("Invoking Java agent did start lifecycle event");
-            let env = ffi_context.vm.env_or_abort();
-            java_agent.did_start(&env).unwrap();
-        }
+
+        let env = ffi_context.env.clone();
+        java_agent.did_start(&env)?;
 
         loop {
             let event: Option<RuntimeEvent> = select! {
@@ -616,37 +628,23 @@ impl FfiAgentTask {
                 Some(RuntimeEvent::Request { id, request }) => {
                     let lane_name = lane_name_lookup.get(&id).cloned().expect("Missing lane");
                     let mut writer = item_writers.get_mut(&id).expect("Missing lane writer");
-                    if let Err(e) = handle_request(
+
+                    handle_request(
                         &ffi_context,
                         &java_agent,
                         lane_name.java,
+                        &lane_name.str,
                         request,
                         &mut writer,
                     )
-                    .await
-                    {
-                        match e {
-                            FfiAgentError::Java(e) => {
-                                panic!("{:?}", e)
-                            }
-                            FfiAgentError::Decode(error) => {
-                                return Err(AgentTaskError::BadFrame {
-                                    lane: lane_name.str,
-                                    error,
-                                })
-                            }
-                        }
-                    }
+                    .await?;
                 }
                 Some(RuntimeEvent::RequestError { id, error }) => {}
                 None => break,
             }
         }
 
-        {
-            let env = ffi_context.vm.env_or_abort();
-            java_agent.did_stop(&env).unwrap();
-        }
+        java_agent.did_stop(&env)?;
 
         Ok(())
     }
@@ -658,53 +656,28 @@ async fn handle_request(
     context: &FfiContext,
     agent_ref: &JavaAgentRef,
     lane_name_ref: GlobalRef,
+    lane: &Text,
     request: TaggedLaneRequest,
     lane_writer: &mut &mut ByteWriter,
-) -> Result<(), FfiAgentError> {
-    let TaggedLaneRequest { lane_type, request } = request;
+) -> Result<(), AgentTaskError> {
+    let env = &context.env;
+    let TaggedLaneRequest { request, .. } = request;
+
     match request {
-        LaneRequest::Command(mut msg) => {
+        LaneRequest::Command(msg) => {
             trace!("Received a command request");
-            let result = {
-                let env = context.vm.env_or_abort();
+            let response = agent_ref.dispatch(&env, &lane_name_ref, msg)?;
 
-                trace!("Invoking Java agent dispatch method");
+            trace!("Handling lane response");
+            handle_lane_response(context, agent_ref, response, lane_writer, lane).await?;
 
-                let buffer = unsafe { env.new_direct_byte_buffer_exact(&mut msg) }?;
-                jni_call(&env, || agent_ref.dispatch(&env, &lane_name_ref, buffer))
-            };
-            match result {
-                Ok(ret) => {
-                    match lane_type {
-                        LaneType::Value => {
-                            trace!("Handling lane response");
-
-                            handle_lane_response(context, agent_ref, ret, lane_writer).await?;
-                        }
-                        LaneType::Map => {
-                            unimplemented!()
-                        }
-                    }
-
-                    Ok(())
-                }
-                Err(e) => panic_any(e),
-            }
+            Ok(())
         }
         LaneRequest::Sync(remote_id) => {
             trace!("Received a sync request");
 
-            let result = {
-                let env = context.vm.env_or_abort();
-                jni_call(&env, || agent_ref.sync(&env, &lane_name_ref, remote_id))
-            };
-
-            match result {
-                Ok(ret) => {
-                    handle_lane_response(context, agent_ref, ret, lane_writer).await?;
-                }
-                Err(e) => panic_any(e),
-            }
+            let response = agent_ref.sync(&env, &lane_name_ref, remote_id)?;
+            handle_lane_response(context, agent_ref, response, lane_writer, lane).await?;
 
             Ok(())
         }
@@ -742,25 +715,30 @@ async fn handle_lane_response(
     agent_ref: &JavaAgentRef,
     mut returned_value: Vec<u8>,
     lane_writer: &mut &mut ByteWriter,
-) -> Result<(), FfiAgentError> {
+    lane: &Text,
+) -> Result<(), AgentTaskError> {
+    let env = &ctx.env;
     loop {
         if returned_value.len() < 1 {
             return Ok(());
         }
 
-        let now = Instant::now();
-
         let (int_parts, rest) = returned_value.split_at(size_of::<i32>());
         let len = i32::from_be_bytes(int_parts.try_into().unwrap()) as usize;
 
-        lane_writer.write_all(&rest[0..len]).await?;
+        lane_writer
+            .write_all(&rest[0..len])
+            .await
+            .map_err(|e| AgentTaskError::BadFrame {
+                lane: lane.clone(),
+                error: FrameIoError::Io(e),
+            })?;
 
         let (more_data, _) = returned_value.split_at(size_of::<i8>());
 
         if more_data[0] == 1u8 {
-            debug!("Agent has specified that there is more data to fetch");
-            let env = ctx.vm.env_or_abort();
-            returned_value = agent_ref.flush_state(&env)?;
+            debug!("Agent has specified that there is more data available");
+            returned_value = agent_ref.flush_state(env)?;
         } else {
             debug!("Agent response decode complete");
             return Ok(());
@@ -786,8 +764,8 @@ impl LaneReaderCodec {
 struct MapOperationBytesEncoder;
 
 impl MapOperationBytesEncoder {
-    const TAG_SIZE: usize = std::mem::size_of::<u8>();
-    const LEN_SIZE: usize = std::mem::size_of::<u64>();
+    const TAG_SIZE: usize = size_of::<u8>();
+    const LEN_SIZE: usize = size_of::<u64>();
 
     const UPDATE: u8 = 0;
     const REMOVE: u8 = 1;
