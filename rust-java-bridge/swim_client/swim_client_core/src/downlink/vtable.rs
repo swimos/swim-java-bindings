@@ -12,26 +12,61 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use jvm_sys::vm::method::JavaObjectMethodDef;
+use jni::objects::{GlobalRef, JObject, JThrowable, JValue};
+use jni::sys::jobject;
+use jvm_sys::env::{IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler, Scope};
+use swim_api::error::DownlinkTaskError;
 
-pub const ON_LINKED: JavaObjectMethodDef =
-    JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnLinked", "onLinked", "()V");
-pub const ON_UNLINKED: JavaObjectMethodDef =
-    JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnUnlinked", "onUnlinked", "()V");
-pub const CONSUMER_ACCEPT: JavaObjectMethodDef = JavaObjectMethodDef::new(
-    "java/util/function/Consumer",
-    "accept",
-    "(Ljava/lang/Object;)V",
-);
-pub const BI_CONSUMER_ACCEPT: JavaObjectMethodDef = JavaObjectMethodDef::new(
-    "java/util/function/BiConsumer",
-    "accept",
-    "(Ljava/lang/Object;Ljava/lang/Object;)V",
-);
-pub const TRI_CONSUMER_ACCEPT: JavaObjectMethodDef = JavaObjectMethodDef::new(
-    "ai/swim/client/downlink/TriConsumer",
-    "accept",
-    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V",
-);
-pub const ROUTINE_EXEC: JavaObjectMethodDef =
-    JavaObjectMethodDef::new("ai/swim/client/downlink/map/Routine", "exec", "()V");
+use jvm_sys::method::{
+    InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
+};
+
+pub struct JavaMethod {
+    ptr: Option<GlobalRef>,
+    def: InitialisedJavaObjectMethod,
+}
+
+impl JavaMethod {
+    pub fn for_method(env: &JavaEnv, ptr: jobject, method: JavaObjectMethodDef) -> JavaMethod {
+        let (ptr, def) = env.with_env(|scope| {
+            let ptr = if ptr.is_null() {
+                None
+            } else {
+                unsafe { Some(scope.new_global_ref(JObject::from_raw(ptr))) }
+            };
+
+            let method = scope.resolve(method);
+            (ptr, method)
+        });
+        JavaMethod { ptr, def }
+    }
+
+    #[track_caller]
+    pub fn execute<'j, H>(
+        &mut self,
+        handler: &H,
+        scope: &Scope,
+        args: &[JValue<'j>],
+    ) -> Result<(), H::Err>
+    where
+        H: JavaExceptionHandler,
+    {
+        let JavaMethod { ptr, def } = self;
+        match ptr {
+            Some(ptr) => def.v().invoke(handler, scope, ptr.as_obj(), args),
+            None => Ok(()),
+        }
+    }
+}
+
+pub struct ExceptionHandler(pub IsTypeOfExceptionHandler);
+
+impl JavaExceptionHandler for ExceptionHandler {
+    type Err = DownlinkTaskError;
+
+    fn inspect(&self, scope: &Scope, throwable: JThrowable) -> Option<Self::Err> {
+        self.0
+            .inspect(scope, throwable)
+            .map(|e| DownlinkTaskError::Custom(Box::new(e)))
+    }
+}

@@ -16,13 +16,14 @@ package ai.swim.client;
 
 import ai.swim.client.downlink.map.MapDownlinkBuilder;
 import ai.swim.client.downlink.value.ValueDownlinkBuilder;
-import ai.swim.lang.ffi.AtomicDestructor;
-import ai.swim.lang.ffi.NativeLoader;
-import ai.swim.lang.ffi.NativeResource;
 import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import java.io.IOException;
 import java.util.Arrays;
+import ai.swim.lang.ffi.AtomicDestructor;
+import ai.swim.lang.ffi.NativeLoader;
+import ai.swim.lang.ffi.NativeResource;
+import java.io.IOException;
 
 /**
  * A SwimClient class used for opening downlinks.
@@ -60,13 +61,6 @@ public class SwimClient implements NativeResource {
       System.out.println(Arrays.toString(bytes));
       return new SwimClient(startClient(packer.toByteArray()));
     }
-  }
-
-  /**
-   * Starts the client runtime using the default configuration and returns an established client.
-   */
-  public static SwimClient open() throws IOException {
-    return open(new ClientConfig());
   }
 
   private static native long startClient(byte[] config);
@@ -109,11 +103,7 @@ public class SwimClient implements NativeResource {
    * @param <V>       The type of the downlink's value.
    * @return A map downlink builder.
    */
-  public <K, V> MapDownlinkBuilder<K, V> mapDownlink(String host,
-      String node,
-      String lane,
-      Class<K> keyForm,
-      Class<V> valueForm) {
+  public <K, V> MapDownlinkBuilder<K, V> mapDownlink(String host, String node, String lane, Class<K> keyForm, Class<V> valueForm) {
     return new MapDownlinkBuilder<>(Handle.create(runtime), keyForm, valueForm, host, node, lane);
   }
 }

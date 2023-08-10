@@ -13,14 +13,102 @@
 // limitations under the License.
 
 use bytes::BytesMut;
-use jni::errors::Error;
 use jni::sys::jobject;
-use jni::JNIEnv;
-use jvm_sys::EnvExt;
+use swim_api::error::DownlinkTaskError;
+use jvm_sys::env::{IsTypeOfExceptionHandler, JavaEnv};
 
-use crate::downlink::vtable::{CONSUMER_ACCEPT, ON_LINKED, ON_UNLINKED};
-use jvm_sys::vm::method::{void_fn, JavaCallback};
-use jvm_sys::vm::{jni_call, SpannedError};
+use jvm_sys::vtable::Consumer;
+use crate::downlink::{ON_LINKED, ON_UNLINKED};
+
+use crate::downlink::vtable::{ExceptionHandler, JavaMethod};
+
+
+pub struct ValueDownlinkVTable {
+    on_linked: JavaMethod,
+    on_synced: JavaMethod,
+    on_event: JavaMethod,
+    on_set: JavaMethod,
+    on_unlinked: JavaMethod,
+    handler: ExceptionHandler,
+}
+
+impl ValueDownlinkVTable {
+    pub fn new(
+        env: &JavaEnv,
+        on_event: jobject,
+        on_linked: jobject,
+        on_set: jobject,
+        on_synced: jobject,
+        on_unlinked: jobject,
+    ) -> ValueDownlinkVTable {
+        ValueDownlinkVTable {
+            on_linked: JavaMethod::for_method(env, on_linked, ON_LINKED),
+            on_synced: JavaMethod::for_method(env, on_synced, Consumer::ACCEPT),
+            on_event: JavaMethod::for_method(env, on_event, Consumer::ACCEPT),
+            on_set: JavaMethod::for_method(env, on_set, Consumer::ACCEPT),
+            on_unlinked: JavaMethod::for_method(env, on_unlinked, ON_UNLINKED),
+            handler: ExceptionHandler(IsTypeOfExceptionHandler::new(
+                env,
+                "ai/swim/client/downlink/DownlinkException",
+            )),
+        }
+    }
+
+    pub fn on_linked(&mut self, env: &JavaEnv) -> Result<(), DownlinkTaskError> {
+        let ValueDownlinkVTable {
+            on_linked, handler, ..
+        } = self;
+        env.with_env(|scope| on_linked.execute(handler, &scope, &[]))
+    }
+
+    pub fn on_synced(
+        &mut self,
+        env: &JavaEnv,
+        value: &mut Vec<u8>,
+    ) -> Result<(), DownlinkTaskError> {
+        let ValueDownlinkVTable {
+            on_synced, handler, ..
+        } = self;
+        env.with_env(|scope| {
+            let buffer = unsafe { scope.new_direct_byte_buffer_exact(value) };
+            on_synced.execute(handler, &scope, &[buffer.into()])
+        })
+    }
+
+    pub fn on_event(
+        &mut self,
+        env: &JavaEnv,
+        value: &mut Vec<u8>,
+    ) -> Result<(), DownlinkTaskError> {
+        let ValueDownlinkVTable {
+            on_event, handler, ..
+        } = self;
+        env.with_env(|scope| {
+            let buffer = unsafe { scope.new_direct_byte_buffer_exact(value) };
+            on_event.execute(handler, &scope, &[buffer.into()])
+        })
+    }
+
+    pub fn on_set(&mut self, env: &JavaEnv, value: &mut Vec<u8>) -> Result<(), DownlinkTaskError> {
+        let ValueDownlinkVTable {
+            on_set, handler, ..
+        } = self;
+        env.with_env(|scope| {
+            let buffer = unsafe { scope.new_direct_byte_buffer_exact(value) };
+            on_set.execute(handler, &scope, &[buffer.into()])
+        })
+    }
+
+    pub fn on_unlinked(&mut self, env: &JavaEnv) -> Result<(), DownlinkTaskError> {
+        let ValueDownlinkVTable {
+            on_unlinked,
+            handler,
+            ..
+        } = self;
+        env.with_env(|scope| on_unlinked.execute(handler, &scope, &[]))
+    }
+}
+
 
 pub struct ValueDownlinkLifecycle {
     vtable: ValueDownlinkVTable,
@@ -28,14 +116,14 @@ pub struct ValueDownlinkLifecycle {
 
 impl ValueDownlinkLifecycle {
     pub fn from_parts(
-        env: &JNIEnv,
+        env: &JavaEnv,
         on_event: jobject,
         on_linked: jobject,
         on_set: jobject,
         on_synced: jobject,
         on_unlinked: jobject,
-    ) -> Result<ValueDownlinkLifecycle, Error> {
-        Ok(ValueDownlinkLifecycle {
+    ) -> ValueDownlinkLifecycle {
+        ValueDownlinkLifecycle {
             vtable: ValueDownlinkVTable::new(
                 env,
                 on_event,
@@ -43,97 +131,47 @@ impl ValueDownlinkLifecycle {
                 on_set,
                 on_synced,
                 on_unlinked,
-            )?,
-        })
+            ),
+        }
     }
 
-    pub fn on_linked(&mut self, env: &JNIEnv) -> Result<(), SpannedError> {
+    pub fn on_linked(&mut self, env: &JavaEnv) -> Result<(), DownlinkTaskError> {
         let ValueDownlinkLifecycle { vtable } = self;
-        jni_call(env, || vtable.on_linked(env))
+        vtable.on_linked(env)
     }
 
     pub fn on_synced(
         &mut self,
-        env: &JNIEnv,
+        env: &JavaEnv,
         value: &mut Vec<u8>,
         _ret: &mut BytesMut,
-    ) -> Result<(), SpannedError> {
+    ) -> Result<(), DownlinkTaskError> {
         let ValueDownlinkLifecycle { vtable } = self;
-        jni_call(env, || vtable.on_synced(env, value))
+        vtable.on_synced(env, value)
     }
 
     pub fn on_event(
         &mut self,
-        env: &JNIEnv,
+        env: &JavaEnv,
         value: &mut Vec<u8>,
         _ret: &mut BytesMut,
-    ) -> Result<(), SpannedError> {
+    ) -> Result<(), DownlinkTaskError> {
         let ValueDownlinkLifecycle { vtable } = self;
-        jni_call(env, || vtable.on_event(env, value))
+        vtable.on_event(env, value)
     }
 
     pub fn on_set(
         &mut self,
-        env: &JNIEnv,
+        env: &JavaEnv,
         value: &mut Vec<u8>,
         _ret: &mut BytesMut,
-    ) -> Result<(), SpannedError> {
+    ) -> Result<(), DownlinkTaskError> {
         let ValueDownlinkLifecycle { vtable } = self;
-        jni_call(env, || vtable.on_set(env, value))
+        vtable.on_set(env, value)
     }
 
-    pub fn on_unlinked(&mut self, env: &JNIEnv) -> Result<(), SpannedError> {
+    pub fn on_unlinked(&mut self, env: &JavaEnv) -> Result<(), DownlinkTaskError> {
         let ValueDownlinkLifecycle { vtable } = self;
-        jni_call(env, || vtable.on_unlinked(env))
-    }
-}
-
-pub struct ValueDownlinkVTable {
-    on_linked: JavaCallback,
-    on_synced: JavaCallback,
-    on_event: JavaCallback,
-    on_set: JavaCallback,
-    on_unlinked: JavaCallback,
-}
-
-impl ValueDownlinkVTable {
-    fn new(
-        env: &JNIEnv,
-        on_event: jobject,
-        on_linked: jobject,
-        on_set: jobject,
-        on_synced: jobject,
-        on_unlinked: jobject,
-    ) -> Result<ValueDownlinkVTable, Error> {
-        Ok(ValueDownlinkVTable {
-            on_linked: JavaCallback::for_method(&env, on_linked, ON_LINKED)?,
-            on_synced: JavaCallback::for_method(&env, on_synced, CONSUMER_ACCEPT)?,
-            on_event: JavaCallback::for_method(&env, on_event, CONSUMER_ACCEPT)?,
-            on_set: JavaCallback::for_method(&env, on_set, CONSUMER_ACCEPT)?,
-            on_unlinked: JavaCallback::for_method(&env, on_unlinked, ON_UNLINKED)?,
-        })
-    }
-
-    fn on_linked(&mut self, env: &JNIEnv) -> Result<(), Error> {
-        void_fn(env, &mut self.on_linked, &[])
-    }
-
-    fn on_synced(&mut self, env: &JNIEnv, value: &mut Vec<u8>) -> Result<(), Error> {
-        let buffer = unsafe { env.new_direct_byte_buffer_exact(value) }?;
-        void_fn(env, &mut self.on_synced, &[buffer.into()])
-    }
-
-    fn on_event(&mut self, env: &JNIEnv, value: &mut Vec<u8>) -> Result<(), Error> {
-        let buffer = unsafe { env.new_direct_byte_buffer_exact(value) }?;
-        void_fn(env, &mut self.on_event, &[buffer.into()])
-    }
-
-    fn on_set(&mut self, env: &JNIEnv, value: &mut Vec<u8>) -> Result<(), Error> {
-        let buffer = unsafe { env.new_direct_byte_buffer_exact(value) }?;
-        void_fn(env, &mut self.on_set, &[buffer.into()])
-    }
-
-    fn on_unlinked(&mut self, env: &JNIEnv) -> Result<(), Error> {
-        void_fn(env, &mut self.on_unlinked, &[])
+        vtable.on_unlinked(env)
     }
 }

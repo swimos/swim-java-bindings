@@ -32,14 +32,6 @@ public class DownlinkConfig {
   private boolean keepSynced = true;
 
   /**
-   * @param b
-   * @return
-   */
-  private static byte booleanToByte(boolean b) {
-    return (byte) (b ? 1 : 0);
-  }
-
-  /**
    * Sets the duration that the runtime may be inactive for before it shuts down; a runtime is considered inactive if
    * it has no consumers.
    *
@@ -57,6 +49,19 @@ public class DownlinkConfig {
     if (emptyTimeout <= 0) {
       throw new IllegalArgumentException("Argument must be non-zero");
     }
+  }
+
+  /**
+   * Sets the queue size for attaching new subscribers to the runtime.
+   *
+   * @param attachmentQueueSize the queue size.
+   * @throws IllegalArgumentException if the queue size is less than 1.
+   */
+  public DownlinkConfig setAttachmentQueueSize(int attachmentQueueSize) {
+    nonZero(emptyTimeout);
+
+    this.attachmentQueueSize = attachmentQueueSize;
+    return this;
   }
 
   /**
@@ -121,19 +126,6 @@ public class DownlinkConfig {
   }
 
   /**
-   * Sets the queue size for attaching new subscribers to the runtime.
-   *
-   * @param attachmentQueueSize the queue size.
-   * @throws IllegalArgumentException if the queue size is less than 1.
-   */
-  public DownlinkConfig setAttachmentQueueSize(int attachmentQueueSize) {
-    nonZero(emptyTimeout);
-
-    this.attachmentQueueSize = attachmentQueueSize;
-    return this;
-  }
-
-  /**
    * Sets whether the downlink should attempt to keep linked.
    */
   public DownlinkConfig setKeepLinked(boolean keepLinked) {
@@ -147,6 +139,10 @@ public class DownlinkConfig {
   public DownlinkConfig setKeepSynced(boolean keepSynced) {
     this.keepSynced = keepSynced;
     return this;
+  }
+
+  private static byte booleanToByte(boolean b) {
+    return (byte) (b ? 1 : 0);
   }
 
   /**
