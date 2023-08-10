@@ -144,14 +144,17 @@ impl<'v, 'a> ToTokens for TryFromReader<'v, 'a> {
                 let len = fields.len() as u32;
                 let fields = TryFromReader::fold_fields(fields);
                 let try_from_reader = quote! {
-                    let __repr_len: u32 = #len;
-                    if __repr_len != bytebridge::read_array_len(reader)? {
-                        return Err(bytebridge::FromBytesError::Invalid(format!("Expected an array of len: {}", __repr_len)));
+                    {
+                        let len: u32 = #len;
+                        if len != bytebridge::read_array_len(reader)? {
+                            return Err(bytebridge::FromBytesError::Invalid(format!("Expected an array of len: {}", len)));
+                        }
                     }
-
-                    Ok(#ident {
-                        #fields
-                    })
+                    {
+                        Ok(#ident {
+                            #fields
+                        })
+                    }
                 };
                 try_from_reader.to_tokens(tokens);
             }
@@ -165,7 +168,13 @@ impl<'v, 'a> ToTokens for TryFromReader<'v, 'a> {
                     TokenStream::new(),
                     |tokens, (idx, variant)| {
                         // this is safe as we've previously checked the number of variants
-                        let idx = i8::try_from(idx).expect("Too many variants");
+                        let idx = match i8::try_from(idx) {
+                            Ok(idx) => {idx}
+                            Err(e) => {
+                                unreachable!("Too many enum variants: {:?}", e)
+                            }
+                        };
+
                         let Variant {
                             ident: variant_ident,
                             fields,
@@ -175,14 +184,18 @@ impl<'v, 'a> ToTokens for TryFromReader<'v, 'a> {
                         quote! {
                             #tokens
                             #idx => {
-                                let __repr_len: u32 = #len;
-                                if __repr_len != bytebridge::read_array_len(reader)? {
-                                    return Err(bytebridge::FromBytesError::Invalid(format!("Expected an array of len: {}", __repr_len)));
+                                {
+                                    let len: u32 = #len;
+                                    if len != bytebridge::read_array_len(reader)? {
+                                        return Err(bytebridge::FromBytesError::Invalid(format!("Expected an array of len: {}", len)));
+                                    }
                                 }
 
-                                Ok(#enum_ident::#variant_ident {
-                                    #fields
-                                })
+                                {
+                                    Ok(#enum_ident::#variant_ident {
+                                        #fields
+                                    })
+                                }
                             }
                         }
                     },
@@ -276,7 +289,12 @@ impl<'v, 'a> ToTokens for ToBytes<'v, 'a> {
                         let fields = ToBytes::fold_fields(fields);
 
                         // this is safe as we've previously checked the number of variants
-                        let idx = i8::try_from(idx).expect("Too many variants");
+                        let idx = match i8::try_from(idx) {
+                            Ok(idx) => idx,
+                            Err(e) => {
+                                unreachable!("Too many enum variants: {:?}", e)
+                            }
+                        };
 
                         quote! {
                             #tokens

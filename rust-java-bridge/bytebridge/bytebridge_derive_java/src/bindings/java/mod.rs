@@ -15,8 +15,9 @@ use syn::{
 pub use writer::{JavaSourceWriter, JavaSourceWriterBuilder};
 
 use crate::bindings::java::models::{
-    Block, Constraint, ConstraintKind, JavaField, JavaMethod, JavaType, PrimitiveJavaType,
-    JAVA_KEYWORDS, PACKER_VAR, PACK_METHOD, TEMP_VAR, TO_STRING_METHOD,
+    try_map_type, Block, Constraint, ConstraintKind, JavaField, JavaMethod, JavaType,
+    PrimitiveJavaType, RustType, JAVA_KEYWORDS, PACKER_VAR, PACK_METHOD, RESERVED_VARIABLES,
+    TEMP_VAR, TO_STRING_METHOD,
 };
 use crate::bindings::java::writer::{ClassType, INDENTATION};
 use crate::bindings::{
@@ -28,6 +29,9 @@ use crate::FormatStyle;
 
 mod models;
 mod writer;
+
+const IO_EXCEPTION: &str = "IOException";
+const OVERRIDE_ANNOTATION: &str = "@Override";
 
 /// A derived class binding from a Rust struct.
 #[derive(Debug)]
@@ -67,7 +71,7 @@ impl ClassBinding {
             methods,
         } = self;
 
-        let transposition_method = ClassBinding::byte_transposition_method(
+        let byte_representation_method = ClassBinding::byte_representation_method(
             &fields,
             parent.as_ref().map(|cfg| cfg.ordinal),
         );
@@ -98,24 +102,24 @@ impl ClassBinding {
             class_writer.write_method(method)?;
         }
 
-        class_writer.write_method(transposition_method)?;
+        class_writer.write_method(byte_representation_method)?;
         class_writer.write_method(to_string_method)?;
         class_writer.end_class()
     }
 
     /// Derive a byte-level representation from a slice of java fields and an optional ordinal
     /// of an enumeration constant.
-    fn byte_transposition_method(fields: &[JavaField], ordinal: Option<u8>) -> JavaMethod {
+    fn byte_representation_method(fields: &[JavaField], ordinal: Option<u8>) -> JavaMethod {
         let method = JavaMethod::new(
             PACK_METHOD,
             JavaType::Void,
-            ordinal.as_ref().map(|_| "@Override".to_string()),
+            ordinal.as_ref().map(|_| OVERRIDE_ANNOTATION.to_string()),
         )
         .add_documentation("Returns a byte array representation of the current configuration.")
         .add_arg(PACKER_VAR, JavaType::Object("MessagePacker".to_string()))
-        .add_throws("IOException");
+        .add_throws(IO_EXCEPTION);
 
-        let mut transposition = match ordinal {
+        let mut byte_representation = match ordinal {
             Some(idx) => Block::of_statement(format!(
                 "{}.packExtensionTypeHeader((byte) 1, 1)",
                 PACKER_VAR
@@ -124,7 +128,7 @@ impl ClassBinding {
             None => Block::default(),
         };
 
-        transposition = transposition.add_statement(format!(
+        byte_representation = byte_representation.add_statement(format!(
             "{}.packArrayHeader({})",
             PACKER_VAR,
             fields.len()
@@ -139,34 +143,35 @@ impl ClassBinding {
                 }
                 JavaType::Primitive(ty) => {
                     let name = format!("this.{name}");
-                    transposition = transposition.add_statement(put_primitive(ty, &name));
+                    byte_representation =
+                        byte_representation.add_statement(put_primitive(ty, &name));
                 }
                 JavaType::String => {
-                    transposition = transposition
+                    byte_representation = byte_representation
                         .add_statement(format!("{}.packString(this.{})", PACKER_VAR, name));
                 }
                 JavaType::Array(ty) => {
-                    transposition = transposition
+                    byte_representation = byte_representation
                         .add_statement(format!("{}.packInt(this.{}.length)", PACKER_VAR, name))
                         .add_line(format!("for ({} {} : this.{}) {{", ty, TEMP_VAR, name))
                         .add_statement(format!("{INDENTATION}{}", put_primitive(ty, TEMP_VAR)))
                         .add_line("}");
                 }
                 JavaType::Object(_) => {
-                    transposition =
-                        transposition.add_statement(format!("{}.pack({})", name, PACKER_VAR));
+                    byte_representation =
+                        byte_representation.add_statement(format!("{}.pack({})", name, PACKER_VAR));
                 }
             }
         }
 
-        method.set_block(transposition)
+        method.set_block(byte_representation)
     }
 
     fn to_string_method(name: &str, fields: &[JavaField]) -> JavaMethod {
         let method = JavaMethod::new(
             TO_STRING_METHOD,
             JavaType::String,
-            Some("@Override".to_string()),
+            Some(OVERRIDE_ANNOTATION.to_string()),
         );
 
         if fields.is_empty() {
@@ -213,6 +218,12 @@ fn put_primitive(ty: &PrimitiveJavaType, name: &str) -> String {
         PrimitiveJavaType::Boolean => {
             format!("{}.packBoolean({})", PACKER_VAR, name)
         }
+        PrimitiveJavaType::Short { .. } => {
+            format!("{}.packShort({})", PACKER_VAR, name)
+        }
+        PrimitiveJavaType::Char => {
+            format!("{}.packString(String.valueOf({}))", PACKER_VAR, name)
+        }
     }
 }
 
@@ -245,13 +256,13 @@ impl AbstractClassBinding {
         let pack_method = JavaMethod::new(PACK_METHOD, JavaType::Void, None)
             .add_documentation("Pack a byte representation of the current configuration.")
             .add_arg(PACKER_VAR, JavaType::Object("MessagePacker".to_string()))
-            .add_throws("IOException")
+            .add_throws(IO_EXCEPTION)
             .set_abstract();
 
         let to_string_method = JavaMethod::new(
             TO_STRING_METHOD,
             JavaType::String,
-            Some("@Override".to_string()),
+            Some(OVERRIDE_ANNOTATION.to_string()),
         )
         .set_abstract();
 
@@ -584,26 +595,30 @@ pub fn validate_identifier(meta: MetaNameValue) -> Result<String, Error> {
 impl<'ast> Visit<'ast> for ClassBuilder {
     fn visit_field(&mut self, field: &'ast Field) {
         self.with(|infer_docs, builder| {
-            let ty = map_type(&field.ty)?;
+            let (java_ty, rust_ty) = map_type(&field.ty)?;
             let span = field.span();
             let name = field
                 .ident
                 .as_ref()
                 .ok_or_else(|| Error::new(span, "Tuple fields are not supported"))
                 .map(|i| AsLowerCamelCase(i.to_string()).to_string())?;
-            let (name, properties) =
-                derive_field_properties(name, field.span(), infer_docs, ty.clone(), &field.attrs)?;
-            let default_value = match properties.default_value {
-                Some(ty) => ty,
-                None => ty.default_value(),
-            };
-            sanitize_name(name.as_str(), span)?;
+            let (name, properties) = derive_field_properties(
+                name,
+                field.span(),
+                infer_docs,
+                java_ty.clone(),
+                rust_ty,
+                &field.attrs,
+            )?;
+            validate_name(name.as_str(), span)?;
 
             let field = JavaField {
                 name,
                 documentation: properties.documentation,
-                ty,
-                default_value,
+                default_value: properties
+                    .default_value
+                    .unwrap_or_else(|| java_ty.default_value()),
+                ty: java_ty,
                 constraint: properties.constraint,
             };
 
@@ -628,13 +643,13 @@ struct FieldProperties {
 }
 
 /// Attempts to align a Rust type to a Java Type.
-pub fn map_type(ty: &Type) -> Result<JavaType, Error> {
+pub fn map_type(ty: &Type) -> Result<(JavaType, RustType), Error> {
     let unsupported_type = |span| Err(Error::new(span, "Unsupported type"));
     match ty {
         Type::Path(TypePath { qself: None, path }) => match path.segments.last() {
             Some(PathSegment { ident, arguments }) => {
-                match JavaType::try_map(ident.to_string().as_str(), arguments) {
-                    Ok(ty) => Ok(ty),
+                match try_map_type(ident.to_string().as_str(), arguments) {
+                    Ok(tys) => Ok(tys),
                     Err(e) => Err(Error::new(path.span(), e)),
                 }
             }
@@ -645,7 +660,7 @@ pub fn map_type(ty: &Type) -> Result<JavaType, Error> {
 }
 
 /// Infers documentation from the Rust attribute #[doc = "..."] and writes it into 'documentation'.
-fn infer_docs(attrs: &[Attribute], documentation: &mut Documentation) {
+fn infer_docs(attrs: &[Attribute], documentation: &mut Documentation) -> Result<(), Error> {
     let attrs = attrs.iter().filter(|at| at.path().is_ident(ATTR_DOC));
     for attr in attrs {
         match &attr.meta {
@@ -653,13 +668,21 @@ fn infer_docs(attrs: &[Attribute], documentation: &mut Documentation) {
                 Expr::Lit(ExprLit {
                     lit: Lit::Str(str), ..
                 }) => documentation.push_header_line(str.value()),
-                v => panic!("Unexpected doc value: {:?}", v.to_token_stream()),
+                v => {
+                    return Err(Error::new_spanned(
+                        v,
+                        format!(
+                            "Invalid documentation type: {}",
+                            v.to_token_stream().to_string()
+                        ),
+                    ))
+                }
             },
-            meta => {
-                panic!("Unexpected doc value: {:?}", meta.to_token_stream())
-            }
+            _ => {}
         }
     }
+
+    Ok(())
 }
 
 /// Derives field properties from a slice of attributes. Returns a new name for the field if a valid
@@ -676,7 +699,8 @@ fn derive_field_properties(
     mut name: String,
     span: Span,
     infer_documentation: bool,
-    field_type: JavaType,
+    java_type: JavaType,
+    rust_type: RustType,
     attrs: &[Attribute],
 ) -> Result<(String, FieldProperties), Error> {
     let mut properties = FieldProperties {
@@ -686,7 +710,7 @@ fn derive_field_properties(
     };
 
     if infer_documentation {
-        infer_docs(attrs, &mut properties.documentation);
+        infer_docs(attrs, &mut properties.documentation)?;
     }
 
     let mut attribute_iter = attrs
@@ -695,7 +719,7 @@ fn derive_field_properties(
         .peekable();
 
     if attribute_iter.peek().is_none() {
-        Constraint::implicit(&mut properties.constraint, &field_type)?;
+        Constraint::implicit(&mut properties.constraint, &java_type)?;
         return Ok((name, properties));
     }
 
@@ -727,17 +751,18 @@ fn derive_field_properties(
                     if properties.default_value.is_some() {
                         return Err(Error::new(lit.span(), "Duplicate default value"));
                     }
-                    properties.default_value = Some(field_type.unpack_default_value(lit)?);
+                    properties.default_value =
+                        Some(java_type.unpack_default_value(lit, rust_type)?);
                 }
                 Meta::Path(path) if path.is_ident(ATTR_NON_ZERO) => properties
                     .constraint
-                    .step(field_type.as_non_zero(path.span())?)?,
+                    .step(java_type.as_non_zero(path.span())?)?,
                 Meta::Path(path) if path.is_ident(ATTR_NATURAL) => properties
                     .constraint
-                    .step(field_type.as_natural(path.span())?)?,
+                    .step(java_type.as_natural(path.span())?)?,
                 Meta::Path(path) if path.is_ident(ATTR_UNSIGNED_ARRAY) => properties
                     .constraint
-                    .step(field_type.as_unsigned_array(path.span())?)?,
+                    .step(java_type.as_unsigned_array(path.span())?)?,
                 Meta::List(list) if list.path.is_ident(ATTR_RANGE) => {
                     struct RangeArgs {
                         min: LitInt,
@@ -756,7 +781,7 @@ fn derive_field_properties(
                     }
 
                     let args = list.parse_args::<RangeArgs>()?;
-                    properties.constraint.step(field_type.as_range(
+                    properties.constraint.step(java_type.as_range(
                         list.span(),
                         args.min,
                         args.max,
@@ -769,7 +794,7 @@ fn derive_field_properties(
         }
     }
 
-    Constraint::implicit(&mut properties.constraint, &field_type)?;
+    Constraint::implicit(&mut properties.constraint, &java_type)?;
 
     if !documentation_override.is_empty() {
         properties.documentation = documentation_override;
@@ -779,12 +804,20 @@ fn derive_field_properties(
 }
 
 /// Sanitizes 'name' to ensure that it is not a reserved Java or bytebridge keyword.
-fn sanitize_name(name: &str, span: Span) -> Result<(), Error> {
+fn validate_name(name: &str, span: Span) -> Result<(), Error> {
     if JAVA_KEYWORDS.contains(name) {
         Err(Error::new(
             span,
             format!(
                 "Attempted to use a reserved keyword as a field name: {}",
+                name
+            ),
+        ))
+    } else if RESERVED_VARIABLES.contains(&name) {
+        Err(Error::new(
+            span,
+            format!(
+                "Attempted to use a reserved variable name as a field name: {}",
                 name
             ),
         ))
