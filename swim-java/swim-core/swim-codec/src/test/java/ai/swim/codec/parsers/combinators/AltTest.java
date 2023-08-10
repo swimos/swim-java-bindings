@@ -7,9 +7,7 @@ import org.junit.jupiter.api.Test;
 import static ai.swim.codec.LambdaParser.lambda;
 import static ai.swim.codec.parsers.combinators.Alt.alt;
 import static ai.swim.codec.parsers.text.StringParser.stringLiteral;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class AltTest {
   @Test

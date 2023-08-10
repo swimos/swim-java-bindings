@@ -14,6 +14,7 @@ client_runtime = { package = "runtime", path = "../../../swim-rust/client/runtim
 swim_downlink = { path = "../../../swim-rust/swim_downlink" }
 jvm_sys = { path = "../../jvm_sys" }
 swim_api = { path = "../../../swim-rust/api/swim_api" }
+swim_form = { path = "../../../swim-rust/api/swim_form" }
 swim_model = { path = "../../../swim-rust/api/swim_model" }
 swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["byte_channel"] }
 swim_recon = { path = "../../../swim-rust/api/formats/swim_recon" }

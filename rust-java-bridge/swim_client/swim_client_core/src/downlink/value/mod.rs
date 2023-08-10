@@ -107,7 +107,7 @@ async fn run_ffi_value_downlink(
     } = config;
 
     let mut state = LinkState::Unlinked;
-    let mut framed_read = FramedRead::new(input, ValueNotificationDecoder::<Value>::default());
+    let mut framed_read = FramedRead::new(input, ValueDlNotDecoder::default());
     let mut ffi_buffer = BytesMut::new();
 
     while let Some(result) = framed_read.next().await {
@@ -128,7 +128,7 @@ async fn run_ffi_value_downlink(
                 }
             },
             DownlinkNotification::Event { body } => {
-                let mut data = format!("{}", print_recon_compact(&body)).into_bytes();
+                let mut data = body.to_vec();
                 match &mut state {
                     LinkState::Linked(value) => {
                         if events_when_not_synced {

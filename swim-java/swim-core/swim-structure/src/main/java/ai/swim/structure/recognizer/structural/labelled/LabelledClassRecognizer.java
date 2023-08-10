@@ -69,10 +69,10 @@ public class LabelledClassRecognizer<T> extends ClassRecognizer<LabelledClassRec
       }
     } else if (event.isText()) {
       ReadTextValue textValue = (ReadTextValue) event;
-      Integer idx = this.indexFn.selectIndex(LabelledFieldKey.item(textValue.value()));
+      Integer idx = this.indexFn.selectIndex(LabelledFieldKey.item(textValue.getValue()));
 
       if (idx == null) {
-        return Recognizer.error(new RuntimeException(String.format("Unexpected field \"%s\"", textValue.value())));
+        return Recognizer.error(new RuntimeException(String.format("Unexpected field \"%s\"", textValue.getValue())));
       } else {
         this.index = idx;
         this.state = State.BodyExpectingSlot;

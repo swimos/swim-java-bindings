@@ -16,6 +16,9 @@ package ai.swim.structure.writer.print.strategy;
 
 import ai.swim.structure.writer.print.Padding;
 
+/**
+ * Inline printing strategy with spaces.
+ */
 class StandardPrintStrategy implements PrintStrategy {
   @Override
   public Padding attrPadding() {

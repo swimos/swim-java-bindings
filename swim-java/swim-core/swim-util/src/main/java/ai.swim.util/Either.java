@@ -33,9 +33,9 @@ public abstract class Either<L, R> {
 
   public abstract boolean isRight();
 
-  public abstract <O> O accept(Either.Visitor<L, R, O> visitor);
+  public abstract <O> O accept(Visitor<L, R, O> visitor);
 
-  public abstract void peek(Either.Peek<L, R> peekable);
+  public abstract void peek(Peek<L, R> peekable);
 
   public L unwrapLeft() {
     if (isLeft()) {

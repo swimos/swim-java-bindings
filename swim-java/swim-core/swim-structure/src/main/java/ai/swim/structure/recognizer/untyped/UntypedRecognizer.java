@@ -4,12 +4,7 @@ import ai.swim.recon.event.ReadBlobValue;
 import ai.swim.recon.event.ReadBooleanValue;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadTextValue;
-import ai.swim.recon.event.number.ReadBigDecimalValue;
-import ai.swim.recon.event.number.ReadBigIntValue;
-import ai.swim.recon.event.number.ReadDoubleValue;
-import ai.swim.recon.event.number.ReadFloatValue;
-import ai.swim.recon.event.number.ReadIntValue;
-import ai.swim.recon.event.number.ReadLongValue;
+import ai.swim.recon.event.number.*;
 import ai.swim.structure.recognizer.Recognizer;
 
 import java.util.Collections;
@@ -37,23 +32,23 @@ public class UntypedRecognizer<T> extends Recognizer<T> {
         if (event.isExtant()) {
           return Recognizer.done(null, this);
         } else if (event.isBlob()) {
-          return done(this, ((ReadBlobValue) event).value());
+          return done(this, ((ReadBlobValue) event).getValue());
         } else if (event.isBoolean()) {
-          return done(this, ((ReadBooleanValue) event).value());
+          return done(this, ((ReadBooleanValue) event).getValue());
         } else if (event.isReadInt()) {
-          return done(this, ((ReadIntValue) event).value());
+          return done(this, ((ReadIntValue) event).getValue());
         } else if (event.isReadLong()) {
-          return done(this, ((ReadLongValue) event).value());
+          return done(this, ((ReadLongValue) event).getValue());
         } else if (event.isReadFloat()) {
-          return done(this, ((ReadFloatValue) event).value());
+          return done(this, ((ReadFloatValue) event).getValue());
         } else if (event.isReadDouble()) {
-          return done(this, ((ReadDoubleValue) event).value());
+          return done(this, ((ReadDoubleValue) event).getValue());
         } else if (event.isReadBigInt()) {
-          return done(this, ((ReadBigIntValue) event).value());
+          return done(this, ((ReadBigIntValue) event).getValue());
         } else if (event.isReadBigDecimal()) {
-          return done(this, ((ReadBigDecimalValue) event).value());
+          return done(this, ((ReadBigDecimalValue) event).getValue());
         } else if (event.isText()) {
-          return done(this, ((ReadTextValue) event).value());
+          return done(this, ((ReadTextValue) event).getValue());
         } else if (event.isStartBody()) {
           this.state = State.Between;
           return this;

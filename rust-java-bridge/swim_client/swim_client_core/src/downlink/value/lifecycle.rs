@@ -14,8 +14,9 @@
 
 use bytes::BytesMut;
 use jni::sys::jobject;
-use jvm_sys::env::JavaEnv;
-use swim_api::error::DownlinkTaskError;
+use jni::JNIEnv;
+
+use jvm_sys::vm::{jni_call, SpannedError};
 
 use crate::downlink::value::vtable::ValueDownlinkVTable;
 

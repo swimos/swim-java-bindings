@@ -40,12 +40,12 @@ where
         .expect("Failed to build runtime");
 
     let join_handle = runtime.spawn(fut);
-    tokio::task::LocalSet::new();
 
     runtime.spawn(async move {
         let r = join_handle.await;
 
         env.with_env(|scope| {
+            todo!("trigger");
             let _guard = scope.lock_obj(&global_ref);
             let method = scope.initialise(CountdownLatch::COUNTDOWN);
 

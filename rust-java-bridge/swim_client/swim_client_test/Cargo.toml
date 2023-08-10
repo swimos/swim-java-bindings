@@ -27,3 +27,4 @@ futures = { workspace = true }
 futures-util = { workspace = true }
 ratchet = { workspace = true, features = ["deflate", "split"] }
 url = { workspace = true }
+parking_lot = { workspace = true, features = ["send_guard"] }

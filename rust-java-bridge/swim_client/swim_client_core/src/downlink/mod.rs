@@ -21,7 +21,10 @@ use swim_runtime::downlink::{DownlinkOptions, DownlinkRuntimeConfig};
 
 const CONFIG_LEN: usize = size_of::<u64>() * 5 + size_of::<u8>() * 4;
 
+mod decoder;
+pub mod map;
 pub mod value;
+mod vtable;
 
 /// A wrapper around a downlink runtime configuration, downlink configuration and downlink options
 /// that can be parsed from a Java-provided byte array of the following format:
@@ -35,6 +38,7 @@ pub mod value;
 /// u8 terminate_on_unlinked -> bool
 /// u64 buffer_size -> NonZeroUSize
 /// u8 downlink options -> bool
+// todo: this can be removed once the builder module has been merged
 #[derive(Debug, PartialEq, Eq)]
 pub struct DownlinkConfigurations {
     pub runtime: DownlinkRuntimeConfig,

@@ -14,7 +14,7 @@
 
 package ai.swim.recon.models.state;
 
-public class PopAfterItem extends StateChange {
+public class PopAfterItem extends Action {
   PopAfterItem() {
 
   }

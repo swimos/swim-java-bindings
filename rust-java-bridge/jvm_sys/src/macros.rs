@@ -172,10 +172,14 @@ where
         }
         Ok(false) => {}
         Err(e) => {
-            let _r = write!(
+            let result = write!(
                 writer,
                 "Failed to check if an exception was being thrown: {e:?}"
             );
+
+            if result.is_err() {
+                env.fatal_error(result.unwrap_err().to_string());
+            }
         }
     }
 

@@ -14,7 +14,7 @@
 
 package ai.swim.recon.models.state;
 
-public class PushAttr extends StateChange {
+public class PushAttr extends Action {
   PushAttr() {
 
   }

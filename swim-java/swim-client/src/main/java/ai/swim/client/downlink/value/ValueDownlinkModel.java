@@ -19,16 +19,14 @@ import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.DownlinkConfig;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
+import ai.swim.concurrent.Trigger;
 import ai.swim.structure.Form;
-
 import java.nio.ByteBuffer;
-import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
-  private ValueDownlinkModel(CountDownLatch stoppedBarrier, ValueDownlinkState<T> state) {
-    super(stoppedBarrier, state);
+  private ValueDownlinkModel(Trigger trigger, ValueDownlinkState<T> state) {
+    super(trigger, state);
   }
 
   /**
@@ -44,24 +42,23 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
    * @return An established ValueDownlink.
    * @throws SwimClientException if there is an error opening the downlink or by a malformed address.
    */
-  @SuppressWarnings("RedundantThrows") // Thrown natively.
   static <T> ValueDownlink<T> open(Handle handle,
-                                   String host,
-                                   String node,
-                                   String lane,
-                                   Class<T> formType,
-                                   ValueDownlinkLifecycle<T> lifecycle,
-                                   DownlinkConfig downlinkConfig) throws SwimClientException {
+      String host,
+      String node,
+      String lane,
+      Class<T> formType,
+      ValueDownlinkLifecycle<T> lifecycle,
+      DownlinkConfig downlinkConfig) throws SwimClientException {
     ValueDownlinkState<T> state = new ValueDownlinkState<>(Form.forClass(formType));
-    CountDownLatch stoppedBarrier = new CountDownLatch(1);
-    ValueDownlinkModel<T> downlink = new ValueDownlinkModel<>(stoppedBarrier, state);
+    Trigger trigger = new Trigger();
+    ValueDownlinkModel<T> downlink = new ValueDownlinkModel<>(trigger, state);
 
-    try {
+    try (handle) {
       open(
           handle.get(),
           downlink,
           downlinkConfig.toArray(),
-          stoppedBarrier,
+          trigger,
           host,
           node,
           lane,
@@ -69,10 +66,7 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
           lifecycle.getOnLinked(),
           state.wrapOnSet(lifecycle.getOnSet()),
           state.wrapOnSynced(lifecycle.getOnSynced()),
-          lifecycle.getOnUnlinked()
-      );
-    } finally {
-      handle.drop();
+          lifecycle.getOnUnlinked());
     }
 
     return downlink;
@@ -82,25 +76,24 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
    * Attempts to open a new value downlink; starting a new Value Downlink Runtime as required and attaching a new native
    * value downlink to it.
    *
-   * @param handlePtr      A SwimHandle pointer.
-   * @param downlink       Downlink model reference for reporting any exceptions that are thrown to.
-   * @param config         A byte-representation of the configuration for the downlink and the runtime.
-   * @param stoppedBarrier An owned stop barrier for Java threads to block on until the downlink has terminated.
-   * @param host           The URl of the host to open the connection to.
-   * @param node           The node URI to downlink to.
-   * @param lane           The lane URI to downlink to.
-   * @param onEvent        onEvent callback. If this is null, then it will not be invoked.
-   * @param onLinked       onLinked callback. If this is null, then it will not be invoked.
-   * @param onSet          onSet callback. If this is null, then it will not be invoked.
-   * @param onSynced       onSynced callback. If this is null, then it will not be invoked.
-   * @param onUnlinked     onUnlinked callback. If this is null, then it will not be invoked.
-   * @param <T>            The type of the value.
+   * @param handlePtr  A SwimHandle pointer.
+   * @param downlink   Downlink model reference for reporting any exceptions that are thrown to.
+   * @param config     A byte-representation of the configuration for the downlink and the runtime.
+   * @param trigger    An owned barrier for Java threads to block on until the downlink has terminated.
+   * @param host       The URl of the host to open the connection to.
+   * @param node       The node URI to downlink to.
+   * @param lane       The lane URI to downlink to.
+   * @param onEvent    onEvent callback. If this is null, then it will not be invoked.
+   * @param onLinked   onLinked callback. If this is null, then it will not be invoked.
+   * @param onSet      onSet callback. If this is null, then it will not be invoked.
+   * @param onSynced   onSynced callback. If this is null, then it will not be invoked.
+   * @param onUnlinked onUnlinked callback. If this is null, then it will not be invoked.
+   * @param <T>        The type of the value.
    */
-  private static native <T> void open(
-      long handlePtr,
+  private static native <T> void open(long handlePtr,
       ValueDownlinkModel<T> downlink,
       byte[] config,
-      CountDownLatch stoppedBarrier,
+      Trigger trigger,
       String host,
       String node,
       String lane,
@@ -108,7 +101,6 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
       OnLinked onLinked,
       Consumer<ByteBuffer> onSet,
       Consumer<ByteBuffer> onSynced,
-      OnUnlinked onUnlinked
-  );
+      OnUnlinked onUnlinked) throws SwimClientException;
 
 }

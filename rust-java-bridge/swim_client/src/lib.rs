@@ -52,29 +52,30 @@ impl From<ClientConfig> for swim_client_core::ClientConfig {
         swim_client_core::ClientConfig {
             websocket: WebSocketConfig {
                 max_message_size: max_message_size as usize,
-            },
-            #[cfg(feature = "deflate")]
-            deflate: {
-                use ratchet_deflate::{Compression, DeflateConfig, WindowBits};
+                #[cfg(feature = "deflate")]
+                deflate_config: {
+                    use ratchet_deflate::{Compression, DeflateConfig, WindowBits};
 
-                DeflateConfig {
-                    server_max_window_bits: ratchet_deflate::WindowBits::try_from(
-                        _server_max_window_bits,
-                    )
-                    .unwrap(),
-                    client_max_window_bits: ratchet_deflate::WindowBits::try_from(
-                        _client_max_window_bits,
-                    )
-                    .unwrap(),
-                    request_server_no_context_takeover: _request_server_no_context_takeover,
-                    request_client_no_context_takeover: _request_client_no_context_takeover,
-                    accept_no_context_takeover: _accept_no_context_takeover,
-                    compression_level: Compression::new(_compression_level),
-                }
+                    Some(DeflateConfig {
+                        server_max_window_bits: ratchet_deflate::WindowBits::try_from(
+                            _server_max_window_bits,
+                        )
+                        .unwrap(),
+                        client_max_window_bits: ratchet_deflate::WindowBits::try_from(
+                            _client_max_window_bits,
+                        )
+                        .unwrap(),
+                        request_server_no_context_takeover: _request_server_no_context_takeover,
+                        request_client_no_context_takeover: _request_client_no_context_takeover,
+                        accept_no_context_takeover: _accept_no_context_takeover,
+                        compression_level: Compression::new(_compression_level),
+                    })
+                },
             },
             remote_buffer_size: into_non_zero(_remote_buffer_size),
             transport_buffer_size: into_non_zero(_transport_buffer_size),
             registration_buffer_size: into_non_zero(_registration_buffer_size),
+            interpret_frame_data: false,
         }
     }
 }
@@ -114,7 +115,7 @@ client_fn! {
         _class,
         client: *mut SwimClient,
     ) {
-        npch!(env, client);
+        null_pointer_check_abort!(env, client);
         let runtime = unsafe { Box::from_raw(client) };
         runtime.shutdown();
 
@@ -128,7 +129,7 @@ client_fn! {
         _class,
         runtime: *mut SwimClient,
     ) -> ClientHandle {
-        npch!(env, runtime);
+        null_pointer_check_abort!(env, runtime);
         let runtime = unsafe { &*runtime };
         let handle = runtime.handle();
 
@@ -142,10 +143,67 @@ client_fn! {
         _class,
         handle: *mut ClientHandle,
     ) {
-        npch!(env, handle);
+        null_pointer_check_abort!(env, handle);
         unsafe {
             drop(Box::from_raw(handle));
         }
+    }
+}
+
+/// Attempts to open a downlink using the provided client handle. This function assumes that the
+/// downlink_ref, config, and stopped_barrier are not null pointers.
+fn open_downlink<D>(
+    env: JNIEnv,
+    handle: &ClientHandle,
+    downlink_ref: jobject,
+    config: jbyteArray,
+    stopped_barrier: jobject,
+    host: JString,
+    node: JString,
+    lane: JString,
+    downlink: D,
+) where
+    D: Downlink + Send + Sync + 'static,
+{
+    let mut config_bytes = jni_try! {
+        env,
+        "Failed to parse configuration array",
+        env.convert_byte_array(config).map(BytesMut::from_iter)
+    };
+
+    let config = jni_try! {
+        env,
+        "Invalid config",
+        DownlinkConfigurations::try_from_bytes(&mut config_bytes,&env)
+    };
+
+    let make_global_ref = |obj, name| {
+        new_global_ref(&env, obj)
+            .expect(&format!(
+                "Failed to create new global reference for {}",
+                name
+            ))
+            .unwrap()
+    };
+
+    let host = jni_try! {
+        env,
+        "Failed to parse host URL",
+        Url::try_from(parse_string!(env, host).as_str())
+    };
+
+    let node = parse_string!(env, node);
+    let lane = parse_string!(env, lane);
+
+    jni_try! {
+        handle.spawn_downlink(
+            config,
+            make_global_ref(downlink_ref, "downlink object"),
+            make_global_ref(stopped_barrier, "stopped barrier"),
+            downlink,
+            RemotePath::new(host.to_string(),node,lane)
+        ),
+        ()
     }
 }
 
@@ -169,45 +227,87 @@ client_fn! {
         on_synced: jobject,
         on_unlinked: jobject,
     ) {
-        npch!(env, handle, stopped_barrier, downlink_ref, config);
+        null_pointer_check_abort!(env, handle, stopped_barrier, downlink_ref, config);
 
         let handle = unsafe { &*handle };
-        let env = handle.env();
-
-        let mut config_bytes = env.with_env(|scope| {
-            BytesMut::from_iter(scope.convert_byte_array(config))
-        });
-        let config = match env.with_env_throw("ai/swim/client/SwimClientException",|_| {
-            DownlinkConfigurations::try_from_bytes(&mut config_bytes).map_err(StringError)
-        }) {
-            Ok(config) => config,
-            Err(_) => return,
+        let downlink = jni_try! {
+            env,
+            "Failed to create downlink",
+            FfiValueDownlink::create(
+                handle.vm(),
+                on_event,
+                on_linked,
+                on_set,
+                on_synced,
+                on_unlinked,
+                handle.error_mode(),
+            ),
         };
 
-        let downlink = FfiValueDownlink::create(
-            handle.env(),
-            on_event,
-            on_linked,
-            on_set,
-            on_synced,
-            on_unlinked,
+        open_downlink(
+            env,
+            handle,
+            downlink_ref,
+            config,
+            stopped_barrier,
+            host,
+            node,
+            lane,
+            downlink
         );
+    }
+}
 
-        let (host,node,lane) = env.with_env_throw("ai/swim/client/SwimClientException",move  |scope| {
-            let host = Url::from_str(scope.get_rust_string(host).as_str())?;
-            let node = scope.get_rust_string(node);
-            let lane = scope.get_rust_string(lane);
-            Ok::<(Url,String,String),ParseError>((host,node,lane))
-        }).unwrap();
+client_fn! {
+    downlink_map_MapDownlinkModel_open(
+        env,
+        _class,
+        handle: *mut ClientHandle,
+        downlink_ref: jobject,
+        config: jbyteArray,
+        stopped_barrier: jobject,
+        host: JString,
+        node: JString,
+        lane: JString,
+        on_linked: jobject,
+        on_synced: jobject,
+        on_update: jobject,
+        on_remove: jobject,
+        on_clear: jobject,
+        on_unlinked: jobject,
+        take: jobject,
+        drop: jobject,
+    ) {
+        null_pointer_check_abort!(env, handle, stopped_barrier, downlink_ref, config);
 
-        env.with_env(|scope| {
-            handle.spawn_value_downlink(
-                config,
-                scope.new_global_ref(unsafe{JObject::from_raw(downlink_ref)}),
-                scope.new_global_ref(unsafe {JObject::from_raw(stopped_barrier)}),
-                downlink,
-                RemotePath::new(host.to_string(), node, lane)
-            ).unwrap();
-        });
+        let handle = unsafe { &*handle };
+        let downlink = jni_try! {
+            env,
+            "Failed to create downlink",
+            FfiMapDownlink::create(
+                handle.vm(),
+                on_linked,
+                on_synced,
+                on_update,
+                on_remove,
+                on_clear,
+                on_unlinked,
+                take,
+                drop,
+                handle.error_mode(),
+            ),
+        };
+
+        open_downlink(
+            env,
+            handle,
+            downlink_ref,
+            config,
+            stopped_barrier,
+            host,
+            node,
+            lane,
+            downlink
+        );
     }
 }
