@@ -22,3 +22,9 @@ impl Throwable {
     pub const GET_MESSAGE: JavaObjectMethodDef =
         JavaObjectMethodDef::new("java/lang/Throwable", "getMessage", "()Ljava/lang/String;");
 }
+
+pub struct Trigger;
+impl Trigger {
+    pub const TRIGGER: JavaObjectMethodDef =
+        JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V");
+}

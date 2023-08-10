@@ -15,44 +15,30 @@
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;
 use std::ptr::null_mut;
+use std::str::FromStr;
+use std::sync::Arc;
 
+use bytes::BytesMut;
 use client_runtime::{RemotePath, Transport};
 use fixture::{MockClientConnections, MockWs, Server, WsAction};
-use futures_util::future::try_join3;
-use futures_util::SinkExt;
 use jni::objects::{JObject, JString};
 use jni::sys::{jbyteArray, jobject};
-use swim_api::downlink::{Downlink, DownlinkConfig};
-use swim_api::protocol::downlink::{DownlinkNotification, DownlinkNotificationEncoder};
-use jni::errors::Error;
-use jni::objects::{GlobalRef, JObject, JString};
-use jni::sys::jobject;
-use jni::JNIEnv;
 use swim_form::Form;
 use swim_model::{Blob, Text, Value};
 use swim_utilities::non_zero_usize;
 use tokio::io::duplex;
 use tokio::runtime::Builder;
 use tokio::runtime::Runtime;
-use tokio_util::codec::FramedWrite;
-use url::ParseError;
 use tokio::sync::Mutex;
+use url::ParseError;
 use url::Url;
 
 use jvm_sys::env::JavaEnv;
-use jvm_sys::env::StringError;
 use jvm_sys::jni_try;
 use jvm_sys::method::JavaMethodExt;
-use jvm_sys::vtable::CountdownLatch;
-use jvm_sys_tests::run_test;
-use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
-use jvm_sys::vm::set_panic_hook;
-use jvm_sys::vm::utils::new_global_ref;
-use jvm_sys::vm::utils::VmExt;
-use jvm_sys::{jni_try, jvm_tryf, parse_string};
+use jvm_sys::vtable::Trigger;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
-use swim_client_core::downlink::ErrorHandlingConfig;
 use swim_client_core::{client_fn, SwimClient};
 
 use crate::lifecycle_test;
@@ -109,16 +95,14 @@ client_fn! {
     ) -> Runtime {
         let env = JavaEnv::new(env);
         let downlink = FfiValueDownlink::create(
-            vm.clone(),
+            env.clone(),
             on_event,
             on_linked,
             on_set,
             on_synced,
             on_unlinked,
-            ErrorHandlingConfig::Abort,
-        )
-        .expect("Failed to build downlink");
-        lifecycle_test(downlink, vm, lock, input, host, node, lane,true)
+        );
+        lifecycle_test(downlink, env, lock, input, host, node, lane,true)
     }
 }
 
@@ -139,13 +123,11 @@ client_fn! {
     downlink_value_ValueDownlinkTest_driveDownlinkError(
         env,
         _class,
-        downlink_ref: jobject,
-        stopped_barrier_ref: jobject,
-        barrier: jobject,
+        downlink_ref: JObject,
+        stopped_barrier_ref: JObject,
+        barrier: JObject,
         on_event: jobject,
     ) -> SwimClient {
-        set_panic_hook();
-
         let env = JavaEnv::new(env);
 
         let (transport,  server) = create_io();
@@ -158,63 +140,49 @@ client_fn! {
 
         let client = SwimClient::with_transport(
             runtime,
-            env.get_java_vm().expect("Failed to get Java VM"),
+            env.clone(),
             transport,
             DEFAULT_BUFFER_SIZE,
             DEFAULT_BUFFER_SIZE,
         );
         let handle = client.handle();
-        let downlink = jni_try! {
-            env,
-            "Failed to create downlink",
-            FfiValueDownlink::create(
-                handle.vm(),
-                on_event,
-                null_mut(),
-                null_mut(),
-                null_mut(),
-                null_mut(),
-                handle.error_mode(),
-            ),
-            std::ptr::null_mut()
-        };
+        let downlink = FfiValueDownlink::create(
+            handle.env(),
+            on_event,
+            null_mut(),
+            null_mut(),
+            null_mut(),
+            null_mut(),
+        );
+
+        let (stopped_barrier_gr,downlink_gr) = env.with_env(|scope| {
+            (scope.new_global_ref(stopped_barrier_ref), scope.new_global_ref(downlink_ref))
+        });
 
         jni_try! {
             handle.spawn_downlink(
                 Default::default(),
-                make_global_ref(&env, downlink_ref, "downlink object reference"),
-                make_global_ref(&env, stopped_barrier_ref, "stopped barrier"),
+                downlink_gr,
+                stopped_barrier_gr,
                 downlink,
                 RemotePath::new("ws://127.0.0.1", "node", "lane")
             )
         };
 
         let async_runtime = handle.tokio_handle();
-        let barrier_global_ref = env
-            .new_global_ref(unsafe { JObject::from_raw(barrier) })
-            .unwrap();
-        let vm = handle.vm();
-
-        let mut countdown =
-            JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
-                .initialise(&env)
-                .unwrap();
+        let (trigger,barrier_global_ref) = env.with_env(|scope| {
+           (scope.resolve(Trigger::TRIGGER), scope.new_global_ref(barrier))
+        });
 
         let _jh = async_runtime.spawn(async move {
             let mut lane_peer = Server::lane_for(server, "node", "lane");
             lane_peer.await_link().await;
             lane_peer.await_sync(vec![13]).await;
             lane_peer.send_event(Value::text("blah")).await;
-            let env = vm.expect_env();
 
-            match countdown.invoke(&env, &barrier_global_ref, &[]) {
-                Ok(_) => {}
-                Err(Error::JavaException) => {
-                    let throwable = env.exception_occurred().unwrap();
-                    jvm_tryf!(env, env.throw(throwable));
-                }
-                Err(e) => env.fatal_error(&e.to_string()),
-            }
+            env.with_env(|scope| {
+                scope.invoke(trigger.v(), &barrier_global_ref, &[])
+            });
         });
 
         Box::leak(Box::new(client))
@@ -222,12 +190,28 @@ client_fn! {
 }
 
 client_fn! {
+    downlink_value_ValueDownlinkTest_parsesConfig(
+        env,
+        _class,
+        config: jbyteArray,
+    ) {
+        let mut config_bytes = jni_try! {
+            env,
+            "Failed to parse configuration array",
+            env.convert_byte_array(config).map(BytesMut::from_iter)
+        };
+
+        let _r = DownlinkConfigurations::try_from_bytes(&mut config_bytes);
+    }
+}
+
+client_fn! {
     downlink_value_ValueDownlinkTest_driveDownlink(
         env,
         _class,
-        downlink_ref: jobject,
-        stopped_barrier_ref: jobject,
-        barrier: jobject,
+        downlink_ref: JObject,
+        stopped_barrier_ref: JObject,
+        barrier: JObject,
         host: JString,
         node: JString,
         lane: JString,
@@ -248,35 +232,36 @@ client_fn! {
 
         let client = SwimClient::with_transport(
             runtime,
-            env.get_java_vm().expect("Failed to get Java VM"),
-                transport,
+            env.clone(),
+            transport,
             DEFAULT_BUFFER_SIZE,
             DEFAULT_BUFFER_SIZE,
         );
         let handle = client.handle();
-        let downlink = jni_try! {
-            env,
-            "Failed to create downlink",
-            FfiValueDownlink::create(
-                handle.vm(),
-                on_event,
-                on_linked,
-                on_set,
-                on_synced,
-                on_unlinked,
-                handle.error_mode(),
-            ),
-            std::ptr::null_mut()
-        };
-        let host = jni_try! {
-            env,
-            "Failed to parse host URL",
-            Url::try_from(parse_string!(env, host, std::ptr::null_mut()).as_str()),
-            std::ptr::null_mut()
+        let downlink = FfiValueDownlink::create(
+            env.clone(),
+            on_event,
+            on_linked,
+            on_set,
+            on_synced,
+            on_unlinked,
+        );
+
+        let (host, node, lane) = match env.with_env_throw("ai/swim/client/SwimClientException", move |scope| {
+            let host = Url::from_str(scope.get_rust_string(host).as_str())?;
+            let node = scope.get_rust_string(node);
+            let lane = scope.get_rust_string(lane);
+            Ok::<(Url, String, String), ParseError>((host, node, lane))
+        }) {
+            Ok((host, node, lane)) => (host, node, lane),
+            Err(()) => {
+                return std::ptr::null_mut();
+            }
         };
 
-        let node = parse_string!(env, node, std::ptr::null_mut());
-        let lane = parse_string!(env, lane, std::ptr::null_mut());
+        let (stopped_barrier_gr,downlink_gr) = env.with_env(|scope| {
+            (scope.new_global_ref(stopped_barrier_ref), scope.new_global_ref(downlink_ref))
+        });
 
         jni_try! {
             handle.spawn_downlink(
@@ -289,53 +274,24 @@ client_fn! {
         };
 
         let async_runtime = handle.tokio_handle();
-        let barrier_global_ref = env
-            .new_global_ref(unsafe { JObject::from_raw(barrier) })
-            .unwrap();
-        let vm = handle.vm();
+        let barrier_global_ref = env.with_env(|scope| {
+           scope.new_global_ref(barrier)
+        });
 
-        let mut countdown =
-            JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
-                .initialise(&env)
-                .unwrap();
-
-        let mut countdown_latch =
-            move |env: &JNIEnv, global_ref| match countdown.invoke(env, &global_ref, &[]) {
-                Ok(_) => {}
-                Err(Error::JavaException) => {
-                    let throwable = env.exception_occurred().unwrap();
-                    jvm_tryf!(env, env.throw(throwable));
-                }
-                Err(e) => env.fatal_error(&e.to_string()),
-            };
-
-        let _jh = async_runtime.spawn(async move {
+        let jh = async_runtime.spawn(async move {
             let mut lane_peer = Server::lane_for(server, node, lane);
             lane_peer.await_link().await;
             lane_peer.await_sync(vec![13]).await;
             lane_peer.send_event(15).await;
             lane_peer.send_unlinked().await;
 
-            let env = vm.expect_env();
-            countdown_latch(&env, barrier_global_ref);
+            env.with_env(|scope| {
+                let method = scope.resolve(Trigger::TRIGGER);
+                scope.invoke(method, &barrier_global_ref, &[]);
+            });
         });
+        std::mem::forget(jh);
 
         Box::leak(Box::new(client))
-    }
-}
-
-client_fn! {
-    downlink_value_ValueDownlinkTest_parsesConfig(
-        env,
-        _class,
-        config: jbyteArray,
-    ) {
-        let mut config_bytes = jni_try! {
-            env,
-            "Failed to parse configuration array",
-            env.convert_byte_array(config).map(BytesMut::from_iter)
-        };
-
-        let _r = DownlinkConfigurations::try_from_bytes(&mut config_bytes, &env);
     }
 }

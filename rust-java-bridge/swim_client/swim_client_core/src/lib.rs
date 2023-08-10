@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
-use client_runtime::RemotePath;
+use crate::downlink::DownlinkConfigurations;
 use client_runtime::{
     start_runtime, DownlinkErrorKind, DownlinkRuntimeError, RawHandle, Transport,
 };
+pub use client_runtime::{ClientConfig, RemotePath};
 use jni::objects::{GlobalRef, JValue};
 use jvm_sys::env::{JavaEnv, SpannedError};
 #[cfg(feature = "deflate")]
@@ -44,17 +44,12 @@ use tokio::runtime::{Builder, Handle, Runtime};
 use tokio::task::JoinHandle;
 
 use jvm_sys::method::JavaMethodExt;
-use jvm_sys::vtable::CountdownLatch;
+use jvm_sys::vtable::Trigger;
 pub use macros::*;
-
-use crate::downlink::value::FfiValueDownlink;
-use crate::downlink::DownlinkConfigurations;
 
 pub mod downlink;
 mod macros;
 pub use macros::*;
-
-pub type SharedVm = Arc<JavaVM>;
 
 pub struct SwimClient {
     env: JavaEnv,
@@ -287,9 +282,8 @@ fn spawn_monitor(
 }
 
 fn notify_stopped(env: &JavaEnv, stopped_barrier: GlobalRef) {
-    todo!("trigger");
     env.with_env(|scope| {
-        let countdown = scope.resolve(CountdownLatch::COUNTDOWN);
+        let countdown = scope.resolve(Trigger::TRIGGER);
         scope.invoke(countdown.v(), &stopped_barrier, &[]);
     });
 }

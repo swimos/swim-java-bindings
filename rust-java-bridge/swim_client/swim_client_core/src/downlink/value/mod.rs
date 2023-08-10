@@ -16,20 +16,20 @@ use bytes::BytesMut;
 use futures_util::future::BoxFuture;
 use futures_util::StreamExt;
 use jni::sys::jobject;
-use jvm_sys::env::JavaEnv;
 use swim_api::downlink::{Downlink, DownlinkConfig, DownlinkKind};
 use swim_api::error::DownlinkTaskError;
-use swim_api::protocol::downlink::{DownlinkNotification, ValueNotificationDecoder};
+use swim_api::protocol::downlink::{DownlinkNotification};
+use swim_model::{Text};
 use swim_model::address::Address;
-use swim_model::{Text, Value};
-use swim_recon::printer::print_recon_compact;
 use swim_utilities::io::byte_channel::{ByteReader, ByteWriter};
 use tokio_util::codec::FramedRead;
 
+use jvm_sys::env::JavaEnv;
+
+use crate::downlink::decoder::ValueDlNotDecoder;
 use crate::downlink::value::lifecycle::ValueDownlinkLifecycle;
 
 mod lifecycle;
-pub mod vtable;
 
 pub struct FfiValueDownlink {
     env: JavaEnv,

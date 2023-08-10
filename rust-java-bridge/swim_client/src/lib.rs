@@ -12,23 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use bytebridge::ByteCodec;
 use bytes::BytesMut;
-use client_runtime::RemotePath;
+use client_runtime::{RemotePath, WebSocketConfig};
 use jni::objects::{JObject, JString};
 use jni::sys::{jbyteArray, jobject};
-use jvm_sys::env::JavaEnv;
-use jvm_sys::env::StringError;
-use jvm_sys::{jni_try, npch};
-use ratchet::WebSocketConfig;
+use jvm_sys::null_pointer_check_abort;
 use std::num::NonZeroUsize;
 use std::panic;
 use std::str::FromStr;
+use swim_api::downlink::Downlink;
+use swim_client_core::downlink::map::FfiMapDownlink;
+use url::ParseError;
+use url::Url;
+
+use bytebridge::ByteCodec;
+use jvm_sys::env::JavaEnv;
+use jvm_sys::env::StringError;
+use jvm_sys::jni_try;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
 use swim_client_core::{client_fn, ClientHandle, SwimClient};
-use url::ParseError;
-use url::Url;
 
 include!(concat!(env!("OUT_DIR"), "/out.rs"));
 
@@ -153,11 +156,11 @@ client_fn! {
 /// Attempts to open a downlink using the provided client handle. This function assumes that the
 /// downlink_ref, config, and stopped_barrier are not null pointers.
 fn open_downlink<D>(
-    env: JNIEnv,
+    env: JavaEnv,
     handle: &ClientHandle,
-    downlink_ref: jobject,
+    downlink_ref: JObject,
     config: jbyteArray,
-    stopped_barrier: jobject,
+    stopped_barrier: JObject,
     host: JString,
     node: JString,
     lane: JString,
@@ -165,46 +168,43 @@ fn open_downlink<D>(
 ) where
     D: Downlink + Send + Sync + 'static,
 {
-    let mut config_bytes = jni_try! {
-        env,
-        "Failed to parse configuration array",
-        env.convert_byte_array(config).map(BytesMut::from_iter)
+    let mut config_bytes =
+        env.with_env(|scope| BytesMut::from_iter(scope.convert_byte_array(config)));
+    let config = match env.with_env_throw("ai/swim/client/SwimClientException", |_| {
+        DownlinkConfigurations::try_from_bytes(&mut config_bytes).map_err(StringError)
+    }) {
+        Ok(config) => config,
+        Err(_) => return,
     };
 
-    let config = jni_try! {
-        env,
-        "Invalid config",
-        DownlinkConfigurations::try_from_bytes(&mut config_bytes,&env)
-    };
+    let (host, node, lane) =
+        match env.with_env_throw("ai/swim/client/SwimClientException", move |scope| {
+            let host = Url::from_str(scope.get_rust_string(host).as_str())?;
+            let node = scope.get_rust_string(node);
+            let lane = scope.get_rust_string(lane);
+            Ok::<(Url, String, String), ParseError>((host, node, lane))
+        }) {
+            Ok((host, node, lane)) => (host, node, lane),
+            Err(()) => {
+                return;
+            }
+        };
 
-    let make_global_ref = |obj, name| {
-        new_global_ref(&env, obj)
-            .expect(&format!(
-                "Failed to create new global reference for {}",
-                name
-            ))
-            .unwrap()
-    };
+    let (downlink_gr, barrier_gr) = env.with_env(|scope| {
+        (
+            scope.new_global_ref(downlink_ref),
+            scope.new_global_ref(stopped_barrier),
+        )
+    });
 
-    let host = jni_try! {
-        env,
-        "Failed to parse host URL",
-        Url::try_from(parse_string!(env, host).as_str())
-    };
-
-    let node = parse_string!(env, node);
-    let lane = parse_string!(env, lane);
-
-    jni_try! {
-        handle.spawn_downlink(
-            config,
-            make_global_ref(downlink_ref, "downlink object"),
-            make_global_ref(stopped_barrier, "stopped barrier"),
-            downlink,
-            RemotePath::new(host.to_string(),node,lane)
-        ),
-        ()
-    }
+    // 'spawn_downlink' takes care of propagating the exception
+    let _r = handle.spawn_downlink(
+        config,
+        downlink_gr,
+        barrier_gr,
+        downlink,
+        RemotePath::new(host.to_string(), node, lane),
+    );
 }
 
 client_fn! {
@@ -215,9 +215,9 @@ client_fn! {
         env,
         _class,
         handle: *mut ClientHandle,
-        downlink_ref: jobject,
+        downlink_ref: JObject,
         config: jbyteArray,
-        stopped_barrier: jobject,
+        stopped_barrier: JObject,
         host: JString,
         node: JString,
         lane: JString,
@@ -230,19 +230,15 @@ client_fn! {
         null_pointer_check_abort!(env, handle, stopped_barrier, downlink_ref, config);
 
         let handle = unsafe { &*handle };
-        let downlink = jni_try! {
-            env,
-            "Failed to create downlink",
-            FfiValueDownlink::create(
-                handle.vm(),
-                on_event,
-                on_linked,
-                on_set,
-                on_synced,
-                on_unlinked,
-                handle.error_mode(),
-            ),
-        };
+        let env = handle.env();
+        let downlink = FfiValueDownlink::create(
+            env.clone(),
+            on_event,
+            on_linked,
+            on_set,
+            on_synced,
+            on_unlinked,
+        );
 
         open_downlink(
             env,
@@ -263,9 +259,9 @@ client_fn! {
         env,
         _class,
         handle: *mut ClientHandle,
-        downlink_ref: jobject,
+        downlink_ref: JObject,
         config: jbyteArray,
-        stopped_barrier: jobject,
+        stopped_barrier: JObject,
         host: JString,
         node: JString,
         lane: JString,
@@ -281,22 +277,18 @@ client_fn! {
         null_pointer_check_abort!(env, handle, stopped_barrier, downlink_ref, config);
 
         let handle = unsafe { &*handle };
-        let downlink = jni_try! {
-            env,
-            "Failed to create downlink",
-            FfiMapDownlink::create(
-                handle.vm(),
-                on_linked,
-                on_synced,
-                on_update,
-                on_remove,
-                on_clear,
-                on_unlinked,
-                take,
-                drop,
-                handle.error_mode(),
-            ),
-        };
+        let env = handle.env();
+        let downlink = FfiMapDownlink::create(
+            env.clone(),
+            on_linked,
+            on_synced,
+            on_update,
+            on_remove,
+            on_clear,
+            on_unlinked,
+            take,
+            drop,
+        );
 
         open_downlink(
             env,

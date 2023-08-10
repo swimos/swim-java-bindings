@@ -12,18 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::lifecycle_test;
 use jni::objects::JString;
 use jni::sys::jobject;
-use jni::JNIEnv;
+use tokio::runtime::Runtime;
+
+use jvm_sys::env::JavaEnv;
 use jvm_sys::null_pointer_check_abort;
-use jvm_sys::vm::set_panic_hook;
-use std::fmt::Display;
-use std::sync::Arc;
 use swim_client_core::client_fn;
 use swim_client_core::downlink::map::{FfiMapDownlink, MapDownlinkLifecycle};
-use swim_client_core::downlink::ErrorHandlingConfig;
-use tokio::runtime::Runtime;
+
+use crate::lifecycle_test;
 
 client_fn! {
     downlink_map_MapDownlinkTest_callbackTest(
@@ -38,7 +36,6 @@ client_fn! {
         take: jobject,
         drop: jobject,
     ) {
-        set_panic_hook();
         null_pointer_check_abort!(
             env,
             on_linked,
@@ -51,6 +48,8 @@ client_fn! {
             drop
         );
 
+        let env = JavaEnv::new(env);
+
         let mut vtable = MapDownlinkLifecycle::from_parts(
             &env,
             on_linked,
@@ -61,45 +60,33 @@ client_fn! {
             on_unlinked,
             take,
             drop
-        ).unwrap();
+        );
 
-        fn tri<F,O,E>(env:&JNIEnv, f:F) -> O
-        where
-            F: FnOnce() -> Result<O,E>,
-            E: Display
-        {
-            match f() {
-                Ok(o) => o,
-                Err(e) => {
-                    env.exception_describe().unwrap();
-                    panic!("{}", e);
-                }
-            }
-        }
-
-        tri(&env, || vtable.on_linked(&env));
-        tri(&env, || vtable.on_update(
-            &env,
-            b"key1".as_slice().to_vec(),
-            b"value1".as_slice().to_vec(),
-            false
-        ));
-        tri(&env, || vtable.on_update(
-            &env,
-            b"key2".as_slice().to_vec(),
-            b"value2".as_slice().to_vec(),
-            false
-        ));
-        tri(&env, || vtable.on_synced(&env));
-        tri(&env, || vtable.on_remove(
-            &env,
-            b"key2".as_slice().to_vec(),
-            true
-        ));
-        tri(&env, || vtable.on_clear(&env, true));
-        tri(&env, || vtable.take(&env, 5, true));
-        tri(&env, || vtable.drop(&env, 3, true));
-        tri(&env, || vtable.on_unlinked(&env));
+        let _r =env.with_env_throw("java/lang/RuntimeException", |_| {
+            vtable.on_linked(&env)?;
+            vtable.on_update(
+                &env,
+                &mut b"key1".as_slice().to_vec(),
+               &mut  b"value1".as_slice().to_vec(),
+                false
+            )?;
+            vtable.on_update(
+                &env,
+                &mut b"key2".as_slice().to_vec(),
+               &mut  b"value2".as_slice().to_vec(),
+                false
+            )?;
+            vtable.on_synced(&env)?;
+            vtable.on_remove(
+                &env,
+               &mut  b"key2".as_slice().to_vec(),
+                true
+            )?;
+            vtable.on_clear(&env, true)?;
+            vtable.take(&env, 5, true)?;
+            vtable.drop(&env, 3, true)?;
+            vtable.on_unlinked(&env)
+        });
     }
 }
 
@@ -121,11 +108,9 @@ client_fn! {
         take: jobject,
         drop: jobject,
     ) -> Runtime {
-        set_panic_hook();
-
-        let vm = Arc::new(env.get_java_vm().unwrap());
+        let env = JavaEnv::new(env);
         let downlink = FfiMapDownlink::create(
-            vm.clone(),
+            env.clone(),
             on_linked,
             on_synced,
             on_update,
@@ -134,9 +119,8 @@ client_fn! {
             on_unlinked,
             take,
             drop,
-            ErrorHandlingConfig::Abort,
-        ).unwrap();
+        );
 
-        lifecycle_test(downlink, vm, lock, input, host, node, lane,false)
+        lifecycle_test(downlink, env, lock, input, host, node, lane,false)
     }
 }

@@ -59,7 +59,7 @@ class ValueDownlinkTest extends FfiTest {
   void simpleOpen() throws InterruptedException {
     Trigger trigger = new Trigger();
 
-    long ptr = lifecycleTest(trigger, "", "host", "node", "lane", null, null, null, null, null);
+    long ptr = lifecycleTest(trigger, "", "ws://swim.ai", "node", "lane", null, null, null, null, null);
 
     awaitTrigger(trigger, 5, "downlink");
     dropRuntime(ptr);
@@ -174,7 +174,7 @@ class ValueDownlinkTest extends FfiTest {
 
     long ptr = lifecycleTest(lock,
                              input.toString(),
-                             "host",
+                             "ws://swim.ai",
                              "node",
                              "lane",
                              state.wrapOnEvent(lifecycle.getOnEvent()),
@@ -359,7 +359,7 @@ class ValueDownlinkTest extends FfiTest {
 
     long ptr = driveDownlink(valueDownlink,
                              stoppedBarrier,
-                             null,
+                             new Trigger(),
                              "ws://127.0.0.1",
                              "node",
                              "lane",

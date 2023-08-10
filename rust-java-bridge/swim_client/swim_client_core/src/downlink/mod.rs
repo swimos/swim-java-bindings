@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use bytes::{Buf, BytesMut};
 use std::mem::size_of;
 use std::num::NonZeroUsize;
 use std::time::Duration;
+
+use bytes::{Buf, BytesMut};
 use swim_api::downlink::DownlinkConfig;
 use swim_runtime::downlink::{DownlinkOptions, DownlinkRuntimeConfig};
+
+use jvm_sys::method::JavaObjectMethodDef;
 
 const CONFIG_LEN: usize = size_of::<u64>() * 5 + size_of::<u8>() * 4;
 
@@ -25,6 +28,44 @@ mod decoder;
 pub mod map;
 pub mod value;
 mod vtable;
+
+
+pub const ON_LINKED: JavaObjectMethodDef =
+    JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnLinked", "onLinked", "()V");
+pub const ON_UNLINKED: JavaObjectMethodDef =
+    JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnUnlinked", "onUnlinked", "()V");
+pub const CONSUMER_ACCEPT: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "java/util/function/Consumer",
+    "accept",
+    "(Ljava/lang/Object;)V",
+);
+pub const DISPATCH_ON_UPDATE: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchOnUpdate",
+    "onUpdate",
+    "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Z)V",
+);
+pub const DISPATCH_ON_REMOVE: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchOnRemove",
+    "onRemove",
+    "(Ljava/nio/ByteBuffer;Z)V",
+);
+pub const DISPATCH_ON_CLEAR: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchOnClear",
+    "onClear",
+    "(Z)V",
+);
+pub const DISPATCH_TAKE: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchTake",
+    "take",
+    "(IZ)V",
+);
+pub const DISPATCH_DROP: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchDrop",
+    "drop",
+    "(IZ)V",
+);
+pub const ROUTINE_EXEC: JavaObjectMethodDef =
+    JavaObjectMethodDef::new("ai/swim/client/downlink/map/Routine", "exec", "()V");
 
 /// A wrapper around a downlink runtime configuration, downlink configuration and downlink options
 /// that can be parsed from a Java-provided byte array of the following format:
@@ -109,12 +150,14 @@ fn parse_bool(buf: &mut BytesMut) -> Result<bool, String> {
 
 #[cfg(test)]
 mod test {
-    use crate::downlink::DownlinkConfigurations;
-    use bytes::{BufMut, BytesMut};
     use std::time::Duration;
+
+    use bytes::{BufMut, BytesMut};
     use swim_api::downlink::DownlinkConfig;
     use swim_runtime::downlink::{DownlinkOptions, DownlinkRuntimeConfig};
     use swim_utilities::non_zero_usize;
+
+    use crate::downlink::DownlinkConfigurations;
 
     #[test]
     fn parse_valid_config() {

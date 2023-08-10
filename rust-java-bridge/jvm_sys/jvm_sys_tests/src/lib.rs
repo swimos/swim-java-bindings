@@ -20,7 +20,7 @@ use tokio::runtime::{Builder, Runtime};
 
 use jvm_sys::env::JavaEnv;
 use jvm_sys::method::JavaMethodExt;
-use jvm_sys::vtable::CountdownLatch;
+use jvm_sys::vtable::{ Trigger};
 
 /// Creates a new multi-threaded Tokio runtime and spawns 'fut' on to it. A monitor task is spawned
 /// that waits for 'fut' to complete and then notifies 'barrier' that the task has completed; this
@@ -28,9 +28,9 @@ use jvm_sys::vtable::CountdownLatch;
 /// unwind due to uses of &mut T by readers and writers.
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn run_test<F>(env: JavaEnv, barrier: jobject, fut: F) -> *mut Runtime
-where
-    F: Future + Send + 'static,
-    F::Output: Send + 'static,
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
 {
     let global_ref =
         env.with_env(|scope| scope.new_global_ref(unsafe { JObject::from_raw(barrier) }));
@@ -45,9 +45,8 @@ where
         let r = join_handle.await;
 
         env.with_env(|scope| {
-            todo!("trigger");
             let _guard = scope.lock_obj(&global_ref);
-            let method = scope.initialise(CountdownLatch::COUNTDOWN);
+            let method = scope.initialise(Trigger::TRIGGER);
 
             scope.invoke(method.v(), &global_ref, &[]);
             if r.is_err() {
