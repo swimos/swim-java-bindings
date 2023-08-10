@@ -15,7 +15,7 @@
 use std::num::NonZeroUsize;
 use std::panic;
 
-use bytebridge::ByteCodec;
+use bytebridge::ByteCodecExt;
 use bytes::BytesMut;
 use client_runtime::{RemotePath, WebSocketConfig};
 use jni::objects::JString;

@@ -2,11 +2,11 @@ use std::path::PathBuf;
 use std::{fs, io};
 
 #[derive(Default, Debug, Clone)]
-struct StringStack {
+struct StringBuilder {
     inner: String,
 }
 
-impl StringStack {
+impl StringBuilder {
     fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
@@ -23,25 +23,25 @@ impl StringStack {
     }
 }
 
-impl From<&str> for StringStack {
+impl From<&str> for StringBuilder {
     fn from(s: &str) -> Self {
-        StringStack::from(s.to_string())
+        StringBuilder::from(s.to_string())
     }
 }
 
-impl From<String> for StringStack {
+impl From<String> for StringBuilder {
     fn from(inner: String) -> Self {
-        StringStack { inner }
+        StringBuilder { inner }
     }
 }
 
 /// A Java documentation builder.
 #[derive(Debug, Clone)]
 pub struct Documentation {
-    header: StringStack,
-    params: StringStack,
-    throws: StringStack,
-    returns: Option<StringStack>,
+    header: StringBuilder,
+    params: StringBuilder,
+    throws: StringBuilder,
+    returns: Option<StringBuilder>,
     style: FormatStyle,
 }
 
@@ -50,7 +50,7 @@ impl TryFrom<PathBuf> for Documentation {
 
     fn try_from(value: PathBuf) -> Result<Self, Self::Error> {
         Ok(Documentation {
-            header: StringStack::from(fs::read_to_string(value)?),
+            header: StringBuilder::from(fs::read_to_string(value)?),
             params: Default::default(),
             throws: Default::default(),
             returns: None,
@@ -62,7 +62,7 @@ impl TryFrom<PathBuf> for Documentation {
 impl Documentation {
     pub fn new(header: String, style: FormatStyle) -> Documentation {
         Documentation {
-            header: StringStack::from(header),
+            header: StringBuilder::from(header),
             params: Default::default(),
             throws: Default::default(),
             returns: None,
@@ -76,9 +76,9 @@ impl Documentation {
 
     pub fn from_style(style: FormatStyle) -> Documentation {
         Documentation {
-            header: StringStack::default(),
-            params: StringStack::default(),
-            throws: StringStack::default(),
+            header: StringBuilder::default(),
+            params: StringBuilder::default(),
+            throws: StringBuilder::default(),
             returns: None,
             style,
         }
@@ -115,7 +115,10 @@ impl Documentation {
         header.is_empty()
             && params.is_empty()
             && throws.is_empty()
-            && returns.as_ref().map(StringStack::is_empty).unwrap_or(true)
+            && returns
+                .as_ref()
+                .map(StringBuilder::is_empty)
+                .unwrap_or(true)
     }
 
     pub fn push_header_line(&mut self, line: impl ToString) {
@@ -141,7 +144,7 @@ impl Documentation {
                 panic!("Bug: attempted to set documentation for a return value twice")
             }
             None => {
-                let mut stack = StringStack::default();
+                let mut stack = StringBuilder::default();
                 stack.push_line(format!("@return {}", doc.to_string()));
                 self.returns = Some(stack)
             }
