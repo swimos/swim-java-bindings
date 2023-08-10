@@ -16,6 +16,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * A factory for constructing agents of type {@code A}.
+ * <p>
+ * An initialised agent is an {@link AgentModel}s that is used to dispatch events from the Rust runtime to lanes;
+ * decoding the message requests, setting the state of the lanes, invoking user-defined lifecycle events and encoding
+ * responses.
+ *
+ * @param <A>
+ */
 public class AgentFactory<A extends Agent> {
   private final Constructor<A> constructor;
 
@@ -23,6 +32,14 @@ public class AgentFactory<A extends Agent> {
     this.constructor = constructor;
   }
 
+  /**
+   * Reflects and returns a new {@link AgentFactory} for {@code clazz}.
+   *
+   * @param clazz to reflect.
+   * @param <A>   the agent type.
+   * @return a factory for constructing agents of type {@code A}.
+   * @throws NoSuchMethodException if there is no zero-arg constructor in the agent.
+   */
   public static <A extends Agent> AgentFactory<A> forClass(Class<A> clazz) throws NoSuchMethodException {
     try {
       Constructor<A> constructor = clazz.getDeclaredConstructor();
@@ -33,6 +50,10 @@ public class AgentFactory<A extends Agent> {
     }
   }
 
+  /**
+   * Reflects agent {@code agent}. This involves reflecting the agent's lanes and setting their lane models with a
+   * reference to the agent's {@link StateCollector}.
+   */
   private static <A extends Agent> AgentModel reflectAgent(A agent) {
     Class<? extends Agent> agentClass = agent.getClass();
     Field[] fields = agentClass.getDeclaredFields();
@@ -69,6 +90,11 @@ public class AgentFactory<A extends Agent> {
     return new IllegalArgumentException("Unsupported lane type: " + type + " in " + agentClass.getCanonicalName());
   }
 
+  /**
+   * Reflects a {@link Lane} and creates and sets its corresponding {@link LaneModel}. This allows for users to directly
+   * operate on a {@link Lane} when a lifecycle event is fired (which happens on the {@link ai.swim.server.lanes.LaneView}
+   * as well as the runtime setting its state using the {@link LaneModel}.
+   */
   private static LaneModel reflectLane(Agent agent, Field field, Class<?> type, StateCollector collector) {
     if (ValueLane.class.equals(type)) {
       return reflectValueLane(agent, field, collector);
@@ -89,6 +115,11 @@ public class AgentFactory<A extends Agent> {
     }
   }
 
+  /**
+   * Reflects and initialises a new {@link AgentModel}.
+   *
+   * @return an initialised agent.
+   */
   public AgentModel newInstance() {
     try {
       constructor.setAccessible(true);
