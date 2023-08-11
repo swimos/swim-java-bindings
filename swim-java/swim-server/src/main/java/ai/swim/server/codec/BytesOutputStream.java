@@ -3,6 +3,9 @@ package ai.swim.server.codec;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * Wrapper around a {@link Bytes} that provides an {@link OutputStream} implementation.
+ */
 class BytesOutputStream extends OutputStream {
   private final Bytes inner;
 

@@ -17,10 +17,10 @@ import java.util.UUID;
 public class ValueState<T> implements State {
   private final Form<T> form;
   private final StateCollector collector;
-  private T state;
-  private boolean dirty;
   private final List<T> events;
   private final List<UUID> syncRequests;
+  private T state;
+  private boolean dirty;
 
   public ValueState(Form<T> form, StateCollector collector) {
     this.form = form;

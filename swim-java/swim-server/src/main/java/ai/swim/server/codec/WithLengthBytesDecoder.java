@@ -1,6 +1,10 @@
 package ai.swim.server.codec;
 
+/**
+ * A decoder that decodes N bytes that are prefixed by their len.
+ */
 public class WithLengthBytesDecoder extends Decoder<Bytes> {
+
   @Override
   public Decoder<Bytes> decode(Bytes buffer) throws DecoderException {
     if (buffer.remaining() < Size.LONG) {
@@ -17,7 +21,7 @@ public class WithLengthBytesDecoder extends Decoder<Bytes> {
         }
       } catch (ArithmeticException e) {
         // Java array capacity is an integer but it is possible that Rust/a peer sends a long representation.
-        throw new DecoderException("Buffer overflow", e);
+        throw new DecoderException("Integer overflow", e);
       }
     }
   }

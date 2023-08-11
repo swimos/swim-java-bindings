@@ -1,6 +1,7 @@
 package ai.swim.server.schema;
 
 import ai.swim.server.agent.AbstractAgent;
+import ai.swim.server.agent.Agent;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
@@ -16,24 +17,31 @@ class PlaneSchemaTest {
 
   @Test
   void testReflectAgentSchema() {
-    AgentSchema agentSchema = AgentSchema.reflectSchema(TestAgent.class);
-    assertEquals(agentSchema, new AgentSchema("Agent", Map.of("testValueLane", new LaneSchema(true, LaneKind.Value))));
+    AgentSchema<TestAgent> agentSchema = AgentSchema.reflectSchema(TestAgent.class);
+    assertEquals(
+        agentSchema,
+        new AgentSchema<>(
+            TestAgent.class,
+            "Agent",
+            Map.of("testValueLane", new LaneSchema(true, LaneKind.Value,
+                                                   0))));
   }
 
   @Test
   void testReflectPlaneSchema() {
-    PlaneSchema schema = PlaneSchema.reflectSchema(TestPlane.class);
+    PlaneSchema<TestPlane> schema = PlaneSchema.reflectSchema(TestPlane.class);
+    Map<Class<? extends Agent>, String> uriResolver = Map.of(TestAgent.class, "testRoute");
     assertEquals(
         schema,
-        new PlaneSchema(
-            "testPlane",
+        new PlaneSchema<>(
+            TestPlane.class, "testPlane",
             Map.of(
                 "testRoute",
-                new AgentSchema(
-                    "Agent",
+                new AgentSchema<>(
+                    TestAgent.class, "Agent",
                     Map.of(
                         "testValueLane",
-                        new LaneSchema(true, LaneKind.Value))))));
+                        new LaneSchema(true, LaneKind.Value, 0)))), uriResolver));
   }
 
   @SwimAgent("Agent")

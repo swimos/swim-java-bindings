@@ -6,9 +6,7 @@ import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.plane.AbstractPlane;
 import ai.swim.server.schema.PlaneSchema;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -18,38 +16,22 @@ public abstract class AbstractSwimServerBuilder {
     System.loadLibrary("swim_server");
   }
 
+  // NodeUri -> Agent mapping
   protected final Map<String, AgentFactory<? extends Agent>> agentFactories;
-  protected final PlaneSchema schema;
+  protected final PlaneSchema<?> schema;
 
-  public AbstractSwimServerBuilder(Map<String, AgentFactory<? extends Agent>> agentFactories, PlaneSchema schema) {
+  public AbstractSwimServerBuilder(Map<String, AgentFactory<? extends Agent>> agentFactories, PlaneSchema<?> schema) {
     this.agentFactories = agentFactories;
     this.schema = schema;
   }
 
-  protected static <P extends AbstractPlane> Map<String, AgentFactory<? extends Agent>> reflectAgentFactories(Class<P> clazz) {
-    P plane;
-
-    try {
-      Constructor<P> constructor = clazz.getDeclaredConstructor();
-      constructor.setAccessible(true);
-
-      plane = constructor.newInstance();
-    } catch (NoSuchMethodException e) {
-      throw new RuntimeException("Class does not contain a zero-arg constructor", e);
-    } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-      throw new RuntimeException("Failed to create new plane", e);
-    }
-
-    return reflectAgentFactories(plane);
-  }
-
-  protected static <P extends AbstractPlane> PlaneSchema reflectPlaneSchema(Class<P> clazz) {
+  protected static <P extends AbstractPlane> PlaneSchema<P> reflectPlaneSchema(Class<P> clazz) {
     return PlaneSchema.reflectSchema(clazz);
   }
 
-  @SuppressWarnings("unchecked")
-  private static Map<String, AgentFactory<? extends Agent>> reflectAgentFactories(AbstractPlane plane) {
-    Class<? extends AbstractPlane> clazz = plane.getClass();
+
+  public static <P extends AbstractPlane> Map<String, AgentFactory<? extends Agent>> reflectAgentFactories(PlaneSchema<P> planeSchema) {
+    Class<? extends AbstractPlane> clazz = planeSchema.getPlaneClass();
     Map<String, AgentFactory<? extends Agent>> agentFactories = new HashMap<>();
 
     for (Field field : clazz.getDeclaredFields()) {
@@ -58,9 +40,9 @@ public abstract class AbstractSwimServerBuilder {
         Class<?> type = field.getType();
 
         if (Agent.class.isAssignableFrom(type)) {
-          Class<? extends Agent> agentClass = (Class<? extends Agent>) type;
+          @SuppressWarnings("unchecked") Class<? extends Agent> agentClass = (Class<? extends Agent>) type;
           try {
-            agentFactories.put(route.value(), AgentFactory.forClass(agentClass));
+            agentFactories.put(route.value(), AgentFactory.forSchema(planeSchema.schemaFor(agentClass)));
           } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
           }

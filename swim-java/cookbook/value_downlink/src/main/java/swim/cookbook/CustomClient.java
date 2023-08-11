@@ -14,6 +14,7 @@
 
 package swim.cookbook;
 
+import ai.swim.client.ClientConfig;
 import ai.swim.client.SwimClient;
 import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.value.ValueDownlink;
@@ -31,7 +32,7 @@ final class CustomClient {
 
   public static void main(String[] args) throws SwimClientException, IOException {
     // Initialises the client runtime.
-    try (SwimClient client = SwimClien.open()) {
+    try (SwimClient client = SwimClient.open(new ClientConfig())) {
 
       // Here we create a ValueDownlinkBuilder to a host running at "warp://localhost:9001/" an agent of "unit/foo" and a
       // value lane of "lane" - which corresponds to UnitAgent#intLane.

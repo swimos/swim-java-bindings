@@ -2,7 +2,6 @@ package ai.swim.server.lanes.models.response;
 
 import ai.swim.server.codec.Bytes;
 import ai.swim.server.codec.Encoder;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.UUID;
 

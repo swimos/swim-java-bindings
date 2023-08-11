@@ -1,5 +1,8 @@
 package ai.swim.server.codec;
 
-public class BufferOverflowException extends RuntimeException{
+/**
+ * Exception thrown when there is insufficient capacity in a buffer.
+ */
+public class BufferOverflowException extends RuntimeException {
 
 }

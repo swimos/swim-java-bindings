@@ -11,17 +11,23 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
-public class PlaneSchema {
+public class PlaneSchema<P extends AbstractPlane> {
+  private final Class<P> planeClass;
   private final String name;
-  private final Map<String, AgentSchema> agentSchemas;
+  private final Map<String, AgentSchema<?>> agentSchemas;
+  private final Map<Class<? extends Agent>, String> uriResolver;
 
-  public PlaneSchema(String name, Map<String, AgentSchema> agentSchemas) {
+  public PlaneSchema(Class<P> planeClass, String name, Map<String, AgentSchema<?>> agentSchemas,
+      Map<Class<? extends Agent>, String> uriResolver) {
+    this.planeClass = planeClass;
     this.name = name;
     this.agentSchemas = agentSchemas;
+    this.uriResolver = uriResolver;
   }
 
-  public static <P extends AbstractPlane> PlaneSchema reflectSchema(Class<P> planeClass) {
+  public static <P extends AbstractPlane> PlaneSchema<P> reflectSchema(Class<P> planeClass) {
     if (planeClass == null) {
       throw new NullPointerException();
     }
@@ -35,13 +41,17 @@ public class PlaneSchema {
     }
 
     String planeName = planeAnno.value();
-    Map<String, AgentSchema> agentSchemas = reflectAgents(planeClass);
+    Map<String, AgentSchema<?>> agentSchemas = reflectAgents(planeClass);
+    Map<Class<? extends Agent>, String> uriResolver = agentSchemas
+        .entrySet()
+        .stream()
+        .collect(Collectors.toMap(entry -> entry.getValue().getAgentClass(), Map.Entry::getKey));
 
-    return new PlaneSchema(planeName, agentSchemas);
+    return new PlaneSchema<>(planeClass, planeName, agentSchemas, uriResolver);
   }
 
-  private static <P extends AbstractPlane> Map<String, AgentSchema> reflectAgents(Class<P> planeClass) {
-    Map<String, AgentSchema> agentSchemas = new HashMap<>();
+  private static <P extends AbstractPlane> Map<String, AgentSchema<?>> reflectAgents(Class<P> planeClass) {
+    Map<String, AgentSchema<?>> agentSchemas = new HashMap<>();
     Field[] fields = planeClass.getDeclaredFields();
 
     for (Field field : fields) {
@@ -68,8 +78,10 @@ public class PlaneSchema {
   @Override
   public String toString() {
     return "PlaneSchema{" +
-        "name='" + name + '\'' +
+        "planeClass=" + planeClass +
+        ", name='" + name + '\'' +
         ", agentSchemas=" + agentSchemas +
+        ", uriResolver=" + uriResolver +
         '}';
   }
 
@@ -81,13 +93,17 @@ public class PlaneSchema {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PlaneSchema schema = (PlaneSchema) o;
-    return Objects.equals(name, schema.name) && Objects.equals(agentSchemas, schema.agentSchemas);
+    PlaneSchema<?> that = (PlaneSchema<?>) o;
+    return Objects.equals(planeClass, that.planeClass) && Objects.equals(
+        name,
+        that.name) && Objects.equals(
+        agentSchemas,
+        that.agentSchemas) && Objects.equals(uriResolver, that.uriResolver);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, agentSchemas);
+    return Objects.hash(planeClass, name, agentSchemas, uriResolver);
   }
 
   public byte[] bytes() throws IOException {
@@ -96,12 +112,21 @@ public class PlaneSchema {
       packer.packString(name);
       packer.packMapHeader(agentSchemas.size());
 
-      for (Map.Entry<String, AgentSchema> entry : agentSchemas.entrySet()) {
+      for (Map.Entry<String, AgentSchema<?>> entry : agentSchemas.entrySet()) {
         packer.packString(entry.getKey());
         entry.getValue().pack(packer);
       }
 
       return packer.toByteArray();
     }
+  }
+
+  public AgentSchema<?> schemaFor(Class<? extends Agent> agentClass) {
+    String uri = uriResolver.get(agentClass);
+    return agentSchemas.get(uri);
+  }
+
+  public Class<P> getPlaneClass() {
+    return planeClass;
   }
 }

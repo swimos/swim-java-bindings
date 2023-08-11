@@ -14,8 +14,8 @@ class TestSwimServer extends AbstractSwimServerBuilder {
   }
 
   public static <P extends AbstractPlane> TestSwimServer forPlane(Class<P> planeClass) {
-    Map<String, AgentFactory<? extends Agent>> agentFactories = reflectAgentFactories(planeClass);
-    PlaneSchema planeSchema = reflectPlaneSchema(planeClass);
+    PlaneSchema<P> planeSchema = reflectPlaneSchema(planeClass);
+    Map<String, AgentFactory<? extends Agent>> agentFactories = reflectAgentFactories(planeSchema);
     return new TestSwimServer(agentFactories, planeSchema);
   }
 

@@ -7,6 +7,7 @@ import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.server.lanes.value.ValueLane;
 import ai.swim.server.lanes.value.ValueLaneModel;
 import ai.swim.server.lanes.value.ValueLaneView;
+import ai.swim.server.schema.AgentSchema;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -27,24 +28,27 @@ import java.util.Objects;
  */
 public class AgentFactory<A extends Agent> {
   private final Constructor<A> constructor;
+  private final Map<String, Integer> laneMappings;
 
-  private AgentFactory(Constructor<A> constructor) {
+  private AgentFactory(Constructor<A> constructor, Map<String, Integer> laneMappings) {
     this.constructor = constructor;
+    this.laneMappings = laneMappings;
   }
 
   /**
-   * Reflects and returns a new {@link AgentFactory} for {@code clazz}.
+   * Reflects and returns a new {@link AgentFactory} for {@code agentSchema}.
    *
-   * @param clazz to reflect.
-   * @param <A>   the agent type.
+   * @param <A>         the agent type.
+   * @param agentSchema to reflect.
    * @return a factory for constructing agents of type {@code A}.
    * @throws NoSuchMethodException if there is no zero-arg constructor in the agent.
    */
-  public static <A extends Agent> AgentFactory<A> forClass(Class<A> clazz) throws NoSuchMethodException {
+  public static <A extends Agent> AgentFactory<A> forSchema(AgentSchema<A> agentSchema) throws NoSuchMethodException {
     try {
-      Constructor<A> constructor = clazz.getDeclaredConstructor();
+      Class<A> agentClass = agentSchema.getAgentClass();
+      Constructor<A> constructor = agentClass.getDeclaredConstructor();
       constructor.setAccessible(true);
-      return new AgentFactory<>(constructor);
+      return new AgentFactory<>(constructor, agentSchema.laneMappings());
     } catch (NoSuchMethodException e) {
       throw new NoSuchMethodException("No zero-arg constructor in Agent");
     }
@@ -54,10 +58,10 @@ public class AgentFactory<A extends Agent> {
    * Reflects agent {@code agent}. This involves reflecting the agent's lanes and setting their lane models with a
    * reference to the agent's {@link StateCollector}.
    */
-  private static <A extends Agent> AgentModel reflectAgent(A agent) {
+  private static <A extends Agent> AgentModel reflectAgent(A agent, Map<String, Integer> laneMappings) {
     Class<? extends Agent> agentClass = agent.getClass();
     Field[] fields = agentClass.getDeclaredFields();
-    Map<String, LaneModel> lanes = new HashMap<>();
+    Map<Integer, LaneModel> lanes = new HashMap<>();
     StateCollector collector = new StateCollector();
 
     for (Field field : fields) {
@@ -71,7 +75,7 @@ public class AgentFactory<A extends Agent> {
             Type rawType = ((ParameterizedType) type).getRawType();
 
             if (rawType instanceof Class<?>) {
-              lanes.put(laneUri, reflectLane(agent, field, (Class<?>) rawType, collector));
+              lanes.put(laneMappings.get(laneUri), reflectLane(agent, field, (Class<?>) rawType, collector));
             } else {
               throw unsupportedLaneType(type, agentClass);
             }
@@ -124,7 +128,7 @@ public class AgentFactory<A extends Agent> {
     try {
       constructor.setAccessible(true);
       A agent = constructor.newInstance();
-      return reflectAgent(agent);
+      return reflectAgent(agent, laneMappings);
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException("Failed to create new agent", e);
     }

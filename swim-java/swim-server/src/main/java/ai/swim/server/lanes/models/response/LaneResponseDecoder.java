@@ -15,6 +15,7 @@ public class LaneResponseDecoder<T> extends Decoder<LaneResponse<T>> {
   private UUID uuid;
   private State state = State.Header;
   private Decoder<T> delegate;
+
   public LaneResponseDecoder(Decoder<T> delegate) {
     this.delegate = delegate;
   }

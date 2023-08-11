@@ -388,11 +388,11 @@ async fn initialize_agent(
     let env = ffi_context.env.clone();
 
     env.with_env(|scope| {
-        for (idx, uri) in lane_specs.keys().enumerate() {
+        for (uri, spec) in lane_specs.iter() {
             let uri_string = scope.new_string(uri.as_str());
             let uri_global_ref = scope.new_global_ref(uri_string);
             lane_name_lookup.insert(
-                idx as u64,
+                spec.lane_idx,
                 LaneName {
                     java: uri_global_ref,
                     str: uri.into(),
@@ -401,10 +401,10 @@ async fn initialize_agent(
         }
     });
 
-    for (idx, (uri, spec)) in lane_specs.into_iter().enumerate() {
-        let idx = idx as u64;
+    for (uri, spec) in lane_specs.into_iter() {
         let LaneSpec {
             is_transient,
+            lane_idx,
             lane_kind_repr,
         } = spec;
         let kind: LaneKind = lane_kind_repr.into();
@@ -417,19 +417,19 @@ async fn initialize_agent(
             let (tx, rx) = context.add_lane(uri.as_str(), kind, lane_conf).await?;
 
             if is_transient {
-                lane_readers.push(LaneReader::value(idx, rx));
-                item_writers.insert(idx, tx);
+                lane_readers.push(LaneReader::value(lane_idx, rx));
+                item_writers.insert(lane_idx, tx);
             } else {
                 init_tasks.push(run_lane_initializer(
                     ffi_context.clone(),
                     JavaValueLikeLaneInitializer::new(
                         java_agent.clone(),
-                        (&lane_name_lookup[&idx]).java.clone(),
+                        (&lane_name_lookup[&lane_idx]).java.clone(),
                     ),
                     lane_kind_repr,
                     (tx, rx),
                     WithLengthBytesCodec::default(),
-                    idx,
+                    lane_idx,
                 ));
             }
         }
@@ -470,7 +470,7 @@ async fn initialize_agent(
 struct InitializedLane {
     kind: LaneKindRepr,
     io: (ByteWriter, ByteReader),
-    id: u64,
+    id: i64,
 }
 
 fn init_stream<'a, D>(
@@ -551,7 +551,7 @@ async fn run_lane_initializer<I, D>(
     kind: LaneKindRepr,
     io: (ByteWriter, ByteReader),
     decoder: D,
-    id: u64,
+    id: i64,
 ) -> Result<InitializedLane, FrameIoError>
 where
     I: JavaItemInitializer,
@@ -588,10 +588,10 @@ struct FfiAgentTask {
     route: RouteUri,
     route_params: HashMap<String, String>,
     config: AgentConfig,
-    lane_name_lookup: HashMap<u64, LaneName>,
+    lane_name_lookup: HashMap<i64, LaneName>,
     java_agent: JavaAgentRef,
     lane_readers: SelectAll<LaneReader>,
-    item_writers: HashMap<u64, ByteWriter>,
+    item_writers: HashMap<i64, ByteWriter>,
 }
 
 impl FfiAgentTask {
@@ -628,7 +628,6 @@ impl FfiAgentTask {
                 Some(RuntimeEvent::Request { id, request }) => {
                     let lane_name = lane_name_lookup.get(&id).cloned().expect("Missing lane");
                     let mut writer = item_writers.get_mut(&id).expect("Missing lane writer");
-
                     handle_request(
                         &ffi_context,
                         &java_agent,
@@ -639,7 +638,13 @@ impl FfiAgentTask {
                     )
                     .await?;
                 }
-                Some(RuntimeEvent::RequestError { id, error }) => {}
+                Some(RuntimeEvent::RequestError { id, error }) => {
+                    let lane_name = lane_name_lookup.get(&id).cloned().expect("Missing lane");
+                    return Err(AgentTaskError::BadFrame {
+                        lane: lane_name.str,
+                        error,
+                    });
+                }
                 None => break,
             }
         }
@@ -649,8 +654,6 @@ impl FfiAgentTask {
         Ok(())
     }
 }
-
-type BoxError = Box<dyn Error + Send + 'static>;
 
 async fn handle_request(
     context: &FfiContext,
@@ -681,12 +684,10 @@ async fn handle_request(
 
             Ok(())
         }
-        LaneRequest::InitComplete => {
-            trace!("Received a notification that an initialisation has completed");
-            Ok(())
-        }
+        LaneRequest::InitComplete => Ok(()),
     }
 }
+
 enum FfiAgentError {
     Java(JavaError),
     Decode(FrameIoError),
@@ -734,7 +735,8 @@ async fn handle_lane_response(
                 error: FrameIoError::Io(e),
             })?;
 
-        let (more_data, _) = returned_value.split_at(size_of::<i8>());
+        let (more_data, rem) = returned_value.split_at(size_of::<i8>());
+        debug_assert!(rem.is_empty());
 
         if more_data[0] == 1u8 {
             debug!("Agent has specified that there is more data available");
@@ -843,24 +845,24 @@ impl Stream for LaneReaderCodec {
 }
 
 struct LaneWriter {
-    idx: u64,
+    idx: i64,
     writer: ByteWriter,
 }
 
 struct LaneReader {
-    idx: u64,
+    idx: i64,
     codec: LaneReaderCodec,
 }
 
 impl LaneReader {
-    fn value(idx: u64, reader: ByteReader) -> LaneReader {
+    fn value(idx: i64, reader: ByteReader) -> LaneReader {
         LaneReader {
             idx,
             codec: LaneReaderCodec::value(reader),
         }
     }
 
-    fn map(idx: u64, reader: ByteReader) -> LaneReader {
+    fn map(idx: i64, reader: ByteReader) -> LaneReader {
         LaneReader {
             idx,
             codec: LaneReaderCodec::map(reader),
@@ -881,7 +883,7 @@ struct TaggedLaneRequest {
 }
 
 impl Stream for LaneReader {
-    type Item = (u64, Result<TaggedLaneRequest, FrameIoError>);
+    type Item = (i64, Result<TaggedLaneRequest, FrameIoError>);
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let LaneReader { idx, codec } = self.get_mut();
@@ -898,6 +900,6 @@ impl Stream for LaneReader {
 
 #[derive(Debug)]
 enum RuntimeEvent {
-    Request { id: u64, request: TaggedLaneRequest },
-    RequestError { id: u64, error: FrameIoError },
+    Request { id: i64, request: TaggedLaneRequest },
+    RequestError { id: i64, error: FrameIoError },
 }

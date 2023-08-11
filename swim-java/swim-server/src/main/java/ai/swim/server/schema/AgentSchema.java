@@ -14,17 +14,20 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
-public class AgentSchema {
+public class AgentSchema<A extends Agent> {
+  private final Class<A> clazz;
   private final String name;
   private final Map<String, LaneSchema> laneSchemas;
 
-  public AgentSchema(String name, Map<String, LaneSchema> laneSchemas) {
+  public AgentSchema(Class<A> clazz, String name, Map<String, LaneSchema> laneSchemas) {
+    this.clazz = clazz;
     this.name = name;
     this.laneSchemas = laneSchemas;
   }
 
-  public static <A extends Agent> AgentSchema reflectSchema(Class<A> agentClass) {
+  public static <A extends Agent> AgentSchema<A> reflectSchema(Class<A> agentClass) {
     if (agentClass == null) {
       throw new NullPointerException();
     }
@@ -40,12 +43,14 @@ public class AgentSchema {
     String agentUri = Objects.requireNonNullElse(agentAnno.value(), agentClass.getSimpleName());
     Map<String, LaneSchema> laneSchemas = reflectLanes(agentClass);
 
-    return new AgentSchema(agentUri, laneSchemas);
+    return new AgentSchema<>(agentClass, agentUri, laneSchemas);
   }
 
   private static <A extends Agent> Map<String, LaneSchema> reflectLanes(Class<A> agentClass) {
     Map<String, LaneSchema> laneSchemas = new HashMap<>();
     Field[] fields = agentClass.getDeclaredFields();
+
+    int ids = 0;
 
     for (Field field : fields) {
       if (Lane.class.isAssignableFrom(field.getType())) {
@@ -59,7 +64,7 @@ public class AgentSchema {
             Type rawType = ((ParameterizedType) type).getRawType();
 
             if (rawType instanceof Class<?>) {
-              laneSchemas.put(laneUri, reflectLane(agentClass, (Class<?>) rawType, isTransient));
+              laneSchemas.put(laneUri, reflectLane(agentClass, (Class<?>) rawType, isTransient, ids++));
             } else {
               throw unsupportedLaneType(type, agentClass);
             }
@@ -77,9 +82,12 @@ public class AgentSchema {
     return new IllegalArgumentException("Unsupported lane type: " + type + " in " + agentClass.getCanonicalName());
   }
 
-  private static <A extends Agent> LaneSchema reflectLane(Class<A> agentClass, Class<?> type, boolean isTransient) {
+  private static <A extends Agent> LaneSchema reflectLane(Class<A> agentClass,
+      Class<?> type,
+      boolean isTransient,
+      int laneId) {
     if (ValueLane.class.equals(type)) {
-      return new LaneSchema(isTransient, LaneKind.Value);
+      return new LaneSchema(isTransient, LaneKind.Value, laneId);
     } else {
       throw unsupportedLaneType(type, agentClass);
     }
@@ -89,9 +97,8 @@ public class AgentSchema {
     return laneSchemas;
   }
 
-  @Override
-  public String toString() {
-    return "AgentSchema{" + "agentUri='" + name + '\'' + ", laneSchemas=" + laneSchemas + '}';
+  public Class<A> getAgentClass() {
+    return clazz;
   }
 
   @Override
@@ -102,15 +109,26 @@ public class AgentSchema {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AgentSchema agentSchema = (AgentSchema) o;
-    return Objects.equals(name, agentSchema.name) && Objects.equals(
+    AgentSchema<?> that = (AgentSchema<?>) o;
+    return Objects.equals(clazz, that.clazz) && Objects.equals(
+        name,
+        that.name) && Objects.equals(
         laneSchemas,
-        agentSchema.laneSchemas);
+        that.laneSchemas);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, laneSchemas);
+    return Objects.hash(clazz, name, laneSchemas);
+  }
+
+  @Override
+  public String toString() {
+    return "AgentSchema{" +
+        "clazz=" + clazz +
+        ", name='" + name + '\'' +
+        ", laneSchemas=" + laneSchemas +
+        '}';
   }
 
   public void pack(MessageBufferPacker packer) throws IOException {
@@ -122,5 +140,12 @@ public class AgentSchema {
       packer.packString(entry.getKey());
       entry.getValue().pack(packer);
     }
+  }
+
+  public Map<String, Integer> laneMappings() {
+    return laneSchemas
+        .entrySet()
+        .stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getLaneId()));
   }
 }

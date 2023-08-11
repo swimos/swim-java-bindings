@@ -1,6 +1,7 @@
 package ai.swim.server.codec;
 
 import java.io.OutputStream;
+import java.nio.BufferUnderflowException;
 import java.util.Arrays;
 
 /**
@@ -140,6 +141,11 @@ public class Bytes {
    * Gets a byte and advances the cursor by 1.
    */
   public byte getByte() {
+    int next = readPointer += 1;
+    if (next > writePointer) {
+      throw new BufferUnderflowException();
+    }
+
     return buffer[readPointer++];
   }
 
@@ -147,6 +153,10 @@ public class Bytes {
    * Peeks a byte without advancing the read pointer.
    */
   public byte peekByte() {
+    if (readPointer > writePointer) {
+      throw new BufferUnderflowException();
+    }
+
     return buffer[readPointer];
   }
 

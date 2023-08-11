@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * An encoder that a {@link Writable} into {@link Bytes} and prefixes it by the length of the produced number of bytes.
+ */
 public class WithLenReconEncoder<V, T extends Writable<V>> implements Encoder<V> {
   private final T writable;
 

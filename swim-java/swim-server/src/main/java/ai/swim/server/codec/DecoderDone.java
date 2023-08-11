@@ -1,5 +1,10 @@
 package ai.swim.server.codec;
 
+/**
+ * A decoder in a done state.
+ *
+ * @param <T> decoder's target type.
+ */
 public class DecoderDone<T> extends Decoder<T> {
   private final Decoder<T> decoder;
   private final T value;

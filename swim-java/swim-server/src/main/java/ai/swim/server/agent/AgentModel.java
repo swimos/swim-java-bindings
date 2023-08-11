@@ -16,37 +16,37 @@ import java.util.UUID;
  */
 public class AgentModel implements Agent {
   private final Agent agent;
-  private final Map<String, LaneModel> lanes;
+  private final Map<Integer, LaneModel> lanes;
   private final StateCollector collector;
 
-  public AgentModel(Agent agent, Map<String, LaneModel> lanes, StateCollector collector) {
+  public AgentModel(Agent agent, Map<Integer, LaneModel> lanes, StateCollector collector) {
     this.agent = agent;
     this.lanes = lanes;
     this.collector = collector;
   }
 
   /**
-   * Dispatch an event to {@code laneUri}
+   * Dispatch an event to {@code laneIdx}
    *
-   * @param laneUri the URI of the lane.
+   * @param laneIdx the URI of the lane.
    * @param buffer  the event data.
    * @return an array containing encoded {@link ai.swim.server.lanes.models.response.LaneResponse}s.
    */
-  public byte[] dispatch(String laneUri, ByteBuffer buffer) {
-    lanes.get(laneUri).dispatch(buffer);
+  public byte[] dispatch(int laneIdx, ByteBuffer buffer) {
+    lanes.get(laneIdx).dispatch(buffer);
     return flushState();
   }
 
   /**
-   * Dispatch a sync request to {@lcode laneUri} that was requested by a remote.
+   * Dispatch a sync request to {@code laneIdx} that was requested by a remote.
    *
-   * @param laneUri the URI of the lane.
+   * @param laneIdx the URI of the lane.
    * @param uuidMsb UUID most significant bits.
    * @param uuidLsb UUID least significant bits.
    * @return an array containing an encoded {@link ai.swim.server.lanes.models.response.LaneResponse} sync.
    */
-  public byte[] sync(String laneUri, long uuidMsb, long uuidLsb) {
-    lanes.get(laneUri).sync(new UUID(uuidMsb, uuidLsb));
+  public byte[] sync(int laneIdx, long uuidMsb, long uuidLsb) {
+    lanes.get(laneIdx).sync(new UUID(uuidMsb, uuidLsb));
     return flushState();
   }
 
@@ -60,13 +60,13 @@ public class AgentModel implements Agent {
   }
 
   /**
-   * Initialise {@code laneUri} with the store data in {@code from}.
+   * Initialise {@code laneIdx} with the store data in {@code from}.
    *
-   * @param laneUri to initialise.
+   * @param laneIdx to initialise.
    * @param from    the store initialisation data.
    */
-  public void init(String laneUri, ByteBuffer from) {
-    lanes.get(laneUri).init(from);
+  public void init(int laneIdx, ByteBuffer from) {
+    lanes.get(laneIdx).init(from);
   }
 
   @Override
