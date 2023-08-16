@@ -12,34 +12,97 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-extern crate core;
-
+use std::num::NonZeroUsize;
 use std::panic;
 
+use bytebridge::ByteCodecExt;
 use bytes::BytesMut;
-use client_runtime::{ClientConfig, RemotePath};
+use client_runtime::{RemotePath, WebSocketConfig};
 use jni::objects::JString;
 use jni::sys::{jbyteArray, jobject};
 use jni::JNIEnv;
-use swim_api::downlink::Downlink;
-use url::Url;
-
 use jvm_sys::vm::set_panic_hook;
 use jvm_sys::vm::utils::new_global_ref;
 use jvm_sys::{jni_try, null_pointer_check_abort, parse_string};
+use swim_api::downlink::Downlink;
 use swim_client_core::downlink::map::FfiMapDownlink;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
 use swim_client_core::{client_fn, ClientHandle, SwimClient};
+use url::Url;
+
+include!(concat!(env!("OUT_DIR"), "/out.rs"));
+
+impl From<ClientConfig> for swim_client_core::ClientConfig {
+    fn from(config: ClientConfig) -> Self {
+        let ClientConfig {
+            max_message_size,
+            remote_buffer_size: _remote_buffer_size,
+            transport_buffer_size: _transport_buffer_size,
+            registration_buffer_size: _registration_buffer_size,
+            server_max_window_bits: _server_max_window_bits,
+            client_max_window_bits: _client_max_window_bits,
+            request_server_no_context_takeover: _request_server_no_context_takeover,
+            request_client_no_context_takeover: _request_client_no_context_takeover,
+            accept_no_context_takeover: _accept_no_context_takeover,
+            compression_level: _compression_level,
+        } = config;
+
+        let into_non_zero = |val: u32| unsafe { NonZeroUsize::new_unchecked(val as usize) };
+
+        swim_client_core::ClientConfig {
+            websocket: WebSocketConfig {
+                max_message_size: max_message_size as usize,
+                #[cfg(feature = "deflate")]
+                deflate_config: {
+                    use ratchet_deflate::{Compression, DeflateConfig, WindowBits};
+
+                    Some(DeflateConfig {
+                        server_max_window_bits: ratchet_deflate::WindowBits::try_from(
+                            _server_max_window_bits,
+                        )
+                        .unwrap(),
+                        client_max_window_bits: ratchet_deflate::WindowBits::try_from(
+                            _client_max_window_bits,
+                        )
+                        .unwrap(),
+                        request_server_no_context_takeover: _request_server_no_context_takeover,
+                        request_client_no_context_takeover: _request_client_no_context_takeover,
+                        accept_no_context_takeover: _accept_no_context_takeover,
+                        compression_level: Compression::new(_compression_level),
+                    })
+                },
+            },
+            remote_buffer_size: into_non_zero(_remote_buffer_size),
+            transport_buffer_size: into_non_zero(_transport_buffer_size),
+            registration_buffer_size: into_non_zero(_registration_buffer_size),
+            interpret_frame_data: false,
+        }
+    }
+}
 
 client_fn! {
     SwimClient_startClient(
         env,
         _class,
+        config: jbyteArray,
     ) -> SwimClient {
+        let mut config_bytes = jni_try! {
+            env,
+            "Failed to parse configuration array",
+            env.convert_byte_array(config).map(BytesMut::from_iter),
+            std::ptr::null_mut()
+        };
+        let config = jni_try!{
+            env,
+            "Failed to read client configuration",
+            ClientConfig::try_from_bytes(&mut config_bytes).map(Into::into),
+            std::ptr::null_mut()
+        };
+
         let client = Box::leak(Box::new(SwimClient::new(
             env.get_java_vm().expect("Failed to get Java VM"),
-            ClientConfig::default()
+            config
         )));
 
         set_panic_hook();

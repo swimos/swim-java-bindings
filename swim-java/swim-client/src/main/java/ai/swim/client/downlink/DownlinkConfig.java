@@ -31,10 +31,6 @@ public class DownlinkConfig {
   private boolean keepLinked = true;
   private boolean keepSynced = true;
 
-  private static byte booleanToByte(boolean b) {
-    return (byte) (b ? 1 : 0);
-  }
-
   /**
    * Sets the duration that the runtime may be inactive for before it shuts down; a runtime is considered inactive if
    * it has no consumers.
@@ -123,6 +119,14 @@ public class DownlinkConfig {
   }
 
   /**
+   *
+   * @return
+   */
+  public int getAttachmentQueueSize() {
+    return attachmentQueueSize;
+  }
+
+  /**
    * Sets whether the downlink should attempt to keep linked.
    */
   public DownlinkConfig setKeepLinked(boolean keepLinked) {
@@ -138,12 +142,15 @@ public class DownlinkConfig {
     return this;
   }
 
+  private static byte booleanToByte(boolean b) {
+    return (byte) (b ? 1 : 0);
+  }
+
   /**
    * Returns a byte array representation of the current configuration.
    */
   public byte[] toArray() {
     ByteBuffer buffer = ByteBuffer.allocate(44);
-
     buffer.putLong(emptyTimeout);
     buffer.putLong(attachmentQueueSize);
     buffer.put(booleanToByte(abortOnBadFrames));

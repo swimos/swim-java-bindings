@@ -20,7 +20,7 @@ client_runtime = { package = "runtime", path = "../../../swim-rust/client/runtim
 jvm_sys = { path = "../../jvm_sys" }
 jvm_sys_tests = { path = "../../jvm_sys/jvm_sys_tests" }
 jni = { workspace = true }
-tokio = { version = "1.1.1", features = ["rt-multi-thread", "io-util"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "io-util"] }
 tokio-util = { workspace = true, features = ["codec", "io-util"] }
 bytes = { workspace = true }
 futures = { workspace = true }

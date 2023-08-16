@@ -16,6 +16,10 @@ package ai.swim.client;
 
 import ai.swim.client.downlink.map.MapDownlinkBuilder;
 import ai.swim.client.downlink.value.ValueDownlinkBuilder;
+import org.msgpack.core.MessageBufferPacker;
+import org.msgpack.core.MessagePack;
+import java.io.IOException;
+import java.util.Arrays;
 import ai.swim.lang.ffi.AtomicDestructor;
 import ai.swim.lang.ffi.NativeLoader;
 import ai.swim.lang.ffi.NativeResource;
@@ -48,13 +52,18 @@ public class SwimClient implements NativeResource {
   }
 
   /**
-   * Starts the client runtime and returns an established client.
+   * Starts the client runtime using the provided configuration and returns an established client.
    */
-  public static SwimClient open() {
-    return new SwimClient(startClient());
+  public static SwimClient open(ClientConfig config) throws IOException {
+    try (MessageBufferPacker packer = MessagePack.newDefaultBufferPacker()) {
+      config.pack(packer);
+      byte[] bytes = packer.toByteArray();
+      System.out.println(Arrays.toString(bytes));
+      return new SwimClient(startClient(packer.toByteArray()));
+    }
   }
 
-  private static native long startClient();
+  private static native long startClient(byte[] config);
 
   private static native long shutdownClient(long runtime);
 
