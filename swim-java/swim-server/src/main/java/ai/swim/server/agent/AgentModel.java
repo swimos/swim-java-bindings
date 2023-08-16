@@ -7,19 +7,19 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * A wrapper around a user-defined {@link Agent} and the lanes that it contains.
+ * A wrapper around a user-defined {@link AbstractAgent} and the lanes that it contains.
  * <p>
  * This class receives events from the Rust runtime and dispatches them to the corresponding lanes. When an event is
  * received, its corresponding lane is looked up and the event is dispatched to it. This dispatch may result in N
  * lifecycle events being fired that generate subsequent events in lanes. Once the dispatch has completed, the {@link StateCollector}
  * has any pending events flushed out into a byte array that is returned to the Rust runtime for dispatching to peers.
  */
-public class AgentModel implements Agent {
-  private final Agent agent;
+public class AgentModel {
+  private final AbstractAgent agent;
   private final Map<Integer, LaneModel> lanes;
   private final StateCollector collector;
 
-  public AgentModel(Agent agent, Map<Integer, LaneModel> lanes, StateCollector collector) {
+  public AgentModel(AbstractAgent agent, Map<Integer, LaneModel> lanes, StateCollector collector) {
     this.agent = agent;
     this.lanes = lanes;
     this.collector = collector;
@@ -69,13 +69,12 @@ public class AgentModel implements Agent {
     lanes.get(laneIdx).init(from);
   }
 
-  @Override
   public void didStart() {
-    agent.didStart();
+    this.agent.didStart();
   }
 
-  @Override
   public void didStop() {
-    agent.didStop();
+    this.agent.didStop();
   }
+
 }

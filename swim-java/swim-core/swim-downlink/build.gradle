@@ -1,0 +1,12 @@
+ext.moduleName = 'swim-downlink'
+
+dependencies {
+    api project(':swim-codec')
+    api project(':swim-recon')
+    api project(':swim-concurrent')
+    api project(':swim-ffi')
+    implementation project(':swim-structure')
+
+    annotationProcessor project(':swim-structure-processor')
+    testAnnotationProcessor project(':swim-structure-processor')
+}

@@ -25,8 +25,7 @@ public class StateCollector {
     Iterator<State> iter = stack.iterator();
 
     int startIdx = buffer.remaining();
-    buffer.writeInteger(0);
-    int startLen = buffer.remaining();
+    buffer.writeByte((byte) 0);
 
     while (iter.hasNext()) {
       State dirty = iter.next();
@@ -42,8 +41,7 @@ public class StateCollector {
       }
     }
 
-    buffer.writeInteger(buffer.remaining() - startLen, startIdx);
-    buffer.writeByte(writeResult.statusCode());
+    buffer.writeByte(writeResult.statusCode(), startIdx);
 
     byte[] data = buffer.getArray();
     buffer = new Bytes();

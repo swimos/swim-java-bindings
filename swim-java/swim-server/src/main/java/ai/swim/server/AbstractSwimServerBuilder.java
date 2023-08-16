@@ -1,7 +1,8 @@
 package ai.swim.server;
 
-import ai.swim.server.agent.Agent;
+import ai.swim.server.agent.AbstractAgent;
 import ai.swim.server.agent.AgentFactory;
+import ai.swim.server.agent.AgentModel;
 import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.plane.AbstractPlane;
 import ai.swim.server.schema.PlaneSchema;
@@ -17,30 +18,31 @@ public abstract class AbstractSwimServerBuilder {
   }
 
   // NodeUri -> Agent mapping
-  protected final Map<String, AgentFactory<? extends Agent>> agentFactories;
+  protected final Map<String, AgentFactory<? extends AbstractAgent>> agentFactories;
   protected final PlaneSchema<?> schema;
 
-  public AbstractSwimServerBuilder(Map<String, AgentFactory<? extends Agent>> agentFactories, PlaneSchema<?> schema) {
+  protected AbstractSwimServerBuilder(Map<String, AgentFactory<? extends AbstractAgent>> agentFactories,
+      PlaneSchema<?> schema) {
     this.agentFactories = agentFactories;
     this.schema = schema;
   }
 
-  protected static <P extends AbstractPlane> PlaneSchema<P> reflectPlaneSchema(Class<P> clazz) {
+  protected static <P extends AbstractPlane> PlaneSchema<P> reflectPlaneSchema(Class<P> clazz) throws SwimServerException {
     return PlaneSchema.reflectSchema(clazz);
   }
 
-
-  public static <P extends AbstractPlane> Map<String, AgentFactory<? extends Agent>> reflectAgentFactories(PlaneSchema<P> planeSchema) {
+  public static <P extends AbstractPlane> Map<String, AgentFactory<? extends AbstractAgent>> reflectAgentFactories(
+      PlaneSchema<P> planeSchema) {
     Class<? extends AbstractPlane> clazz = planeSchema.getPlaneClass();
-    Map<String, AgentFactory<? extends Agent>> agentFactories = new HashMap<>();
+    Map<String, AgentFactory<? extends AbstractAgent>> agentFactories = new HashMap<>();
 
     for (Field field : clazz.getDeclaredFields()) {
       SwimRoute route = field.getAnnotation(SwimRoute.class);
       if (route != null) {
         Class<?> type = field.getType();
 
-        if (Agent.class.isAssignableFrom(type)) {
-          @SuppressWarnings("unchecked") Class<? extends Agent> agentClass = (Class<? extends Agent>) type;
+        if (AbstractAgent.class.isAssignableFrom(type)) {
+          @SuppressWarnings("unchecked") Class<? extends AbstractAgent> agentClass = (Class<? extends AbstractAgent>) type;
           try {
             agentFactories.put(route.value(), AgentFactory.forSchema(planeSchema.schemaFor(agentClass)));
           } catch (NoSuchMethodException e) {
@@ -58,12 +60,12 @@ public abstract class AbstractSwimServerBuilder {
     return agentFactories;
   }
 
-  public Agent agentFor(String uri) {
-    AgentFactory<? extends Agent> agentFactory = agentFactories.get(uri);
+  public AgentModel agentFor(String uri, long agentContextPtr) {
+    AgentFactory<? extends AbstractAgent> agentFactory = agentFactories.get(uri);
     if (agentFactory == null) {
       throw new NoSuchElementException(uri); // todo
     } else {
-      return agentFactory.newInstance();
+      return agentFactory.newInstance(agentContextPtr);
     }
   }
 

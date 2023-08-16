@@ -26,7 +26,7 @@ import java.util.Objects;
  *
  * @param <A>
  */
-public class AgentFactory<A extends Agent> {
+public class AgentFactory<A extends AbstractAgent> {
   private final Constructor<A> constructor;
   private final Map<String, Integer> laneMappings;
 
@@ -43,14 +43,14 @@ public class AgentFactory<A extends Agent> {
    * @return a factory for constructing agents of type {@code A}.
    * @throws NoSuchMethodException if there is no zero-arg constructor in the agent.
    */
-  public static <A extends Agent> AgentFactory<A> forSchema(AgentSchema<A> agentSchema) throws NoSuchMethodException {
+  public static <A extends AbstractAgent> AgentFactory<A> forSchema(AgentSchema<A> agentSchema) throws NoSuchMethodException {
     try {
       Class<A> agentClass = agentSchema.getAgentClass();
-      Constructor<A> constructor = agentClass.getDeclaredConstructor();
+      Constructor<A> constructor = agentClass.getDeclaredConstructor(AgentContext.class);
       constructor.setAccessible(true);
       return new AgentFactory<>(constructor, agentSchema.laneMappings());
     } catch (NoSuchMethodException e) {
-      throw new NoSuchMethodException("No zero-arg constructor in Agent");
+      throw new NoSuchMethodException("Missing constructor with AgentContext");
     }
   }
 
@@ -58,8 +58,8 @@ public class AgentFactory<A extends Agent> {
    * Reflects agent {@code agent}. This involves reflecting the agent's lanes and setting their lane models with a
    * reference to the agent's {@link StateCollector}.
    */
-  private static <A extends Agent> AgentModel reflectAgent(A agent, Map<String, Integer> laneMappings) {
-    Class<? extends Agent> agentClass = agent.getClass();
+  private static <A extends AbstractAgent> AgentModel reflectAgent(A agent, Map<String, Integer> laneMappings) {
+    Class<? extends AbstractAgent> agentClass = agent.getClass();
     Field[] fields = agentClass.getDeclaredFields();
     Map<Integer, LaneModel> lanes = new HashMap<>();
     StateCollector collector = new StateCollector();
@@ -73,9 +73,10 @@ public class AgentFactory<A extends Agent> {
 
           if (type instanceof ParameterizedType) {
             Type rawType = ((ParameterizedType) type).getRawType();
+            Integer laneId = laneMappings.get(laneUri);
 
             if (rawType instanceof Class<?>) {
-              lanes.put(laneMappings.get(laneUri), reflectLane(agent, field, (Class<?>) rawType, collector));
+              lanes.put(laneId, reflectLane(agent, laneId, field, (Class<?>) rawType, collector));
             } else {
               throw unsupportedLaneType(type, agentClass);
             }
@@ -89,8 +90,7 @@ public class AgentFactory<A extends Agent> {
     return new AgentModel(agent, lanes, collector);
   }
 
-  private static <A extends Agent> IllegalArgumentException unsupportedLaneType(Type type,
-      Class<? extends Agent> agentClass) {
+  private static <A extends AbstractAgent> IllegalArgumentException unsupportedLaneType(Type type, Class<A> agentClass) {
     return new IllegalArgumentException("Unsupported lane type: " + type + " in " + agentClass.getCanonicalName());
   }
 
@@ -99,20 +99,20 @@ public class AgentFactory<A extends Agent> {
    * operate on a {@link Lane} when a lifecycle event is fired (which happens on the {@link ai.swim.server.lanes.LaneView}
    * as well as the runtime setting its state using the {@link LaneModel}.
    */
-  private static LaneModel reflectLane(Agent agent, Field field, Class<?> type, StateCollector collector) {
+  private static LaneModel reflectLane(AbstractAgent agent, int laneId, Field field, Class<?> type, StateCollector collector) {
     if (ValueLane.class.equals(type)) {
-      return reflectValueLane(agent, field, collector);
+      return reflectValueLane(agent, laneId, field, collector);
     } else {
       throw unsupportedLaneType(type, agent.getClass());
     }
   }
 
-  private static LaneModel reflectValueLane(Agent agent, Field field, StateCollector collector) {
+  private static LaneModel reflectValueLane(AbstractAgent agent, int laneId, Field field, StateCollector collector) {
     field.setAccessible(true);
     try {
       ValueLaneView<?> laneView = (ValueLaneView<?>) field.get(agent);
-      ValueLaneModel<?> model = new ValueLaneModel<>(laneView, collector);
-      laneView.setModel(new ValueLaneModel<>(laneView, collector));
+      ValueLaneModel<?> model = new ValueLaneModel<>(laneId, laneView, collector);
+      laneView.setModel(model);
       return model;
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
@@ -124,10 +124,11 @@ public class AgentFactory<A extends Agent> {
    *
    * @return an initialised agent.
    */
-  public AgentModel newInstance() {
+  public AgentModel newInstance(long agentContextPtr) {
     try {
+      AgentContext context = new AgentContext(agentContextPtr);
       constructor.setAccessible(true);
-      A agent = constructor.newInstance();
+      A agent = constructor.newInstance(context);
       return reflectAgent(agent, laneMappings);
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException("Failed to create new agent", e);
@@ -136,8 +137,6 @@ public class AgentFactory<A extends Agent> {
 
   @Override
   public String toString() {
-    return "AgentFactory{" +
-        "constructor=" + constructor +
-        '}';
+    return "AgentFactory{" + "constructor=" + constructor + '}';
   }
 }

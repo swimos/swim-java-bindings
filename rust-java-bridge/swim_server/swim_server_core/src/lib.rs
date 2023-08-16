@@ -17,6 +17,8 @@ use crate::agent::{AgentFactory, FfiAgentDef};
 use crate::spec::PlaneSpec;
 
 mod agent;
+mod codec;
+mod java_context;
 pub mod macros;
 pub mod spec;
 

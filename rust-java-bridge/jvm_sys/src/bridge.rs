@@ -20,7 +20,7 @@ where
         Self: Sized,
         R: JniDefault,
     {
-        let result = env.with_env_throw("ai/swim/lang/ffi/DecodeException", |scope| {
+        let result = env.with_env_throw("ai/swim/server/codec/DecoderException", |scope| {
             let mut config_bytes = BytesMut::from_iter(scope.convert_byte_array(array));
             Ok::<B, FromBytesError>(B::try_from_bytes(&mut config_bytes)?)
         });

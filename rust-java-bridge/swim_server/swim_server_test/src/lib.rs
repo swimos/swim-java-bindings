@@ -27,12 +27,7 @@ server_fn! {
 
         let env = JavaEnv::new(env);
 
-        let spec = match PlaneSpec::try_from_jbyte_array(&env, config) {
-            Ok(spec) => spec,
-            Err(e) => return e
-        };
-
-        println!("{:?}", spec);
+        let _r = PlaneSpec::try_from_jbyte_array::<()>(&env, config);
     }
 }
 
@@ -53,7 +48,7 @@ server_fn! {
         };
 
         let task = async move {
-            let (mut handle, task) = run_server(env, unsafe { JObject::from_raw(plane_obj) }, spec).await;
+            let ( handle, task) = run_server(env, unsafe { JObject::from_raw(plane_obj) }, spec).await;
             let server_task = tokio::spawn(task);
 
             // println!("{}",handle.bound_addr().await.unwrap());

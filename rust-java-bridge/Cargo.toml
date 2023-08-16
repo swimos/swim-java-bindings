@@ -5,6 +5,8 @@ members = [
     "bytebridge/bytebridge_derive/internals",
     "bytebridge/bytebridge_derive_java",
     "bytebridge/test/*",
+    "resource_api/api",
+    "resource_api/ffi_common",
     "jvm_sys",
     "jvm_sys/jvm_sys_tests",
     "swim_client",

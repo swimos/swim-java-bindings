@@ -13,7 +13,6 @@ ext {
         target_dir = target_dir.concat('/x86_64-apple-darwin')
     }
 
-    debug_dir = target_dir.concat('/debug')
     release_dir = target_dir.concat('/release')
 }
 
@@ -25,9 +24,9 @@ test {
     testLogging.showStandardStreams = true
 }
 
-def compileRust(release) {
+def compileRust() {
     exec {
-        println "Compiling rust libraries (".concat(release ? "release)" : "debug)")
+        println "Compiling rust libraries"
 
         workingDir(bridge_dir)
         environment('RUSTFLAGS', '-Awarnings')
@@ -52,31 +51,17 @@ def compileRust(release) {
             args.addAll(features.join(','))
         }
 
-        if (release) {
-            args.add('--release')
-        }
+        args.add('--release')
 
         commandLine args
     }
 }
 
-def compileRustDebug = tasks.register('compileRustDebug') {
-    compileRust(false)
+def compileRust = tasks.register('compileRust') {
+    compileRust()
 }
 
-compileTestJava {
-    doLast {
-        compileRust(false)
-    }
-}
-
-assemble {
-    doLast {
-        compileRust(true)
-    }
-}
-
-check.dependsOn compileRustDebug
+check.dependsOn compileRust
 
 tasks.register('cleanRust') {
     doLast {

@@ -427,7 +427,7 @@ fn flush_output_streams(env: &JNIEnv) {
 #[inline(never)]
 fn abort_vm(vm: Arc<JavaVM>, e: impl StdError + Send + 'static) -> ! {
     let backtrace = Backtrace::force_capture();
-    eprintln!("Aborting VM");
+    eprintln!("Aborting VM due to: {}\nStack backtrace: {}", e, backtrace);
 
     let _r = std::thread::spawn(move || {
         let _stdout_lock = std::io::stdout().lock();

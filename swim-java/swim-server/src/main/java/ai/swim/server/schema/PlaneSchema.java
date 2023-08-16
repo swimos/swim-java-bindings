@@ -1,6 +1,7 @@
 package ai.swim.server.schema;
 
-import ai.swim.server.agent.Agent;
+import ai.swim.server.SwimServerException;
+import ai.swim.server.agent.AbstractAgent;
 import ai.swim.server.annotations.SwimPlane;
 import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.plane.AbstractPlane;
@@ -17,17 +18,17 @@ public class PlaneSchema<P extends AbstractPlane> {
   private final Class<P> planeClass;
   private final String name;
   private final Map<String, AgentSchema<?>> agentSchemas;
-  private final Map<Class<? extends Agent>, String> uriResolver;
+  private final Map<Class<? extends AbstractAgent>, String> uriResolver;
 
   public PlaneSchema(Class<P> planeClass, String name, Map<String, AgentSchema<?>> agentSchemas,
-      Map<Class<? extends Agent>, String> uriResolver) {
+      Map<Class<? extends AbstractAgent>, String> uriResolver) {
     this.planeClass = planeClass;
     this.name = name;
     this.agentSchemas = agentSchemas;
     this.uriResolver = uriResolver;
   }
 
-  public static <P extends AbstractPlane> PlaneSchema<P> reflectSchema(Class<P> planeClass) {
+  public static <P extends AbstractPlane> PlaneSchema<P> reflectSchema(Class<P> planeClass) throws SwimServerException {
     if (planeClass == null) {
       throw new NullPointerException();
     }
@@ -42,7 +43,7 @@ public class PlaneSchema<P extends AbstractPlane> {
 
     String planeName = planeAnno.value();
     Map<String, AgentSchema<?>> agentSchemas = reflectAgents(planeClass);
-    Map<Class<? extends Agent>, String> uriResolver = agentSchemas
+    Map<Class<? extends AbstractAgent>, String> uriResolver = agentSchemas
         .entrySet()
         .stream()
         .collect(Collectors.toMap(entry -> entry.getValue().getAgentClass(), Map.Entry::getKey));
@@ -50,7 +51,7 @@ public class PlaneSchema<P extends AbstractPlane> {
     return new PlaneSchema<>(planeClass, planeName, agentSchemas, uriResolver);
   }
 
-  private static <P extends AbstractPlane> Map<String, AgentSchema<?>> reflectAgents(Class<P> planeClass) {
+  private static <P extends AbstractPlane> Map<String, AgentSchema<?>> reflectAgents(Class<P> planeClass) throws SwimServerException {
     Map<String, AgentSchema<?>> agentSchemas = new HashMap<>();
     Field[] fields = planeClass.getDeclaredFields();
 
@@ -59,15 +60,20 @@ public class PlaneSchema<P extends AbstractPlane> {
       SwimRoute routeAnno = field.getAnnotation(SwimRoute.class);
 
       if (routeAnno != null) {
-        if (Agent.class.isAssignableFrom(fieldType)) {
-          @SuppressWarnings("unchecked") Class<? extends Agent> agentClass = (Class<? extends Agent>) fieldType;
-          agentSchemas.put(routeAnno.value(), AgentSchema.reflectSchema(agentClass));
+        if (AbstractAgent.class.isAssignableFrom(fieldType)) {
+          @SuppressWarnings("unchecked") Class<? extends AbstractAgent> agentClass = (Class<? extends AbstractAgent>) fieldType;
+          String nodeUri = routeAnno.value();
+          if (agentSchemas.containsKey(nodeUri)) {
+            throw new SwimServerException("Duplicate node URI: " + nodeUri);
+          }
+
+          agentSchemas.put(nodeUri, AgentSchema.reflectSchema(agentClass));
         } else {
           throw new IllegalArgumentException(String.format(
               "%s is annotated with %s but its field does not extend from %s",
               field.getName(),
               SwimRoute.class.getCanonicalName(),
-              Agent.class.getCanonicalName()));
+              AbstractAgent.class.getCanonicalName()));
         }
       }
     }
@@ -121,7 +127,7 @@ public class PlaneSchema<P extends AbstractPlane> {
     }
   }
 
-  public AgentSchema<?> schemaFor(Class<? extends Agent> agentClass) {
+  public AgentSchema<?> schemaFor(Class<? extends AbstractAgent> agentClass) {
     String uri = uriResolver.get(agentClass);
     return agentSchemas.get(uri);
   }

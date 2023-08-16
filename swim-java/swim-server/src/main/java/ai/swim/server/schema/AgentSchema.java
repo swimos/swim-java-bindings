@@ -1,6 +1,7 @@
 package ai.swim.server.schema;
 
-import ai.swim.server.agent.Agent;
+import ai.swim.server.SwimServerException;
+import ai.swim.server.agent.AbstractAgent;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.Transient;
@@ -16,7 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class AgentSchema<A extends Agent> {
+public class AgentSchema<A extends AbstractAgent> {
   private final Class<A> clazz;
   private final String name;
   private final Map<String, LaneSchema> laneSchemas;
@@ -27,7 +28,7 @@ public class AgentSchema<A extends Agent> {
     this.laneSchemas = laneSchemas;
   }
 
-  public static <A extends Agent> AgentSchema<A> reflectSchema(Class<A> agentClass) {
+  public static <A extends AbstractAgent> AgentSchema<A> reflectSchema(Class<A> agentClass) throws SwimServerException {
     if (agentClass == null) {
       throw new NullPointerException();
     }
@@ -46,7 +47,7 @@ public class AgentSchema<A extends Agent> {
     return new AgentSchema<>(agentClass, agentUri, laneSchemas);
   }
 
-  private static <A extends Agent> Map<String, LaneSchema> reflectLanes(Class<A> agentClass) {
+  private static <A extends AbstractAgent> Map<String, LaneSchema> reflectLanes(Class<A> agentClass) throws SwimServerException {
     Map<String, LaneSchema> laneSchemas = new HashMap<>();
     Field[] fields = agentClass.getDeclaredFields();
 
@@ -64,6 +65,10 @@ public class AgentSchema<A extends Agent> {
             Type rawType = ((ParameterizedType) type).getRawType();
 
             if (rawType instanceof Class<?>) {
+              if (laneSchemas.containsKey(laneUri)) {
+                throw new SwimServerException("Duplicate lane URI: " + laneUri);
+              }
+
               laneSchemas.put(laneUri, reflectLane(agentClass, (Class<?>) rawType, isTransient, ids++));
             } else {
               throw unsupportedLaneType(type, agentClass);
@@ -78,11 +83,12 @@ public class AgentSchema<A extends Agent> {
     return laneSchemas;
   }
 
-  private static <A extends Agent> IllegalArgumentException unsupportedLaneType(Type type, Class<A> agentClass) {
+  private static <A extends AbstractAgent> IllegalArgumentException unsupportedLaneType(Type type,
+      Class<A> agentClass) {
     return new IllegalArgumentException("Unsupported lane type: " + type + " in " + agentClass.getCanonicalName());
   }
 
-  private static <A extends Agent> LaneSchema reflectLane(Class<A> agentClass,
+  private static <A extends AbstractAgent> LaneSchema reflectLane(Class<A> agentClass,
       Class<?> type,
       boolean isTransient,
       int laneId) {

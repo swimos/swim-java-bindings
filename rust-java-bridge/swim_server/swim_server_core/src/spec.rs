@@ -46,12 +46,12 @@ impl AgentSpec {
 #[derive(ByteCodec, Debug, Clone)]
 pub struct LaneSpec {
     pub is_transient: bool,
-    pub lane_idx: i64,
+    pub lane_idx: i32,
     pub lane_kind_repr: LaneKindRepr,
 }
 
 impl LaneSpec {
-    pub fn new(is_transient: bool, lane_idx: i64, lane_kind_repr: LaneKindRepr) -> LaneSpec {
+    pub fn new(is_transient: bool, lane_idx: i32, lane_kind_repr: LaneKindRepr) -> LaneSpec {
         LaneSpec {
             is_transient,
             lane_idx,

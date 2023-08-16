@@ -18,10 +18,10 @@ public final class ValueLaneModel<T> extends LaneModel {
   private final Form<T> form;
   private final ValueState<T> state;
 
-  public ValueLaneModel(ValueLaneView<T> view, StateCollector collector) {
+  public ValueLaneModel(int laneId, ValueLaneView<T> view, StateCollector collector) {
     this.view = view;
     this.form = view.valueForm();
-    this.state = new ValueState<>(form, collector);
+    this.state = new ValueState<>(laneId,form, collector);
   }
 
   @Override

@@ -19,10 +19,12 @@ public class ValueState<T> implements State {
   private final StateCollector collector;
   private final List<T> events;
   private final List<UUID> syncRequests;
+  private final int laneId;
   private T state;
   private boolean dirty;
 
-  public ValueState(Form<T> form, StateCollector collector) {
+  public ValueState(int laneId, Form<T> form, StateCollector collector) {
+    this.laneId = laneId;
     this.form = form;
     this.collector = collector;
     events = new ArrayList<>();
@@ -43,8 +45,10 @@ public class ValueState<T> implements State {
   }
 
   private void write(Bytes buffer, LaneResponse<T> item) {
+    buffer.writeInteger(laneId);
+
     LaneResponseEncoder<T> responseEncoder = new LaneResponseEncoder<>(new WithLenReconEncoder<>(form));
-    responseEncoder.encode(item, buffer);
+    responseEncoder.encodeWithLen(item, buffer);
   }
 
   @Override

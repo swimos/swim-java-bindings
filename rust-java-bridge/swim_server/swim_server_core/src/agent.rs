@@ -4,8 +4,8 @@ use std::convert::Infallible;
 use std::error::Error;
 use std::future::Future;
 use std::iter::StepBy;
-use std::mem::size_of;
-use std::ops::Deref;
+use std::mem::{size_of, transmute};
+use std::ops::{ControlFlow, Deref};
 use std::panic::panic_any;
 use std::pin::Pin;
 use std::rc::Rc;
@@ -20,14 +20,14 @@ use futures_util::stream::{unfold, BoxStream, FuturesUnordered, SelectAll};
 use futures_util::{FutureExt, SinkExt};
 use jni::errors::{Error as JavaError, JniError};
 use jni::objects::{GlobalRef, JByteBuffer, JObject, JThrowable, JValue};
+use jni::sys::{jint, jobject};
 use jni::JNIEnv;
 use swim_api::agent::{Agent, AgentConfig, AgentContext, AgentInitResult, LaneConfig, UplinkKind};
 use swim_api::error::{AgentInitError, AgentTaskError, FrameIoError};
 use swim_api::meta::lane::LaneKind;
 use swim_api::protocol::agent::{
-    LaneRequest, LaneRequestDecoder, LaneResponse, LaneResponseDecoder, LaneResponseEncoder,
-    StoreInitMessage, StoreInitMessageDecoder, StoreInitialized, StoreInitializedCodec,
-    ValueLaneResponseEncoder,
+    LaneRequest, LaneRequestDecoder, LaneResponse, LaneResponseEncoder, StoreInitMessage,
+    StoreInitMessageDecoder, StoreInitialized, StoreInitializedCodec, ValueLaneResponseEncoder,
 };
 use swim_api::protocol::map::{
     MapMessage, MapMessageDecoder, MapMessageEncoder, MapOperation, RawMapOperationDecoder,
@@ -39,8 +39,10 @@ use swim_recon::parser::{AsyncParseError, ParseError, RecognizerDecoder};
 use swim_utilities::future::try_last;
 use swim_utilities::io::byte_channel::{ByteReader, ByteWriter};
 use swim_utilities::routing::route_uri::RouteUri;
+use swim_utilities::trigger::trigger;
 use tokio::io::AsyncWriteExt;
 use tokio::select;
+use tokio::sync::mpsc;
 use tokio::task::spawn_blocking;
 use tokio::time::Instant;
 use tokio_util::codec::{BytesCodec, Decoder, Encoder, FramedRead, FramedWrite};
@@ -50,18 +52,17 @@ use uuid::Uuid;
 
 use bytebridge::{ByteCodec, FromBytesError};
 use jvm_sys::env::{
-    ByteBufferGuard, IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler, MethodResolver, Scope,
+    ByteBufferGuard, IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler, MethodResolver,
+    Scope, StringError,
 };
 use jvm_sys::method::{
     ByteArray, InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
 };
 
+use crate::codec::{LaneReaderCodec, LaneResponseDecoder, LaneResponseElement};
+use crate::java_context::JavaAgentContext;
 use crate::spec::{AgentSpec, LaneKindRepr, LaneSpec};
 use crate::FfiContext;
-
-type LaneCodec<T> = FramedRead<ByteReader, LaneRequestDecoder<T>>;
-type ValueReaderCodec = LaneCodec<WithLengthBytesCodec>;
-type MapReaderCodec = LaneCodec<MapMessageDecoder<RawMapOperationDecoder>>;
 
 #[derive(Debug)]
 struct ExceptionHandler(IsTypeOfExceptionHandler);
@@ -87,7 +88,7 @@ impl AgentFactory {
     const NEW_AGENT: JavaObjectMethodDef = JavaObjectMethodDef::new(
         "ai/swim/server/AbstractSwimServerBuilder",
         "agentFor",
-        "(Ljava/lang/String;)Lai/swim/server/agent/Agent;",
+        "(Ljava/lang/String;J)Lai/swim/server/agent/AgentModel;",
     );
 
     pub fn new(env: &JavaEnv, factory: GlobalRef) -> AgentFactory {
@@ -98,22 +99,31 @@ impl AgentFactory {
         }
     }
 
-    pub fn agent_for(&self, env: &JavaEnv, uri: impl AsRef<str>) -> JavaAgentRef {
+    pub fn agent_for(
+        &self,
+        env: &JavaEnv,
+        uri: impl AsRef<str>,
+        ctx: *mut JavaAgentContext,
+    ) -> JavaAgentRef {
         let AgentFactory {
             new_agent_method,
             factory,
             vtable,
         } = self;
-
-        env.with_env(|scope| {
-            let java_uri = scope.new_string(uri.as_ref());
-            let obj_ref = scope.invoke(
-                new_agent_method.l().global_ref(),
-                factory.as_obj(),
-                &[JValue::Object(java_uri.deref().clone())],
-            );
-            JavaAgentRef::new(obj_ref, vtable.clone())
-        })
+        unsafe {
+            env.with_env(|scope| {
+                let java_uri = scope.new_string(uri.as_ref());
+                let obj_ref = scope.invoke(
+                    new_agent_method.l().global_ref(),
+                    factory.as_obj(),
+                    &[
+                        JValue::Object(java_uri.deref().clone()),
+                        JValue::Object(JObject::from_raw(ctx as u64 as jobject)),
+                    ],
+                );
+                JavaAgentRef::new(obj_ref, vtable.clone())
+            })
+        }
     }
 }
 
@@ -141,31 +151,26 @@ impl JavaAgentRef {
     fn dispatch(
         &self,
         env: &JavaEnv,
-        lane_name: &GlobalRef,
+        lane_id: i32,
         mut msg: BytesMut,
     ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| {
             let buffer = unsafe { scope.new_direct_byte_buffer_exact(&mut msg) };
-            vtable.dispatch(&scope, agent_obj.as_obj(), lane_name.as_obj(), buffer)
+            vtable.dispatch(&scope, agent_obj.as_obj(), lane_id, buffer)
         })
     }
 
-    fn sync(
-        &self,
-        env: &JavaEnv,
-        lane_name: &GlobalRef,
-        remote: Uuid,
-    ) -> Result<Vec<u8>, AgentTaskError> {
+    fn sync(&self, env: &JavaEnv, lane_id: i32, remote: Uuid) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentRef { agent_obj, vtable } = self;
-        env.with_env(|scope| vtable.sync(&scope, agent_obj.as_obj(), lane_name.as_obj(), remote))
+        env.with_env(|scope| vtable.sync(&scope, agent_obj.as_obj(), lane_id, remote))
     }
 
-    fn init(&self, env: &JavaEnv, lane_name: &GlobalRef, mut msg: BytesMut) {
+    fn init(&self, env: &JavaEnv, lane_id: i32, mut msg: BytesMut) {
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| {
             let buffer = unsafe { scope.new_direct_byte_buffer_exact(&mut msg) };
-            vtable.init(&scope, agent_obj.as_obj(), lane_name.as_obj(), buffer)
+            vtable.init(&scope, agent_obj.as_obj(), lane_id, buffer)
         })
     }
 
@@ -188,23 +193,20 @@ pub struct JavaAgentVTable {
 
 impl JavaAgentVTable {
     const DID_START: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/Agent", "didStart", "()V");
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentModel", "didStart", "()V");
     const DID_STOP: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/Agent", "didStop", "()V");
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentModel", "didStop", "()V");
     const DISPATCH: JavaObjectMethodDef = JavaObjectMethodDef::new(
         "ai/swim/server/agent/AgentModel",
         "dispatch",
-        "(Ljava/lang/String;Ljava/nio/ByteBuffer;)[B",
+        "(ILjava/nio/ByteBuffer;)[B",
     );
-    const SYNC: JavaObjectMethodDef = JavaObjectMethodDef::new(
-        "ai/swim/server/agent/AgentModel",
-        "sync",
-        "(Ljava/lang/String;JJ)[B",
-    );
+    const SYNC: JavaObjectMethodDef =
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentModel", "sync", "(IJJ)[B");
     const INIT: JavaObjectMethodDef = JavaObjectMethodDef::new(
         "ai/swim/server/agent/AgentModel",
         "init",
-        "(Ljava/lang/String;Ljava/nio/ByteBuffer;)V",
+        "(ILjava/nio/ByteBuffer;)V",
     );
     const FLUSH_STATE: JavaObjectMethodDef =
         JavaObjectMethodDef::new("ai/swim/server/agent/AgentModel", "flushState", "()[B");
@@ -242,7 +244,7 @@ impl JavaAgentVTable {
         &self,
         scope: &Scope,
         agent_obj: JObject,
-        lane_ref: JObject,
+        lane_id: jint,
         msg: ByteBufferGuard,
     ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable {
@@ -252,7 +254,7 @@ impl JavaAgentVTable {
             handler,
             scope,
             agent_obj,
-            &[lane_ref.into(), msg.into()],
+            &[lane_id.into(), msg.into()],
         )
     }
 
@@ -260,7 +262,7 @@ impl JavaAgentVTable {
         &self,
         scope: &Scope,
         agent_obj: JObject,
-        lane_ref: JObject,
+        lane_id: jint,
         remote: Uuid,
     ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable { sync, handler, .. } = self;
@@ -283,7 +285,7 @@ impl JavaAgentVTable {
             handler,
             scope,
             agent_obj,
-            &[lane_ref.into(), msb.into(), lsb.into()],
+            &[lane_id.into(), msb.into(), lsb.into()],
         )
     }
 
@@ -299,9 +301,9 @@ impl JavaAgentVTable {
             .invoke(handler, scope, agent_obj, &[])
     }
 
-    fn init(&self, scope: &Scope, agent_obj: JObject, lane_ref: JObject, msg: ByteBufferGuard) {
+    fn init(&self, scope: &Scope, agent_obj: JObject, lane_id: jint, msg: ByteBufferGuard) {
         let JavaAgentVTable { init, .. } = self;
-        scope.invoke(init.v(), agent_obj, &[lane_ref.into(), msg.into()])
+        scope.invoke(init.v(), agent_obj, &[lane_id.into(), msg.into()])
     }
 }
 
@@ -340,7 +342,11 @@ impl Agent for FfiAgentDef {
             agent_factory,
         } = self;
 
-        let java_agent = agent_factory.agent_for(&ffi_context.env, route.as_str());
+        let (tx, rx) = mpsc::channel(8);
+
+        let java_agent_ctx = Box::leak(Box::new(JavaAgentContext::new(tx)));
+
+        let java_agent = agent_factory.agent_for(&ffi_context.env, route.as_str(), java_agent_ctx);
         let ffi_context = ffi_context.clone();
         let spec = spec.clone();
 
@@ -380,26 +386,10 @@ async fn initialize_agent(
 ) -> Result<FfiAgentTask, AgentInitError> {
     let default_lane_config = config.default_lane_config.unwrap_or_default();
     let AgentSpec { lane_specs, .. } = spec;
-    let mut lane_name_lookup = HashMap::new();
+    let mut lane_identifiers = HashMap::new();
     let mut init_tasks = FuturesUnordered::default();
     let mut lane_readers = SelectAll::new();
-    let mut item_writers = HashMap::new();
-
-    let env = ffi_context.env.clone();
-
-    env.with_env(|scope| {
-        for (uri, spec) in lane_specs.iter() {
-            let uri_string = scope.new_string(uri.as_str());
-            let uri_global_ref = scope.new_global_ref(uri_string);
-            lane_name_lookup.insert(
-                spec.lane_idx,
-                LaneName {
-                    java: uri_global_ref,
-                    str: uri.into(),
-                },
-            );
-        }
-    });
+    let mut lane_writers = HashMap::new();
 
     for (uri, spec) in lane_specs.into_iter() {
         let LaneSpec {
@@ -408,24 +398,22 @@ async fn initialize_agent(
             lane_kind_repr,
         } = spec;
         let kind: LaneKind = lane_kind_repr.into();
+        let text_uri: Text = uri.into();
 
         if lane_kind_repr.map_like() {
-            unimplemented!()
+            unimplemented!("map-like lanes")
         } else {
             let mut lane_conf = default_lane_config;
             lane_conf.transient = is_transient;
-            let (tx, rx) = context.add_lane(uri.as_str(), kind, lane_conf).await?;
+            let (tx, rx) = context.add_lane(text_uri.as_str(), kind, lane_conf).await?;
 
             if is_transient {
                 lane_readers.push(LaneReader::value(lane_idx, rx));
-                item_writers.insert(lane_idx, tx);
+                lane_writers.insert(lane_idx, tx);
             } else {
                 init_tasks.push(run_lane_initializer(
                     ffi_context.clone(),
-                    JavaValueLikeLaneInitializer::new(
-                        java_agent.clone(),
-                        (&lane_name_lookup[&lane_idx]).java.clone(),
-                    ),
+                    JavaValueLikeLaneInitializer::new(java_agent.clone(), spec.lane_idx),
                     lane_kind_repr,
                     (tx, rx),
                     WithLengthBytesCodec::default(),
@@ -433,6 +421,8 @@ async fn initialize_agent(
                 ));
             }
         }
+
+        lane_identifiers.insert(spec.lane_idx, text_uri);
     }
 
     while let Some(init_result) = init_tasks.next().await {
@@ -448,7 +438,7 @@ async fn initialize_agent(
                     unimplemented!()
                 } else {
                     lane_readers.push(LaneReader::value(id, rx));
-                    item_writers.insert(id, tx);
+                    lane_writers.insert(id, tx);
                 }
             }
             Err(e) => return Err(AgentInitError::LaneInitializationFailure(e)),
@@ -460,17 +450,17 @@ async fn initialize_agent(
         route,
         route_params,
         config,
-        lane_name_lookup,
+        lane_identifiers,
         java_agent,
         lane_readers,
-        item_writers,
+        lane_writers,
     })
 }
 
 struct InitializedLane {
     kind: LaneKindRepr,
     io: (ByteWriter, ByteReader),
-    id: i64,
+    id: i32,
 }
 
 fn init_stream<'a, D>(
@@ -508,15 +498,12 @@ trait JavaItemInitializer {
 
 struct JavaValueLikeLaneInitializer {
     agent_obj: JavaAgentRef,
-    lane_name: GlobalRef,
+    lane_id: i32,
 }
 
 impl JavaValueLikeLaneInitializer {
-    pub fn new(agent_obj: JavaAgentRef, lane_name: GlobalRef) -> JavaValueLikeLaneInitializer {
-        JavaValueLikeLaneInitializer {
-            agent_obj,
-            lane_name,
-        }
+    pub fn new(agent_obj: JavaAgentRef, lane_id: i32) -> JavaValueLikeLaneInitializer {
+        JavaValueLikeLaneInitializer { agent_obj, lane_id }
     }
 }
 
@@ -529,14 +516,11 @@ impl JavaItemInitializer for JavaValueLikeLaneInitializer {
     where
         S: Stream<Item = Result<BytesMut, FrameIoError>> + Send + 'l,
     {
-        let JavaValueLikeLaneInitializer {
-            agent_obj,
-            lane_name,
-        } = self;
+        let JavaValueLikeLaneInitializer { agent_obj, lane_id } = self;
         Box::pin(async move {
             match try_last(stream).await? {
                 Some(body) => {
-                    agent_obj.init(&context.env, lane_name, body);
+                    agent_obj.init(&context.env, *lane_id, body);
                     Ok(())
                 }
                 None => Ok(()),
@@ -551,7 +535,7 @@ async fn run_lane_initializer<I, D>(
     kind: LaneKindRepr,
     io: (ByteWriter, ByteReader),
     decoder: D,
-    id: i64,
+    id: i32,
 ) -> Result<InitializedLane, FrameIoError>
 where
     I: JavaItemInitializer,
@@ -578,8 +562,8 @@ where
 }
 
 #[derive(Clone)]
-struct LaneName {
-    java: GlobalRef,
+struct LaneIdentifier {
+    id: i32,
     str: Text,
 }
 
@@ -588,10 +572,10 @@ struct FfiAgentTask {
     route: RouteUri,
     route_params: HashMap<String, String>,
     config: AgentConfig,
-    lane_name_lookup: HashMap<i64, LaneName>,
+    lane_identifiers: HashMap<i32, Text>,
     java_agent: JavaAgentRef,
     lane_readers: SelectAll<LaneReader>,
-    item_writers: HashMap<i64, ByteWriter>,
+    lane_writers: HashMap<i32, ByteWriter>,
 }
 
 impl FfiAgentTask {
@@ -601,10 +585,10 @@ impl FfiAgentTask {
             route,
             route_params,
             config,
-            lane_name_lookup,
+            lane_identifiers,
             java_agent,
             mut lane_readers,
-            mut item_writers,
+            mut lane_writers,
         } = self;
 
         info!("Running agent");
@@ -626,24 +610,12 @@ impl FfiAgentTask {
 
             match event {
                 Some(RuntimeEvent::Request { id, request }) => {
-                    let lane_name = lane_name_lookup.get(&id).cloned().expect("Missing lane");
-                    let mut writer = item_writers.get_mut(&id).expect("Missing lane writer");
-                    handle_request(
-                        &ffi_context,
-                        &java_agent,
-                        lane_name.java,
-                        &lane_name.str,
-                        request,
-                        &mut writer,
-                    )
-                    .await?;
+                    handle_request(&ffi_context, &java_agent, id, request, &mut lane_writers)
+                        .await?;
                 }
                 Some(RuntimeEvent::RequestError { id, error }) => {
-                    let lane_name = lane_name_lookup.get(&id).cloned().expect("Missing lane");
-                    return Err(AgentTaskError::BadFrame {
-                        lane: lane_name.str,
-                        error,
-                    });
+                    let lane = lane_identifiers.get(&id).cloned().expect("Missing lane");
+                    return Err(AgentTaskError::BadFrame { lane, error });
                 }
                 None => break,
             }
@@ -658,33 +630,41 @@ impl FfiAgentTask {
 async fn handle_request(
     context: &FfiContext,
     agent_ref: &JavaAgentRef,
-    lane_name_ref: GlobalRef,
-    lane: &Text,
+    lane_id: i32,
     request: TaggedLaneRequest,
-    lane_writer: &mut &mut ByteWriter,
-) -> Result<(), AgentTaskError> {
+    lane_writers: &mut HashMap<i32, ByteWriter>,
+) -> Result<ControlFlow<()>, AgentTaskError> {
     let env = &context.env;
     let TaggedLaneRequest { request, .. } = request;
 
     match request {
         LaneRequest::Command(msg) => {
             trace!("Received a command request");
-            let response = agent_ref.dispatch(&env, &lane_name_ref, msg)?;
+            let response = agent_ref.dispatch(&env, lane_id, msg)?;
 
             trace!("Handling lane response");
-            handle_lane_response(context, agent_ref, response, lane_writer, lane).await?;
 
-            Ok(())
+            forward_lane_responses(
+                context,
+                agent_ref,
+                BytesMut::from_iter(response),
+                lane_writers,
+            )
+            .await
         }
         LaneRequest::Sync(remote_id) => {
             trace!("Received a sync request");
 
-            let response = agent_ref.sync(&env, &lane_name_ref, remote_id)?;
-            handle_lane_response(context, agent_ref, response, lane_writer, lane).await?;
-
-            Ok(())
+            let response = agent_ref.sync(&env, lane_id, remote_id)?;
+            forward_lane_responses(
+                context,
+                agent_ref,
+                BytesMut::from_iter(response),
+                lane_writers,
+            )
+            .await
         }
-        LaneRequest::InitComplete => Ok(()),
+        LaneRequest::InitComplete => Ok(ControlFlow::Continue(())),
     }
 }
 
@@ -711,158 +691,62 @@ impl From<FrameIoError> for FfiAgentError {
     }
 }
 
-async fn handle_lane_response(
+async fn forward_lane_responses(
     ctx: &FfiContext,
     agent_ref: &JavaAgentRef,
-    mut returned_value: Vec<u8>,
-    lane_writer: &mut &mut ByteWriter,
-    lane: &Text,
-) -> Result<(), AgentTaskError> {
-    let env = &ctx.env;
+    mut data: BytesMut,
+    lane_writers: &mut HashMap<i32, ByteWriter>,
+) -> Result<ControlFlow<()>, AgentTaskError> {
+    let mut decoder = LaneResponseDecoder::default();
+
     loop {
-        if returned_value.len() < 1 {
-            return Ok(());
-        }
-
-        let (int_parts, rest) = returned_value.split_at(size_of::<i32>());
-        let len = i32::from_be_bytes(int_parts.try_into().unwrap()) as usize;
-
-        lane_writer
-            .write_all(&rest[0..len])
-            .await
-            .map_err(|e| AgentTaskError::BadFrame {
-                lane: lane.clone(),
-                error: FrameIoError::Io(e),
-            })?;
-
-        let (more_data, rem) = returned_value.split_at(size_of::<i8>());
-        debug_assert!(rem.is_empty());
-
-        if more_data[0] == 1u8 {
-            debug!("Agent has specified that there is more data available");
-            returned_value = agent_ref.flush_state(env)?;
-        } else {
-            debug!("Agent response decode complete");
-            return Ok(());
-        }
-    }
-}
-
-enum LaneReaderCodec {
-    Value(ValueReaderCodec),
-    Map(MapReaderCodec),
-}
-
-impl LaneReaderCodec {
-    fn value(reader: ByteReader) -> LaneReaderCodec {
-        LaneReaderCodec::Value(LaneCodec::new(reader, LaneRequestDecoder::default()))
-    }
-
-    fn map(reader: ByteReader) -> LaneReaderCodec {
-        LaneReaderCodec::Map(LaneCodec::new(reader, LaneRequestDecoder::default()))
-    }
-}
-
-struct MapOperationBytesEncoder;
-
-impl MapOperationBytesEncoder {
-    const TAG_SIZE: usize = size_of::<u8>();
-    const LEN_SIZE: usize = size_of::<u64>();
-
-    const UPDATE: u8 = 0;
-    const REMOVE: u8 = 1;
-
-    const CLEAR: u8 = 2;
-    const OVERSIZE_KEY: &'static str = "Key too large.";
-    const OVERSIZE_RECORD: &'static str = "Record too large.";
-}
-
-impl Encoder<MapOperation<BytesMut, BytesMut>> for MapOperationBytesEncoder {
-    type Error = std::io::Error;
-
-    fn encode(
-        &mut self,
-        item: MapOperation<BytesMut, BytesMut>,
-        dst: &mut BytesMut,
-    ) -> Result<(), Self::Error> {
-        match item {
-            MapOperation::Update { key, value } => {
-                let total_len = key.len() + value.len() + Self::LEN_SIZE + Self::TAG_SIZE;
-                dst.reserve(total_len + Self::LEN_SIZE);
-                dst.put_u64(u64::try_from(total_len).expect(Self::OVERSIZE_RECORD));
-                dst.put_u8(Self::UPDATE);
-                let key_len = u64::try_from(key.len()).expect(Self::OVERSIZE_KEY);
-                dst.put_u64(key_len);
-                dst.put(key);
-                dst.put(value);
+        match decoder.decode(&mut data) {
+            Ok(Some(LaneResponseElement::Feed)) => {
+                data = agent_ref.flush_state(&ctx.env).map(BytesMut::from_iter)?;
             }
-            MapOperation::Remove { key } => {
-                let total_len = key.len() + Self::TAG_SIZE;
-                dst.reserve(total_len + Self::LEN_SIZE);
-                dst.put_u64(u64::try_from(total_len).expect(Self::OVERSIZE_RECORD));
-                dst.put_u8(Self::REMOVE);
-                dst.put(key);
-            }
-            MapOperation::Clear => {
-                dst.reserve(Self::LEN_SIZE + Self::TAG_SIZE);
-                dst.put_u64(Self::TAG_SIZE as u64);
-                dst.put_u8(Self::CLEAR);
-            }
-        }
-        Ok(())
-    }
-}
+            Ok(Some(LaneResponseElement::Response { lane_id, data })) => {
+                println!("Lane: {}: {:?}", lane_id, data.as_ref());
 
-impl Stream for LaneReaderCodec {
-    type Item = (LaneType, Result<LaneRequest<BytesMut>, FrameIoError>);
-
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        match self.get_mut() {
-            LaneReaderCodec::Value(ref mut inner) => Pin::new(inner)
-                .poll_next(cx)
-                .map(|r| r.map(|r| (LaneType::Value, r))),
-            LaneReaderCodec::Map(ref mut inner) => match Pin::new(inner).poll_next(cx) {
-                Poll::Ready(Some(Ok(op))) => {
-                    let item = match op {
-                        LaneRequest::Command(command) => {
-                            let mut buf = BytesMut::new();
-                            MapMessageEncoder::new(MapOperationBytesEncoder)
-                                .encode(command, &mut buf)
-                                .expect("Map encoding should be infallible");
-                            LaneRequest::Command(buf)
+                match lane_writers.get_mut(&lane_id) {
+                    Some(writer) => {
+                        if writer.write_all(data.as_ref()).await.is_err() {
+                            return Ok(ControlFlow::Break(()));
                         }
-                        LaneRequest::InitComplete => LaneRequest::InitComplete,
-                        LaneRequest::Sync(id) => LaneRequest::Sync(id),
-                    };
-                    Poll::Ready(Some((LaneType::Map, Ok(item))))
+                    }
+                    None => ctx.env.with_env(|scope| {
+                        println!("Lane writers: {:?}", lane_writers);
+
+                        scope.fatal_error(format!("Missing lane writer: {}", lane_id))
+                    }),
                 }
-                Poll::Ready(Some(Err(e))) => Poll::Ready(Some((LaneType::Map, Err(e)))),
-                Poll::Ready(None) => Poll::Ready(None),
-                Poll::Pending => Poll::Pending,
-            },
+            }
+            Ok(None) => break Ok(ControlFlow::Continue(())),
+            Err(_) => ctx.env.with_env(|scope| {
+                scope.fatal_error("Agent received invalid bytes from Java runtime")
+            }),
         }
     }
 }
 
 struct LaneWriter {
-    idx: i64,
+    idx: i32,
     writer: ByteWriter,
 }
 
 struct LaneReader {
-    idx: i64,
+    idx: i32,
     codec: LaneReaderCodec,
 }
 
 impl LaneReader {
-    fn value(idx: i64, reader: ByteReader) -> LaneReader {
+    fn value(idx: i32, reader: ByteReader) -> LaneReader {
         LaneReader {
             idx,
             codec: LaneReaderCodec::value(reader),
         }
     }
 
-    fn map(idx: i64, reader: ByteReader) -> LaneReader {
+    fn map(idx: i32, reader: ByteReader) -> LaneReader {
         LaneReader {
             idx,
             codec: LaneReaderCodec::map(reader),
@@ -871,7 +755,7 @@ impl LaneReader {
 }
 
 #[derive(Debug)]
-enum LaneType {
+pub enum LaneType {
     Value,
     Map,
 }
@@ -883,7 +767,7 @@ struct TaggedLaneRequest {
 }
 
 impl Stream for LaneReader {
-    type Item = (i64, Result<TaggedLaneRequest, FrameIoError>);
+    type Item = (i32, Result<TaggedLaneRequest, FrameIoError>);
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let LaneReader { idx, codec } = self.get_mut();
@@ -900,6 +784,6 @@ impl Stream for LaneReader {
 
 #[derive(Debug)]
 enum RuntimeEvent {
-    Request { id: i64, request: TaggedLaneRequest },
-    RequestError { id: i64, error: FrameIoError },
+    Request { id: i32, request: TaggedLaneRequest },
+    RequestError { id: i32, error: FrameIoError },
 }

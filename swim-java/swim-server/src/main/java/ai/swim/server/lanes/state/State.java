@@ -8,4 +8,5 @@ public interface State {
   WriteResult writeInto(Bytes bytes);
 
   void sync(UUID uuid);
+
 }

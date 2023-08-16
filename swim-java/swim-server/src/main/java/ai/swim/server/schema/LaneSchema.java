@@ -50,7 +50,7 @@ public class LaneSchema {
   }
 
   public void pack(MessageBufferPacker packer) throws IOException {
-    packer.packArrayHeader(2);
+    packer.packArrayHeader(3);
     packer.packBoolean(isTransient);
     packer.packInt(laneId);
     laneKind.pack(packer);
