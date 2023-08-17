@@ -109,6 +109,14 @@ impl JavaEnv {
             Err(e) => Err(scope.throw_new(class, e.to_string())),
         }
     }
+
+    pub fn fatal_error<M>(&self, msg: M) -> !
+    where
+        M: ToString,
+    {
+        let scope = self.enter_scope();
+        scope.fatal_error(msg)
+    }
 }
 
 #[derive(Clone)]

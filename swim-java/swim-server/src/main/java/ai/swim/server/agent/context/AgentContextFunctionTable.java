@@ -1,6 +1,6 @@
 package ai.swim.server.agent.context;
 
 public class AgentContextFunctionTable {
-   static native void openLane(long ptr, byte[] layout);
+   static native void openLane(long ptr, String laneUri, byte[] layout);
 
 }

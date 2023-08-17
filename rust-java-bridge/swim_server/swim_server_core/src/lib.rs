@@ -1,17 +1,12 @@
 #![allow(warnings)]
 
-use std::net::SocketAddr;
-use std::sync::Arc;
-
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use jni::objects::JObject;
-use jni::JavaVM;
-use jvm_sys::env::{JavaEnv, MethodResolver};
-use swim_server_app::{AgentExt, BoxServer, Server, ServerBuilder, ServerHandle};
+use swim_server_app::{AgentExt, Server, ServerBuilder, ServerHandle};
 use swim_utilities::routing::route_pattern::RoutePattern;
-use tracing_subscriber::filter::LevelFilter;
-use tracing_subscriber::EnvFilter;
+
+use jvm_sys::env::JavaEnv;
 
 use crate::agent::{AgentFactory, FfiAgentDef};
 use crate::spec::PlaneSpec;
@@ -21,6 +16,8 @@ mod codec;
 mod java_context;
 pub mod macros;
 pub mod spec;
+
+pub use java_context::JavaAgentContext;
 
 #[derive(Debug, Clone)]
 pub struct FfiContext {

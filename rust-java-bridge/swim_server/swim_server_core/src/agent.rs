@@ -1,59 +1,42 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::convert::Infallible;
-use std::error::Error;
 use std::future::Future;
-use std::iter::StepBy;
-use std::mem::{size_of, transmute};
 use std::ops::{ControlFlow, Deref};
-use std::panic::panic_any;
 use std::pin::Pin;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::BytesMut;
 use futures::StreamExt;
 use futures::{Sink, Stream};
 use futures_util::future::BoxFuture;
-use futures_util::stream::{unfold, BoxStream, FuturesUnordered, SelectAll};
+use futures_util::stream::{unfold, FuturesUnordered, SelectAll};
 use futures_util::{FutureExt, SinkExt};
-use jni::errors::{Error as JavaError, JniError};
-use jni::objects::{GlobalRef, JByteBuffer, JObject, JThrowable, JValue};
+use jni::errors::Error as JavaError;
+use jni::objects::{GlobalRef, JObject, JThrowable, JValue};
 use jni::sys::{jint, jobject};
-use jni::JNIEnv;
-use swim_api::agent::{Agent, AgentConfig, AgentContext, AgentInitResult, LaneConfig, UplinkKind};
+use swim_api::agent::{Agent, AgentConfig, AgentContext, AgentInitResult};
 use swim_api::error::{AgentInitError, AgentTaskError, FrameIoError};
 use swim_api::meta::lane::LaneKind;
 use swim_api::protocol::agent::{
-    LaneRequest, LaneRequestDecoder, LaneResponse, LaneResponseEncoder, StoreInitMessage,
-    StoreInitMessageDecoder, StoreInitialized, StoreInitializedCodec, ValueLaneResponseEncoder,
+    LaneRequest, StoreInitMessage, StoreInitMessageDecoder, StoreInitialized, StoreInitializedCodec,
 };
-use swim_api::protocol::map::{
-    MapMessage, MapMessageDecoder, MapMessageEncoder, MapOperation, RawMapOperationDecoder,
-};
-use swim_api::protocol::{WithLenReconEncoder, WithLengthBytesCodec};
+use swim_api::protocol::WithLengthBytesCodec;
 use swim_form::structural::read::ReadError;
 use swim_model::Text;
-use swim_recon::parser::{AsyncParseError, ParseError, RecognizerDecoder};
 use swim_utilities::future::try_last;
 use swim_utilities::io::byte_channel::{ByteReader, ByteWriter};
 use swim_utilities::routing::route_uri::RouteUri;
-use swim_utilities::trigger::trigger;
 use tokio::io::AsyncWriteExt;
+use tokio::runtime::Handle;
 use tokio::select;
 use tokio::sync::mpsc;
-use tokio::task::spawn_blocking;
-use tokio::time::Instant;
-use tokio_util::codec::{BytesCodec, Decoder, Encoder, FramedRead, FramedWrite};
+use tokio::task::{JoinError, JoinHandle};
+use tokio_util::codec::{Decoder, Encoder, FramedRead, FramedWrite};
 use tracing::{debug, error, info, trace};
-use tracing_subscriber::fmt::init;
 use uuid::Uuid;
 
-use bytebridge::{ByteCodec, FromBytesError};
 use jvm_sys::env::{
-    ByteBufferGuard, IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler, MethodResolver,
-    Scope, StringError,
+    ByteBufferGuard, IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler, Scope,
 };
 use jvm_sys::method::{
     ByteArray, InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
@@ -342,9 +325,12 @@ impl Agent for FfiAgentDef {
             agent_factory,
         } = self;
 
-        let (tx, rx) = mpsc::channel(8);
-
-        let java_agent_ctx = Box::leak(Box::new(JavaAgentContext::new(tx)));
+        let (ffi_tx, ffi_rx) = mpsc::channel(8);
+        let java_agent_ctx = Box::leak(Box::new(JavaAgentContext::new(
+            ffi_context.env.clone(),
+            Handle::current(),
+            ffi_tx,
+        )));
 
         let java_agent = agent_factory.agent_for(&ffi_context.env, route.as_str(), java_agent_ctx);
         let ffi_context = ffi_context.clone();
@@ -359,6 +345,7 @@ impl Agent for FfiAgentDef {
                 config,
                 context,
                 java_agent,
+                ffi_rx,
             )
             .await;
 
@@ -383,6 +370,7 @@ async fn initialize_agent(
     config: AgentConfig,
     context: Box<dyn AgentContext + Send>,
     java_agent: JavaAgentRef,
+    runtime_requests: mpsc::Receiver<AgentRuntimeRequest>,
 ) -> Result<FfiAgentTask, AgentInitError> {
     let default_lane_config = config.default_lane_config.unwrap_or_default();
     let AgentSpec { lane_specs, .. } = spec;
@@ -447,6 +435,7 @@ async fn initialize_agent(
 
     Ok(FfiAgentTask {
         ffi_context,
+        agent_context: context,
         route,
         route_params,
         config,
@@ -454,6 +443,7 @@ async fn initialize_agent(
         java_agent,
         lane_readers,
         lane_writers,
+        runtime_requests,
     })
 }
 
@@ -567,6 +557,22 @@ struct LaneIdentifier {
     str: Text,
 }
 
+enum AgentTaskState {
+    Running,
+    Suspended(JoinHandle<Result<Vec<u8>, AgentTaskError>>),
+}
+
+#[derive(Debug)]
+enum RuntimeEvent {
+    Request { id: i32, request: TaggedLaneRequest },
+    RequestError { id: i32, error: FrameIoError },
+}
+
+enum SuspendedRuntimeEvent {
+    Request(Option<AgentRuntimeRequest>),
+    SuspendComplete(Result<Result<Vec<u8>, AgentTaskError>, JoinError>),
+}
+
 struct FfiAgentTask {
     ffi_context: FfiContext,
     route: RouteUri,
@@ -576,6 +582,8 @@ struct FfiAgentTask {
     java_agent: JavaAgentRef,
     lane_readers: SelectAll<LaneReader>,
     lane_writers: HashMap<i32, ByteWriter>,
+    runtime_requests: mpsc::Receiver<AgentRuntimeRequest>,
+    agent_context: Box<dyn AgentContext + Send>,
 }
 
 impl FfiAgentTask {
@@ -589,6 +597,8 @@ impl FfiAgentTask {
             java_agent,
             mut lane_readers,
             mut lane_writers,
+            mut runtime_requests,
+            agent_context,
         } = self;
 
         info!("Running agent");
@@ -596,28 +606,131 @@ impl FfiAgentTask {
         let env = ffi_context.env.clone();
         java_agent.did_start(&env)?;
 
+        let mut state = AgentTaskState::Running;
+
         loop {
-            let event: Option<RuntimeEvent> = select! {
-                message = lane_readers.next() => message.map(|(id, request)| {
-                    match request {
-                        Ok(request) => RuntimeEvent::Request { id, request },
-                        Err(error) => RuntimeEvent::RequestError { id, error }
+            match state {
+                AgentTaskState::Running => {
+                    let event: Option<RuntimeEvent> = select! {
+                        message = lane_readers.next() => message.map(|(id, request)| {
+                            match request {
+                                Ok(request) => RuntimeEvent::Request { id, request },
+                                Err(error) => RuntimeEvent::RequestError { id, error }
+                            }
+                        }),
+                    };
+
+                    debug!(event = ?event, "FFI agent task received runtime event");
+
+                    match event {
+                        Some(RuntimeEvent::Request { id, request }) => {
+                            state = match dispatch_request(
+                                ffi_context.clone(),
+                                java_agent.clone(),
+                                id,
+                                request,
+                            ) {
+                                Some(handle) => {
+                                    debug!("Suspending agent runtime");
+                                    AgentTaskState::Suspended(handle)
+                                }
+                                None => AgentTaskState::Running,
+                            }
+                        }
+                        Some(RuntimeEvent::RequestError { id, error }) => {
+                            let lane = lane_identifiers.get(&id).cloned().expect("Missing lane");
+                            return Err(AgentTaskError::BadFrame { lane, error });
+                        }
+                        None => break,
                     }
-                }),
-            };
-
-            debug!(event = ?event, "FFI agent task received runtime event");
-
-            match event {
-                Some(RuntimeEvent::Request { id, request }) => {
-                    handle_request(&ffi_context, &java_agent, id, request, &mut lane_writers)
-                        .await?;
                 }
-                Some(RuntimeEvent::RequestError { id, error }) => {
-                    let lane = lane_identifiers.get(&id).cloned().expect("Missing lane");
-                    return Err(AgentTaskError::BadFrame { lane, error });
+                AgentTaskState::Suspended(mut handle) => {
+                    let event: SuspendedRuntimeEvent = select! {
+                        suspend_result = (&mut handle) => SuspendedRuntimeEvent::SuspendComplete(suspend_result),
+                        request = runtime_requests.recv() => SuspendedRuntimeEvent::Request(request),
+                    };
+                    match event {
+                        SuspendedRuntimeEvent::Request(Some(request)) => {
+                            trace!(request = ?request, "Agent runtime received a request");
+
+                            match request {
+                                AgentRuntimeRequest::OpenLane { uri, spec } => {
+                                    let LaneSpec {
+                                        is_transient,
+                                        lane_idx,
+                                        lane_kind_repr,
+                                    } = spec;
+                                    let kind: LaneKind = lane_kind_repr.into();
+                                    let mut lane_conf =
+                                        config.default_lane_config.unwrap_or_default();
+                                    lane_conf.transient = is_transient;
+
+                                    if lane_kind_repr.map_like() {
+                                        unimplemented!("map-like lanes")
+                                    } else {
+                                        let (tx, rx) = agent_context
+                                            .add_lane(uri.as_str(), kind, lane_conf)
+                                            .await
+                                            .map_err(|e| {
+                                                AgentTaskError::UserCodeError(Box::new(e))
+                                            })?;
+
+                                        if is_transient {
+                                            lane_readers.push(LaneReader::value(lane_idx, rx));
+                                            lane_writers.insert(lane_idx, tx);
+                                        } else {
+                                            let InitializedLane {
+                                                kind,
+                                                io: (tx, rx),
+                                                id,
+                                            } = run_lane_initializer(
+                                                ffi_context.clone(),
+                                                JavaValueLikeLaneInitializer::new(
+                                                    java_agent.clone(),
+                                                    spec.lane_idx,
+                                                ),
+                                                lane_kind_repr,
+                                                (tx, rx),
+                                                WithLengthBytesCodec::default(),
+                                                lane_idx,
+                                            )
+                                            .await
+                                            .map_err(|e| {
+                                                AgentTaskError::UserCodeError(Box::new(e))
+                                            })?;
+                                            lane_readers.push(LaneReader::value(id, rx));
+                                            lane_writers.insert(id, tx);
+                                        }
+                                    }
+                                }
+                            }
+
+                            state = AgentTaskState::Suspended(handle);
+                        }
+                        SuspendedRuntimeEvent::Request(None) => {
+                            // Java agent context has been GC'd.
+                            debug!("Java agent context has been garbage collected. Shutting down agent");
+                            java_agent.did_stop(&env)?;
+                            return Ok(());
+                        }
+                        SuspendedRuntimeEvent::SuspendComplete(Ok(Ok(returned_data))) => {
+                            trace!("Handling lane response");
+                            forward_lane_responses(
+                                &ffi_context,
+                                &java_agent,
+                                BytesMut::from_iter(returned_data),
+                                &mut lane_writers,
+                            )
+                            .await?;
+                            state = AgentTaskState::Running;
+                        }
+                        SuspendedRuntimeEvent::SuspendComplete(Ok(Err(e))) => return Err(e),
+                        SuspendedRuntimeEvent::SuspendComplete(Err(e)) => {
+                            error!(error = ?e, "Suspended JNI call join error");
+                            env.fatal_error(e)
+                        }
+                    }
                 }
-                None => break,
             }
         }
 
@@ -627,45 +740,34 @@ impl FfiAgentTask {
     }
 }
 
-async fn handle_request(
-    context: &FfiContext,
-    agent_ref: &JavaAgentRef,
+fn dispatch_request(
+    context: FfiContext,
+    agent_ref: JavaAgentRef,
     lane_id: i32,
     request: TaggedLaneRequest,
-    lane_writers: &mut HashMap<i32, ByteWriter>,
-) -> Result<ControlFlow<()>, AgentTaskError> {
-    let env = &context.env;
+) -> Option<JoinHandle<Result<Vec<u8>, AgentTaskError>>> {
     let TaggedLaneRequest { request, .. } = request;
-
+    let runtime_handle = Handle::current();
     match request {
         LaneRequest::Command(msg) => {
             trace!("Received a command request");
-            let response = agent_ref.dispatch(&env, lane_id, msg)?;
-
-            trace!("Handling lane response");
-
-            forward_lane_responses(
-                context,
-                agent_ref,
-                BytesMut::from_iter(response),
-                lane_writers,
-            )
-            .await
+            let handle = runtime_handle
+                .spawn_blocking(move || agent_ref.dispatch(&context.env, lane_id, msg));
+            Some(handle)
         }
         LaneRequest::Sync(remote_id) => {
             trace!("Received a sync request");
-
-            let response = agent_ref.sync(&env, lane_id, remote_id)?;
-            forward_lane_responses(
-                context,
-                agent_ref,
-                BytesMut::from_iter(response),
-                lane_writers,
-            )
-            .await
+            let handle = runtime_handle
+                .spawn_blocking(move || agent_ref.sync(&context.env, lane_id, remote_id));
+            Some(handle)
         }
-        LaneRequest::InitComplete => Ok(ControlFlow::Continue(())),
+        LaneRequest::InitComplete => None,
     }
+}
+
+#[derive(Debug)]
+pub enum AgentRuntimeRequest {
+    OpenLane { uri: Text, spec: LaneSpec },
 }
 
 enum FfiAgentError {
@@ -705,8 +807,6 @@ async fn forward_lane_responses(
                 data = agent_ref.flush_state(&ctx.env).map(BytesMut::from_iter)?;
             }
             Ok(Some(LaneResponseElement::Response { lane_id, data })) => {
-                println!("Lane: {}: {:?}", lane_id, data.as_ref());
-
                 match lane_writers.get_mut(&lane_id) {
                     Some(writer) => {
                         if writer.write_all(data.as_ref()).await.is_err() {
@@ -714,8 +814,6 @@ async fn forward_lane_responses(
                         }
                     }
                     None => ctx.env.with_env(|scope| {
-                        println!("Lane writers: {:?}", lane_writers);
-
                         scope.fatal_error(format!("Missing lane writer: {}", lane_id))
                     }),
                 }
@@ -780,10 +878,4 @@ impl Stream for LaneReader {
             })
         })
     }
-}
-
-#[derive(Debug)]
-enum RuntimeEvent {
-    Request { id: i32, request: TaggedLaneRequest },
-    RequestError { id: i32, error: FrameIoError },
 }

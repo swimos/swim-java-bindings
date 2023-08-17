@@ -18,7 +18,7 @@ public class AgentContext {
     this.ptr = ptr;
   }
 
-  void setAgent(AgentNode agentNode) {
+  public void setAgent(AgentNode agentNode) {
     this.agentNode = agentNode;
   }
 
@@ -44,7 +44,7 @@ public class AgentContext {
 
     try (MessageBufferPacker packer = MessagePack.newDefaultBufferPacker()) {
       laneSchema.pack(packer);
-      AgentContextFunctionTable.openLane(ptr, packer.toByteArray());
+      AgentContextFunctionTable.openLane(ptr,laneUri, packer.toByteArray());
     } catch (IOException e) {
       throw new RuntimeException("Failed to build lane schema", e);
     }

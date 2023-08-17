@@ -91,11 +91,6 @@ class SwimServerTest {
     private void forward(int ev) {
       plusOne.set(ev + 1);
       minusOne.set(ev - 1);
-
-      if (ev == 13) {
-        ValueLaneView<Integer> dynamic = valueLane(Integer.class).onEvent(value -> System.out.println("Dynamic"));
-        getContext().openLane(dynamic, "mock", false);
-      }
     }
   }
 
