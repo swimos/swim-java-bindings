@@ -1,8 +1,10 @@
 package ai.swim.server.lanes.value;
 
+import ai.swim.server.lanes.LaneModel;
 import ai.swim.server.lanes.LaneView;
 import ai.swim.server.lanes.lifecycle.OnEvent;
 import ai.swim.server.lanes.lifecycle.OnSet;
+import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
 
 public final class ValueLaneView<T> extends LaneView implements ValueLane<T> {
@@ -67,4 +69,8 @@ public final class ValueLaneView<T> extends LaneView implements ValueLane<T> {
     }
   }
 
+  @Override
+  public LaneModel createLaneModel(StateCollector collector, int laneId) {
+    return new ValueLaneModel<>(laneId,this,collector);
+  }
 }

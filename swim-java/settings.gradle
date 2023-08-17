@@ -7,9 +7,6 @@ include('swim-ffi')
 include('swim-core/swim-codec')
 project(':swim-core/swim-codec').name = 'swim-codec'
 
-include('swim-core/swim-downlink')
-project(':swim-core/swim-downlink').name = 'swim-downlink'
-
 include(':swim-core/swim-recon')
 project(':swim-core/swim-recon').name = 'swim-recon'
 

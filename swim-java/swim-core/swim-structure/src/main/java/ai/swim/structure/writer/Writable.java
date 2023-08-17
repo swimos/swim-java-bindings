@@ -28,7 +28,7 @@ import java.io.StringWriter;
  * <p>
  * {@link Writable} implementations should be stateless, threadsafe, reusable and automatically resolve any type
  * parameters incrementally.
- *
+ * <p>
  * <h2>Annotation processing</h2>
  * Generally, a manual implementation of {@link Writable} should not be required unless an object has a complex
  * definition. This interface can be automatically derived using the {@link ai.swim.structure.annotations.AutoForm}

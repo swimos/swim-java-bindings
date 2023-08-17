@@ -7,7 +7,7 @@ package ai.swim.lang.ffi;
  * This is useful in instances where functionality is shared across both a client and server but have slightly different
  * implementation details.
  */
-public interface NativeHandle extends NativeResource, AutoCloseable {
+public interface NativeHandle extends NativeResource {
   /**
    * Returns a pointer to the native resource.
    */
@@ -18,6 +18,7 @@ public interface NativeHandle extends NativeResource, AutoCloseable {
    */
   void drop();
 
+  // Overridden to remove the exception.
   /**
    * Drop the native resource.
    */

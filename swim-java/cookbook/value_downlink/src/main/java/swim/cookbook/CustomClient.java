@@ -14,11 +14,11 @@
 
 package swim.cookbook;
 
-import ai.swim.downlink.ClientConfig;
-import ai.swim.downlink.SwimClient;
-import ai.swim.downlink.SwimClientException;
-import ai.swim.downlink.value.ValueDownlink;
-import ai.swim.downlink.value.ValueDownlinkBuilder;
+import ai.swim.client.ClientConfig;
+import ai.swim.client.SwimClient;
+import ai.swim.client.SwimClientException;
+import ai.swim.client.downlink.value.ValueDownlink;
+import ai.swim.client.downlink.value.ValueDownlinkBuilder;
 import java.io.IOException;
 
 /**

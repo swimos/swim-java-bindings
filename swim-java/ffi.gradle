@@ -87,13 +87,6 @@ tasks.create(name: "cleanLibs", type: Exec, description: "Cleaning library direc
     }
 }
 
-tasks.create(name: "nativeLibs", type: Sync) {
-    from "${project.ext.release_dir}"
-    // todo: prefix search by project. I.e, the client project doesn't need to copy the server libraries which it does at present
-    include "*.dylib", "*.so", "*.dll"
-    into "libs"
-}
-
 tasks.named("processResources").configure { dependsOn("nativeLibs") }
 tasks.withType(JavaCompile).configureEach {
     compileTask -> compileTask.dependsOn "nativeLibs"

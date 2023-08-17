@@ -88,7 +88,7 @@ impl AgentFactory {
     const NEW_AGENT: JavaObjectMethodDef = JavaObjectMethodDef::new(
         "ai/swim/server/AbstractSwimServerBuilder",
         "agentFor",
-        "(Ljava/lang/String;J)Lai/swim/server/agent/AgentModel;",
+        "(Ljava/lang/String;J)Lai/swim/server/agent/AgentView;",
     );
 
     pub fn new(env: &JavaEnv, factory: GlobalRef) -> AgentFactory {
@@ -193,23 +193,23 @@ pub struct JavaAgentVTable {
 
 impl JavaAgentVTable {
     const DID_START: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentModel", "didStart", "()V");
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "didStart", "()V");
     const DID_STOP: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentModel", "didStop", "()V");
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "didStop", "()V");
     const DISPATCH: JavaObjectMethodDef = JavaObjectMethodDef::new(
-        "ai/swim/server/agent/AgentModel",
+        "ai/swim/server/agent/AgentView",
         "dispatch",
         "(ILjava/nio/ByteBuffer;)[B",
     );
     const SYNC: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentModel", "sync", "(IJJ)[B");
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "sync", "(IJJ)[B");
     const INIT: JavaObjectMethodDef = JavaObjectMethodDef::new(
-        "ai/swim/server/agent/AgentModel",
+        "ai/swim/server/agent/AgentView",
         "init",
         "(ILjava/nio/ByteBuffer;)V",
     );
     const FLUSH_STATE: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentModel", "flushState", "()[B");
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "flushState", "()[B");
 
     fn initialise(env: &JavaEnv) -> JavaAgentVTable {
         JavaAgentVTable {

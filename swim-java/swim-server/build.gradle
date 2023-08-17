@@ -14,3 +14,9 @@ dependencies {
 
     implementation 'org.msgpack:msgpack-core:0.9.3'
 }
+
+tasks.create(name: "nativeLibs", type: Sync) {
+    from "${project.ext.release_dir}"
+    include "*_server.dylib", "*_server.so", "*_server.dll"
+    into "libs"
+}

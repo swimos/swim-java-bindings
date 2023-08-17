@@ -1,5 +1,6 @@
 package ai.swim.server.agent;
 
+import ai.swim.server.agent.context.AgentContext;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.lanes.Lane;
 import ai.swim.server.lanes.LaneModel;
@@ -20,7 +21,7 @@ import java.util.Objects;
 /**
  * A factory for constructing agents of type {@code A}.
  * <p>
- * An initialised agent is an {@link AgentModel}s that is used to dispatch events from the Rust runtime to lanes;
+ * An initialised agent is an {@link AgentView}s that is used to dispatch events from the Rust runtime to lanes;
  * decoding the message requests, setting the state of the lanes, invoking user-defined lifecycle events and encoding
  * responses.
  *
@@ -58,7 +59,7 @@ public class AgentFactory<A extends AbstractAgent> {
    * Reflects agent {@code agent}. This involves reflecting the agent's lanes and setting their lane models with a
    * reference to the agent's {@link StateCollector}.
    */
-  private static <A extends AbstractAgent> AgentModel reflectAgent(A agent, Map<String, Integer> laneMappings) {
+  private static <A extends AbstractAgent> AgentView reflectAgent(A agent, Map<String, Integer> laneMappings) {
     Class<? extends AbstractAgent> agentClass = agent.getClass();
     Field[] fields = agentClass.getDeclaredFields();
     Map<Integer, LaneModel> lanes = new HashMap<>();
@@ -68,12 +69,17 @@ public class AgentFactory<A extends AbstractAgent> {
       if (Lane.class.isAssignableFrom(field.getType())) {
         SwimLane anno = field.getAnnotation(SwimLane.class);
         if (anno != null) {
-          String laneUri = Objects.requireNonNullElse(anno.value(), field.getName());
+          String annoValue = anno.value();
+          annoValue = annoValue.isEmpty() ? null : annoValue;
+          String laneUri = Objects.requireNonNullElse(annoValue, field.getName());
+
           Type type = field.getGenericType();
 
           if (type instanceof ParameterizedType) {
             Type rawType = ((ParameterizedType) type).getRawType();
             Integer laneId = laneMappings.get(laneUri);
+
+            field.setAccessible(true);
 
             if (rawType instanceof Class<?>) {
               lanes.put(laneId, reflectLane(agent, laneId, field, (Class<?>) rawType, collector));
@@ -87,10 +93,11 @@ public class AgentFactory<A extends AbstractAgent> {
       }
     }
 
-    return new AgentModel(agent, lanes, collector);
+    return new AgentView(agent, new AgentNode(collector, lanes, laneMappings));
   }
 
-  private static <A extends AbstractAgent> IllegalArgumentException unsupportedLaneType(Type type, Class<A> agentClass) {
+  private static <A extends AbstractAgent> IllegalArgumentException unsupportedLaneType(Type type,
+      Class<A> agentClass) {
     return new IllegalArgumentException("Unsupported lane type: " + type + " in " + agentClass.getCanonicalName());
   }
 
@@ -99,7 +106,11 @@ public class AgentFactory<A extends AbstractAgent> {
    * operate on a {@link Lane} when a lifecycle event is fired (which happens on the {@link ai.swim.server.lanes.LaneView}
    * as well as the runtime setting its state using the {@link LaneModel}.
    */
-  private static LaneModel reflectLane(AbstractAgent agent, int laneId, Field field, Class<?> type, StateCollector collector) {
+  private static LaneModel reflectLane(AbstractAgent agent,
+      int laneId,
+      Field field,
+      Class<?> type,
+      StateCollector collector) {
     if (ValueLane.class.equals(type)) {
       return reflectValueLane(agent, laneId, field, collector);
     } else {
@@ -108,10 +119,9 @@ public class AgentFactory<A extends AbstractAgent> {
   }
 
   private static LaneModel reflectValueLane(AbstractAgent agent, int laneId, Field field, StateCollector collector) {
-    field.setAccessible(true);
     try {
       ValueLaneView<?> laneView = (ValueLaneView<?>) field.get(agent);
-      ValueLaneModel<?> model = new ValueLaneModel<>(laneId, laneView, collector);
+      ValueLaneModel<?> model = (ValueLaneModel<?>) laneView.createLaneModel(collector, laneId);
       laneView.setModel(model);
       return model;
     } catch (IllegalAccessException e) {
@@ -120,18 +130,31 @@ public class AgentFactory<A extends AbstractAgent> {
   }
 
   /**
-   * Reflects and initialises a new {@link AgentModel}.
+   * Reflects and initialises a new {@link AgentView}.
    *
    * @return an initialised agent.
    */
-  public AgentModel newInstance(long agentContextPtr) {
+  public AgentView newInstance(long agentContextPtr) {
     try {
       AgentContext context = new AgentContext(agentContextPtr);
       constructor.setAccessible(true);
       A agent = constructor.newInstance(context);
-      return reflectAgent(agent, laneMappings);
+
+      AgentView agentView = reflectAgent(agent, laneMappings);
+      context.setAgent(agentView.getNode());
+
+      return agentView;
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException("Failed to create new agent", e);
+    }
+  }
+
+  public int idFor(String laneUri) {
+    Integer id = this.laneMappings.get(laneUri);
+    if (id == null) {
+      throw new IllegalArgumentException("Unregistered lane: " + laneUri);
+    } else {
+      return id;
     }
   }
 

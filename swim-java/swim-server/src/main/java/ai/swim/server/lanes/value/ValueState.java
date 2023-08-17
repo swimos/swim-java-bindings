@@ -4,6 +4,8 @@ import ai.swim.server.codec.BufferOverflowException;
 import ai.swim.server.codec.Bytes;
 import ai.swim.server.codec.WithLenReconEncoder;
 import ai.swim.server.lanes.WriteResult;
+import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
+import ai.swim.server.lanes.models.response.IdentifiedLaneResponseEncoder;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.models.response.LaneResponseEncoder;
 import ai.swim.server.lanes.state.State;
@@ -45,10 +47,10 @@ public class ValueState<T> implements State {
   }
 
   private void write(Bytes buffer, LaneResponse<T> item) {
-    buffer.writeInteger(laneId);
-
     LaneResponseEncoder<T> responseEncoder = new LaneResponseEncoder<>(new WithLenReconEncoder<>(form));
-    responseEncoder.encodeWithLen(item, buffer);
+    IdentifiedLaneResponseEncoder<T> encoder = new IdentifiedLaneResponseEncoder<>(responseEncoder);
+
+    encoder.encodeWithLen(new IdentifiedLaneResponse<>(laneId, item), buffer);
   }
 
   @Override

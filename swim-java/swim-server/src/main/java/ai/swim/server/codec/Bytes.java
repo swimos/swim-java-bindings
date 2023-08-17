@@ -141,7 +141,7 @@ public class Bytes {
    * Gets a byte and advances the cursor by 1.
    */
   public byte getByte() {
-    int next = readPointer += 1;
+    int next = readPointer + 1;
     if (next > writePointer) {
       throw new BufferUnderflowException();
     }
@@ -264,7 +264,7 @@ public class Bytes {
    * Returns the underlying array.
    */
   public byte[] getArray() {
-    return buffer;
+    return Arrays.copyOf(buffer, writePointer);
   }
 
   @Override

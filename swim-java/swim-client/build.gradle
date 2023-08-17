@@ -4,7 +4,18 @@ apply from: '../ffi.gradle'
 
 dependencies {
     implementation project(':swim-structure')
-    api project (':swim-downlink')
+    api project(':swim-codec')
+    api project(':swim-recon')
+    api project(':swim-concurrent')
+    api project(':swim-ffi')
 
+    annotationProcessor project(':swim-structure-processor')
+    testAnnotationProcessor project(':swim-structure-processor')
     implementation 'org.msgpack:msgpack-core:0.9.3'
+}
+
+tasks.create(name: "nativeLibs", type: Sync) {
+    from "${project.ext.release_dir}"
+    include "*_client.dylib", "*_client.so", "*_client.dll"
+    into "libs"
 }

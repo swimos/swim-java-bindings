@@ -5,6 +5,7 @@ import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
 import ai.swim.server.codec.Bytes;
 import ai.swim.server.lanes.LaneModel;
+import ai.swim.server.lanes.LaneView;
 import ai.swim.server.lanes.WriteResult;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
@@ -60,6 +61,11 @@ public final class ValueLaneModel<T> extends LaneModel {
     } else {
       throw new RecognizerException("Unconsumed input");
     }
+  }
+
+  @Override
+  public LaneView getLaneView() {
+    return view;
   }
 
   @Override

@@ -9,4 +9,6 @@ public abstract class LaneModel implements LaneItem {
   public abstract void sync(UUID remote);
 
   public abstract void init(ByteBuffer buffer);
+
+  public abstract LaneView getLaneView();
 }

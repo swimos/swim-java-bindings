@@ -14,11 +14,11 @@
 
 package swim.cookbook;
 
-import ai.swim.downlink.ClientConfig;
-import ai.swim.downlink.SwimClient;
-import ai.swim.downlink.SwimClientException;
-import ai.swim.downlink.map.MapDownlink;
-import ai.swim.downlink.map.MapDownlinkBuilder;
+import ai.swim.client.ClientConfig;
+import ai.swim.client.SwimClient;
+import ai.swim.client.SwimClientException;
+import ai.swim.client.downlink.map.MapDownlink;
+import ai.swim.client.downlink.map.MapDownlinkBuilder;
 import java.io.IOException;
 
 /**

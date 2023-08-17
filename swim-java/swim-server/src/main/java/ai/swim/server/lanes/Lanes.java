@@ -1,5 +1,6 @@
 package ai.swim.server.lanes;
 
+import ai.swim.server.lanes.value.ValueLane;
 import ai.swim.server.lanes.value.ValueLaneView;
 import ai.swim.structure.Form;
 
@@ -11,7 +12,7 @@ public class Lanes {
    * @param <T>  the lane's event type.
    * @return a new Value Lane.
    */
-  public static <T> ValueLaneView<T> valueLane(Form<T> form) {
+  public static <T> ValueLane<T> valueLane(Form<T> form) {
     return new ValueLaneView<>(form);
   }
 
@@ -22,7 +23,7 @@ public class Lanes {
    * @param <T>   the lane's event type.
    * @return a new Value Lane.
    */
-  public static <T> ValueLaneView<T> valueLane(Class<T> clazz) {
+  public static <T> ValueLane<T> valueLane(Class<T> clazz) {
     return valueLane(Form.forClass(clazz));
   }
 

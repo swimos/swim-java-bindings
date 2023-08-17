@@ -2,7 +2,7 @@ package ai.swim.server;
 
 import ai.swim.server.agent.AbstractAgent;
 import ai.swim.server.agent.AgentFactory;
-import ai.swim.server.agent.AgentModel;
+import ai.swim.server.agent.AgentView;
 import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.plane.AbstractPlane;
 import ai.swim.server.schema.PlaneSchema;
@@ -60,7 +60,7 @@ public abstract class AbstractSwimServerBuilder {
     return agentFactories;
   }
 
-  public AgentModel agentFor(String uri, long agentContextPtr) {
+  public AgentView agentFor(String uri, long agentContextPtr) {
     AgentFactory<? extends AbstractAgent> agentFactory = agentFactories.get(uri);
     if (agentFactory == null) {
       throw new NoSuchElementException(uri); // todo

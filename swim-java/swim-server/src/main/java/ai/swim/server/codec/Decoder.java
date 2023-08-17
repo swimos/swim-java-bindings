@@ -23,7 +23,7 @@ public abstract class Decoder<T> {
    * Returns whether the decoder is in a {@code done} state.
    */
   public boolean isDone() {
-    throw new IllegalStateException("Decoder is not in a done state");
+    return false;
   }
 
   /**
