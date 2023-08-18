@@ -5,6 +5,7 @@ package ai.swim.server.codec;
  *
  * @param <T> that this encoder encodes.
  */
+@FunctionalInterface
 public interface Encoder<T> {
 
   /**

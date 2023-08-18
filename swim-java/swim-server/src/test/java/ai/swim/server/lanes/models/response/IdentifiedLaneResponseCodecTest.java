@@ -38,8 +38,7 @@ class IdentifiedLaneResponseCodecTest {
   void roundTrip() throws DecoderException {
     Bytes bytes = new Bytes();
 
-    LaneResponseEncoder<Integer> delegateEncoder = new LaneResponseEncoder<>(new IntEncoder());
-    IdentifiedLaneResponseEncoder<Integer> encoder = new IdentifiedLaneResponseEncoder<>(delegateEncoder);
+    IdentifiedLaneResponseEncoder<Integer> encoder = new IdentifiedLaneResponseEncoder<>(new IntEncoder());
     encoder.encode(new IdentifiedLaneResponse<>(1, LaneResponse.event(13)), bytes);
 
     Decoder<IdentifiedLaneResponse<Integer>> decoder = new IdentifiedLaneResponseDecoder<>(new LaneResponseDecoder<>(new IntDecoder()));

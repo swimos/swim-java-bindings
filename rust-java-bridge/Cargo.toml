@@ -19,7 +19,7 @@ members = [
 bytebridge = { path = "bytebridge/bytebridge" }
 jvm_sys = { path = "jvm_sys" }
 jni = "0.20.0"
-tokio = "1.1.1"
+tokio = "1.22"
 tokio-util = "0.7.4"
 bytes = "1.0"
 futures = "0.3.4"
@@ -42,6 +42,7 @@ tracing-subscriber = "0.2.11"
 tracing-futures = "0.2"
 rand = "0.8.5"
 uuid = "1.2"
+swim_utilities = { path = "../swim-rust/swim_utilities" }
 
 [workspace.dependencies.ratchet]
 package = "ratchet_rs"

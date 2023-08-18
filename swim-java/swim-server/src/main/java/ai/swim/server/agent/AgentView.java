@@ -81,6 +81,15 @@ public class AgentView {
     this.agent.didStop();
   }
 
+  /**
+   * Flush any pending state from the {@link StateCollector}.
+   *
+   * @return an array containing encoded {@link ai.swim.server.lanes.models.response.LaneResponse}s.
+   */
+  public byte[] flushState() {
+    return node.flushState();
+  }
+
   public AgentNode getNode() {
     return node;
   }

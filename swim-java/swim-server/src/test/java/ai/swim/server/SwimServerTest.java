@@ -2,9 +2,9 @@ package ai.swim.server;
 
 import ai.swim.lang.ffi.NativeLoader;
 import ai.swim.server.agent.AbstractAgent;
-import ai.swim.server.agent.context.AgentContext;
 import ai.swim.server.agent.AgentFactory;
 import ai.swim.server.agent.AgentView;
+import ai.swim.server.agent.context.AgentContext;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
@@ -18,7 +18,6 @@ import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.models.response.LaneResponseDecoder;
 import ai.swim.server.lanes.value.ValueLane;
-import ai.swim.server.lanes.value.ValueLaneView;
 import ai.swim.server.plane.AbstractPlane;
 import ai.swim.server.schema.PlaneSchema;
 import org.junit.jupiter.api.Test;

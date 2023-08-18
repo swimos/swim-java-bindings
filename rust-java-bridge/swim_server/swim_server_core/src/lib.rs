@@ -8,7 +8,6 @@ use swim_utilities::routing::route_pattern::RoutePattern;
 
 use jvm_sys::env::JavaEnv;
 
-use crate::agent::{AgentFactory, FfiAgentDef};
 use crate::spec::PlaneSpec;
 
 mod agent;
@@ -17,11 +16,18 @@ mod java_context;
 pub mod macros;
 pub mod spec;
 
+pub use agent::{AgentFactory, FfiAgentDef};
 pub use java_context::JavaAgentContext;
 
 #[derive(Debug, Clone)]
 pub struct FfiContext {
     env: JavaEnv,
+}
+
+impl FfiContext {
+    pub fn new(env: JavaEnv) -> FfiContext {
+        FfiContext { env }
+    }
 }
 
 pub async fn run_server(

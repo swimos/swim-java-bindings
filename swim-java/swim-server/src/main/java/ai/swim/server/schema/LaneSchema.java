@@ -58,7 +58,7 @@ public class LaneSchema {
   }
 
   public static LaneSchema reflectLane(Class<?> type, boolean isTransient, int laneId) {
-    if (ValueLane.class.equals(type)) {
+    if (ValueLane.class.isAssignableFrom(type)) {
       return new LaneSchema(isTransient, LaneKind.Value, laneId);
     } else {
       throw new IllegalArgumentException("Unsupported lane type: " + type);
