@@ -18,6 +18,8 @@ pub const TEMP_VAR: &str = "__elem_";
 pub const PACK_METHOD: &str = "pack";
 pub const TO_STRING_METHOD: &str = "toString";
 
+pub const RESERVED_VARIABLES: [&str; 3] = [BUFFER_SIZE_VAR, PACK_METHOD, TEMP_VAR];
+
 lazy_static! {
     pub static ref JAVA_KEYWORDS: HashSet<&'static str> = {
         HashSet::from([
@@ -74,11 +76,29 @@ lazy_static! {
             "void",
             "volatile",
             "while",
-            BUFFER_SIZE_VAR,
-            PACK_METHOD,
-            TEMP_VAR,
         ])
     };
+}
+
+#[derive(Copy, Clone)]
+pub enum RustType {
+    I8,
+    I16,
+    I32,
+    I64,
+    U8,
+    U16,
+    U32,
+    U64,
+    F32,
+    F64,
+    Duration,
+    NonZeroU32,
+    NonZeroU64,
+    String,
+    Bool,
+    Char,
+    Vec,
 }
 
 /// Discriminate between primitive Java types and arrays.
@@ -101,81 +121,134 @@ impl JavaType {
             JavaType::Object(ty) => JavaType::Object(ty.clone()),
         }
     }
+}
 
-    /// Attempts to align a Rust type to a Java Type.
-    pub fn try_map(ident: &str, arguments: &PathArguments) -> Result<JavaType, UnsupportedType> {
-        match ident {
-            "i8" => Ok(JavaType::Primitive(PrimitiveJavaType::Byte {
+/// Attempts to map a Rust type to a Java Type.
+pub fn try_map_type(
+    ident: &str,
+    arguments: &PathArguments,
+) -> Result<(JavaType, RustType), UnsupportedType> {
+    match ident {
+        "i8" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Byte {
                 unsigned: false,
                 nonzero: false,
-            })),
-            "i32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int {
+            }),
+            RustType::I8,
+        )),
+        "i16" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Int {
                 unsigned: false,
                 nonzero: false,
-            })),
-            "i64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long {
+            }),
+            RustType::I16,
+        )),
+        "i32" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Int {
                 unsigned: false,
                 nonzero: false,
-            })),
-            "u8" => Ok(JavaType::Primitive(PrimitiveJavaType::Byte {
+            }),
+            RustType::I32,
+        )),
+        "i64" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Long {
+                unsigned: false,
+                nonzero: false,
+            }),
+            RustType::I64,
+        )),
+        "u8" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Byte {
                 unsigned: true,
                 nonzero: false,
-            })),
-            "u32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int {
+            }),
+            RustType::U8,
+        )),
+        "u16" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Short {
                 unsigned: true,
                 nonzero: false,
-            })),
-            "u64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long {
+            }),
+            RustType::U16,
+        )),
+        "u32" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Int {
                 unsigned: true,
                 nonzero: false,
-            })),
-            "f32" => Ok(JavaType::Primitive(PrimitiveJavaType::Float)),
-            "f64" => Ok(JavaType::Primitive(PrimitiveJavaType::Double)),
-            "Duration" => Ok(JavaType::Primitive(PrimitiveJavaType::Int {
+            }),
+            RustType::U32,
+        )),
+        "u64" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Long {
                 unsigned: true,
                 nonzero: false,
-            })),
-            "NonZeroU32" => Ok(JavaType::Primitive(PrimitiveJavaType::Int {
+            }),
+            RustType::U64,
+        )),
+        "f32" => Ok((JavaType::Primitive(PrimitiveJavaType::Float), RustType::F32)),
+        "f64" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Double),
+            RustType::F64,
+        )),
+        "Duration" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Int {
+                unsigned: true,
+                nonzero: false,
+            }),
+            RustType::Duration,
+        )),
+        "NonZeroU32" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Int {
                 unsigned: true,
                 nonzero: true,
-            })),
-            "NonZeroU64" => Ok(JavaType::Primitive(PrimitiveJavaType::Long {
+            }),
+            RustType::NonZeroU32,
+        )),
+        "NonZeroU64" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Long {
                 unsigned: true,
                 nonzero: true,
-            })),
-            "String" => Ok(JavaType::String),
-            "bool" => Ok(JavaType::Primitive(PrimitiveJavaType::Boolean)),
-            "Vec" => {
-                let err = || {
-                    Err(UnsupportedType(format!(
-                        "Vec{}",
-                        arguments.to_token_stream()
-                    )))
-                };
-                match arguments {
-                    PathArguments::AngleBracketed(ang) => {
-                        let mut iter = ang.args.pairs();
-                        match (iter.next(), iter.next()) {
-                            (Some(pair), None) => {
-                                let value = pair.value();
-                                match JavaType::try_map(
-                                    value.to_token_stream().to_string().as_str(),
-                                    &PathArguments::None,
-                                ) {
-                                    Ok(JavaType::Primitive(ty)) => Ok(JavaType::Array(ty)),
-                                    _ => err(),
+            }),
+            RustType::NonZeroU64,
+        )),
+        "String" => Ok((JavaType::String, RustType::String)),
+        "bool" => Ok((
+            JavaType::Primitive(PrimitiveJavaType::Boolean),
+            RustType::Bool,
+        )),
+        "char" => Ok((JavaType::Primitive(PrimitiveJavaType::Char), RustType::Char)),
+        "Vec" => {
+            let err = || {
+                Err(UnsupportedType(format!(
+                    "Vec{}",
+                    arguments.to_token_stream()
+                )))
+            };
+            match arguments {
+                PathArguments::AngleBracketed(ang) => {
+                    let mut iter = ang.args.pairs();
+                    match (iter.next(), iter.next()) {
+                        (Some(pair), None) => {
+                            let value = pair.value();
+                            match try_map_type(
+                                value.to_token_stream().to_string().as_str(),
+                                &PathArguments::None,
+                            ) {
+                                Ok((JavaType::Primitive(ty), _)) => {
+                                    Ok((JavaType::Array(ty), RustType::Vec))
                                 }
+                                _ => err(),
                             }
-                            (Some(_), Some(_)) => err(),
-                            (None, Some(_)) => unreachable!(),
-                            (None, None) => err(),
                         }
+                        (Some(_), Some(_)) => err(),
+                        (None, Some(_)) => unreachable!(),
+                        (None, None) => err(),
                     }
-                    _ => err(),
                 }
+                _ => err(),
             }
-            v => Err(UnsupportedType(v.to_string())),
         }
+        v => Err(UnsupportedType(v.to_string())),
     }
 }
 
@@ -205,9 +278,11 @@ pub enum PrimitiveJavaType {
     Byte { unsigned: bool, nonzero: bool },
     Int { unsigned: bool, nonzero: bool },
     Long { unsigned: bool, nonzero: bool },
+    Short { unsigned: bool, nonzero: bool },
     Float,
     Double,
     Boolean,
+    Char,
 }
 
 impl PrimitiveJavaType {
@@ -217,17 +292,20 @@ impl PrimitiveJavaType {
             PrimitiveJavaType::Int { .. }
                 | PrimitiveJavaType::Long { .. }
                 | PrimitiveJavaType::Byte { .. }
+                | PrimitiveJavaType::Short { .. }
         )
     }
 
     pub fn size_of(&self) -> usize {
         match self {
             PrimitiveJavaType::Byte { .. } => 1,
+            PrimitiveJavaType::Short { .. } => 2,
             PrimitiveJavaType::Int { .. } => 4,
             PrimitiveJavaType::Long { .. } => 8,
             PrimitiveJavaType::Float => 4,
             PrimitiveJavaType::Double => 8,
             PrimitiveJavaType::Boolean => 1,
+            PrimitiveJavaType::Char => 1,
         }
     }
 }
@@ -237,6 +315,9 @@ impl Display for PrimitiveJavaType {
         match self {
             PrimitiveJavaType::Byte { .. } => {
                 write!(f, "byte")
+            }
+            PrimitiveJavaType::Short { .. } => {
+                write!(f, "short")
             }
             PrimitiveJavaType::Int { .. } => {
                 write!(f, "int")
@@ -253,6 +334,9 @@ impl Display for PrimitiveJavaType {
             PrimitiveJavaType::Boolean => {
                 write!(f, "boolean")
             }
+            PrimitiveJavaType::Char => {
+                write!(f, "char")
+            }
         }
     }
 }
@@ -267,6 +351,8 @@ impl JavaType {
             JavaType::Primitive(PrimitiveJavaType::Float) => "0.0".to_string(),
             JavaType::Primitive(PrimitiveJavaType::Double) => "0.0".to_string(),
             JavaType::Primitive(PrimitiveJavaType::Boolean) => "false".to_string(),
+            JavaType::Primitive(PrimitiveJavaType::Short { .. }) => "0".to_string(),
+            JavaType::Primitive(PrimitiveJavaType::Char) => "u0000".to_string(),
             JavaType::Void => "".to_string(),
             JavaType::String => "\"\"".to_string(),
             JavaType::Array(arr) => {
@@ -341,7 +427,7 @@ impl JavaType {
     /// Attempts to unpack a default value that has been applied in an attribute against this Java
     /// type. This will fail, for example, if this Java Type is a string and a numeric literal has
     /// been supplied.
-    pub fn unpack_default_value(&self, lit: Lit) -> Result<String, Error> {
+    pub fn unpack_default_value(&self, lit: Lit, rust_type: RustType) -> Result<String, Error> {
         let span = lit.span();
         let type_mismatch = |ty, span, lit| {
             Err(Error::new(
@@ -353,29 +439,44 @@ impl JavaType {
             ))
         };
         match (self, lit) {
-            (JavaType::Primitive(ty), lit) => match (ty, lit) {
-                (PrimitiveJavaType::Byte { .. }, Lit::Int(lit)) => {
-                    Ok(lit.into_token_stream().to_string())
+            (JavaType::Primitive(ty), lit) => {
+                match (ty, lit, rust_type) {
+                    (PrimitiveJavaType::Byte { .. }, Lit::Int(lit), _) => {
+                        Ok(lit.into_token_stream().to_string())
+                    }
+                    (PrimitiveJavaType::Int { .. }, Lit::Int(lit), _) => {
+                        Ok(lit.into_token_stream().to_string())
+                    }
+                    (PrimitiveJavaType::Int { .. }, Lit::Str(str), RustType::Duration) => {
+                        let mut value = str.value();
+                        match value.pop() {
+                            Some(last) => {
+                                if last == 's' {
+                                    Ok(value)
+                                } else {
+                                    Err(Error::new(str.span(), format!("Invalid duration time format: {}. Only 's' is accepted", last)))
+                                }
+                            }
+                            None => Err(Error::new(str.span(), "Empty default value")),
+                        }
+                    }
+                    (PrimitiveJavaType::Long { .. }, Lit::Int(lit), _) => {
+                        Ok(lit.into_token_stream().to_string())
+                    }
+                    (PrimitiveJavaType::Float, Lit::Float(lit), _) => {
+                        Ok(lit.into_token_stream().to_string())
+                    }
+                    (PrimitiveJavaType::Double, Lit::Float(lit), _) => {
+                        Ok(lit.into_token_stream().to_string())
+                    }
+                    (PrimitiveJavaType::Boolean, Lit::Bool(lit), _) => {
+                        Ok(lit.into_token_stream().to_string())
+                    }
+                    (ty, lit, _) => type_mismatch(JavaType::Primitive(*ty), span, lit),
                 }
-                (PrimitiveJavaType::Int { .. }, Lit::Int(lit)) => {
-                    Ok(lit.into_token_stream().to_string())
-                }
-                (PrimitiveJavaType::Long { .. }, Lit::Int(lit)) => {
-                    Ok(lit.into_token_stream().to_string())
-                }
-                (PrimitiveJavaType::Float, Lit::Float(lit)) => {
-                    Ok(lit.into_token_stream().to_string())
-                }
-                (PrimitiveJavaType::Double, Lit::Float(lit)) => {
-                    Ok(lit.into_token_stream().to_string())
-                }
-                (PrimitiveJavaType::Boolean, Lit::Bool(lit)) => {
-                    Ok(lit.into_token_stream().to_string())
-                }
-                (ty, lit) => type_mismatch(JavaType::Primitive(*ty), span, lit),
-            },
+            }
             (JavaType::String, lit) => match lit {
-                Lit::Str(lit) => Ok(lit.into_token_stream().to_string()),
+                Lit::Str(lit) => Ok(lit.value()),
                 lit => type_mismatch(JavaType::String, span, lit),
             },
             (ty, def) => type_mismatch(ty.clone(), span, def),
@@ -457,6 +558,24 @@ impl IntRange for u8 {
 
     fn max() -> Self {
         u8::MAX
+    }
+}
+
+impl IntRange for u16 {
+    fn contains_zero(min: Self, max: Self) -> bool {
+        (min..max).contains(&0)
+    }
+
+    fn one() -> Self {
+        1
+    }
+
+    fn min() -> Self {
+        u16::MIN
+    }
+
+    fn max() -> Self {
+        u16::MAX
     }
 }
 
@@ -576,6 +695,10 @@ impl Constraint {
                     unsigned: true,
                     nonzero,
                 } => Self::validate_unsigned::<u8>(constraint, *nonzero),
+                PrimitiveJavaType::Short {
+                    unsigned: true,
+                    nonzero,
+                } => Self::validate_unsigned::<u16>(constraint, *nonzero),
                 PrimitiveJavaType::Int {
                     unsigned: true,
                     nonzero,

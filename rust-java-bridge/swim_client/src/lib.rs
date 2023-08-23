@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::num::NonZeroUsize;
+use std::panic;
+
+use bytebridge::ByteCodecExt;
 use bytes::BytesMut;
 use client_runtime::{RemotePath, WebSocketConfig};
 use jni::objects::{JObject, JString};

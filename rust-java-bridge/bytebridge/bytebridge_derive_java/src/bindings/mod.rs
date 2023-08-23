@@ -30,7 +30,7 @@ const ATTR_NO_DOCS: &str = "no_docs";
 const ATTR_RENAME: &str = "rename";
 const ATTR_DEFAULT_VALUE: &str = "default_value";
 const ATTR_NON_ZERO: &str = "non_zero";
-const ATTR_NATURAL: &str = "natural";
+const ATTR_NATURAL: &str = "natural_number";
 const ATTR_UNSIGNED_ARRAY: &str = "unsigned_array";
 const ATTR_RANGE: &str = "range";
 

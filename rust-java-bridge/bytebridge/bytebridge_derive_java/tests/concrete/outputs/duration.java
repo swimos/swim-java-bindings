@@ -7,14 +7,14 @@ import java.io.IOException;
 
 public class Test {
 
-  private int a = 0;
+  private int a = 30;
 
   private int b = 0;
 
   /**
    * Gets a.
    * <p>
-   * Default value: 0.
+   * Default value: 30.
    *
    * @return a
    */
