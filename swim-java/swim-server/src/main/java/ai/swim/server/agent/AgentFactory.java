@@ -1,6 +1,5 @@
 package ai.swim.server.agent;
 
-import ai.swim.server.agent.context.AgentContext;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.lanes.Lane;
 import ai.swim.server.lanes.LaneModel;
@@ -111,7 +110,7 @@ public class AgentFactory<A extends AbstractAgent> {
       Field field,
       Class<?> type,
       StateCollector collector) {
-    if (ValueLane.class.equals(type)) {
+    if (ValueLane.class.isAssignableFrom(type)) {
       return reflectValueLane(agent, laneId, field, collector);
     } else {
       throw unsupportedLaneType(type, agent.getClass());
@@ -121,7 +120,7 @@ public class AgentFactory<A extends AbstractAgent> {
   private static LaneModel reflectValueLane(AbstractAgent agent, int laneId, Field field, StateCollector collector) {
     try {
       ValueLaneView<?> laneView = (ValueLaneView<?>) field.get(agent);
-      ValueLaneModel<?> model = (ValueLaneModel<?>) laneView.createLaneModel(collector, laneId);
+      ValueLaneModel<?> model = (ValueLaneModel<?>) laneView.initLaneModel(collector, laneId);
       laneView.setModel(model);
       return model;
     } catch (IllegalAccessException e) {

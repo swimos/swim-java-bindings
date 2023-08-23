@@ -128,6 +128,21 @@ public class Bytes {
   }
 
   /**
+   * Converts the argument to a {@code long} by an unsigned conversion and writes it into the buffer.
+   */
+  public void writeUnsignedLong(int b) {
+    writeLong(Integer.toUnsignedLong(b));
+  }
+
+  /**
+   * Converts the argument to a {@code long} by an unsigned conversion and writes it into the buffer starting at the
+   * provided offset.
+   */
+  public void writeUnsignedLongAt(int b, int startAt) {
+    writeLong(Integer.toUnsignedLong(b));
+  }
+
+  /**
    * Writes an integer in big endian format starting from the provided offset.
    */
   public void writeInteger(int b, int startAt) {

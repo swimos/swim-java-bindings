@@ -8,7 +8,7 @@ use swim_server_core::spec::LaneSpec;
 use swim_server_core::JavaAgentContext;
 
 server_fn! {
-    agent_context_AgentContextFunctionTable_openLane(
+    agent_AgentContextFunctionTable_openLane(
         env,
         _class,
         context: *mut JavaAgentContext,
@@ -28,5 +28,18 @@ server_fn! {
             let lane_uri_str = scope.get_rust_string(lane_uri);
             context.open_lane(lane_uri_str, spec);
         });
+    }
+}
+
+server_fn! {
+    agent_AgentContextFunctionTable_dropHandle(
+        env,
+        _class,
+        context: *mut JavaAgentContext,
+    ) {
+        null_pointer_check_abort!(env, context);
+        unsafe {
+            drop(Box::from_raw(context));
+        }
     }
 }

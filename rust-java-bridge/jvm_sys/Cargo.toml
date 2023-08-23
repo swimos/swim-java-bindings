@@ -11,3 +11,4 @@ paste = { workspace = true }
 bytebridge =  { workspace = true }
 parking_lot = { workspace = true, features = ["send_guard"] }
 static_assertions = { workspace = true }
+tracing = { workspace = true }

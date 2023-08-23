@@ -21,7 +21,8 @@ use jni::strings::{JNIString, JavaStr};
 use jni::sys::{jbyteArray, jvalue};
 use jni::{JNIEnv, JavaVM, MonitorGuard};
 use parking_lot::Mutex;
-use static_assertions::assert_impl_all;
+use static_assertions::{assert_impl_all, assert_not_impl_all};
+use tracing::{debug, error};
 
 use crate::method::{
     InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
@@ -29,6 +30,12 @@ use crate::method::{
 use crate::vtable::Throwable;
 
 assert_impl_all!(JavaEnv: Send, Sync);
+
+// JNIEnv's are scoped to a given thread and the Tokio runtime may yield an async task and return
+// execution on another thread, so we uphold this in Scope and ensure that the current instance is
+// not shared across threads; this is upheld directly by JNIEnv being !Send and !Sync but this
+// assertion is added just to ensure that an unsafe implementation isn't added.
+assert_not_impl_all!(Scope: Send, Sync);
 
 #[derive(Debug, Clone)]
 pub struct JavaEnv {
@@ -49,13 +56,21 @@ impl JavaEnv {
     }
 
     fn enter_scope(&self) -> Scope<'_> {
+        debug!("Entering new scoped Java Environment");
         let JavaEnv { vm, resolver } = self;
         let env = match vm.get_env() {
-            Ok(env) => env,
+            Ok(env) => {
+                debug!("Found JNIEnv associated with the current thread");
+                env
+            }
             Err(Error::JniCall(JniError::ThreadDetached)) => {
+                debug!("Current thread was not attached. Attempting to attach it as a daemon");
                 match vm.attach_current_thread_as_daemon() {
                     Ok(env) => env,
-                    Err(_) => abort(),
+                    Err(e) => {
+                        error!(error = ?e, "Failed to attached the current thread as a daemon. Aborting");
+                        abort()
+                    }
                 }
             }
             Err(_) => abort(),
@@ -130,6 +145,7 @@ impl<'l> Scope<'l> {
     #[doc(hidden)]
     pub(crate) fn call_method_unchecked<H, O, T>(
         &self,
+        def: &JavaObjectMethodDef,
         handler: &H,
         obj: O,
         method_id: T,
@@ -141,6 +157,13 @@ impl<'l> Scope<'l> {
         T: Desc<'l, JMethodID>,
         H: JavaExceptionHandler,
     {
+        let method = format!("{}::{}", def.class(), def.name());
+        debug!(
+            def = method,
+            signature = def.signature(),
+            "Invoking object method"
+        );
+
         let Scope { env, .. } = &self;
         fallible_jni_call(self.clone(), handler, || {
             env.call_method_unchecked(obj, method_id, ret, args)
@@ -299,6 +322,8 @@ impl<'l> Scope<'l> {
         String::from(jstr)
     }
 
+    #[cold]
+    #[inline(never)]
     pub fn fatal_error<M>(&self, msg: M) -> !
     where
         M: ToString,
@@ -366,12 +391,7 @@ where
     match f() {
         Ok(o) => o,
         Err(e) => match e {
-            Error::JavaException => {
-                if let Ok(e) = get_env(vm.as_ref()) {
-                    let _r = e.exception_describe();
-                }
-                abort_unexpected_sys_exception(vm.clone())
-            }
+            Error::JavaException => abort_unexpected_sys_exception(vm.clone()),
             e => abort_vm(vm.clone(), e),
         },
     }
@@ -419,6 +439,8 @@ fn abort_unexpected_sys_exception(vm: Arc<JavaVM>) -> ! {
 }
 
 /// Flushes Java output streams to ensure that any exception messages have been printed.
+#[cold]
+#[inline(never)]
 fn flush_output_streams(env: &JNIEnv) {
     let r = env.call_static_method(
         "ai/swim/lang/ffi/ExceptionUtils",
@@ -452,10 +474,70 @@ fn abort_vm(vm: Arc<JavaVM>, e: impl StdError + Send + 'static) -> ! {
     abort()
 }
 
+/// Trait for molding a Java throwable to Rust types.
 pub trait JavaExceptionHandler {
     type Err;
 
+    /// Inspects 'throwable' and molds it to a 'Self::Err' if this handler is capable of handling
+    /// it.
+    ///
+    /// # Note
+    /// Prior to invoking this method, 'throwable' is obtained by a call to the JNIEnv's 'ExceptionOccurred'
+    /// function which in some JVM implementations (E.g, Java 11 versions) has a side effect of
+    /// clearing the exception; but this does not happen on Java 7. As such, implementors of this
+    /// trait are left to print the stack trace associated with the throwable if it is required.
     fn inspect(&self, scope: &Scope, throwable: JThrowable) -> Option<Self::Err>;
+}
+
+impl<E, F> JavaExceptionHandler for F
+where
+    F: Fn(&Scope, JThrowable) -> Option<E>,
+{
+    type Err = E;
+
+    fn inspect(&self, scope: &Scope, throwable: JThrowable) -> Option<Self::Err> {
+        (self)(scope, throwable)
+    }
+}
+
+#[derive(Debug)]
+pub struct NotTypeOfExceptionHandler {
+    method: InitialisedJavaObjectMethod,
+    class: GlobalRef,
+}
+
+impl NotTypeOfExceptionHandler {
+    pub fn new(env: &JavaEnv, class: &str) -> NotTypeOfExceptionHandler {
+        let (class, method) = env.with_env(|scope| {
+            let class = scope.new_global_ref(scope.find_class(class));
+            (
+                class,
+                scope.resolve((
+                    "java/lang/Class",
+                    "isAssignableFrom",
+                    "(Ljava/lang/Class;)Z",
+                )),
+            )
+        });
+
+        NotTypeOfExceptionHandler { method, class }
+    }
+}
+
+impl JavaExceptionHandler for NotTypeOfExceptionHandler {
+    type Err = SpannedError;
+
+    fn inspect(&self, scope: &Scope, throwable: JThrowable) -> Option<Self::Err> {
+        let NotTypeOfExceptionHandler { method, class } = self;
+        let clazz = scope.get_object_class(throwable);
+        let is_assignable_from = scope.invoke(method.z(), clazz, &[JValue::Object(class.as_obj())]);
+
+        if is_assignable_from {
+            None
+        } else {
+            Some(handle_exception(scope, Location::caller(), throwable))
+        }
+    }
 }
 
 struct AbortingHandler;
@@ -554,6 +636,7 @@ impl Display for SpannedError {
             cause,
             ..
         } = self;
+
         writeln!(f, "Native exception thrown at call site: {location}")?;
         writeln!(f, "\tCaused by: {cause}")?;
 
@@ -613,13 +696,19 @@ where
         Err(error) => match error {
             Error::JavaException => {
                 // Safe as the JNI call returned 'Error::JavaException'.
-                let throwable = scope.exception_occurred().unwrap();
+                let throwable = scope.exception_occurred().expect("Missing throwable");
+
+                // We cannot call 'ExceptionDescribe' here as some implementations have a side
+                // effect of clearing the exception.
+
                 scope.exception_clear();
 
                 match exception_handler.inspect(&scope, throwable.clone()) {
                     Some(e) => Err(e),
                     None => {
-                        // print_stack_trace(scope,throwable);
+                        error!("An exception was not handled by the provided handler. Aborting");
+
+                        print_exception_stack_trace(&scope, &throwable);
                         abort_vm(vm.clone(), error)
                     }
                 }
@@ -627,6 +716,16 @@ where
             e => abort_vm(vm.clone(), e),
         },
     })
+}
+
+fn print_exception_stack_trace(scope: &Scope, throwable: &JThrowable) {
+    if let Err(e) = scope
+        .env
+        .call_method(*throwable, "printStackTrace", "()V", &[])
+    {
+        error!(error = ?e, "Failed to print exception stack trace");
+        abort_vm(scope.vm.clone(), e);
+    }
 }
 
 fn jni_call<O, F>(vm: &Arc<JavaVM>, env: &JNIEnv, f: F) -> O
@@ -670,6 +769,7 @@ struct ResolverInner {
 
 impl ResolverInner {
     fn resolve(&mut self, scope: &Scope, def: JavaObjectMethodDef) -> InitialisedJavaObjectMethod {
+        debug!(method = ?def, "Resolving method");
         match self.resolved.entry(def) {
             Entry::Occupied(entry) => entry.get().clone(),
             Entry::Vacant(entry) => match def.initialise(scope) {

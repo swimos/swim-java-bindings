@@ -14,6 +14,7 @@
 
 package ai.swim.client.downlink.value;
 
+import ai.swim.client.Handle;
 import ai.swim.client.downlink.DownlinkConfig;
 import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.lifecycle.OnLinked;
@@ -42,7 +43,7 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
    * @return An established ValueDownlink.
    * @throws DownlinkException if there is an error opening the downlink or by a malformed address.
    */
-  static <T> ValueDownlink<T> open(NativeHandle handle,
+  static <T> ValueDownlink<T> open(Handle handle,
       String host,
       String node,
       String lane,

@@ -1,8 +1,8 @@
 package ai.swim.server.agent;
 
 import ai.swim.lang.ffi.NativeLoader;
+import ai.swim.server.AbstractSwimServerBuilder;
 import ai.swim.server.SwimServerException;
-import ai.swim.server.agent.context.AgentContext;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
@@ -18,7 +18,9 @@ import ai.swim.server.plane.AbstractPlane;
 import ai.swim.server.schema.PlaneSchema;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import static ai.swim.server.lanes.Lanes.valueLane;
 
 class AgentTest {
@@ -33,6 +35,7 @@ class AgentTest {
 
   @SwimAgent
   private static class TestAgent extends AbstractAgent {
+    @Transient
     @SwimLane
     private final ValueLaneView<Integer> numLane = valueLane(Integer.class).onEvent(this::forward);
 
@@ -62,7 +65,7 @@ class AgentTest {
 
   private static native void runNativeAgent(byte[] inputs,
       byte[] expectedResponses,
-      AbstractPlane plane,
+      AbstractSwimServerBuilder server,
       byte[] planeSpec);
 
   private static <E> Bytes encodeIter(Iterable<E> iterator, Encoder<E> encoder) {
@@ -75,25 +78,98 @@ class AgentTest {
     return requestBytes;
   }
 
-  @SuppressWarnings("unchecked")
-  <P extends AbstractPlane> void runAgent(P plane,
-      List<TaggedLaneRequest<Integer>> inputs,
-      List<TaggedLaneResponse<Integer>> outputs) throws SwimServerException, IOException {
-    PlaneSchema<P> planeSchema = (PlaneSchema<P>) PlaneSchema.reflectSchema(plane.getClass());
+  private static class TestServer extends AbstractSwimServerBuilder {
 
-    byte[] schemaBytes = planeSchema.bytes();
-    Bytes requestBytes = encodeIter(inputs, new TaggedLaneRequestEncoder<>((input, dst) -> dst.writeInteger(input)));
-    Bytes responseBytes = encodeIter(outputs, new TaggedLaneResponseEncoder<>((input, dst) -> dst.writeInteger(input)));
+    private final Bytes responseBytes;
+    private final Bytes requestBytes;
 
-    runNativeAgent(requestBytes.getArray(), responseBytes.getArray(), plane, schemaBytes);
+    protected TestServer(Map<String, AgentFactory<? extends AbstractAgent>> agentFactories,
+        PlaneSchema<?> schema,
+        Bytes requestBytes,
+        Bytes responseBytes) {
+      super(agentFactories, schema);
+      this.requestBytes = requestBytes;
+      this.responseBytes = responseBytes;
+    }
+
+    public static <P extends AbstractPlane> TestServer test(Class<P> planeClass,
+        List<TaggedLaneRequest<Integer>> inputs,
+        List<TaggedLaneResponse<Integer>> outputs) throws SwimServerException {
+      PlaneSchema<P> planeSchema = reflectPlaneSchema(planeClass);
+      Map<String, AgentFactory<? extends AbstractAgent>> agentFactories = reflectAgentFactories(planeSchema);
+
+      Bytes requestBytes = encodeIter(inputs, new TaggedLaneRequestEncoder<>(AgentTest::writeInt));
+      Bytes responseBytes = encodeIter(outputs, new TaggedLaneResponseEncoder<>(AgentTest::writeInt));
+
+      return new TestServer(agentFactories, planeSchema, requestBytes, responseBytes);
+    }
+
+    @Override
+    protected long run() throws IOException {
+      runNativeAgent(requestBytes.getArray(), responseBytes.getArray(), this, schema.bytes());
+      return 0;
+    }
+  }
+
+  private static void writeInt(int v, Bytes into) {
+    byte[] bytes = Integer.toString(v).getBytes(StandardCharsets.UTF_8);
+    into.writeLong(bytes.length);
+    into.writeByteArray(bytes);
   }
 
   @Test
   void agentResponses() throws SwimServerException, IOException {
-    runAgent(new TestPlane(),
-             List.of(new TaggedLaneRequest<>("numLane", LaneRequest.command(2))),
-             List.of(new TaggedLaneResponse<>("numLane", LaneResponse.event(2)),
-                     new TaggedLaneResponse<>("plusOne", LaneResponse.event(3)),
-                     new TaggedLaneResponse<>("minusOne", LaneResponse.event(1))));
+    TestServer
+        .test(
+            TestPlane.class,
+            List.of(new TaggedLaneRequest<>("numLane", LaneRequest.command(2))),
+            List.of(
+                new TaggedLaneResponse<>("numLane", LaneResponse.event(2)),
+                new TaggedLaneResponse<>("plusOne", LaneResponse.event(3)),
+                new TaggedLaneResponse<>("minusOne", LaneResponse.event(1))))
+        .run();
+  }
+
+  @SwimAgent
+  private static class DynamicTestAgent extends AbstractAgent {
+    @Transient
+    @SwimLane
+    private final ValueLaneView<Integer> numLane = valueLane(Integer.class).onEvent(this::onEvent);
+
+    private DynamicTestAgent(AgentContext context) {
+      super(context);
+    }
+
+    private void onEvent(int ev) {
+      if (ev == 13) {
+        ValueLaneView<Integer> lane = valueLane(Integer.class);
+        getContext().openLane(lane, "dynamic", true);
+        lane.set(15);
+      } else if (ev == 14) {
+        @SuppressWarnings("unchecked") ValueLaneView<Integer> lane = (ValueLaneView<Integer>) getContext().laneFor(
+            "dynamic");
+        lane.set(16);
+      }
+    }
+  }
+
+  @SwimPlane("mock")
+  private static class DynamicTestPlane extends AbstractPlane {
+    @SwimRoute("agent")
+    private DynamicTestAgent agent;
+  }
+
+  @Test
+  void dynamicLaneOpens() throws SwimServerException, IOException {
+    TestServer.test(
+        DynamicTestPlane.class,
+        List.of(
+            new TaggedLaneRequest<>("numLane", LaneRequest.command(13)),
+            new TaggedLaneRequest<>("numLane", LaneRequest.command(14))),
+        List.of(
+            new TaggedLaneResponse<>("numLane", LaneResponse.event(13)),
+            new TaggedLaneResponse<>("dynamic", LaneResponse.event(15)),
+            new TaggedLaneResponse<>("numLane", LaneResponse.event(14)),
+            new TaggedLaneResponse<>("dynamic", LaneResponse.event(16)))).run();
   }
 }

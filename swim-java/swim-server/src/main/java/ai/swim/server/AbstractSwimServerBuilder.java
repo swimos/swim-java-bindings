@@ -69,10 +69,6 @@ public abstract class AbstractSwimServerBuilder {
     }
   }
 
-  public AbstractSwimServerBuilder setConfig() {
-    throw new AssertionError();
-  }
-
   protected abstract long run() throws IOException;
 
   public SwimServerHandle runServer() throws IOException {

@@ -24,3 +24,6 @@ ratchet = { workspace = true }
 swim_utilities = { workspace = true, features = ["byte_channel"] }
 swim_api = { path = "../../../swim-rust/api/swim_api" }
 tokio-util = { workspace = true, features = ["codec"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tracing = { workspace = true }
+tracing-futures = { workspace = true }

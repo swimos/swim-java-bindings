@@ -17,11 +17,4 @@ public interface NativeHandle extends NativeResource {
    * Drop the native resource.
    */
   void drop();
-
-  // Overridden to remove the exception.
-  /**
-   * Drop the native resource.
-   */
-  @Override
-  void close();
 }

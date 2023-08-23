@@ -1,7 +1,5 @@
 package ai.swim.server.agent;
 
-import ai.swim.server.agent.context.AgentContext;
-
 /**
  * Base agent class for implementing Swim Agents.
  */

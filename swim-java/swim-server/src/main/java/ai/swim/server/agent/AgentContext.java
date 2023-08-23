@@ -1,6 +1,7 @@
-package ai.swim.server.agent.context;
+package ai.swim.server.agent;
 
-import ai.swim.server.agent.AgentNode;
+import ai.swim.lang.ffi.AtomicDestructor;
+import ai.swim.lang.ffi.NativeResource;
 import ai.swim.server.lanes.Lane;
 import ai.swim.server.lanes.LaneModel;
 import ai.swim.server.lanes.LaneView;
@@ -10,15 +11,21 @@ import org.msgpack.core.MessagePack;
 import java.io.IOException;
 import static ai.swim.server.schema.LaneSchema.reflectLane;
 
-public class AgentContext {
+/**
+ * {@link AbstractAgent}-scoped context for performing various actions on an agent.
+ */
+public class AgentContext implements NativeResource {
   private final long ptr;
   private AgentNode agentNode;
+  @SuppressWarnings("FieldCanBeLocal")
+  private final AtomicDestructor destructor;
 
   public AgentContext(long ptr) {
     this.ptr = ptr;
+    this.destructor = new AtomicDestructor(this, () -> AgentContextFunctionTable.dropHandle(ptr));
   }
 
-  public void setAgent(AgentNode agentNode) {
+  void setAgent(AgentNode agentNode) {
     this.agentNode = agentNode;
   }
 
@@ -33,6 +40,15 @@ public class AgentContext {
     return agentNode.getLane(laneUri);
   }
 
+  /**
+   * Attempts to open a new lane on this agent, with a URI of {@code laneUri}.
+   *
+   * @param lane        to open.
+   * @param laneUri     the URI of the lane.
+   * @param isTransient whether the lane is transient.
+   * @param <L>         the type of the lane.
+   * @throws IllegalArgumentException if this agent already contains a lane of URI {@code laneUri}.
+   */
   public <L extends LaneView> void openLane(L lane, String laneUri, boolean isTransient) {
     if (agentNode.containsLane(laneUri)) {
       throw new IllegalArgumentException("Node already contains a lane with URI: " + laneUri);
@@ -44,12 +60,14 @@ public class AgentContext {
 
     try (MessageBufferPacker packer = MessagePack.newDefaultBufferPacker()) {
       laneSchema.pack(packer);
-      AgentContextFunctionTable.openLane(ptr,laneUri, packer.toByteArray());
+      AgentContextFunctionTable.openLane(ptr, laneUri, packer.toByteArray());
     } catch (IOException e) {
-      throw new RuntimeException("Failed to build lane schema", e);
+      // This is intentionally a RuntimeException so that it is caught by the runtime and shutdown as it indicates an
+      // encoding bug.
+      throw new RuntimeException("Bug: Failed to build lane schema", e);
     }
 
-    LaneModel laneModel = lane.createLaneModel(agentNode.getCollector(), id);
+    LaneModel laneModel = lane.initLaneModel(agentNode.getCollector(), id);
     agentNode.addLane(laneUri, id, laneModel);
   }
 

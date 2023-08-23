@@ -2,7 +2,7 @@ package ai.swim.server.schema;
 
 import ai.swim.server.SwimServerException;
 import ai.swim.server.agent.AbstractAgent;
-import ai.swim.server.agent.context.AgentContext;
+import ai.swim.server.agent.AgentContext;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;

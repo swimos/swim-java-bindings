@@ -17,12 +17,28 @@ public interface Encoder<T> {
   void encode(T target, Bytes buffer);
 
   /**
-   * Encodes {@code target} into {@code buffer}, writing the length of {@code target} before the encoded bytes.
+   * Encodes {@code target} into {@code buffer}, writing the length of {@code target} before the encoded bytes as a long.
    *
    * @param target to encode.
    * @param buffer to write into.
    */
-  default void encodeWithLen(T target, Bytes buffer) {
+  default void encodeWithLongLen(T target, Bytes buffer) {
+    int startIdx = buffer.remaining();
+    buffer.writeLong(0);
+
+    int startLen = buffer.remaining();
+
+    encode(target, buffer);
+    buffer.writeLong(buffer.remaining() - startLen, startIdx);
+  }
+
+  /**
+   * Encodes {@code target} into {@code buffer}, writing the length of {@code target} before the encoded bytes as an int.
+   *
+   * @param target to encode.
+   * @param buffer to write into.
+   */
+  default void encodeWithIntLen(T target, Bytes buffer) {
     int startIdx = buffer.remaining();
     buffer.writeInteger(0);
 

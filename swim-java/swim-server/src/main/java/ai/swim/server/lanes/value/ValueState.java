@@ -48,7 +48,7 @@ public class ValueState<T> implements State {
 
   private void write(Bytes buffer, LaneResponse<T> item) {
     IdentifiedLaneResponseEncoder<T> encoder = new IdentifiedLaneResponseEncoder<>(new WithLenReconEncoder<>(form));
-    encoder.encodeWithLen(new IdentifiedLaneResponse<>(laneId, item), buffer);
+    encoder.encode(new IdentifiedLaneResponse<>(laneId, item), buffer);
   }
 
   @Override

@@ -9,7 +9,6 @@ use futures::{ready, Stream};
 use futures_util::future::BoxFuture;
 use futures_util::stream::FuturesUnordered;
 use futures_util::{FutureExt, SinkExt, StreamExt};
-
 use jni::sys::jbyteArray;
 use swim_api::agent::{AgentContext, LaneConfig, UplinkKind};
 use swim_api::downlink::DownlinkKind;
@@ -124,7 +123,15 @@ impl Channels {
         let inner = &mut *guard;
         let writer = inner.writers.get_mut(&lane_uri).expect("Missing channel");
         let mut framed = FramedWrite::new(writer, LaneRequestEncoder::value());
+
         framed.send(request).await.expect("Channel closed");
+    }
+
+    async fn drop_all(&self) {
+        let mut guard = self.inner.lock().await;
+        let inner = &mut *guard;
+        inner.writers.clear();
+        inner.read_demux.clear();
     }
 }
 

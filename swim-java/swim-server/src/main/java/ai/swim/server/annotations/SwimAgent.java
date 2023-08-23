@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marker annotation for defining a {@link ai.swim.server.agent.Agent}.
+ * Marker annotation for defining a {@link ai.swim.server.agent.AbstractAgent}.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

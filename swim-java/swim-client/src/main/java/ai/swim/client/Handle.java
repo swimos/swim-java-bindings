@@ -22,7 +22,7 @@ import ai.swim.lang.ffi.NativeHandle;
  * <p>
  * Created through swim_client/src/lib.rs#Java_ai_swim_client_SwimClient_handle
  */
-public class Handle implements NativeHandle {
+public class Handle implements NativeHandle, AutoCloseable {
   private final long handlePtr;
   private final AtomicDestructor destructor;
 

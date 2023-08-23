@@ -14,6 +14,7 @@
 
 package ai.swim.client.downlink.value;
 
+import ai.swim.client.Handle;
 import ai.swim.client.downlink.DownlinkConfig;
 import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.lifecycle.OnEvent;
@@ -25,7 +26,7 @@ import java.util.Objects;
 import ai.swim.lang.ffi.NativeHandle;
 
 public class ValueDownlinkBuilder<T> {
-  private final NativeHandle handle;
+  private final Handle handle;
   private final String host;
   private final String lane;
   private final Class<T> formType;
@@ -33,7 +34,7 @@ public class ValueDownlinkBuilder<T> {
   private final ValueDownlinkLifecycle<T> lifecycle;
   private DownlinkConfig downlinkConfig;
 
-  public ValueDownlinkBuilder(NativeHandle handle, Class<T> formType, String host, String node, String lane) {
+  public ValueDownlinkBuilder(Handle handle, Class<T> formType, String host, String node, String lane) {
     this.handle = handle;
     this.formType = formType;
     this.host = host;

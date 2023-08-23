@@ -32,11 +32,13 @@ use tokio::select;
 use tokio::sync::mpsc;
 use tokio::task::{JoinError, JoinHandle};
 use tokio_util::codec::{Decoder, Encoder, FramedRead, FramedWrite};
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, info, span, trace, Level};
+use tracing_futures::Instrument;
 use uuid::Uuid;
 
 use jvm_sys::env::{
-    ByteBufferGuard, IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler, Scope,
+    ByteBufferGuard, IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler,
+    NotTypeOfExceptionHandler, Scope,
 };
 use jvm_sys::method::{
     ByteArray, InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
@@ -48,15 +50,34 @@ use crate::spec::{AgentSpec, LaneKindRepr, LaneSpec};
 use crate::FfiContext;
 
 #[derive(Debug)]
-struct ExceptionHandler(IsTypeOfExceptionHandler);
+struct ExceptionHandler {
+    user: NotTypeOfExceptionHandler,
+    deserialization: IsTypeOfExceptionHandler,
+}
 
 impl JavaExceptionHandler for ExceptionHandler {
     type Err = AgentTaskError;
 
     fn inspect(&self, scope: &Scope, throwable: JThrowable) -> Option<Self::Err> {
-        self.0
-            .inspect(scope, throwable)
-            .map(|e| AgentTaskError::UserCodeError(Box::new(e)))
+        let ExceptionHandler {
+            user,
+            deserialization,
+        } = self;
+
+        debug!("Inspecting error");
+
+        match deserialization.inspect(scope, throwable) {
+            Some(err) => {
+                debug!("Detected deserialization erorr");
+                Some(AgentTaskError::DeserializationFailed(ReadError::Message(
+                    err.to_string().into(),
+                )))
+            }
+            None => user.inspect(scope, throwable).map(|err| {
+                debug!("Detected user code error");
+                AgentTaskError::UserCodeError(Box::new(err))
+            }),
+        }
     }
 }
 
@@ -88,6 +109,9 @@ impl AgentFactory {
         uri: impl AsRef<str>,
         ctx: *mut JavaAgentContext,
     ) -> JavaAgentRef {
+        let node_uri = uri.as_ref();
+        debug!(node_uri, "Attempting to create a new Java agent");
+
         let AgentFactory {
             new_agent_method,
             factory,
@@ -95,7 +119,7 @@ impl AgentFactory {
         } = self;
         unsafe {
             env.with_env(|scope| {
-                let java_uri = scope.new_string(uri.as_ref());
+                let java_uri = scope.new_string(node_uri);
                 let obj_ref = scope.invoke(
                     new_agent_method.l().global_ref(),
                     factory.as_obj(),
@@ -122,11 +146,14 @@ impl JavaAgentRef {
     }
 
     fn did_start(&self, env: &JavaEnv) -> Result<(), AgentTaskError> {
+        trace!("Invoking agent did_start method");
+
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| vtable.did_start(&scope, agent_obj.as_obj()))
     }
 
     fn did_stop(&self, env: &JavaEnv) -> Result<(), AgentTaskError> {
+        trace!("Invoking agent did_stop method");
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| vtable.did_stop(&scope, agent_obj.as_obj()))
     }
@@ -137,6 +164,7 @@ impl JavaAgentRef {
         lane_id: i32,
         mut msg: BytesMut,
     ) -> Result<Vec<u8>, AgentTaskError> {
+        trace!("Dispatching event to agent");
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| {
             let buffer = unsafe { scope.new_direct_byte_buffer_exact(&mut msg) };
@@ -145,11 +173,13 @@ impl JavaAgentRef {
     }
 
     fn sync(&self, env: &JavaEnv, lane_id: i32, remote: Uuid) -> Result<Vec<u8>, AgentTaskError> {
+        trace!(lane_id, remote = %remote, "Dispatching sync for lane");
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| vtable.sync(&scope, agent_obj.as_obj(), lane_id, remote))
     }
 
     fn init(&self, env: &JavaEnv, lane_id: i32, mut msg: BytesMut) {
+        trace!(lane_id, "Initialising lane");
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| {
             let buffer = unsafe { scope.new_direct_byte_buffer_exact(&mut msg) };
@@ -158,6 +188,7 @@ impl JavaAgentRef {
     }
 
     fn flush_state(&self, env: &JavaEnv) -> Result<Vec<u8>, AgentTaskError> {
+        trace!("Flushing agent state");
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| vtable.flush_state(&scope, agent_obj.as_obj()))
     }
@@ -202,10 +233,13 @@ impl JavaAgentVTable {
             sync: env.initialise(Self::SYNC),
             init: env.initialise(Self::INIT),
             flush_state: env.initialise(Self::FLUSH_STATE),
-            handler: ExceptionHandler(IsTypeOfExceptionHandler::new(
-                env,
-                "ai/swim/server/agent/AgentException",
-            )),
+            handler: ExceptionHandler {
+                user: NotTypeOfExceptionHandler::new(env, "ai/swim/server/agent/AgentException"),
+                deserialization: IsTypeOfExceptionHandler::new(
+                    env,
+                    "ai/swim/server/agent/AgentException",
+                ),
+            },
         }
     }
 
@@ -332,7 +366,10 @@ impl Agent for FfiAgentDef {
             ffi_tx,
         )));
 
-        let java_agent = agent_factory.agent_for(&ffi_context.env, route.as_str(), java_agent_ctx);
+        let uri_string = route.to_string();
+
+        let java_agent =
+            agent_factory.agent_for(&ffi_context.env, uri_string.as_str(), java_agent_ctx);
         let ffi_context = ffi_context.clone();
         let spec = spec.clone();
 
@@ -358,7 +395,8 @@ impl Agent for FfiAgentDef {
             }
         };
 
-        task.boxed()
+        task.instrument(span!(Level::DEBUG, "Agent task", uri_string))
+            .boxed()
     }
 }
 
@@ -386,6 +424,8 @@ async fn initialize_agent(
             lane_kind_repr,
         } = spec;
         let kind: LaneKind = lane_kind_repr.into();
+        debug!(uri, lane_kind = ?lane_kind_repr, is_transient, "Adding lane");
+
         let text_uri: Text = uri.into();
 
         if lane_kind_repr.map_like() {
@@ -393,6 +433,7 @@ async fn initialize_agent(
         } else {
             let mut lane_conf = default_lane_config;
             lane_conf.transient = is_transient;
+
             let (tx, rx) = context.add_lane(text_uri.as_str(), kind, lane_conf).await?;
 
             if is_transient {
@@ -429,9 +470,14 @@ async fn initialize_agent(
                     lane_writers.insert(id, tx);
                 }
             }
-            Err(e) => return Err(AgentInitError::LaneInitializationFailure(e)),
+            Err(e) => {
+                error!(error = ?e, "Failed to initialise agent");
+                return Err(AgentInitError::LaneInitializationFailure(e));
+            }
         }
     }
+
+    debug!("Agent initialised");
 
     Ok(FfiAgentTask {
         ffi_context,
@@ -704,13 +750,11 @@ impl FfiAgentTask {
                                     }
                                 }
                             }
-
                             state = AgentTaskState::Suspended(handle);
                         }
                         SuspendedRuntimeEvent::Request(None) => {
                             // Java agent context has been GC'd.
                             debug!("Java agent context has been garbage collected. Shutting down agent");
-                            java_agent.did_stop(&env)?;
                             return Ok(());
                         }
                         SuspendedRuntimeEvent::SuspendComplete(Ok(Ok(returned_data))) => {
@@ -722,6 +766,7 @@ impl FfiAgentTask {
                                 &mut lane_writers,
                             )
                             .await?;
+                            debug!("Resuming agent runtime");
                             state = AgentTaskState::Running;
                         }
                         SuspendedRuntimeEvent::SuspendComplete(Ok(Err(e))) => return Err(e),
@@ -810,6 +855,8 @@ async fn forward_lane_responses(
                 match lane_writers.get_mut(&lane_id) {
                     Some(writer) => {
                         if writer.write_all(data.as_ref()).await.is_err() {
+                            // if the writer has closed then it indicates that the runtime has
+                            // shutdown and it is safe to sink the error.
                             return Ok(ControlFlow::Break(()));
                         }
                     }

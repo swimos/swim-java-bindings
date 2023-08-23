@@ -70,7 +70,10 @@ public final class ValueLaneView<T> extends LaneView implements ValueLane<T> {
   }
 
   @Override
-  public LaneModel createLaneModel(StateCollector collector, int laneId) {
-    return new ValueLaneModel<>(laneId,this,collector);
+  public LaneModel initLaneModel(StateCollector collector, int laneId) {
+    ValueLaneModel<T> model = new ValueLaneModel<>(laneId, this, collector);
+    this.model = model;
+    return model;
   }
+
 }

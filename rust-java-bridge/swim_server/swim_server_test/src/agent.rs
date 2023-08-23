@@ -1,26 +1,30 @@
-use crate::TestAgentContext;
-use bytes::{Buf, BytesMut};
-use futures_util::future::try_join3;
-use futures_util::StreamExt;
-use jni::objects::{JObject, JString};
-use jni::sys::jbyteArray;
-use jvm_sys::bridge::JniByteCodec;
-use jvm_sys::env::JavaEnv;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::io::ErrorKind;
 use std::str::FromStr;
 use std::sync::Arc;
+
+use bytes::{Buf, BytesMut};
+use futures_util::future::try_join3;
+use futures_util::StreamExt;
+use jni::objects::JObject;
+use jni::sys::{jbyteArray, jobject};
 use swim_api::agent::Agent;
 use swim_api::protocol::agent::{
-    LaneRequest, LaneRequestDecoder, LaneResponse, LaneResponseDecoder, ValueLaneResponseDecoder,
+    LaneRequest, LaneRequestDecoder, LaneResponse, ValueLaneResponseDecoder,
 };
 use swim_api::protocol::WithLengthBytesCodec;
-use swim_server_core::spec::{AgentSpec, PlaneSpec};
-use swim_server_core::{server_fn, AgentFactory, FfiAgentDef, FfiContext};
 use swim_utilities::routing::route_uri::RouteUri;
 use tokio::runtime::Builder;
 use tokio::sync::Notify;
 use tokio_util::codec::Decoder;
+
+use jvm_sys::bridge::JniByteCodec;
+use jvm_sys::env::JavaEnv;
+use swim_server_core::spec::AgentSpec;
+use swim_server_core::spec::PlaneSpec;
+use swim_server_core::{server_fn, AgentFactory, FfiAgentDef, FfiContext};
+
+use crate::TestAgentContext;
 
 server_fn! {
     agent_AgentTest_runNativeAgent(
@@ -28,7 +32,7 @@ server_fn! {
         _class,
         inputs: jbyteArray,
         outputs:jbyteArray,
-        plane_obj: JObject,
+        plane_obj: jobject,
         config: jbyteArray,
     ) {
         let env = JavaEnv::new(env);
@@ -41,23 +45,16 @@ server_fn! {
            (scope.convert_byte_array(inputs), scope.convert_byte_array(outputs))
         });
 
+        let plane_obj = env.with_env(|scope| {
+            if plane_obj.is_null() {
+                scope.fatal_error("Bug: plane object is null");
+            } else {
+                unsafe { JObject::from_raw(plane_obj)}
+            }
+        });
+
         let runtime = Builder::new_multi_thread().enable_all().build().expect("Failed to build Tokio runtime");
         runtime.block_on(run_agent(env, spec, plane_obj, inputs, outputs));
-    }
-}
-
-struct I32Decoder;
-
-impl Decoder for I32Decoder {
-    type Item = i32;
-    type Error = std::io::Error;
-
-    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
-        if src.remaining() >= std::mem::size_of::<i32>() {
-            Ok(Some(src.get_i32()))
-        } else {
-            Ok(None)
-        }
     }
 }
 
@@ -79,7 +76,6 @@ where
             let lane_uri = std::str::from_utf8(src.split_to(uri_len).as_ref())
                 .expect("Invalid lane URI")
                 .to_string();
-
             Ok(self.0.decode(src)?.map(|it| (lane_uri, it)))
         }
     }
@@ -115,6 +111,26 @@ impl Decoder for RequestDecoder {
     }
 }
 
+/// Runs an agent (defined by 'spec'), feeding it inputs from 'inputs' and asserting that the events
+/// that it produces the correct outputs decoded from 'outputs'.
+///
+/// # Arguments:
+/// `env`: Java environment
+/// `spec`: the agent's specification.
+/// `plane_obj`: a reference to the `AbstractPlane` in Java for creating the agent. This plane must
+/// contain the agent defined by `spec`.
+/// `inputs`: a vector of bytes that will be decoded by a `TaggedDecoder::<RequestDecoder>` instance.
+/// This contains the commands that will be forwarded to the agent. These commands may be multiple
+/// messages for the same lane URI.
+/// `outputs`: a vector of bytes that will be decoded by a `TaggedDecoder::<ResponseDecoder>`
+/// instance. These are the expected responses that the agent will produce.
+///
+/// # Errors:
+/// If there is an error, then it will panic to ensure that the error is propagated to the JVM.
+///
+/// # Note:
+/// This function needs to be blocked on by the callee. If there is an error, then it will panic to
+/// ensure that the error is propagated to the JVM.
 async fn run_agent(
     env: JavaEnv,
     spec: AgentSpec,
@@ -135,10 +151,13 @@ async fn run_agent(
 
         let mut data = BytesMut::from_iter(inputs);
         let mut decoder = TaggedDecoder::<RequestDecoder>::default();
+
         loop {
             match decoder.decode(&mut data) {
                 Ok(Some((uri, request))) => producer_channels.send(uri, request).await,
-                Ok(None) => break,
+                Ok(None) => {
+                    break;
+                }
                 Err(e) => panic!("Decode error: {:?}", e),
             }
         }
@@ -153,28 +172,42 @@ async fn run_agent(
 
         let mut data = BytesMut::from_iter(outputs);
         let mut decoder = TaggedDecoder::<ResponseDecoder>::default();
-        let mut responses = HashMap::<String, LaneResponse<BytesMut>>::default();
+        let mut responses = HashMap::<String, VecDeque<LaneResponse<BytesMut>>>::default();
 
         loop {
             match decoder.decode(&mut data) {
-                Ok(Some((uri, request))) => {
-                    responses.insert(uri, request);
+                Ok(Some((uri, response))) => {
+                    responses.entry(uri).or_default().push_back(response);
                 }
-                Ok(None) => break,
+                Ok(None) => {
+                    break;
+                }
                 Err(e) => panic!("Decode error: {:?}", e),
             }
         }
 
         while let Some((uri, response)) = consumer_channels.next().await {
-            match responses.remove(&uri) {
+            match responses.get_mut(&uri) {
                 Some(expected) => {
-                    assert_eq!(expected, response)
+                    let expected_response = expected.pop_front().expect("Missing response");
+                    assert_eq!(expected_response, response);
+
+                    if expected.is_empty() {
+                        responses.remove(&uri);
+                    }
+
+                    if responses.is_empty() {
+                        break;
+                    }
                 }
                 None => {
                     panic!("Missing lane response for: {uri}")
                 }
             }
         }
+
+        // Drop all of the agent's input channels so that it stops.
+        consumer_channels.drop_all().await;
 
         Ok(())
     };
@@ -198,6 +231,10 @@ async fn run_agent(
     let result = try_join3(producer_task, consumer_task, agent_task).await;
 
     if let Err(e) = result {
+        let lock = std::io::stderr().lock();
+        eprintln!("Task error: {}", e);
+        drop(lock);
+
         env.with_env(|scope| scope.throw_new("java/lang/RuntimeException", e.to_string()))
     }
 }

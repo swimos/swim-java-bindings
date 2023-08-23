@@ -27,6 +27,7 @@ use std::sync::Arc;
 /// in the case in HotSpot VM's.
 #[derive(Debug, Clone)]
 pub struct InitialisedJavaObjectMethod {
+    def: JavaObjectMethodDef,
     signature: Arc<TypeSignature>,
     method_id: JMethodID,
 }
@@ -49,6 +50,7 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
         let InitialisedJavaObjectMethod {
             signature,
             method_id,
+            def,
         } = self;
 
         if signature.args.len() != args.len() {
@@ -56,7 +58,14 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
         }
 
         let args = args.iter().map(|v| v.to_jni()).collect::<Vec<_>>();
-        scope.call_method_unchecked(handler, object, *method_id, signature.ret.clone(), &args)
+        scope.call_method_unchecked(
+            def,
+            handler,
+            object,
+            *method_id,
+            signature.ret.clone(),
+            &args,
+        )
     }
 }
 
@@ -113,6 +122,7 @@ impl JavaObjectMethodDef {
         let signature = TypeSignature::from_str(signature)?;
 
         Ok(InitialisedJavaObjectMethod {
+            def: *self,
             signature: Arc::new(signature),
             method_id,
         })

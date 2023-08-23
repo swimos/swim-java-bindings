@@ -75,6 +75,9 @@ public class AgentNode {
     lanes.put(id, laneModel);
   }
 
+  /**
+   * Returns whether this node contains a lane of {@code laneUri}.
+   */
   public boolean containsLane(String laneUri) {
     return laneMappings.containsKey(laneUri);
   }
@@ -88,6 +91,9 @@ public class AgentNode {
     return collector.flushState();
   }
 
+  /**
+   * Returns the {@link StateCollector} associated with this {@link AgentNode}.
+   */
   public StateCollector getCollector() {
     return collector;
   }

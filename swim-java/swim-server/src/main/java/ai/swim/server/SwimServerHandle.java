@@ -18,8 +18,4 @@ public class SwimServerHandle implements NativeResource {
     }
   }
 
-  @Override
-  public void close() {
-    destructor.drop();
-  }
 }

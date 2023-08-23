@@ -1,15 +1,12 @@
-use crate::agent::LaneType;
-use bytes::{Buf, BufMut, Bytes, BytesMut};
-use futures::Stream;
-use jvm_sys::env::JavaEnv;
-use std::collections::HashMap;
-use std::convert::Infallible;
 use std::io::ErrorKind;
 use std::mem::size_of;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+
+use bytes::{Buf, BufMut, Bytes, BytesMut};
+use futures::Stream;
 use swim_api::error::FrameIoError;
-use swim_api::protocol::agent::{LaneRequest, LaneRequestDecoder, LaneResponse};
+use swim_api::protocol::agent::{LaneRequest, LaneRequestDecoder};
 use swim_api::protocol::map::{
     MapMessageDecoder, MapMessageEncoder, MapOperation, RawMapOperationDecoder,
 };
@@ -17,9 +14,14 @@ use swim_api::protocol::WithLengthBytesCodec;
 use swim_utilities::io::byte_channel::ByteReader;
 use tokio_util::codec::{Decoder, Encoder, FramedRead};
 
+use crate::agent::LaneType;
+
 type LaneCodec<T> = FramedRead<ByteReader, LaneRequestDecoder<T>>;
 type ValueReaderCodec = LaneCodec<WithLengthBytesCodec>;
 type MapReaderCodec = LaneCodec<MapMessageDecoder<RawMapOperationDecoder>>;
+
+const TAG_SIZE: usize = size_of::<u8>();
+const LEN_SIZE: usize = size_of::<i32>();
 
 pub enum LaneReaderCodec {
     Value(ValueReaderCodec),
@@ -39,9 +41,6 @@ impl LaneReaderCodec {
 struct MapOperationBytesEncoder;
 
 impl MapOperationBytesEncoder {
-    const TAG_SIZE: usize = size_of::<u8>();
-    const LEN_SIZE: usize = size_of::<u64>();
-
     const UPDATE: u8 = 0;
     const REMOVE: u8 = 1;
 
@@ -60,8 +59,8 @@ impl Encoder<MapOperation<BytesMut, BytesMut>> for MapOperationBytesEncoder {
     ) -> Result<(), Self::Error> {
         match item {
             MapOperation::Update { key, value } => {
-                let total_len = key.len() + value.len() + Self::LEN_SIZE + Self::TAG_SIZE;
-                dst.reserve(total_len + Self::LEN_SIZE);
+                let total_len = key.len() + value.len() + LEN_SIZE + TAG_SIZE;
+                dst.reserve(total_len + LEN_SIZE);
                 dst.put_u64(u64::try_from(total_len).expect(Self::OVERSIZE_RECORD));
                 dst.put_u8(Self::UPDATE);
                 let key_len = u64::try_from(key.len()).expect(Self::OVERSIZE_KEY);
@@ -70,15 +69,15 @@ impl Encoder<MapOperation<BytesMut, BytesMut>> for MapOperationBytesEncoder {
                 dst.put(value);
             }
             MapOperation::Remove { key } => {
-                let total_len = key.len() + Self::TAG_SIZE;
-                dst.reserve(total_len + Self::LEN_SIZE);
+                let total_len = key.len() + TAG_SIZE;
+                dst.reserve(total_len + LEN_SIZE);
                 dst.put_u64(u64::try_from(total_len).expect(Self::OVERSIZE_RECORD));
                 dst.put_u8(Self::REMOVE);
                 dst.put(key);
             }
             MapOperation::Clear => {
-                dst.reserve(Self::LEN_SIZE + Self::TAG_SIZE);
-                dst.put_u64(Self::TAG_SIZE as u64);
+                dst.reserve(LEN_SIZE + TAG_SIZE);
+                dst.put_u64(TAG_SIZE as u64);
                 dst.put_u8(Self::CLEAR);
             }
         }
@@ -173,7 +172,7 @@ impl Decoder for LaneResponseDecoder {
                 LaneResponseDecoderState::ResponseHeader => {
                     if src.remaining() >= Self::RESPONSE_HEADER {
                         let lane_id = src.get_i32();
-                        let len = src.get_i32() as usize;
+                        let len = src.get_u32() as usize;
                         *state = LaneResponseDecoderState::ResponseBody { lane_id, len };
                     } else {
                         *state = LaneResponseDecoderState::Header;
@@ -203,10 +202,12 @@ impl Decoder for LaneResponseDecoder {
 
 #[cfg(test)]
 mod tests {
-    use crate::codec::{LaneResponseDecoder, LaneResponseDecoderState, LaneResponseElement};
-    use bytes::{BufMut, Bytes, BytesMut};
     use std::io::ErrorKind;
+
+    use bytes::{BufMut, Bytes, BytesMut};
     use tokio_util::codec::Decoder;
+
+    use crate::codec::{LaneResponseDecoder, LaneResponseDecoderState, LaneResponseElement};
 
     #[test]
     fn empty() {

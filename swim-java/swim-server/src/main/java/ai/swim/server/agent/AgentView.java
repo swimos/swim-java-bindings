@@ -1,7 +1,7 @@
 package ai.swim.server.agent;
 
-import ai.swim.server.agent.context.AgentContext;
 import ai.swim.server.lanes.state.StateCollector;
+import ai.swim.structure.recognizer.RecognizerException;
 import java.nio.ByteBuffer;
 
 /**
@@ -41,9 +41,14 @@ public class AgentView {
    *
    * @param laneIdx the URI of the lane.
    * @param buffer  the event data.
+   * @throws AgentException if an error is encountered when deserialising the envelope.
    */
   public byte[] dispatch(int laneIdx, ByteBuffer buffer) {
-    return node.dispatch(laneIdx, buffer);
+    try {
+      return node.dispatch(laneIdx, buffer);
+    } catch (RecognizerException e) {
+      throw new AgentException(e);
+    }
   }
 
   /**

@@ -30,7 +30,7 @@ import ai.swim.lang.ffi.NativeResource;
  * This class is **not** thread safe. If shared access is required then synchronization must be performed, or it must be
  * placed behind a lock.
  */
-public class SwimClient implements NativeResource {
+public class SwimClient implements NativeResource, AutoCloseable {
   static {
     try {
       NativeLoader.loadLibrary("swim_client");
