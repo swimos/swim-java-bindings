@@ -2,70 +2,53 @@ use crate::bindings::java::models::{JavaMethod, JavaType};
 use crate::docs::{Documentation, FormatStyle};
 use std::fs::{create_dir_all, File};
 use std::io;
-use std::io::{BufWriter, ErrorKind, Stdout, Write};
+use std::io::{stdout, BufWriter, ErrorKind, Stdout, Write};
 use std::path::{Path, PathBuf};
 
 pub const INDENTATION: &str = "  ";
 
-/// A Java method writer factory. This may either write to the standard output stream or yield
-/// file writers.
-pub enum WriterFactory {
-    /// Write to the standard output stream.
-    StdOut,
-    /// A writer that will yield file writers into a directory.
-    Dir { path: PathBuf },
+pub trait WriterFactory {
+    fn writer_for(&mut self, package_name: String, file_name: &Path) -> io::Result<Writer>;
 }
 
-impl WriterFactory {
-    /// Returns a new writer for 'file_name' and 'package_name'.
-    pub fn new_file(&mut self, package_name: String, file_name: &Path) -> io::Result<Writer> {
-        match self {
-            WriterFactory::StdOut => {
-                let mut out = io::stdout();
-                writeln!(out, ">>>>> File: {:?}.java", file_name)?;
-                let writer = Writer::std_out(out);
-                Ok(writer)
-            }
-            WriterFactory::Dir { path } => {
-                let mut file_path = path.clone();
-                file_path.push(package_name.replace('.', "/"));
-                create_dir_all(&file_path)?;
+impl WriterFactory for Stdout {
+    fn writer_for(&mut self, _package_name: String, file_name: &Path) -> io::Result<Writer> {
+        let mut out = stdout();
+        writeln!(out, ">>>>> File: {:?}.java", file_name)?;
+        Ok(Writer::new(Box::new(out)))
+    }
+}
 
-                file_path.push(file_name);
-                assert!(file_path.set_extension("java"));
+pub struct DirectoryWriter {
+    path: PathBuf,
+}
 
-                Ok(Writer::file(BufWriter::new(File::create(file_path)?)))
-            }
-        }
+impl WriterFactory for DirectoryWriter {
+    fn writer_for(&mut self, package_name: String, file_name: &Path) -> io::Result<Writer> {
+        let mut file_path = self.path.clone();
+        file_path.push(package_name.replace('.', "/"));
+        create_dir_all(&file_path)?;
+
+        file_path.push(file_name);
+        assert!(file_path.set_extension("java"));
+
+        Ok(Writer::new(Box::new(BufWriter::new(File::create(
+            file_path,
+        )?))))
     }
 }
 
 /// A Java file writer.
 pub struct Writer {
     /// The inner writer.
-    inner: WriterHandle,
+    inner: Box<dyn Write + 'static>,
     /// The block depth.
     depth: usize,
 }
 
-pub enum WriterHandle {
-    StdOut(Stdout),
-    File(Box<dyn Write + 'static>),
-}
-
 impl Writer {
-    fn std_out(handle: Stdout) -> Writer {
-        Writer {
-            inner: WriterHandle::StdOut(handle),
-            depth: 1,
-        }
-    }
-
-    fn file(handle: impl Write + 'static) -> Writer {
-        Writer {
-            inner: WriterHandle::File(Box::new(handle)),
-            depth: 0,
-        }
+    fn new(inner: Box<dyn Write + 'static>) -> Writer {
+        Writer { inner, depth: 0 }
     }
 
     /// Begins a new block.
@@ -147,26 +130,10 @@ impl Writer {
     }
 }
 
-impl Write for WriterHandle {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match self {
-            WriterHandle::StdOut(writer) => writer.write(buf),
-            WriterHandle::File(writer) => writer.write(buf),
-        }
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        match self {
-            WriterHandle::StdOut(writer) => writer.flush(),
-            WriterHandle::File(writer) => writer.flush(),
-        }
-    }
-}
-
 /// A Java source code writer builder. Provides control over where classes are written to, the
 /// package name of the files and any copyright to apply to the derived classes.
 pub struct JavaSourceWriterBuilder {
-    writer: WriterFactory,
+    writer: Box<dyn WriterFactory>,
     copyright: Option<Documentation>,
     package: String,
 }
@@ -175,7 +142,7 @@ impl JavaSourceWriterBuilder {
     /// Returns a Java source writer builder that writes to the standard output stream.
     pub fn std_out(package: impl ToString) -> JavaSourceWriterBuilder {
         JavaSourceWriterBuilder {
-            writer: WriterFactory::StdOut,
+            writer: Box::new(stdout()),
             copyright: None,
             package: package.to_string(),
         }
@@ -194,9 +161,9 @@ impl JavaSourceWriterBuilder {
         }
 
         Ok(JavaSourceWriterBuilder {
-            writer: WriterFactory::Dir {
+            writer: Box::new(DirectoryWriter {
                 path: path.to_path_buf(),
-            },
+            }),
             copyright: None,
             package: package.to_string(),
         })
@@ -233,7 +200,7 @@ impl JavaSourceWriterBuilder {
 }
 
 pub struct JavaSourceWriter {
-    writer: WriterFactory,
+    writer: Box<dyn WriterFactory>,
     copyright: String,
     package: String,
 }
@@ -244,7 +211,9 @@ impl JavaSourceWriter {
         P: AsRef<Path>,
     {
         Ok(JavaFileWriter {
-            writer: self.writer.new_file(self.package.clone(), name.as_ref())?,
+            writer: self
+                .writer
+                .writer_for(self.package.clone(), name.as_ref())?,
             copyright: self.copyright.clone(),
             package: self.package.clone(),
         })

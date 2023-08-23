@@ -21,6 +21,7 @@ pub use bytebridge_derive::*;
 #[cfg(feature = "derive_java")]
 pub use bytebridge_derive_java::*;
 
+/// Msgpack enumeration ordinal extension.
 pub const ENUM_EXT: i8 = 1;
 
 /// Trait for defining a transformation between an object and its byte representation.
@@ -31,6 +32,13 @@ pub trait ByteCodec {
         Self: Sized,
         R: Read;
 
+    /// Transform this instance into its byte representation.
+    fn to_bytes<W>(&self, writer: &mut W) -> Result<(), Error>
+    where
+        W: Write;
+}
+
+pub trait ByteCodecExt: ByteCodec {
     /// Attempt to decode an instance of this type from a buffer of bytes.
     fn try_from_bytes(bytes: &mut BytesMut) -> Result<Self, FromBytesError>
     where
@@ -39,12 +47,9 @@ pub trait ByteCodec {
         let mut reader = bytes.reader();
         Self::try_from_reader(&mut reader)
     }
-
-    /// Transform this instance into its byte representation.
-    fn to_bytes<W>(&self, writer: &mut W) -> Result<(), Error>
-    where
-        W: Write;
 }
+
+impl<B> ByteCodecExt for B where B: ByteCodec {}
 
 /// Unrecoverable errors produced when attempting to decode an object from its byte representation.
 #[derive(Debug, PartialEq, thiserror::Error)]

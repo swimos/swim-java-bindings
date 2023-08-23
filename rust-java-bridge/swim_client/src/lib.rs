@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::num::NonZeroUsize;
+use std::panic;
+
+use bytebridge::ByteCodecExt;
 use bytes::BytesMut;
 use client_runtime::{RemotePath, WebSocketConfig};
 use jni::objects::{JObject, JString};
 use jni::sys::{jbyteArray, jobject};
 use jvm_sys::null_pointer_check_abort;
-use std::num::NonZeroUsize;
-use std::panic;
 use std::str::FromStr;
 use swim_api::downlink::Downlink;
 use swim_client_core::downlink::map::FfiMapDownlink;
 use url::ParseError;
 use url::Url;
 
-use bytebridge::ByteCodec;
 use jvm_sys::env::JavaEnv;
 use jvm_sys::env::StringError;
 use jvm_sys::jni_try;
