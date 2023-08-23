@@ -22,7 +22,7 @@ public final class ValueLaneModel<T> extends LaneModel {
   public ValueLaneModel(int laneId, ValueLaneView<T> view, StateCollector collector) {
     this.view = view;
     this.form = view.valueForm();
-    this.state = new ValueState<>(laneId,form, collector);
+    this.state = new ValueState<>(laneId, form, collector);
   }
 
   @Override

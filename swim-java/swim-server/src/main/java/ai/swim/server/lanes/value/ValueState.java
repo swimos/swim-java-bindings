@@ -1,5 +1,6 @@
 package ai.swim.server.lanes.value;
 
+import ai.swim.server.agent.call.CallContext;
 import ai.swim.server.codec.BufferOverflowException;
 import ai.swim.server.codec.Bytes;
 import ai.swim.server.codec.WithLenReconEncoder;
@@ -7,7 +8,6 @@ import ai.swim.server.lanes.WriteResult;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponseEncoder;
 import ai.swim.server.lanes.models.response.LaneResponse;
-import ai.swim.server.lanes.models.response.LaneResponseEncoder;
 import ai.swim.server.lanes.state.State;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
@@ -33,7 +33,14 @@ public class ValueState<T> implements State {
     syncRequests = new ArrayList<>();
   }
 
+  /**
+   * Sets the current state.
+   *
+   * @throws ai.swim.server.agent.call.CallContextException if not invoked from a valid call context.
+   */
   public T set(T to) {
+    CallContext.check();
+
     T oldState = state;
     dirty = true;
     state = to;
@@ -42,7 +49,13 @@ public class ValueState<T> implements State {
     return oldState;
   }
 
+  /**
+   * Gets the current state.
+   *
+   * @throws ai.swim.server.agent.call.CallContextException if not invoked from a valid call context.
+   */
   public T get() {
+    CallContext.check();
     return state;
   }
 
