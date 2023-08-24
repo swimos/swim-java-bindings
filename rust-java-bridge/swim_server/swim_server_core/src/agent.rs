@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::future::Future;
+use std::mem::size_of;
 use std::ops::{ControlFlow, Deref};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use bytes::BytesMut;
-use futures::StreamExt;
+use futures::{pin_mut, StreamExt};
 use futures::{Sink, Stream};
 use futures_util::future::BoxFuture;
 use futures_util::stream::{unfold, FuturesUnordered, SelectAll};
@@ -427,27 +428,43 @@ async fn initialize_agent(
         debug!(uri, lane_kind = ?lane_kind_repr, is_transient, "Adding lane");
 
         let text_uri: Text = uri.into();
+        let mut lane_conf = default_lane_config;
+        lane_conf.transient = is_transient;
+        let (tx, rx) = context.add_lane(text_uri.as_str(), kind, lane_conf).await?;
 
-        if lane_kind_repr.map_like() {
-            unimplemented!("map-like lanes")
-        } else {
-            let mut lane_conf = default_lane_config;
-            lane_conf.transient = is_transient;
-
-            let (tx, rx) = context.add_lane(text_uri.as_str(), kind, lane_conf).await?;
-
-            if is_transient {
-                lane_readers.push(LaneReader::value(lane_idx, rx));
-                lane_writers.insert(lane_idx, tx);
+        if is_transient {
+            let reader = if lane_kind_repr.map_like() {
+                LaneReader::map(lane_idx, rx)
             } else {
-                init_tasks.push(run_lane_initializer(
-                    ffi_context.clone(),
-                    JavaValueLikeLaneInitializer::new(java_agent.clone(), spec.lane_idx),
-                    lane_kind_repr,
-                    (tx, rx),
-                    WithLengthBytesCodec::default(),
-                    lane_idx,
-                ));
+                LaneReader::value(lane_idx, rx)
+            };
+            lane_readers.push(reader);
+            lane_writers.insert(lane_idx, tx);
+        } else {
+            if lane_kind_repr.map_like() {
+                init_tasks.push(
+                    run_lane_initializer(
+                        ffi_context.clone(),
+                        JavaMapLikeLaneInitializer::new(java_agent.clone(), spec.lane_idx),
+                        lane_kind_repr,
+                        (tx, rx),
+                        WithLengthBytesCodec::default(),
+                        lane_idx,
+                    )
+                    .boxed(),
+                );
+            } else {
+                init_tasks.push(
+                    run_lane_initializer(
+                        ffi_context.clone(),
+                        JavaValueLikeLaneInitializer::new(java_agent.clone(), spec.lane_idx),
+                        lane_kind_repr,
+                        (tx, rx),
+                        WithLengthBytesCodec::default(),
+                        lane_idx,
+                    )
+                    .boxed(),
+                );
             }
         }
 
@@ -463,12 +480,14 @@ async fn initialize_agent(
                     id,
                 } = lane;
 
-                if kind.map_like() {
-                    unimplemented!()
+                let reader = if kind.map_like() {
+                    LaneReader::map(id, rx)
                 } else {
-                    lane_readers.push(LaneReader::value(id, rx));
-                    lane_writers.insert(id, tx);
-                }
+                    LaneReader::value(id, rx)
+                };
+
+                lane_readers.push(reader);
+                lane_writers.insert(id, tx);
             }
             Err(e) => {
                 error!(error = ?e, "Failed to initialise agent");
@@ -565,16 +584,64 @@ impl JavaItemInitializer for JavaValueLikeLaneInitializer {
     }
 }
 
-async fn run_lane_initializer<I, D>(
+struct JavaMapLikeLaneInitializer {
+    agent_obj: JavaAgentRef,
+    lane_id: i32,
+}
+
+impl JavaMapLikeLaneInitializer {
+    pub fn new(agent_obj: JavaAgentRef, lane_id: i32) -> JavaMapLikeLaneInitializer {
+        JavaMapLikeLaneInitializer { agent_obj, lane_id }
+    }
+}
+
+impl JavaItemInitializer for JavaMapLikeLaneInitializer {
+    fn initialize<'l, S>(
+        &'l self,
+        context: FfiContext,
+        mut stream: S,
+    ) -> BoxFuture<'l, Result<(), FrameIoError>>
+    where
+        S: Stream<Item = Result<BytesMut, FrameIoError>> + Send + 'l,
+    {
+        let JavaMapLikeLaneInitializer { agent_obj, lane_id } = self;
+        Box::pin(async move {
+            pin_mut!(stream);
+            // Event buffer to reduce the number of FFI calls to initialise the lane.
+            let mut buf = BytesMut::new();
+
+            while let Some(result) = stream.next().await {
+                match result {
+                    Ok(ev) => {
+                        if buf.len() + ev.len() < size_of::<i32>() {
+                            buf.extend_from_slice(ev.as_ref());
+                        } else {
+                            agent_obj.init(&context.env, *lane_id, buf);
+                            buf = BytesMut::new();
+                        }
+                    }
+                    Err(e) => return Err(e),
+                }
+            }
+
+            if !buf.is_empty() {
+                agent_obj.init(&context.env, *lane_id, buf);
+            }
+
+            Ok(())
+        })
+    }
+}
+
+async fn run_lane_initializer<D>(
     context: FfiContext,
-    initializer: I,
+    initializer: impl JavaItemInitializer,
     kind: LaneKindRepr,
     io: (ByteWriter, ByteReader),
     decoder: D,
     id: i32,
 ) -> Result<InitializedLane, FrameIoError>
 where
-    I: JavaItemInitializer,
     D: Decoder<Item = BytesMut> + Send + 'static,
     FrameIoError: From<D::Error>,
 {
@@ -698,7 +765,6 @@ impl FfiAgentTask {
                     match event {
                         SuspendedRuntimeEvent::Request(Some(request)) => {
                             trace!(request = ?request, "Agent runtime received a request");
-
                             match request {
                                 AgentRuntimeRequest::OpenLane { uri, spec } => {
                                     let LaneSpec {
@@ -711,25 +777,38 @@ impl FfiAgentTask {
                                         config.default_lane_config.unwrap_or_default();
                                     lane_conf.transient = is_transient;
 
-                                    if lane_kind_repr.map_like() {
-                                        unimplemented!("map-like lanes")
-                                    } else {
-                                        let (tx, rx) = agent_context
-                                            .add_lane(uri.as_str(), kind, lane_conf)
-                                            .await
-                                            .map_err(|e| {
-                                                AgentTaskError::UserCodeError(Box::new(e))
-                                            })?;
+                                    let (tx, rx) = agent_context
+                                        .add_lane(uri.as_str(), kind, lane_conf)
+                                        .await
+                                        .map_err(|e| AgentTaskError::UserCodeError(Box::new(e)))?;
 
-                                        if is_transient {
-                                            lane_readers.push(LaneReader::value(lane_idx, rx));
-                                            lane_writers.insert(lane_idx, tx);
+                                    if is_transient {
+                                        let reader = if lane_kind_repr.map_like() {
+                                            LaneReader::map(lane_idx, rx)
                                         } else {
-                                            let InitializedLane {
-                                                kind,
-                                                io: (tx, rx),
-                                                id,
-                                            } = run_lane_initializer(
+                                            LaneReader::value(lane_idx, rx)
+                                        };
+                                        lane_readers.push(reader);
+                                        lane_writers.insert(lane_idx, tx);
+                                    } else {
+                                        let initialised = if lane_kind_repr.map_like() {
+                                            run_lane_initializer(
+                                                ffi_context.clone(),
+                                                JavaMapLikeLaneInitializer::new(
+                                                    java_agent.clone(),
+                                                    spec.lane_idx,
+                                                ),
+                                                lane_kind_repr,
+                                                (tx, rx),
+                                                WithLengthBytesCodec::default(),
+                                                lane_idx,
+                                            )
+                                            .await
+                                            .map_err(
+                                                |e| AgentTaskError::UserCodeError(Box::new(e)),
+                                            )?
+                                        } else {
+                                            run_lane_initializer(
                                                 ffi_context.clone(),
                                                 JavaValueLikeLaneInitializer::new(
                                                     java_agent.clone(),
@@ -741,12 +820,18 @@ impl FfiAgentTask {
                                                 lane_idx,
                                             )
                                             .await
-                                            .map_err(|e| {
-                                                AgentTaskError::UserCodeError(Box::new(e))
-                                            })?;
-                                            lane_readers.push(LaneReader::value(id, rx));
-                                            lane_writers.insert(id, tx);
-                                        }
+                                            .map_err(
+                                                |e| AgentTaskError::UserCodeError(Box::new(e)),
+                                            )?
+                                        };
+
+                                        let InitializedLane {
+                                            kind,
+                                            io: (tx, rx),
+                                            id,
+                                        } = initialised;
+                                        lane_readers.push(LaneReader::value(id, rx));
+                                        lane_writers.insert(id, tx);
                                     }
                                 }
                             }
