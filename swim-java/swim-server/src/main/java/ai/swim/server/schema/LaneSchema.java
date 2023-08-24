@@ -1,5 +1,6 @@
 package ai.swim.server.schema;
 
+import ai.swim.server.lanes.map.MapLane;
 import ai.swim.server.lanes.value.ValueLane;
 import org.msgpack.core.MessageBufferPacker;
 import java.io.IOException;
@@ -60,6 +61,8 @@ public class LaneSchema {
   public static LaneSchema reflectLane(Class<?> type, boolean isTransient, int laneId) {
     if (ValueLane.class.isAssignableFrom(type)) {
       return new LaneSchema(isTransient, LaneKind.Value, laneId);
+    } else if (MapLane.class.isAssignableFrom(type)) {
+      return new LaneSchema(isTransient, LaneKind.Map, laneId);
     } else {
       throw new IllegalArgumentException("Unsupported lane type: " + type);
     }
