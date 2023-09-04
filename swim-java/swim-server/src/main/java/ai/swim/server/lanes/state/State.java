@@ -1,6 +1,6 @@
 package ai.swim.server.lanes.state;
 
-import ai.swim.server.codec.Bytes;
+import ai.swim.codec.data.ByteWriter;
 import ai.swim.server.lanes.WriteResult;
 import java.util.UUID;
 
@@ -14,7 +14,7 @@ public interface State {
    * @param bytes to write into.
    * @return a result stating whether there is more data to write.
    */
-  WriteResult writeInto(Bytes bytes);
+  WriteResult writeInto(ByteWriter bytes);
 
   /**
    * Register {@code uuid}'s intent to sync with the lane.

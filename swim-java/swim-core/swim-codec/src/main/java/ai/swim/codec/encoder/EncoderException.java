@@ -1,4 +1,4 @@
-package ai.swim.server.codec;
+package ai.swim.codec.encoder;
 
 /**
  * An exception that is thrown when an error is encountered by an {@link Encoder}.

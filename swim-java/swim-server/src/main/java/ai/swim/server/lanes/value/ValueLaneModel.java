@@ -2,8 +2,8 @@ package ai.swim.server.lanes.value;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
+import ai.swim.codec.data.ByteWriter;
 import ai.swim.codec.input.Input;
-import ai.swim.server.codec.Bytes;
 import ai.swim.server.lanes.LaneModel;
 import ai.swim.server.lanes.LaneView;
 import ai.swim.server.lanes.WriteResult;
@@ -69,7 +69,7 @@ public final class ValueLaneModel<T> extends LaneModel {
   }
 
   @Override
-  public WriteResult writeToBuffer(Bytes bytes) {
+  public WriteResult writeToBuffer(ByteWriter bytes) {
     return state.writeInto(bytes);
   }
 

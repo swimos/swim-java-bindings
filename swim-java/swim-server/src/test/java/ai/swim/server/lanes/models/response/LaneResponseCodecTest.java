@@ -1,9 +1,10 @@
 package ai.swim.server.lanes.models.response;
 
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Decoder;
-import ai.swim.server.codec.DecoderException;
-import ai.swim.server.codec.Encoder;
+import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.decoder.Decoder;
+import ai.swim.codec.decoder.DecoderException;
+import ai.swim.codec.encoder.Encoder;
 import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.UUID;
@@ -13,11 +14,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class LaneResponseCodecTest {
 
   void roundTrip(LaneResponse<Integer> response) throws DecoderException {
-    Bytes buffer = new Bytes();
+    ByteWriter buffer = new ByteWriter();
     response.encode(new IntEncoder(), buffer);
 
+    ByteReader reader = buffer.reader();
     Decoder<LaneResponse<Integer>> decoder = new LaneResponseDecoder<>(new IntDecoder());
-    decoder = decoder.decode(buffer);
+    decoder = decoder.decode(reader);
 
     assertTrue(decoder.isDone());
     assertEquals(response, decoder.bind());
@@ -55,7 +57,7 @@ class LaneResponseCodecTest {
         LaneResponse.event(4),
         LaneResponse.event(5));
 
-    Bytes buffer = new Bytes();
+    ByteWriter buffer = new ByteWriter();
     Encoder<LaneResponse<Integer>> encoder = new LaneResponseEncoder<>(new IntEncoder());
     Decoder<LaneResponse<Integer>> decoder = new LaneResponseDecoder<>(new IntDecoder());
 
@@ -63,8 +65,10 @@ class LaneResponseCodecTest {
       encoder.encode(event, buffer);
     }
 
+    ByteReader reader = buffer.reader();
+
     for (LaneResponse<Integer> event : events) {
-      decoder = decoder.decode(buffer);
+      decoder = decoder.decode(reader);
 
       assertTrue(decoder.isDone());
       assertEquals(event, decoder.bind());
@@ -75,14 +79,14 @@ class LaneResponseCodecTest {
 
   private static class IntEncoder implements Encoder<Integer> {
     @Override
-    public void encode(Integer target, Bytes dst) {
+    public void encode(Integer target, ByteWriter dst) {
       dst.writeInteger(target);
     }
   }
 
   private static class IntDecoder extends Decoder<Integer> {
     @Override
-    public Decoder<Integer> decode(Bytes buffer) {
+    public Decoder<Integer> decode(ByteReader buffer) {
       return Decoder.done(this, buffer.getInteger());
     }
 

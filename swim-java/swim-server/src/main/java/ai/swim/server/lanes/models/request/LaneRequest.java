@@ -1,7 +1,7 @@
 package ai.swim.server.lanes.models.request;
 
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Encoder;
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.encoder.Encoder;
 import java.util.Objects;
 import java.util.UUID;
 import static ai.swim.server.lanes.models.response.LaneResponse.TAG_LEN;
@@ -25,7 +25,7 @@ public abstract class LaneRequest<T> {
     return new Sync<>(remote);
   }
 
-  public abstract void encode(Encoder<T> encoder, Bytes buffer);
+  public abstract void encode(Encoder<T> encoder, ByteWriter buffer);
 
   @Override
   public abstract boolean equals(Object obj);
@@ -35,7 +35,7 @@ public abstract class LaneRequest<T> {
 
   private static class InitComplete<T> extends LaneRequest<T> {
     @Override
-    public void encode(Encoder<T> encoder, Bytes buffer) {
+    public void encode(Encoder<T> encoder, ByteWriter buffer) {
       buffer.writeByte(SYNC);
     }
 
@@ -61,7 +61,7 @@ public abstract class LaneRequest<T> {
     }
 
     @Override
-    public void encode(Encoder<T> encoder, Bytes buffer) {
+    public void encode(Encoder<T> encoder, ByteWriter buffer) {
       buffer.writeByte(COMMAND);
       encoder.encode(event, buffer);
     }
@@ -99,7 +99,7 @@ public abstract class LaneRequest<T> {
     }
 
     @Override
-    public void encode(Encoder<T> encoder, Bytes buffer) {
+    public void encode(Encoder<T> encoder, ByteWriter buffer) {
       buffer.reserve(TAG_LEN + UUID_LEN);
       buffer.writeByte(SYNC);
       buffer.writeLong(remote.getMostSignificantBits());

@@ -4,11 +4,9 @@ import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.lanes.Lane;
 import ai.swim.server.lanes.LaneModel;
 import ai.swim.server.lanes.map.MapLane;
-import ai.swim.server.lanes.map.MapLaneModel;
 import ai.swim.server.lanes.map.MapLaneView;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.server.lanes.value.ValueLane;
-import ai.swim.server.lanes.value.ValueLaneModel;
 import ai.swim.server.lanes.value.ValueLaneView;
 import ai.swim.server.schema.AgentSchema;
 import java.lang.reflect.Constructor;
@@ -125,9 +123,7 @@ public class AgentFactory<A extends AbstractAgent> {
   private static LaneModel reflectValueLane(AbstractAgent agent, int laneId, Field field, StateCollector collector) {
     try {
       ValueLaneView<?> laneView = (ValueLaneView<?>) field.get(agent);
-      ValueLaneModel<?> model = (ValueLaneModel<?>) laneView.initLaneModel(collector, laneId);
-      laneView.setModel(model);
-      return model;
+      return laneView.initLaneModel(collector, laneId);
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }
@@ -136,9 +132,7 @@ public class AgentFactory<A extends AbstractAgent> {
   private static LaneModel reflectMapLane(AbstractAgent agent, int laneId, Field field, StateCollector collector) {
     try {
       MapLaneView<?, ?> laneView = (MapLaneView<?, ?>) field.get(agent);
-      MapLaneModel<?, ?> model = (MapLaneModel<?, ?>) laneView.initLaneModel(collector, laneId);
-      laneView.setModel(model);
-      return model;
+      return laneView.initLaneModel(collector, laneId);
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }

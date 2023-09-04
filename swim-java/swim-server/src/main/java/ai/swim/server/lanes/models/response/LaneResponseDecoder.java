@@ -1,8 +1,8 @@
 package ai.swim.server.lanes.models.response;
 
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Decoder;
-import ai.swim.server.codec.DecoderException;
+import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.decoder.Decoder;
+import ai.swim.codec.decoder.DecoderException;
 import java.util.UUID;
 import static ai.swim.server.lanes.models.response.LaneResponse.EVENT;
 import static ai.swim.server.lanes.models.response.LaneResponse.INITIALIZED;
@@ -21,12 +21,11 @@ public class LaneResponseDecoder<T> extends Decoder<LaneResponse<T>> {
   }
 
   @Override
-  public Decoder<LaneResponse<T>> decode(Bytes buffer) throws DecoderException {
+  public Decoder<LaneResponse<T>> decode(ByteReader buffer) throws DecoderException {
     while (true) {
       switch (state) {
         case Header:
           if (buffer.remaining() < TAG_LEN) {
-            buffer.reserve(1);
             return this;
           } else {
             byte tag = buffer.peekByte();
@@ -40,7 +39,6 @@ public class LaneResponseDecoder<T> extends Decoder<LaneResponse<T>> {
                 return Decoder.done(this, LaneResponse.initialized());
               case SYNC:
                 if (buffer.remaining() < UUID_LEN + TAG_LEN) {
-                  buffer.reserve(UUID_LEN);
                   return this;
                 } else {
                   buffer.advance(1);
@@ -52,7 +50,6 @@ public class LaneResponseDecoder<T> extends Decoder<LaneResponse<T>> {
                 }
               case SYNC_COMPLETE:
                 if (buffer.remaining() < UUID_LEN + TAG_LEN) {
-                  buffer.reserve(UUID_LEN);
                   return this;
                 } else {
                   buffer.advance(1);

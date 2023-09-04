@@ -1,15 +1,15 @@
-package ai.swim.server.codec;
+package ai.swim.codec.data;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Wrapper around a {@link Bytes} that provides an {@link OutputStream} implementation.
+ * Wrapper around a {@link ByteWriter} that provides an {@link OutputStream} implementation.
  */
-class BytesOutputStream extends OutputStream {
-  private final Bytes inner;
+class ByteWriterOutputStream extends OutputStream {
+  private final ByteWriter inner;
 
-  public BytesOutputStream(Bytes inner) {
+  public ByteWriterOutputStream(ByteWriter inner) {
     this.inner = inner;
   }
 
@@ -28,6 +28,7 @@ class BytesOutputStream extends OutputStream {
     if (off == 0) {
       inner.writeByteArray(b, len);
     } else {
+      inner.reserve(len);
       super.write(b, off, len);
     }
   }

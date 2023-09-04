@@ -34,7 +34,7 @@ public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String
   private boolean braceWritten;
   private boolean singleItem;
   private boolean first;
-  private AttributePrinter attributePrinter;
+  private final AttributePrinter attributePrinter;
 
   public StructurePrinter(java.io.Writer writer, PrintStrategy printStrategy) {
     this.writer = new SuppressingWriter(writer);

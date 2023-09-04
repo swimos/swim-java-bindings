@@ -1,8 +1,8 @@
 package ai.swim.server.lanes.state;
 
+import ai.swim.codec.data.ByteWriter;
 import ai.swim.server.agent.AgentView;
-import ai.swim.server.codec.BufferOverflowException;
-import ai.swim.server.codec.Bytes;
+import ai.swim.codec.data.BufferOverflowException;
 import ai.swim.server.lanes.WriteResult;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -22,10 +22,10 @@ import java.util.Set;
  */
 public class StateCollector {
   private final Set<State> stack;
-  private Bytes buffer;
+  private ByteWriter buffer;
 
   public StateCollector() {
-    this.buffer = new Bytes();
+    this.buffer = new ByteWriter();
     this.stack = new HashSet<>();
   }
 
@@ -49,7 +49,7 @@ public class StateCollector {
     WriteResult writeResult = WriteResult.NoData;
     Iterator<State> iter = stack.iterator();
 
-    int startIdx = buffer.remaining();
+    int startIdx = buffer.writePosition();
     buffer.writeByte((byte) 0);
 
     while (iter.hasNext()) {
@@ -69,7 +69,7 @@ public class StateCollector {
     buffer.writeByte(writeResult.statusCode(), startIdx);
 
     byte[] data = buffer.getArray();
-    buffer = new Bytes();
+    buffer = new ByteWriter();
 
     return data;
   }

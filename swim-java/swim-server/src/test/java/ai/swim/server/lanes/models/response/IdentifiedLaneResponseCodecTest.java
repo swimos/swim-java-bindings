@@ -1,10 +1,11 @@
 package ai.swim.server.lanes.models.response;
 
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Decoder;
-import ai.swim.server.codec.DecoderException;
-import ai.swim.server.codec.Encoder;
-import ai.swim.server.codec.Size;
+import ai.swim.codec.Size;
+import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.decoder.Decoder;
+import ai.swim.codec.decoder.DecoderException;
+import ai.swim.codec.encoder.Encoder;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -13,7 +14,7 @@ class IdentifiedLaneResponseCodecTest {
 
   private static class IntDecoder extends Decoder<Integer> {
     @Override
-    public Decoder<Integer> decode(Bytes buffer) {
+    public Decoder<Integer> decode(ByteReader buffer) {
       if (buffer.remaining() >= Size.INT) {
         return Decoder.done(this, buffer.getInteger());
       } else {
@@ -29,20 +30,21 @@ class IdentifiedLaneResponseCodecTest {
 
   private static class IntEncoder implements Encoder<Integer> {
     @Override
-    public void encode(Integer target, Bytes buffer) {
+    public void encode(Integer target, ByteWriter buffer) {
       buffer.writeInteger(target);
     }
   }
 
   @Test
   void roundTrip() throws DecoderException {
-    Bytes bytes = new Bytes();
+    ByteWriter writer = new ByteWriter();
 
     IdentifiedLaneResponseEncoder<Integer> encoder = new IdentifiedLaneResponseEncoder<>(new IntEncoder());
-    encoder.encode(new IdentifiedLaneResponse<>(1, LaneResponse.event(13)), bytes);
+    encoder.encode(new IdentifiedLaneResponse<>(1, LaneResponse.event(13)), writer);
 
+    ByteReader reader = writer.reader();
     Decoder<IdentifiedLaneResponse<Integer>> decoder = new IdentifiedLaneResponseDecoder<>(new LaneResponseDecoder<>(new IntDecoder()));
-    decoder = decoder.decode(bytes);
+    decoder = decoder.decode(reader);
 
     if (decoder.isDone()) {
       IdentifiedLaneResponse<Integer> response = decoder.bind();

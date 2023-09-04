@@ -50,7 +50,7 @@ class CallContextTest {
     });
 
     ValueLaneModel<Integer> model = new ValueLaneModel<>(0, laneView, stateCollector);
-    laneView.setModel(new ValueLaneModel<>(0, laneView, stateCollector));
+    laneView.setModel(model);
 
     AgentNode node = new AgentNode(stateCollector, Map.of(0, model), Map.of("test", 0));
 

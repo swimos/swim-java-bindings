@@ -1,12 +1,17 @@
 package ai.swim.server.codec;
 
+import ai.swim.codec.Size;
+import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.decoder.Decoder;
+import ai.swim.codec.decoder.DecoderException;
+
 /**
  * A decoder that decodes N bytes that are prefixed by their len.
  */
-public class WithLengthBytesDecoder extends Decoder<Bytes> {
+public class WithLengthBytesDecoder extends Decoder<ByteReader> {
 
   @Override
-  public Decoder<Bytes> decode(Bytes buffer) throws DecoderException {
+  public Decoder<ByteReader> decode(ByteReader buffer) throws DecoderException {
     if (buffer.remaining() < Size.LONG) {
       return this;
     } else {
@@ -21,13 +26,13 @@ public class WithLengthBytesDecoder extends Decoder<Bytes> {
         }
       } catch (ArithmeticException e) {
         // Java array capacity is an integer but it is possible that Rust/a peer sends a long representation.
-        throw new DecoderException("Integer overflow", e);
+        throw new DecoderException(e);
       }
     }
   }
 
   @Override
-  public Decoder<Bytes> reset() {
+  public Decoder<ByteReader> reset() {
     return this;
   }
 

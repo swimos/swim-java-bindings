@@ -1,9 +1,9 @@
 package ai.swim.server.lanes.models.response;
 
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Decoder;
-import ai.swim.server.codec.DecoderException;
-import ai.swim.server.codec.Size;
+import ai.swim.codec.Size;
+import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.decoder.Decoder;
+import ai.swim.codec.decoder.DecoderException;
 
 public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResponse<T>> {
   enum State {
@@ -21,12 +21,14 @@ public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResp
   }
 
   @Override
-  public Decoder<IdentifiedLaneResponse<T>> decode(Bytes buffer) throws DecoderException {
+  public Decoder<IdentifiedLaneResponse<T>> decode(ByteReader buffer) throws DecoderException {
     while (true) {
       switch (state) {
         case LaneId:
           if (buffer.remaining() >= Size.INT) {
             laneId = buffer.getInteger();
+            // Discard the length as it is only used when writing to Rust.
+            buffer.getInteger();
             state = State.Delegated;
             break;
           } else {

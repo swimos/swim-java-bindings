@@ -1,5 +1,7 @@
 package ai.swim.server.agent;
 
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.encoder.Encoder;
 import ai.swim.lang.ffi.NativeLoader;
 import ai.swim.server.AbstractSwimServerBuilder;
 import ai.swim.server.SwimServerException;
@@ -8,8 +10,6 @@ import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
 import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.annotations.Transient;
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Encoder;
 import ai.swim.server.lanes.models.request.LaneRequest;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.value.ValueLane;
@@ -68,8 +68,8 @@ class AgentTest {
       AbstractSwimServerBuilder server,
       byte[] planeSpec);
 
-  private static <E> Bytes encodeIter(Iterable<E> iterator, Encoder<E> encoder) {
-    Bytes requestBytes = new Bytes();
+  private static <E> ByteWriter encodeIter(Iterable<E> iterator, Encoder<E> encoder) {
+    ByteWriter requestBytes = new ByteWriter();
 
     for (E e : iterator) {
       encoder.encode(e, requestBytes);
@@ -80,13 +80,13 @@ class AgentTest {
 
   private static class TestServer extends AbstractSwimServerBuilder {
 
-    private final Bytes responseBytes;
-    private final Bytes requestBytes;
+    private final ByteWriter responseBytes;
+    private final ByteWriter requestBytes;
 
     protected TestServer(Map<String, AgentFactory<? extends AbstractAgent>> agentFactories,
         PlaneSchema<?> schema,
-        Bytes requestBytes,
-        Bytes responseBytes) {
+        ByteWriter requestBytes,
+        ByteWriter responseBytes) {
       super(agentFactories, schema);
       this.requestBytes = requestBytes;
       this.responseBytes = responseBytes;
@@ -98,8 +98,8 @@ class AgentTest {
       PlaneSchema<P> planeSchema = reflectPlaneSchema(planeClass);
       Map<String, AgentFactory<? extends AbstractAgent>> agentFactories = reflectAgentFactories(planeSchema);
 
-      Bytes requestBytes = encodeIter(inputs, new TaggedLaneRequestEncoder<>(AgentTest::writeInt));
-      Bytes responseBytes = encodeIter(outputs, new TaggedLaneResponseEncoder<>(AgentTest::writeInt));
+      ByteWriter requestBytes = encodeIter(inputs, new TaggedLaneRequestEncoder<>(AgentTest::writeInt));
+      ByteWriter responseBytes = encodeIter(outputs, new TaggedLaneResponseEncoder<>(AgentTest::writeInt));
 
       return new TestServer(agentFactories, planeSchema, requestBytes, responseBytes);
     }
@@ -111,7 +111,7 @@ class AgentTest {
     }
   }
 
-  private static void writeInt(int v, Bytes into) {
+  private static void writeInt(int v, ByteWriter into) {
     byte[] bytes = Integer.toString(v).getBytes(StandardCharsets.UTF_8);
     into.writeLong(bytes.length);
     into.writeByteArray(bytes);

@@ -34,7 +34,7 @@ public class ByteBufferInput extends Input {
 
   @Override
   public boolean has(int n) {
-    return false;
+    return data.remaining() >= n;
   }
 
   @Override

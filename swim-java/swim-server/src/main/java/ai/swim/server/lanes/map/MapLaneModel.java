@@ -1,6 +1,6 @@
 package ai.swim.server.lanes.map;
 
-import ai.swim.server.codec.Bytes;
+import ai.swim.codec.data.ByteWriter;
 import ai.swim.server.lanes.LaneModel;
 import ai.swim.server.lanes.LaneView;
 import ai.swim.server.lanes.WriteResult;
@@ -13,7 +13,7 @@ public final class MapLaneModel<K, V> extends LaneModel {
   private final MapLaneView<K, V> view;
   private final Form<K> keyForm;
   private final Form<V> valueForm;
-  private final MapState<K,V> state;
+  private final MapState<K, V> state;
 
   public MapLaneModel(int laneId, MapLaneView<K, V> view, StateCollector collector) {
     this.view = view;
@@ -43,7 +43,7 @@ public final class MapLaneModel<K, V> extends LaneModel {
   }
 
   @Override
-  public WriteResult writeToBuffer(Bytes bytes) {
+  public WriteResult writeToBuffer(ByteWriter bytes) {
     return state.writeInto(bytes);
   }
 

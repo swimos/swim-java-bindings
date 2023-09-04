@@ -1,7 +1,7 @@
 package ai.swim.server.lanes.models.response;
 
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Encoder;
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.encoder.Encoder;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,7 +31,7 @@ public abstract class LaneResponse<T> {
     return new Synced<>(remote);
   }
 
-  public abstract void encode(Encoder<T> encoder, Bytes buffer);
+  public abstract void encode(Encoder<T> encoder, ByteWriter buffer);
 
   @Override
   public abstract boolean equals(Object obj);
@@ -41,7 +41,7 @@ public abstract class LaneResponse<T> {
 
   private static class Initialized<T> extends LaneResponse<T> {
     @Override
-    public void encode(Encoder<T> encoder, Bytes buffer) {
+    public void encode(Encoder<T> encoder, ByteWriter buffer) {
       buffer.writeByte(INITIALIZED);
     }
 
@@ -67,7 +67,7 @@ public abstract class LaneResponse<T> {
     }
 
     @Override
-    public void encode(Encoder<T> encoder, Bytes buffer) {
+    public void encode(Encoder<T> encoder, ByteWriter buffer) {
       buffer.writeByte(EVENT);
       encoder.encode(event, buffer);
     }
@@ -107,7 +107,7 @@ public abstract class LaneResponse<T> {
     }
 
     @Override
-    public void encode(Encoder<T> encoder, Bytes dst) {
+    public void encode(Encoder<T> encoder, ByteWriter dst) {
       dst.reserve(TAG_LEN + UUID_LEN);
       dst.writeByte(SYNC);
       dst.writeLong(remote.getMostSignificantBits());
@@ -149,7 +149,7 @@ public abstract class LaneResponse<T> {
     }
 
     @Override
-    public void encode(Encoder<T> encoder, Bytes dst) {
+    public void encode(Encoder<T> encoder, ByteWriter dst) {
       dst.reserve(TAG_LEN + UUID_LEN);
       dst.writeByte(SYNC_COMPLETE);
       dst.writeLong(remote.getMostSignificantBits());

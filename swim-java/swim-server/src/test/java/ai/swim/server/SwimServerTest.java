@@ -1,19 +1,20 @@
 package ai.swim.server;
 
+import ai.swim.codec.Size;
+import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.decoder.Decoder;
+import ai.swim.codec.decoder.DecoderException;
 import ai.swim.lang.ffi.NativeLoader;
 import ai.swim.server.agent.AbstractAgent;
+import ai.swim.server.agent.AgentContext;
 import ai.swim.server.agent.AgentFactory;
 import ai.swim.server.agent.AgentView;
-import ai.swim.server.agent.AgentContext;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
 import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.annotations.Transient;
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Decoder;
-import ai.swim.server.codec.DecoderException;
-import ai.swim.server.codec.Size;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.models.response.LaneResponseDecoder;
@@ -101,7 +102,7 @@ class SwimServerTest {
 
   private static final class StringDecoder extends Decoder<String> {
     @Override
-    public Decoder<String> decode(Bytes buffer) {
+    public Decoder<String> decode(ByteReader buffer) {
       if (buffer.remaining() >= Size.LONG) {
         long len = buffer.getLong();
         if (buffer.remaining() >= len) {
@@ -124,13 +125,13 @@ class SwimServerTest {
 
   private static final class IdentifiedLaneResponseDecoder extends Decoder<IdentifiedLaneResponse<String>> {
     @Override
-    public Decoder<IdentifiedLaneResponse<String>> decode(Bytes buffer) throws DecoderException {
+    public Decoder<IdentifiedLaneResponse<String>> decode(ByteReader buffer) throws DecoderException {
       if (buffer.remaining() == 0) {
         return this;
       }
 
-      buffer.getInteger(); // discard len
       int laneId = buffer.getInteger();
+      buffer.getInteger(); // discard len
 
       LaneResponseDecoder<String> delegate = new LaneResponseDecoder<>(new StringDecoder());
       LaneResponse<String> response = delegate.decode(buffer).bind();
@@ -160,12 +161,14 @@ class SwimServerTest {
     AgentView agentView = agentFactory.newInstance(0);
     ByteBuffer buffer = ByteBuffer.wrap(new byte[] {49, 51}); // 13
 
-    Bytes bytes = new Bytes();
+    ByteWriter bytes = new ByteWriter();
     bytes.writeByteArray(agentView.dispatch(laneId, buffer));
 
     // assert that there isn't any more data available. only three events should have been written and these would fit
     // in the buffer
-    assertEquals(0, bytes.getByte());
+    ByteReader reader = bytes.reader();
+    System.out.println(reader);
+    assertEquals(0, reader.getByte());
 
     Decoder<IdentifiedLaneResponse<String>> decoder = new IdentifiedLaneResponseDecoder();
 
@@ -175,11 +178,11 @@ class SwimServerTest {
     expected.add(new IdentifiedLaneResponse<>(minusId, LaneResponse.event("12")));
 
     while (true) {
-      decoder = decoder.decode(bytes);
+      decoder = decoder.decode(reader);
       if (decoder.isDone()) {
-        expected.remove(decoder.bind());
+        assertTrue(expected.remove(decoder.bind()));
         decoder = decoder.reset();
-      } else if (bytes.remaining() == 0) {
+      } else if (reader.remaining() == 0) {
         break;
       } else {
         throw new IllegalStateException("Unconsumed input");

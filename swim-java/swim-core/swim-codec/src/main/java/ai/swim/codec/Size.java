@@ -1,4 +1,4 @@
-package ai.swim.server.codec;
+package ai.swim.codec;
 
 public class Size {
   public static final int BYTE = 1;

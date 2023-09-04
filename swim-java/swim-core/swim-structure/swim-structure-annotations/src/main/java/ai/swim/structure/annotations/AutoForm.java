@@ -29,10 +29,10 @@ import java.lang.annotation.Target;
  * <p>
  * For non-specialised types, marking a Java object with {@code @AutoForm} should suffice in generating recognizers and
  * writable objects that will then automatically be registered with their respective proxy upon the class being loaded.
- * These generated definitions the minimal amount of reflection possible and only require it to resolve types when
+ * These generated definitions use the minimal amount of reflection possible and only require it to resolve types when
  * writing an object; if a type is known when deserializing an object, it is possible to provide a type parameter to
  * the recognizer through its {@code @TypedConstructor} constructor.
- *
+ * <p>
  * <h1>Classes</h1>
  * The form annotation processor functions similarly to other data serialization libraries with the exception that the
  * entire definition is generated at compile time instead of using runtime reflection. This annotation may be placed on
@@ -48,11 +48,11 @@ import java.lang.annotation.Target;
  * {@code ?} or any unbounded generic type parameter, then the matching {@code Recognizer} will be untyped and a
  * best-effort approach is taken to deserialize the type from known scalar recognizers. For the {@code Writable}
  * definition, runtime reflection is used to find a matching {@code Writable} for the field.
- *
+ * <p>
  * <h1>Interfaces</h1>
  * All interfaces annotated with this parameter must have the {@code subtype} property populated with the acceptable
  * subtypes of this object.
- *
+ * <p>
  * <h1>Enums</h1>
  * Compared to other data serialization libraries, form enumerations in Java work differently in that their entire
  * definition is both serialized and deserialized as a node may be communicating with another node that is not written
@@ -124,7 +124,7 @@ public @interface AutoForm {
   /**
    * A marker annotation that can be used to specify a method that provides mutable access to set the state of a field
    * in this class. The annotated method must be a local method that accepts a variable of the same type that this
-   * annotation references. Every member  variable in the parent class must either have public visibility, provide a
+   * annotation references. Every member variable in the parent class must either have public visibility, provide a
    * method named {@code setVar} (where 'var' is the name of the reference variable) or have a method annotated with
    * this annotation.
    */

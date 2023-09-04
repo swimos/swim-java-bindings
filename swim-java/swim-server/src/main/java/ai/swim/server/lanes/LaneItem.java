@@ -1,7 +1,7 @@
 package ai.swim.server.lanes;
 
-import ai.swim.server.codec.Bytes;
+import ai.swim.codec.data.ByteWriter;
 
 public interface LaneItem {
-  WriteResult writeToBuffer(Bytes bytes);
+  WriteResult writeToBuffer(ByteWriter bytes);
 }

@@ -1,12 +1,8 @@
 package ai.swim.server.lanes.map;
 
+import ai.swim.codec.data.ByteWriter;
 import ai.swim.server.agent.call.CallContext;
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.WithLenReconEncoder;
 import ai.swim.server.lanes.WriteResult;
-import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
-import ai.swim.server.lanes.models.response.IdentifiedLaneResponseEncoder;
-import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.state.State;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
@@ -92,7 +88,7 @@ public class MapState<K, V> implements State {
 //  }
 
   @Override
-  public WriteResult writeInto(Bytes bytes) {
+  public WriteResult writeInto(ByteWriter bytes) {
 //    ListIterator<UUID> syncIter = syncRequests.listIterator();
 //
 //    while (syncIter.hasNext()) {
