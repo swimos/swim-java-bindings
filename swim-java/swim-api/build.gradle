@@ -1,0 +1,8 @@
+ext.moduleName = 'swim-api'
+
+dependencies {
+    implementation project(':swim-structure')
+
+    annotationProcessor project(':swim-structure-processor')
+    testAnnotationProcessor project(':swim-structure-processor')
+}

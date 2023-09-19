@@ -35,3 +35,6 @@ project(':map_downlink').name = 'map_downlink'
 
 include('swim-server')
 project(':swim-server').name = 'swim-server'
+
+include('swim-api')
+project(':swim-api').name = 'swim-api'
