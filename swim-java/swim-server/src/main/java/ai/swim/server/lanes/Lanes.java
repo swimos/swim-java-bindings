@@ -36,7 +36,7 @@ public class Lanes {
    * @param <V>       the lane's value type.
    * @return a new Map Lane.
    */
-  public static <K, V> MapLaneView<K, V> valueLane(Form<K> keyForm, Form<V> valueForm) {
+  public static <K, V> MapLaneView<K, V> mapLane(Form<K> keyForm, Form<V> valueForm) {
     return new MapLaneView<>(keyForm, valueForm);
   }
 
@@ -49,7 +49,7 @@ public class Lanes {
    * @param <V>        the lane's value type.
    * @return a new Map Lane.
    */
-  public static <K, V> MapLaneView<K, V> valueLane(Class<K> keyClass, Class<V> valueClass) {
+  public static <K, V> MapLaneView<K, V> mapLane(Class<K> keyClass, Class<V> valueClass) {
     return new MapLaneView<>(Form.forClass(keyClass), Form.forClass(valueClass));
   }
 

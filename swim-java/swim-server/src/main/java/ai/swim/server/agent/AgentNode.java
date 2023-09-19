@@ -1,5 +1,7 @@
 package ai.swim.server.agent;
 
+import ai.swim.codec.data.ReadBuffer;
+import ai.swim.codec.decoder.DecoderException;
 import ai.swim.server.agent.call.CallContext;
 import ai.swim.server.lanes.Lane;
 import ai.swim.server.lanes.LaneModel;
@@ -39,10 +41,10 @@ public class AgentNode {
    * @param buffer  the event data.
    * @return an array containing encoded {@link ai.swim.server.lanes.models.response.LaneResponse}s.
    */
-  public byte[] dispatch(int laneIdx, ByteBuffer buffer) {
+  public byte[] dispatch(int laneIdx, ByteBuffer buffer) throws DecoderException {
     CallContext.enter();
 
-    lanes.get(laneIdx).dispatch(buffer);
+    lanes.get(laneIdx).dispatch(ReadBuffer.byteBuffer(buffer));
     byte[] bytes = flushState();
 
     CallContext.exit();
@@ -57,7 +59,7 @@ public class AgentNode {
    * @param uuidLsb UUID least significant bits.
    * @return an array containing an encoded {@link ai.swim.server.lanes.models.response.LaneResponse} sync.
    */
-  public byte[] sync(int laneIdx, long uuidMsb, long uuidLsb) {
+  public byte[] sync(int laneIdx, long uuidMsb, long uuidLsb) throws DecoderException {
     lanes.get(laneIdx).sync(new UUID(uuidMsb, uuidLsb));
     return flushState();
   }
@@ -68,8 +70,8 @@ public class AgentNode {
    * @param laneIdx to initialise.
    * @param from    the store initialisation data.
    */
-  public void init(int laneIdx, ByteBuffer from) {
-    lanes.get(laneIdx).init(from);
+  public void init(int laneIdx, ByteBuffer from) throws DecoderException {
+    lanes.get(laneIdx).init(ReadBuffer.byteBuffer(from));
   }
 
   public int nextLaneId() {

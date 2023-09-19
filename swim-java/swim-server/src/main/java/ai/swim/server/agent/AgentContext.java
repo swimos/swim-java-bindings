@@ -16,9 +16,9 @@ import static ai.swim.server.schema.LaneSchema.reflectLane;
  */
 public class AgentContext implements NativeResource {
   private final long ptr;
-  private AgentNode agentNode;
-  @SuppressWarnings("FieldCanBeLocal")
+  @SuppressWarnings({"FieldCanBeLocal", "unused"})
   private final AtomicDestructor destructor;
+  private AgentNode agentNode;
 
   public AgentContext(long ptr) {
     this.ptr = ptr;

@@ -327,7 +327,8 @@ public class Recognizer {
       parameters.add(ParameterSpec.builder(TypeName.get(typed), typeParameterName).build());
 
       nullChecks.add(CodeBlock
-                         .of("requireNonNullElse($L, ai.swim.structure.recognizer.proxy.RecognizerTypeParameter.<$T>untyped())",
+                         .of(
+                             "requireNonNullElse($L, ai.swim.structure.recognizer.proxy.RecognizerTypeParameter.<$T>untyped())",
                              typeParameterName,
                              typeParameter)
                          .toString());

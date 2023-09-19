@@ -33,6 +33,8 @@ public abstract class LaneResponse<T> {
 
   public abstract void encode(Encoder<T> encoder, ByteWriter buffer);
 
+  public abstract void accept(LaneResponseVisitor<T> visitor);
+
   @Override
   public abstract boolean equals(Object obj);
 
@@ -43,6 +45,11 @@ public abstract class LaneResponse<T> {
     @Override
     public void encode(Encoder<T> encoder, ByteWriter buffer) {
       buffer.writeByte(INITIALIZED);
+    }
+
+    @Override
+    public void accept(LaneResponseVisitor<T> visitor) {
+      visitor.visitInitialized();
     }
 
     @Override
@@ -70,6 +77,11 @@ public abstract class LaneResponse<T> {
     public void encode(Encoder<T> encoder, ByteWriter buffer) {
       buffer.writeByte(EVENT);
       encoder.encode(event, buffer);
+    }
+
+    @Override
+    public void accept(LaneResponseVisitor<T> visitor) {
+      visitor.visitEvent(event);
     }
 
     @Override
@@ -116,6 +128,11 @@ public abstract class LaneResponse<T> {
     }
 
     @Override
+    public void accept(LaneResponseVisitor<T> visitor) {
+      visitor.visitSyncEvent(remote, event);
+    }
+
+    @Override
     public String toString() {
       return "SyncEvent{" +
           "event=" + event +
@@ -154,6 +171,11 @@ public abstract class LaneResponse<T> {
       dst.writeByte(SYNC_COMPLETE);
       dst.writeLong(remote.getMostSignificantBits());
       dst.writeLong(remote.getLeastSignificantBits());
+    }
+
+    @Override
+    public void accept(LaneResponseVisitor<T> visitor) {
+      visitor.visitSynced(remote);
     }
 
     @Override

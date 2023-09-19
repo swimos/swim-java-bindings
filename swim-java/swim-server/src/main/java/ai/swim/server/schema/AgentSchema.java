@@ -6,7 +6,6 @@ import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.Transient;
 import ai.swim.server.lanes.Lane;
-import ai.swim.server.lanes.value.ValueLane;
 import org.msgpack.core.MessageBufferPacker;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -15,7 +14,6 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import static ai.swim.server.schema.LaneSchema.reflectLane;
 
@@ -37,9 +35,10 @@ public class AgentSchema<A extends AbstractAgent> {
 
     SwimAgent agentAnno = agentClass.getAnnotation(SwimAgent.class);
     if (agentAnno == null) {
-      throw new IllegalArgumentException(String.format("%s is not annotated with %s",
-                                                       agentClass.getCanonicalName(),
-                                                       SwimAgent.class.getName()));
+      throw new IllegalArgumentException(String.format(
+          "%s is not annotated with %s",
+          agentClass.getCanonicalName(),
+          SwimAgent.class.getName()));
     }
 
     String agentUri = Objects.requireNonNullElse(agentAnno.value(), agentClass.getSimpleName());
@@ -108,8 +107,9 @@ public class AgentSchema<A extends AbstractAgent> {
       return false;
     }
     AgentSchema<?> that = (AgentSchema<?>) o;
-    return Objects.equals(clazz, that.clazz) && Objects.equals(name, that.name) && Objects.equals(laneSchemas,
-                                                                                                  that.laneSchemas);
+    return Objects.equals(clazz, that.clazz) && Objects.equals(name, that.name) && Objects.equals(
+        laneSchemas,
+        that.laneSchemas);
   }
 
   @Override

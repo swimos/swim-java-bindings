@@ -22,8 +22,8 @@ public final class MapLaneView<K, V> extends LaneView implements MapLane<K, V> {
   }
 
   @SuppressWarnings("unchecked")
-  public void setModel(MapLaneModel<?,?> model) {
-    this.model = (MapLaneModel<K,V>) model;
+  public void setModel(MapLaneModel<?, ?> model) {
+    this.model = (MapLaneModel<K, V>) model;
   }
 
   @Override
@@ -88,13 +88,13 @@ public final class MapLaneView<K, V> extends LaneView implements MapLane<K, V> {
   }
 
   @Override
-  public void update(K key, V value) {
-    model.update(key, value);
+  public V update(K key, V value) {
+    return model.update(key, value);
   }
 
   @Override
-  public void remove(K key) {
-    model.remove(key);
+  public V remove(K key) {
+    return model.remove(key);
   }
 
   @Override

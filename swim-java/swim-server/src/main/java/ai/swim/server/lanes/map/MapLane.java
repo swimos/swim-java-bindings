@@ -2,22 +2,20 @@ package ai.swim.server.lanes.map;
 
 import ai.swim.server.lanes.Lane;
 import ai.swim.server.lanes.lifecycle.OnClear;
-import ai.swim.server.lanes.lifecycle.OnEvent;
 import ai.swim.server.lanes.lifecycle.OnRemove;
-import ai.swim.server.lanes.lifecycle.OnSet;
 import ai.swim.server.lanes.lifecycle.OnUpdate;
 import ai.swim.structure.Form;
 
-public interface MapLane<K,V> extends Lane {
+public interface MapLane<K, V> extends Lane {
   Form<K> keyForm();
 
   Form<V> valueForm();
 
-  MapLaneView<K,V> onUpdate(OnUpdate<K,V> onUpdate);
+  MapLaneView<K, V> onUpdate(OnUpdate<K, V> onUpdate);
 
-  MapLaneView<K,V> onRemove(OnRemove<K,V> onRemove);
+  MapLaneView<K, V> onRemove(OnRemove<K, V> onRemove);
 
-  MapLaneView<K,V> onClear(OnClear onClear);
+  MapLaneView<K, V> onClear(OnClear onClear);
 
   void onUpdate(K key, V oldValue, V newValue);
 
@@ -27,9 +25,9 @@ public interface MapLane<K,V> extends Lane {
 
   void clear();
 
-  void update(K key, V value);
+  V update(K key, V value);
 
-  void remove(K key);
+  V remove(K key);
 
   V get(K key);
 }

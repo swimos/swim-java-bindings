@@ -24,8 +24,8 @@ class BytesTest {
 
     ByteReader start = reader.splitTo(4);
 
-    assertArrayEquals(new byte[] {3, 4, 5, 6}, start.getArray());
-    assertArrayEquals(new byte[] {7, 8, 9}, reader.getArray());
+    assertArrayEquals(new byte[] {3, 4, 5, 6}, start.peekArray());
+    assertArrayEquals(new byte[] {7, 8, 9}, reader.peekArray());
 
     start.advance(4);
     assertEquals(0, start.remaining());
@@ -33,8 +33,8 @@ class BytesTest {
     reader.advance(3);
     assertEquals(0, reader.remaining());
 
-    assertThrows(IllegalArgumentException.class, () -> start.advance(10));
-    assertThrows(IllegalArgumentException.class, () -> reader.advance(10));
+    assertThrows(BufferOverflowException.class, () -> start.advance(10));
+    assertThrows(BufferOverflowException.class, () -> reader.advance(10));
   }
 
   /**

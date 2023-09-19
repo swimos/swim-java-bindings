@@ -27,7 +27,7 @@ use swim_server_core::{server_fn, AgentFactory, FfiAgentDef, FfiContext};
 use crate::TestAgentContext;
 
 server_fn! {
-    agent_AgentTest_runNativeAgent(
+    agent_TestServer_runNativeAgent(
         env,
         _class,
         inputs: jbyteArray,

@@ -1,27 +1,21 @@
 package ai.swim.server.lanes.models.response;
 
 import ai.swim.codec.Size;
-import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
 
 public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResponse<T>> {
-  enum State {
-    LaneId,
-    Delegated
-  }
-
   private Decoder<LaneResponse<T>> delegate;
   private State state;
   private int laneId;
-
   public IdentifiedLaneResponseDecoder(Decoder<LaneResponse<T>> delegate) {
     this.delegate = delegate;
     this.state = State.LaneId;
   }
 
   @Override
-  public Decoder<IdentifiedLaneResponse<T>> decode(ByteReader buffer) throws DecoderException {
+  public Decoder<IdentifiedLaneResponse<T>> decode(ReadBuffer buffer) throws DecoderException {
     while (true) {
       switch (state) {
         case LaneId:
@@ -48,5 +42,10 @@ public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResp
   @Override
   public Decoder<IdentifiedLaneResponse<T>> reset() {
     return new IdentifiedLaneResponseDecoder<>(delegate.reset());
+  }
+
+  enum State {
+    LaneId,
+    Delegated
   }
 }

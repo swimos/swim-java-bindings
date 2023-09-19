@@ -1,6 +1,6 @@
 package ai.swim.codec.decoder;
 
-import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ReadBuffer;
 
 /**
  * An abstract, incremental, decoder that yields objects of type {@code T}.
@@ -21,6 +21,15 @@ public abstract class Decoder<T> {
     return new DecoderDone<>(decoder, value);
   }
 
+  protected static int longToInt(long len) throws DecoderException {
+    try {
+      return Math.toIntExact(len);
+    } catch (ArithmeticException e) {
+      // Java array capacity is an integer but it is possible that Rust/a peer sends a long array.
+      throw new DecoderException(e);
+    }
+  }
+
   /**
    * Returns whether the decoder is in a {@code done} state.
    */
@@ -35,7 +44,7 @@ public abstract class Decoder<T> {
    * @return a decoder representing the output of the operation.
    * @throws DecoderException if it was not possible to decode the buffer.
    */
-  public abstract Decoder<T> decode(ByteReader buffer) throws DecoderException;
+  public abstract Decoder<T> decode(ReadBuffer buffer) throws DecoderException;
 
   /**
    * If this decoder is in a {@code done} state, take the decoded value.
@@ -51,14 +60,5 @@ public abstract class Decoder<T> {
    * Reset this decoder back to its original state.
    */
   public abstract Decoder<T> reset();
-
-  protected static int longToInt(long len) throws DecoderException {
-    try {
-      return Math.toIntExact(len);
-    } catch (ArithmeticException e) {
-      // Java array capacity is an integer but it is possible that Rust/a peer sends a long array.
-      throw new DecoderException(e);
-    }
-  }
 
 }

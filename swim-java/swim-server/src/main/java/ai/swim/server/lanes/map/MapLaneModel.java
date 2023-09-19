@@ -1,12 +1,15 @@
 package ai.swim.server.lanes.map;
 
-import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.data.ReadBuffer;
+import ai.swim.codec.decoder.Decoder;
+import ai.swim.codec.decoder.DecoderException;
 import ai.swim.server.lanes.LaneModel;
 import ai.swim.server.lanes.LaneView;
-import ai.swim.server.lanes.WriteResult;
+import ai.swim.server.lanes.map.codec.MapOperationDecoder;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
-import java.nio.ByteBuffer;
+import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.RecognizerException;
 import java.util.UUID;
 
 public final class MapLaneModel<K, V> extends LaneModel {
@@ -14,17 +17,21 @@ public final class MapLaneModel<K, V> extends LaneModel {
   private final Form<K> keyForm;
   private final Form<V> valueForm;
   private final MapState<K, V> state;
+  private final OperationDispatcher<V, K> operationDispatcher;
+  private final Initialiser<V, K> initVisitor;
 
   public MapLaneModel(int laneId, MapLaneView<K, V> view, StateCollector collector) {
     this.view = view;
     this.keyForm = view.keyForm();
     this.valueForm = view.valueForm();
     this.state = new MapState<>(laneId, keyForm, valueForm, collector);
+    this.operationDispatcher = new OperationDispatcher<>(state, view);
+    this.initVisitor = new Initialiser<>(state);
   }
 
   @Override
-  public void dispatch(ByteBuffer buffer) {
-
+  public void dispatch(ReadBuffer buffer) throws DecoderException {
+    decodeAndDispatch(buffer, keyForm.reset(), valueForm.reset(), operationDispatcher);
   }
 
   @Override
@@ -33,8 +40,37 @@ public final class MapLaneModel<K, V> extends LaneModel {
   }
 
   @Override
-  public void init(ByteBuffer buffer) {
+  public void init(ReadBuffer buffer) throws DecoderException {
+    decodeAndDispatch(buffer, keyForm.reset(), valueForm.reset(), initVisitor);
+  }
 
+  private static <K, V> void decodeAndDispatch(ReadBuffer buffer,
+      Recognizer<K> keyRecognizer,
+      Recognizer<V> valueRecognizer,
+      MapOperationVisitor<K, V> visitor) throws DecoderException {
+    Decoder<MapOperation<K, V>> decoder = new MapOperationDecoder<>(keyRecognizer, valueRecognizer);
+
+    boolean dispatched = false;
+
+    while (true) {
+      try {
+        decoder = decoder.decode(buffer);
+      } catch (DecoderException e) {
+        throw new RecognizerException(e);
+      }
+
+      if (decoder.isDone()) {
+        MapOperation<K, V> op = decoder.bind();
+        op.accept(visitor);
+
+        dispatched = true;
+        decoder = decoder.reset();
+      } else if (dispatched) {
+        break;
+      } else {
+        throw new RecognizerException("Buffer did not contain any valid map operations");
+      }
+    }
   }
 
   @Override
@@ -42,25 +78,21 @@ public final class MapLaneModel<K, V> extends LaneModel {
     return view;
   }
 
-  @Override
-  public WriteResult writeToBuffer(ByteWriter bytes) {
-    return state.writeInto(bytes);
-  }
-
   public void clear() {
     state.clear();
   }
 
-  public void update(K key, V value) {
-    state.update(key, value);
+  public V update(K key, V value) {
+    return state.update(key, value);
   }
 
-  public void remove(K key) {
-    state.remove(key);
+  public V remove(K key) {
+    return state.remove(key);
   }
 
   public V get(K key) {
     return state.get(key);
   }
+
 
 }

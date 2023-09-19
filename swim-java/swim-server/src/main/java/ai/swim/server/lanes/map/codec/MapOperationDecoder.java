@@ -3,14 +3,15 @@ package ai.swim.server.lanes.map.codec;
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
 import ai.swim.codec.Size;
-import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
-import ai.swim.codec.input.ByteReaderInput;
 import ai.swim.codec.input.Input;
+import ai.swim.codec.input.ReadBufferInput;
 import ai.swim.server.lanes.map.MapOperation;
 import ai.swim.structure.FormParser;
 import ai.swim.structure.recognizer.Recognizer;
+import ai.swim.structure.recognizer.RecognizerException;
 import static ai.swim.server.lanes.map.MapOperation.CLEAR;
 import static ai.swim.server.lanes.map.MapOperation.REMOVE;
 import static ai.swim.server.lanes.map.MapOperation.UPDATE;
@@ -23,18 +24,31 @@ public class MapOperationDecoder<K, V> extends Decoder<MapOperation<K, V>> {
   private Integer valueSize;
   private K key;
 
-  private enum State {
-    ReadingHeader, ReadingKey, AfterKey, ReadingValue
-  }
-
   public MapOperationDecoder(Recognizer<K> keyRecognizer, Recognizer<V> valueRecognizer) {
     this.keyRecognizer = keyRecognizer;
     this.valueRecognizer = valueRecognizer;
     this.state = State.ReadingHeader;
   }
 
+  private static <T> T parseRecognise(ReadBuffer reader, int limit, Recognizer<T> recognizer) {
+    ReadBufferInput readBufferInput = Input.readBuffer(reader).limit(reader.readPointer() + limit);
+    FormParser<T> parser = new FormParser<>(recognizer.reset());
+    Parser<T> parseResult = parser.feed(readBufferInput);
+
+    if (parseResult.isDone()) {
+      reader.advance(limit);
+      return parseResult.bind();
+    } else if (parseResult.isError()) {
+      ParserError<T> parserError = (ParserError<T>) parseResult;
+      String message = String.format("Parse error: %s at %s", parserError.cause(), parserError.location());
+      throw new RecognizerException(message);
+    } else {
+      throw new RecognizerException("Unconsumed input by parser");
+    }
+  }
+
   @Override
-  public Decoder<MapOperation<K, V>> decode(ByteReader buffer) throws DecoderException {
+  public Decoder<MapOperation<K, V>> decode(ReadBuffer buffer) throws DecoderException {
     if (buffer.remaining() < Size.LONG + Size.BYTE) {
       return this;
     } else {
@@ -53,7 +67,7 @@ public class MapOperationDecoder<K, V> extends Decoder<MapOperation<K, V>> {
                   buffer.advance(Size.BYTE + Size.LONG);
 
                   int keyLen = longToInt(buffer.getLong());
-                  int valueLen = totalLen - keyLen-Size.LONG-Size.BYTE;
+                  int valueLen = totalLen - keyLen - Size.LONG - Size.BYTE;
 
                   if (valueLen <= 0) {
                     throw new DecoderException("Invalid header. Value length <= 0");
@@ -102,25 +116,12 @@ public class MapOperationDecoder<K, V> extends Decoder<MapOperation<K, V>> {
     }
   }
 
-  private static <T> T parseRecognise(ByteReader reader, int limit, Recognizer<T> recognizer) throws DecoderException {
-    ByteReaderInput byteReaderInput = Input.byteReader(reader).limit(reader.getReadPointer() + limit);
-    FormParser<T> parser = new FormParser<>(recognizer.reset());
-    Parser<T> parseResult = parser.feed(byteReaderInput);
-
-    if (parseResult.isDone()) {
-      reader.advance(limit);
-      return parseResult.bind();
-    } else if (parseResult.isError()) {
-      ParserError<T> parserError = (ParserError<T>) parseResult;
-      String message = String.format("Parser decode error: %s at %s", parserError.cause(), parserError.location());
-      throw new DecoderException(message);
-    } else {
-      throw new DecoderException("Unconsumed input by parser");
-    }
-  }
-
   @Override
   public Decoder<MapOperation<K, V>> reset() {
     return new MapOperationDecoder<>(keyRecognizer.reset(), valueRecognizer.reset());
+  }
+
+  private enum State {
+    ReadingHeader, ReadingKey, AfterKey, ReadingValue
   }
 }

@@ -16,8 +16,6 @@ public abstract class MapOperation<K, V> {
   public static final byte REMOVE = 1;
   public static final byte CLEAR = 2;
 
-  public abstract void encode(Writable<K> kEncoder, Writable<V> vEncoder, ByteWriter buffer);
-
   public static <K, V> MapOperation<K, V> update(K key, V value) {
     return new Update<>(key, value);
   }
@@ -30,6 +28,8 @@ public abstract class MapOperation<K, V> {
     return new Clear<>();
   }
 
+  public abstract void encode(Writable<K> kEncoder, Writable<V> vEncoder, ByteWriter buffer);
+
   @Override
   public abstract boolean equals(Object obj);
 
@@ -38,6 +38,8 @@ public abstract class MapOperation<K, V> {
 
   @Override
   public abstract String toString();
+
+  public abstract void accept(MapOperationVisitor<K, V> visitor);
 
   // Byte layout:
   //  Total length
@@ -110,6 +112,11 @@ public abstract class MapOperation<K, V> {
           ", value=" + value +
           '}';
     }
+
+    @Override
+    public void accept(MapOperationVisitor<K, V> visitor) {
+      visitor.visitUpdate(key, value);
+    }
   }
 
   // Byte layout:
@@ -166,6 +173,11 @@ public abstract class MapOperation<K, V> {
           "key=" + key +
           '}';
     }
+
+    @Override
+    public void accept(MapOperationVisitor<K, V> visitor) {
+      visitor.visitRemove(key);
+    }
   }
 
   // Byte layout:
@@ -177,7 +189,6 @@ public abstract class MapOperation<K, V> {
       buffer.writeLong(Size.BYTE);
       buffer.writeByte(CLEAR);
     }
-
 
     @Override
     public boolean equals(Object o) {
@@ -195,6 +206,11 @@ public abstract class MapOperation<K, V> {
     @Override
     public String toString() {
       return "Clear{}";
+    }
+
+    @Override
+    public void accept(MapOperationVisitor<K, V> visitor) {
+      visitor.visitClear();
     }
 
   }

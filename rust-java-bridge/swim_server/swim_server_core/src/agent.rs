@@ -13,7 +13,7 @@ use futures_util::future::BoxFuture;
 use futures_util::stream::{unfold, FuturesUnordered, SelectAll};
 use futures_util::{FutureExt, SinkExt};
 use jni::errors::Error as JavaError;
-use jni::objects::{GlobalRef, JObject, JThrowable, JValue};
+use jni::objects::{GlobalRef, JByteBuffer, JObject, JThrowable, JValue};
 use jni::sys::{jint, jobject};
 use swim_api::agent::{Agent, AgentConfig, AgentContext, AgentInitResult};
 use swim_api::error::{AgentInitError, AgentTaskError, FrameIoError};
@@ -38,8 +38,8 @@ use tracing_futures::Instrument;
 use uuid::Uuid;
 
 use jvm_sys::env::{
-    ByteBufferGuard, IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler,
-    NotTypeOfExceptionHandler, Scope,
+    ByteBufferGuard, GlobalRefByteBuffer, IsTypeOfExceptionHandler, JObjectFromByteBuffer, JavaEnv,
+    JavaExceptionHandler, NotTypeOfExceptionHandler, Scope,
 };
 use jvm_sys::method::{
     ByteArray, InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
@@ -159,17 +159,15 @@ impl JavaAgentRef {
         env.with_env(|scope| vtable.did_stop(&scope, agent_obj.as_obj()))
     }
 
-    fn dispatch(
-        &self,
-        env: &JavaEnv,
-        lane_id: i32,
-        mut msg: BytesMut,
-    ) -> Result<Vec<u8>, AgentTaskError> {
+    fn dispatch<T>(&self, env: &JavaEnv, lane_id: i32, buffer: T) -> Result<Vec<u8>, AgentTaskError>
+    where
+        T: JObjectFromByteBuffer,
+    {
         trace!("Dispatching event to agent");
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| {
-            let buffer = unsafe { scope.new_direct_byte_buffer_exact(&mut msg) };
-            vtable.dispatch(&scope, agent_obj.as_obj(), lane_id, buffer)
+            let obj = buffer.as_byte_buffer();
+            vtable.dispatch(&scope, agent_obj.as_obj(), lane_id, obj)
         })
     }
 
@@ -263,7 +261,7 @@ impl JavaAgentVTable {
         scope: &Scope,
         agent_obj: JObject,
         lane_id: jint,
-        msg: ByteBufferGuard,
+        msg: JObject,
     ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable {
             dispatch, handler, ..
@@ -719,6 +717,12 @@ impl FfiAgentTask {
         let env = ffi_context.env.clone();
         java_agent.did_start(&env)?;
 
+        let mut buf = BytesMut::with_capacity(128);
+        let byte_buffer = {
+            let (addr, len) = { (buf.as_mut_ptr(), buf.capacity()) };
+            unsafe { env.with_env(|scope| scope.new_direct_byte_buffer_global(addr, len)) }
+        };
+
         let mut state = AgentTaskState::Running;
 
         loop {
@@ -737,11 +741,14 @@ impl FfiAgentTask {
 
                     match event {
                         Some(RuntimeEvent::Request { id, request }) => {
+                            let bb = byte_buffer.clone();
                             state = match dispatch_request(
                                 ffi_context.clone(),
                                 java_agent.clone(),
                                 id,
                                 request,
+                                &mut buf,
+                                bb,
                             ) {
                                 Some(handle) => {
                                     debug!("Suspending agent runtime");
@@ -875,14 +882,54 @@ fn dispatch_request(
     agent_ref: JavaAgentRef,
     lane_id: i32,
     request: TaggedLaneRequest,
+    buffer_content: &mut BytesMut,
+    byte_buffer: GlobalRefByteBuffer,
 ) -> Option<JoinHandle<Result<Vec<u8>, AgentTaskError>>> {
     let TaggedLaneRequest { request, .. } = request;
     let runtime_handle = Handle::current();
+    let env = context.env.clone();
+
     match request {
-        LaneRequest::Command(msg) => {
+        LaneRequest::Command(mut msg) => {
             trace!("Received a command request");
-            let handle = runtime_handle
-                .spawn_blocking(move || agent_ref.dispatch(&context.env, lane_id, msg));
+
+            // todo: implement an EWMA to track the message sizes and reallocate the buffer if
+            //  there is frequent access into the slow path.
+
+            let handle = if msg.len() > buffer_content.capacity() {
+                // Slow path where the message is too big to fit into the buffer. It's faster to
+                // allocate a new buffer and still perform the JNI call in one hop as opposed to
+                // executing multiple calls, performing incremental decoding of the message and
+                // allocating temporary buffers.
+
+                runtime_handle.spawn_blocking(move || {
+                    // The message **must** live for the duration of the JNI call.
+                    //
+                    // This is different to below where the message is copied into 'buffer_content'
+                    // as the buffer lives for the duration of the JNI call.
+                    let mut msg = msg;
+
+                    let temp_buffer =
+                        env.with_env(|scope| scope.new_direct_byte_buffer_exact(&mut msg));
+                    let result = agent_ref.dispatch(&env, lane_id, temp_buffer);
+
+                    // Free the local ref created when allocating the direct byte buffer. This
+                    // should be performed within the dispatch local frame but it will require
+                    // additional work to be moved there.
+                    env.with_env(|scope| scope.delete_local_ref(temp_buffer.as_byte_buffer()));
+
+                    result
+                })
+            } else {
+                // Fast path where the message will fit into the existing direct byte buffer by
+                // copying the bytes into it.
+
+                buffer_content.clear();
+                buffer_content.extend_from_slice(msg.as_ref());
+
+                runtime_handle
+                    .spawn_blocking(move || agent_ref.dispatch(&env, lane_id, byte_buffer))
+            };
             Some(handle)
         }
         LaneRequest::Sync(remote_id) => {

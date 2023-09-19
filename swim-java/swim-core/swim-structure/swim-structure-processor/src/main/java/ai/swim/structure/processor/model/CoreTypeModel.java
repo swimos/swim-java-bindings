@@ -9,6 +9,7 @@ import javax.lang.model.util.Elements;
 public class CoreTypeModel<T> extends Model {
   private final Kind kind;
   private final T defaultValue;
+
   private CoreTypeModel(TypeMirror type, Element element, Kind kind, T defaultValue, PackageElement packageElement) {
     super(type, element, packageElement);
     this.kind = kind;

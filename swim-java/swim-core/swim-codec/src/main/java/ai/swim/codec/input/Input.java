@@ -1,6 +1,6 @@
 package ai.swim.codec.input;
 
-import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.location.Location;
 import java.nio.ByteBuffer;
 
@@ -27,10 +27,10 @@ public abstract class Input {
   }
 
   /**
-   * Creates a new {@link ai.swim.codec.data.ByteReader} {@code Input}.
+   * Creates a new {@link ReadBuffer} {@code Input}.
    */
-  public static ByteReaderInput byteReader(ByteReader data) {
-    return new ByteReaderInput(data);
+  public static ReadBufferInput readBuffer(ReadBuffer data) {
+    return new ReadBufferInput(data);
   }
 
   /**

@@ -1,7 +1,7 @@
 package ai.swim.server.agent;
 
+import ai.swim.codec.decoder.DecoderException;
 import ai.swim.server.lanes.state.StateCollector;
-import ai.swim.structure.recognizer.RecognizerException;
 import java.nio.ByteBuffer;
 
 /**
@@ -43,12 +43,8 @@ public class AgentView {
    * @param buffer  the event data.
    * @throws AgentException if an error is encountered when deserialising the envelope.
    */
-  public byte[] dispatch(int laneIdx, ByteBuffer buffer) {
-    try {
-      return node.dispatch(laneIdx, buffer);
-    } catch (RecognizerException e) {
-      throw new AgentException(e);
-    }
+  public byte[] dispatch(int laneIdx, ByteBuffer buffer) throws DecoderException {
+    return node.dispatch(laneIdx, buffer);
   }
 
   /**
@@ -58,7 +54,7 @@ public class AgentView {
    * @param uuidMsb UUID most significant bits.
    * @param uuidLsb UUID least significant bits.
    */
-  public byte[] sync(int laneIdx, long uuidMsb, long uuidLsb) {
+  public byte[] sync(int laneIdx, long uuidMsb, long uuidLsb) throws DecoderException {
     return node.sync(laneIdx, uuidMsb, uuidLsb);
   }
 
@@ -68,7 +64,7 @@ public class AgentView {
    * @param laneIdx to initialise.
    * @param from    the store initialisation data.
    */
-  public void init(int laneIdx, ByteBuffer from) {
+  public void init(int laneIdx, ByteBuffer from) throws DecoderException {
     node.init(laneIdx, from);
   }
 

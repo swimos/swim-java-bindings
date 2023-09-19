@@ -7,7 +7,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ByteReaderInputTest {
+class ReadBufferInputTest {
+
+  @Test
+  void has() {
+    ByteWriter writer = new ByteWriter();
+    writer.writeByteArray(new byte[] {1, 2, 3, 4, 5});
+
+    Input input = Input.readBuffer(writer.reader());
+
+    for (int i = 4; i > 0; i--) {
+      assertTrue(input.has(i));
+      input.step();
+    }
+  }
 
   @Test
   void testBounded() {
@@ -17,7 +30,7 @@ class ByteReaderInputTest {
     ByteReader reader = bytes.reader();
     reader.advance(2);
 
-    Input input = new ByteReaderInput(reader, false, 4);
+    Input input = new ReadBufferInput(reader, false, 4);
 
     assertEquals(3, input.head());
     assertTrue(input.has(1));
@@ -40,7 +53,7 @@ class ByteReaderInputTest {
     ByteWriter bytes = new ByteWriter();
     bytes.writeByteArray(new byte[] {1, 2, 3});
 
-    Input input = Input.byteReader(bytes.reader());
+    Input input = Input.readBuffer(bytes.reader());
 
     assertTrue(input.has(1));
     assertFalse(input.has(4));

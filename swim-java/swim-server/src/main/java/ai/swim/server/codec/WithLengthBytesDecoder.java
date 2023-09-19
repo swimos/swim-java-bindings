@@ -1,17 +1,17 @@
 package ai.swim.server.codec;
 
 import ai.swim.codec.Size;
-import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
 
 /**
  * A decoder that decodes N bytes that are prefixed by their len.
  */
-public class WithLengthBytesDecoder extends Decoder<ByteReader> {
+public class WithLengthBytesDecoder extends Decoder<ReadBuffer> {
 
   @Override
-  public Decoder<ByteReader> decode(ByteReader buffer) throws DecoderException {
+  public Decoder<ReadBuffer> decode(ReadBuffer buffer) throws DecoderException {
     if (buffer.remaining() < Size.LONG) {
       return this;
     } else {
@@ -32,7 +32,7 @@ public class WithLengthBytesDecoder extends Decoder<ByteReader> {
   }
 
   @Override
-  public Decoder<ByteReader> reset() {
+  public Decoder<ReadBuffer> reset() {
     return this;
   }
 

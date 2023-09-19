@@ -1,6 +1,6 @@
 package ai.swim.server.lanes.models.response;
 
-import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
 import java.util.UUID;
@@ -21,7 +21,7 @@ public class LaneResponseDecoder<T> extends Decoder<LaneResponse<T>> {
   }
 
   @Override
-  public Decoder<LaneResponse<T>> decode(ByteReader buffer) throws DecoderException {
+  public Decoder<LaneResponse<T>> decode(ReadBuffer buffer) throws DecoderException {
     while (true) {
       switch (state) {
         case Header:

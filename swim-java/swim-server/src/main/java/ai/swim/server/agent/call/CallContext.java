@@ -8,6 +8,21 @@ package ai.swim.server.agent.call;
 public class CallContext {
   private static final ThreadLocal<Object> CALL_CONTEXT = new ThreadLocal<>();
 
+  public static void enter() {
+    CALL_CONTEXT.set(new Object());
+  }
+
+  public static void exit() {
+    CALL_CONTEXT.remove();
+  }
+
+  public static void check() {
+    boolean entered = CALL_CONTEXT.get() != null;
+    if (!entered) {
+      throw CallContextException.illegalAccess(ThreadInfo.build());
+    }
+  }
+
   public static class ThreadInfo {
     private final String name;
     private final ThreadGroup threadGroup;
@@ -31,21 +46,6 @@ public class CallContext {
           ", threadGroup=" + threadGroup +
           ", id=" + id +
           '}';
-    }
-  }
-
-  public static void enter() {
-    CALL_CONTEXT.set(new Object());
-  }
-
-  public static void exit() {
-    CALL_CONTEXT.remove();
-  }
-
-  public static void check() {
-    boolean entered = CALL_CONTEXT.get() != null;
-    if (!entered) {
-      throw CallContextException.illegalAccess(ThreadInfo.build());
     }
   }
 

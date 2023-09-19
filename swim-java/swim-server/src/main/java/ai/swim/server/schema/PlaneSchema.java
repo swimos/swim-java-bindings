@@ -133,7 +133,7 @@ public class PlaneSchema<P extends AbstractPlane> {
   }
 
   public int laneIdFor(Class<? extends AbstractAgent> agentClass, String nodeUri) {
-    AgentSchema<?> schema =schemaFor(agentClass);
+    AgentSchema<?> schema = schemaFor(agentClass);
     return schema.getLaneSchemas().get(nodeUri).getLaneId();
   }
 

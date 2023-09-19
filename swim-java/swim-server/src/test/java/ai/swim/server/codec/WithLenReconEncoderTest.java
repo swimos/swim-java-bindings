@@ -1,13 +1,11 @@
 package ai.swim.server.codec;
 
-import ai.swim.codec.Size;
 import ai.swim.codec.data.ByteReader;
 import ai.swim.codec.data.ByteWriter;
 import ai.swim.structure.Recon;
 import ai.swim.structure.annotations.AutoForm;
 import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 class WithLenReconEncoderTest {

@@ -1,15 +1,15 @@
 package ai.swim.server.lanes;
 
-import ai.swim.structure.recognizer.RecognizerException;
-import java.nio.ByteBuffer;
+import ai.swim.codec.data.ReadBuffer;
+import ai.swim.codec.decoder.DecoderException;
 import java.util.UUID;
 
-public abstract class LaneModel implements LaneItem {
-  public abstract void dispatch(ByteBuffer buffer) throws RecognizerException;
+public abstract class LaneModel {
+  public abstract void dispatch(ReadBuffer buffer) throws DecoderException;
 
-  public abstract void sync(UUID remote);
+  public abstract void sync(UUID remote) throws DecoderException;
 
-  public abstract void init(ByteBuffer buffer);
+  public abstract void init(ReadBuffer buffer) throws DecoderException;
 
   public abstract LaneView getLaneView();
 }

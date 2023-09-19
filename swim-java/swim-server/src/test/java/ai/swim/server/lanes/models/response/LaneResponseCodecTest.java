@@ -2,6 +2,7 @@ package ai.swim.server.lanes.models.response;
 
 import ai.swim.codec.data.ByteReader;
 import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
 import ai.swim.codec.encoder.Encoder;
@@ -86,7 +87,7 @@ class LaneResponseCodecTest {
 
   private static class IntDecoder extends Decoder<Integer> {
     @Override
-    public Decoder<Integer> decode(ByteReader buffer) {
+    public Decoder<Integer> decode(ReadBuffer buffer) {
       return Decoder.done(this, buffer.getInteger());
     }
 

@@ -1,8 +1,8 @@
 package ai.swim.server.lanes.state;
 
+import ai.swim.codec.data.BufferOverflowException;
 import ai.swim.codec.data.ByteWriter;
 import ai.swim.server.agent.AgentView;
-import ai.swim.codec.data.BufferOverflowException;
 import ai.swim.server.lanes.WriteResult;
 import java.util.HashSet;
 import java.util.Iterator;

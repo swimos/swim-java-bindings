@@ -20,7 +20,6 @@ import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.concurrent.Trigger;
-import ai.swim.lang.ffi.NativeHandle;
 import ai.swim.structure.Form;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;

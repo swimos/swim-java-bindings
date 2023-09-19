@@ -2,12 +2,13 @@ package ai.swim.server.lanes.map;
 
 import ai.swim.codec.data.ByteWriter;
 import ai.swim.server.agent.call.CallContext;
+import ai.swim.server.agent.call.CallContextException;
 import ai.swim.server.lanes.WriteResult;
 import ai.swim.server.lanes.state.State;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 
@@ -15,19 +16,17 @@ public class MapState<K, V> implements State {
   private final Form<K> keyForm;
   private final Form<V> valueForm;
   private final StateCollector collector;
-  private final List<MapEvent<K, V>> events;
-  private final List<UUID> syncRequests;
+  private final PendingWrites<K, V> pendingWrites;
   private final int laneId;
-  private Map<K, V> state;
-  private boolean dirty;
+  private final Map<K, V> state;
 
   public MapState(int laneId, Form<K> keyForm, Form<V> valueForm, StateCollector collector) {
     this.laneId = laneId;
     this.keyForm = keyForm;
     this.valueForm = valueForm;
     this.collector = collector;
-    events = new ArrayList<>();
-    syncRequests = new ArrayList<>();
+    state = new HashMap<>();
+    pendingWrites = new PendingWrites<>();
   }
 
   /**
@@ -38,99 +37,61 @@ public class MapState<K, V> implements State {
   public void clear() {
     CallContext.check();
 
-    dirty = true;
     state.clear();
-    events.add(MapEvent.clear());
+    pendingWrites.pushOperation(MapOperation.clear());
     collector.add(this);
   }
 
   /**
    * Associates the specified value with the specified key in this map.
    *
+   * @return the old value associated with the key
    * @throws ai.swim.server.agent.call.CallContextException if not invoked from a valid call context.
    */
-  public void update(K key, V value) {
+  public V update(K key, V value) {
     CallContext.check();
 
-    dirty = true;
-    state.put(key, value);
-    events.add(MapEvent.update(key, value));
+    V oldValue = state.put(key, value);
+    pendingWrites.pushOperation(MapOperation.update(key, value));
     collector.add(this);
+
+    return oldValue;
   }
 
   /**
    * Removes the mapping for a key from this map if it is present.
    *
-   * @throws ai.swim.server.agent.call.CallContextException if not invoked from a valid call context.
+   * @return the old value associated with the key
+   * @throws CallContextException if not invoked from a valid call context.
    */
-  public void remove(K key) {
+  public V remove(K key) {
     CallContext.check();
 
-    dirty = true;
-    state.remove(key);
-    events.add(MapEvent.remove(key));
+    V oldValue = state.remove(key);
+    pendingWrites.pushOperation(MapOperation.remove(key));
     collector.add(this);
+
+    return oldValue;
   }
 
   /**
    * Gets the value associated with the key.
    *
-   * @throws ai.swim.server.agent.call.CallContextException if not invoked from a valid call context.
+   * @throws CallContextException if not invoked from a valid call context.
    */
   public V get(K key) {
     CallContext.check();
     return state.get(key);
   }
 
-//  private void write(Bytes buffer, LaneResponse<T> item) {
-//    IdentifiedLaneResponseEncoder<T> encoder = new IdentifiedLaneResponseEncoder<>(new WithLenReconEncoder<>(form));
-//    encoder.encode(new IdentifiedLaneResponse<>(laneId, item), buffer);
-//  }
-
   @Override
   public WriteResult writeInto(ByteWriter bytes) {
-//    ListIterator<UUID> syncIter = syncRequests.listIterator();
-//
-//    while (syncIter.hasNext()) {
-//      UUID remote = syncIter.next();
-//
-//      try {
-//        write(bytes, LaneResponse.syncEvent(remote, state));
-//        write(bytes, LaneResponse.synced(remote));
-//      } catch (BufferOverflowException ignored) {
-//        return WriteResult.DataStillAvailable;
-//      }
-//
-//      syncIter.remove();
-//    }
-//
-//    if (dirty) {
-//      ListIterator<T> iter = events.listIterator();
-//
-//      while (iter.hasNext()) {
-//        T item = iter.next();
-//
-//        try {
-//          write(bytes, LaneResponse.event(item));
-//        } catch (BufferOverflowException ignored) {
-//          return WriteResult.DataStillAvailable;
-//        }
-//
-//        iter.remove();
-//      }
-//
-//      dirty = false;
-//      return WriteResult.Done;
-//    } else {
-//      return WriteResult.NoData;
-//    }
-
-    return null;
+    return pendingWrites.writeInto(laneId, state, bytes, keyForm, valueForm);
   }
 
   @Override
   public void sync(UUID uuid) {
-    syncRequests.add(uuid);
+    pendingWrites.pushSync(uuid, new HashSet<>(state.keySet()));
     collector.add(this);
   }
 

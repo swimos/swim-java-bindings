@@ -1,12 +1,11 @@
 package ai.swim.server.codec;
 
-import ai.swim.codec.data.ByteReader;
 import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
 import ai.swim.codec.encoder.Encoder;
 import org.junit.jupiter.api.Test;
-import java.util.Arrays;
 import java.util.Random;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,11 +29,11 @@ class WithLengthBytesCodecTest {
 
     assertArrayEquals(expected.getArray(), bytes.getArray());
 
-    Decoder<ByteReader> decoder = new WithLengthBytesDecoder();
+    Decoder<ReadBuffer> decoder = new WithLengthBytesDecoder();
     decoder = decoder.decode(bytes.reader());
     assertTrue(decoder.isDone());
 
-    ByteReader actual = decoder.bind();
+    ReadBuffer actual = decoder.bind();
     assertArrayEquals(data, actual.getArray());
   }
 

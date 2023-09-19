@@ -6,6 +6,7 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
+use std::ops::Deref;
 use std::panic::Location;
 use std::process::abort;
 use std::sync::Arc;
@@ -14,7 +15,7 @@ use bytes::BytesMut;
 use jni::descriptors::Desc;
 use jni::errors::{Error, JniError};
 use jni::objects::{
-    GlobalRef, JByteBuffer, JClass, JMethodID, JObject, JString, JThrowable, JValue,
+    AutoLocal, GlobalRef, JByteBuffer, JClass, JMethodID, JObject, JString, JThrowable, JValue,
 };
 use jni::signature::ReturnType;
 use jni::strings::{JNIString, JavaStr};
@@ -340,18 +341,23 @@ impl<'l> Scope<'l> {
         system_call(vm, || env.new_global_ref(obj))
     }
 
+    pub fn delete_local_ref(&self, obj: JObject) {
+        let Scope { vm, env, .. } = self;
+        system_call(vm, || env.delete_local_ref(obj))
+    }
+
     pub fn convert_byte_array(&self, array: jbyteArray) -> Vec<u8> {
         let Scope { vm, env, .. } = self;
         system_call(vm, || env.convert_byte_array(array))
     }
 
-    pub unsafe fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b>
+    pub fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b>
     where
         B: BufPtr,
         'l: 'b,
     {
         let Scope { vm, env, .. } = self;
-        let buffer = system_call(vm, || {
+        let buffer = system_call(vm, || unsafe {
             env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len())
         });
         ByteBufferGuard {
@@ -359,9 +365,46 @@ impl<'l> Scope<'l> {
             buffer,
         }
     }
+
+    pub unsafe fn new_direct_byte_buffer_global(
+        &self,
+        data: *mut u8,
+        len: usize,
+    ) -> GlobalRefByteBuffer {
+        let Scope { vm, env, .. } = self;
+        system_call(vm, || {
+            let buffer = unsafe { env.new_direct_byte_buffer(data, len)? };
+            let global_ref = env.new_global_ref(buffer)?;
+            Ok(GlobalRefByteBuffer(global_ref))
+        })
+    }
+
+    pub fn auto_local<'s, 'o>(&'s self, obj: JObject<'o>) -> AutoLocal<'o, 's>
+    where
+        's: 'o,
+    {
+        let Scope { env, .. } = self;
+        AutoLocal::new(env, obj)
+    }
+}
+
+#[must_use]
+#[derive(Clone)]
+pub struct GlobalRefByteBuffer(GlobalRef);
+
+pub unsafe trait JObjectFromByteBuffer {
+    fn as_byte_buffer(&self) -> JObject;
+}
+
+unsafe impl JObjectFromByteBuffer for GlobalRefByteBuffer {
+    fn as_byte_buffer(&self) -> JObject {
+        self.0.as_obj()
+    }
 }
 
 /// Guard that binds the lifetime of the JByteBuffer to the backing data.
+#[must_use]
+#[derive(Clone, Copy)]
 pub struct ByteBufferGuard<'b> {
     _buf: PhantomData<&'b mut Vec<u8>>,
     buffer: JByteBuffer<'b>,
@@ -370,6 +413,13 @@ pub struct ByteBufferGuard<'b> {
 impl<'b> From<ByteBufferGuard<'b>> for JValue<'b> {
     fn from(value: ByteBufferGuard<'b>) -> Self {
         unsafe { JValue::Object(JObject::from_raw(value.buffer.into_raw())) }
+    }
+}
+
+unsafe impl<'b> JObjectFromByteBuffer for ByteBufferGuard<'b> {
+    // This is unsafe due to the clone unbinding the object from the lifetime.
+    fn as_byte_buffer(&self) -> JObject {
+        *self.buffer.deref()
     }
 }
 

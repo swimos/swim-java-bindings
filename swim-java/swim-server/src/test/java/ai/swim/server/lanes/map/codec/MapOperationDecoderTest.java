@@ -9,7 +9,6 @@ import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import ai.swim.structure.writer.std.ScalarWriters;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import static org.junit.jupiter.api.Assertions.assertEquals;

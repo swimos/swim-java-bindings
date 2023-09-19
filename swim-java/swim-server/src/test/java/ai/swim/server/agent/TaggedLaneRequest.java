@@ -3,7 +3,7 @@ package ai.swim.server.agent;
 import ai.swim.server.lanes.models.request.LaneRequest;
 import java.util.Objects;
 
-public class TaggedLaneRequest<T>  {
+public class TaggedLaneRequest<T> {
   private final String laneUri;
   private final LaneRequest<T> request;
 

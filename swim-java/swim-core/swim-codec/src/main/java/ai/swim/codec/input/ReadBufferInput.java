@@ -1,43 +1,39 @@
 package ai.swim.codec.input;
 
-import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.location.Location;
 
-public class ByteReaderInput extends Input {
+public class ReadBufferInput extends Input {
   private static final int NO_LIMIT = -1;
 
-  private ByteReader bytes;
+  private ReadBuffer bytes;
   private boolean isPartial;
   private int limit;
 
-  public ByteReaderInput(ByteReader bytes, boolean isPartial, int limit) {
+  public ReadBufferInput(ReadBuffer bytes, boolean isPartial, int limit) {
     this.bytes = bytes;
     this.isPartial = isPartial;
     this.limit = limit;
   }
 
-  public ByteReaderInput(ByteReader bytes) {
+  public ReadBufferInput(ReadBuffer bytes) {
     this(bytes, false, NO_LIMIT);
   }
 
-  public ByteReaderInput limit(int limit) {
-    return new ByteReaderInput(bytes, isPartial, limit);
+  public ReadBufferInput limit(int limit) {
+    return new ReadBufferInput(bytes, isPartial, limit);
   }
 
   @Override
   public boolean has(int n) {
+    if (n < 1) {
+      throw new IllegalArgumentException("n < 1");
+    }
+
     if (limit == NO_LIMIT) {
-      int remaining = bytes.remaining();
-      if (remaining == 1) {
-        remaining = 0;
-      }
-
-      // This class lags behind by 1 as the `head()` peeks the next byte. If there is only one byte remaining, then
-      // we're done.
-
-      return remaining >= n;
+      return bytes.remaining() >= n;
     } else {
-      return n <= limit - bytes.getReadPointer();
+      return n <= limit - bytes.readPointer();
     }
   }
 
@@ -48,7 +44,7 @@ public class ByteReaderInput extends Input {
 
   @Override
   public Input step() {
-    if (has(1)) {
+    if (isContinuation()) {
       bytes.advance(1);
       return this;
     } else {
@@ -58,7 +54,7 @@ public class ByteReaderInput extends Input {
 
   @Override
   public Location location() {
-    return Location.of(0, 0, bytes.getReadPointer());
+    return Location.of(0, 0, bytes.readPointer());
   }
 
   @Override
@@ -78,7 +74,7 @@ public class ByteReaderInput extends Input {
 
   @Override
   public Input setPartial(boolean isPartial) {
-    return new ByteReaderInput(bytes, isPartial, limit);
+    return new ReadBufferInput(bytes, isPartial, limit);
   }
 
   @Override
@@ -104,15 +100,15 @@ public class ByteReaderInput extends Input {
 
   @Override
   public Input clone() {
-    return new ByteReaderInput(bytes.clone(), isPartial, limit);
+    return new ReadBufferInput(bytes.clone(), isPartial, limit);
   }
 
   @Override
   public Input extend(Input from) {
-    if (from instanceof ByteReaderInput) {
-      ByteReaderInput other = (ByteReaderInput) from;
+    if (from instanceof ReadBufferInput) {
+      ReadBufferInput other = (ReadBufferInput) from;
       bytes.unsplit(other.bytes);
-      return new ByteReaderInput(bytes, isPartial, limit);
+      return new ReadBufferInput(bytes, isPartial, limit);
     } else {
       throw new ClassCastException();
     }
@@ -120,8 +116,8 @@ public class ByteReaderInput extends Input {
 
   @Override
   public void setFrom(Input from) {
-    if (from instanceof ByteReaderInput) {
-      ByteReaderInput other = (ByteReaderInput) from;
+    if (from instanceof ReadBufferInput) {
+      ReadBufferInput other = (ReadBufferInput) from;
       this.bytes = other.bytes;
       this.limit = other.limit;
       this.isPartial = other.isPartial;

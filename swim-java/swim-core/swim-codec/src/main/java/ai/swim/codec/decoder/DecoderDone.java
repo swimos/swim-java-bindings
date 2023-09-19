@@ -1,7 +1,7 @@
 package ai.swim.codec.decoder;
 
 
-import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ReadBuffer;
 
 /**
  * A decoder in a done state.
@@ -18,7 +18,7 @@ public class DecoderDone<T> extends Decoder<T> {
   }
 
   @Override
-  public Decoder<T> decode(ByteReader buffer) {
+  public Decoder<T> decode(ReadBuffer buffer) {
     throw new IllegalStateException("Decoder complete");
   }
 

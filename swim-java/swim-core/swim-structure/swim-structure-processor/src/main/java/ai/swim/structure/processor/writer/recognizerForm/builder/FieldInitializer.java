@@ -41,7 +41,8 @@ public class FieldInitializer extends Emitter {
   @Override
   public String toString() {
     return CodeBlock
-        .of("new $L<>($L$L)",
+        .of(
+            "new $L<>($L$L)",
             FIELD_RECOGNIZING_BUILDER_CLASS,
             fieldModel.instantiate(context.getInitializer(), inConstructor),
             new RecognizerTransformation(fieldModel))
