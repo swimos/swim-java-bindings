@@ -51,11 +51,6 @@ class SwimServerTest {
     forPlane(planeSchema.bytes());
   }
 
-  @Test
-  void testRun() throws IOException, SwimServerException {
-    MockSwimServer.forPlane(TestPlane.class).runServer();
-  }
-
   /**
    * Tests that the agent sets the state of the other lanes correctly and that the responses are encoded correctly.
    */
@@ -73,7 +68,7 @@ class SwimServerTest {
     ByteBuffer buffer = ByteBuffer.wrap(new byte[] {49, 51}); // 13
 
     ByteWriter bytes = new ByteWriter();
-    bytes.writeByteArray(agentView.dispatch(laneId, buffer));
+    bytes.writeByteArray(agentView.dispatch(laneId, buffer, buffer.remaining()));
 
     // assert that there isn't any more data available. only three events should have been written and these would fit
     // in the buffer

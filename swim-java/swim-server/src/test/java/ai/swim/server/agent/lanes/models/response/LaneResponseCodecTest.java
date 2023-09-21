@@ -1,4 +1,4 @@
-package ai.swim.server.lanes.models.response;
+package ai.swim.server.agent.lanes.models.response;
 
 import ai.swim.codec.data.ByteReader;
 import ai.swim.codec.data.ByteWriter;
@@ -6,6 +6,9 @@ import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
 import ai.swim.codec.encoder.Encoder;
+import ai.swim.server.lanes.models.response.LaneResponse;
+import ai.swim.server.lanes.models.response.LaneResponseDecoder;
+import ai.swim.server.lanes.models.response.LaneResponseEncoder;
 import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.UUID;

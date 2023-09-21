@@ -6,20 +6,28 @@ import java.nio.charset.StandardCharsets;
 
 public class AgentFixture {
 
-  public static void writeInt(int v, ByteWriter into) {
+  public static void writeIntString(int v, ByteWriter into) {
     byte[] bytes = Integer.toString(v).getBytes(StandardCharsets.UTF_8);
     into.writeLong(bytes.length);
     into.writeByteArray(bytes);
   }
 
+  public static void writeBooleanString(Boolean v, ByteWriter into) {
+    byte[] bytes = Boolean.toString(v).getBytes(StandardCharsets.UTF_8);
+    into.writeLong(bytes.length);
+    into.writeByteArray(bytes);
+  }
+
   public static <E> ByteWriter encodeIter(Iterable<E> iterator, Encoder<E> encoder) {
-    ByteWriter requestBytes = new ByteWriter();
+    ByteWriter writer = new ByteWriter();
+    encodeIter(writer, iterator, encoder);
+    return writer;
+  }
 
+  public static <E> void encodeIter(ByteWriter writer, Iterable<E> iterator, Encoder<E> encoder) {
     for (E e : iterator) {
-      encoder.encode(e, requestBytes);
+      encoder.encode(e, writer);
     }
-
-    return requestBytes;
   }
 
 }

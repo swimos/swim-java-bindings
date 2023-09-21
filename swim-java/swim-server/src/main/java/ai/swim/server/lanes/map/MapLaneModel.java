@@ -30,7 +30,7 @@ public final class MapLaneModel<K, V> extends LaneModel {
   }
 
   @Override
-  public void dispatch(ReadBuffer buffer) throws DecoderException {
+  public void dispatch(ReadBuffer buffer) {
     decodeAndDispatch(buffer, keyForm.reset(), valueForm.reset(), operationDispatcher);
   }
 
@@ -40,14 +40,14 @@ public final class MapLaneModel<K, V> extends LaneModel {
   }
 
   @Override
-  public void init(ReadBuffer buffer) throws DecoderException {
+  public void init(ReadBuffer buffer) {
     decodeAndDispatch(buffer, keyForm.reset(), valueForm.reset(), initVisitor);
   }
 
   private static <K, V> void decodeAndDispatch(ReadBuffer buffer,
       Recognizer<K> keyRecognizer,
       Recognizer<V> valueRecognizer,
-      MapOperationVisitor<K, V> visitor) throws DecoderException {
+      MapOperationVisitor<K, V> visitor) {
     Decoder<MapOperation<K, V>> decoder = new MapOperationDecoder<>(keyRecognizer, valueRecognizer);
 
     boolean dispatched = false;

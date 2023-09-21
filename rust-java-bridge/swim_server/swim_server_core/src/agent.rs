@@ -159,7 +159,13 @@ impl JavaAgentRef {
         env.with_env(|scope| vtable.did_stop(&scope, agent_obj.as_obj()))
     }
 
-    fn dispatch<T>(&self, env: &JavaEnv, lane_id: i32, buffer: T) -> Result<Vec<u8>, AgentTaskError>
+    fn dispatch<T>(
+        &self,
+        env: &JavaEnv,
+        lane_id: i32,
+        buffer: T,
+        len: i32,
+    ) -> Result<Vec<u8>, AgentTaskError>
     where
         T: JObjectFromByteBuffer,
     {
@@ -167,7 +173,7 @@ impl JavaAgentRef {
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| {
             let obj = buffer.as_byte_buffer();
-            vtable.dispatch(&scope, agent_obj.as_obj(), lane_id, obj)
+            vtable.dispatch(&scope, agent_obj.as_obj(), lane_id, obj, len)
         })
     }
 
@@ -212,7 +218,7 @@ impl JavaAgentVTable {
     const DISPATCH: JavaObjectMethodDef = JavaObjectMethodDef::new(
         "ai/swim/server/agent/AgentView",
         "dispatch",
-        "(ILjava/nio/ByteBuffer;)[B",
+        "(ILjava/nio/ByteBuffer;I)[B",
     );
     const SYNC: JavaObjectMethodDef =
         JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "sync", "(IJJ)[B");
@@ -262,6 +268,7 @@ impl JavaAgentVTable {
         agent_obj: JObject,
         lane_id: jint,
         msg: JObject,
+        len: i32,
     ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable {
             dispatch, handler, ..
@@ -270,7 +277,7 @@ impl JavaAgentVTable {
             handler,
             scope,
             agent_obj,
-            &[lane_id.into(), msg.into()],
+            &[lane_id.into(), msg.into(), len.into()],
         )
     }
 
@@ -891,6 +898,10 @@ fn dispatch_request(
 
     match request {
         LaneRequest::Command(mut msg) => {
+            if i32::try_from(msg.len()).is_err() {
+                unimplemented!("oversized messages");
+            }
+
             trace!("Received a command request");
 
             // todo: implement an EWMA to track the message sizes and reallocate the buffer if
@@ -908,10 +919,11 @@ fn dispatch_request(
                     // This is different to below where the message is copied into 'buffer_content'
                     // as the buffer lives for the duration of the JNI call.
                     let mut msg = msg;
+                    let msg_len = msg.len() as i32;
 
                     let temp_buffer =
                         env.with_env(|scope| scope.new_direct_byte_buffer_exact(&mut msg));
-                    let result = agent_ref.dispatch(&env, lane_id, temp_buffer);
+                    let result = agent_ref.dispatch(&env, lane_id, temp_buffer, msg_len);
 
                     // Free the local ref created when allocating the direct byte buffer. This
                     // should be performed within the dispatch local frame but it will require
@@ -927,8 +939,9 @@ fn dispatch_request(
                 buffer_content.clear();
                 buffer_content.extend_from_slice(msg.as_ref());
 
-                runtime_handle
-                    .spawn_blocking(move || agent_ref.dispatch(&env, lane_id, byte_buffer))
+                runtime_handle.spawn_blocking(move || {
+                    agent_ref.dispatch(&env, lane_id, byte_buffer, msg.len() as i32)
+                })
             };
             Some(handle)
         }

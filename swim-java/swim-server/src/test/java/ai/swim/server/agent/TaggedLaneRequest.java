@@ -5,11 +5,21 @@ import java.util.Objects;
 
 public class TaggedLaneRequest<T> {
   private final String laneUri;
+  private final boolean mapLike;
   private final LaneRequest<T> request;
 
-  public TaggedLaneRequest(String laneUri, LaneRequest<T> request) {
+  private TaggedLaneRequest(String laneUri, boolean mapLike,LaneRequest<T> request) {
     this.laneUri = laneUri;
+    this.mapLike=mapLike;
     this.request = request;
+  }
+
+  public static <T> TaggedLaneRequest<T> value(String laneUri,LaneRequest<T> request){
+    return new TaggedLaneRequest<>(laneUri,false,request);
+  }
+
+  public static <T> TaggedLaneRequest<T> map(String laneUri,LaneRequest<T> request){
+    return new TaggedLaneRequest<>(laneUri,true,request);
   }
 
   public String getLaneUri() {
@@ -18,6 +28,10 @@ public class TaggedLaneRequest<T> {
 
   public LaneRequest<T> getRequest() {
     return request;
+  }
+
+  public boolean isMapLike() {
+    return mapLike;
   }
 
   @Override

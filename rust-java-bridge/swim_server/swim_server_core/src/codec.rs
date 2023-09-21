@@ -21,7 +21,7 @@ type ValueReaderCodec = LaneCodec<WithLengthBytesCodec>;
 type MapReaderCodec = LaneCodec<MapMessageDecoder<RawMapOperationDecoder>>;
 
 const TAG_SIZE: usize = size_of::<u8>();
-const LEN_SIZE: usize = size_of::<i32>();
+const LEN_SIZE: usize = size_of::<i64>();
 
 pub enum LaneReaderCodec {
     Value(ValueReaderCodec),
@@ -43,8 +43,8 @@ struct MapOperationBytesEncoder;
 impl MapOperationBytesEncoder {
     const UPDATE: u8 = 0;
     const REMOVE: u8 = 1;
-
     const CLEAR: u8 = 2;
+
     const OVERSIZE_KEY: &'static str = "Key too large.";
     const OVERSIZE_RECORD: &'static str = "Record too large.";
 }
@@ -60,6 +60,12 @@ impl Encoder<MapOperation<BytesMut, BytesMut>> for MapOperationBytesEncoder {
         match item {
             MapOperation::Update { key, value } => {
                 let total_len = key.len() + value.len() + LEN_SIZE + TAG_SIZE;
+                println!("Total len 2: {}", total_len);
+                println!("key len 2: {}", key.len());
+                println!("value len 2: {}", value.len());
+
+                // int/i32 overflow is handled in Java
+
                 dst.reserve(total_len + LEN_SIZE);
                 dst.put_u64(u64::try_from(total_len).expect(Self::OVERSIZE_RECORD));
                 dst.put_u8(Self::UPDATE);

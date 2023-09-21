@@ -41,10 +41,13 @@ public class AgentView {
    *
    * @param laneIdx the URI of the lane.
    * @param buffer  the event data.
+   * @param len the number of elements written into the buffer
    * @throws AgentException if an error is encountered when deserialising the envelope.
    */
-  public byte[] dispatch(int laneIdx, ByteBuffer buffer) throws DecoderException {
-    return node.dispatch(laneIdx, buffer);
+  public byte[] dispatch(int laneIdx, ByteBuffer buffer, int len) throws DecoderException {
+    byte[] response = node.dispatch(laneIdx, buffer.limit(len));
+    buffer.clear();
+    return response;
   }
 
   /**

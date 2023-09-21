@@ -68,7 +68,7 @@ class CallContextTest {
     AgentView view = agentFactory.newInstance(0);
 
     byte[] msg = "13".getBytes(StandardCharsets.UTF_8);
-    view.dispatch(0, ByteBuffer.wrap(msg));
+    view.dispatch(0, ByteBuffer.wrap(msg), msg.length);
   }
 
   @SwimAgent("agent")

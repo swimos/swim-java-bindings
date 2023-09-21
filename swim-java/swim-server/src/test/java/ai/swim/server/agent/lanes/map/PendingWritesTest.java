@@ -1,13 +1,15 @@
-package ai.swim.server.lanes.map;
+package ai.swim.server.agent.lanes.map;
 
 import ai.swim.codec.data.ByteReader;
 import ai.swim.codec.data.ByteWriter;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
 import ai.swim.server.lanes.WriteResult;
+import ai.swim.server.lanes.map.MapOperation;
+import ai.swim.server.lanes.map.PendingWrites;
 import ai.swim.server.lanes.map.codec.MapOperationDecoder;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
-import ai.swim.server.lanes.models.response.IdentifiedLaneResponseDecoder;
+import ai.swim.server.agent.lanes.models.response.IdentifiedLaneResponseDecoder;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.models.response.LaneResponseDecoder;
 import ai.swim.server.lanes.models.response.LaneResponseVisitor;
@@ -102,7 +104,7 @@ class PendingWritesTest {
     };
   }
 
-  private static <T> Decoder<IdentifiedLaneResponse<T>> decode(Decoder<IdentifiedLaneResponse<T>> decoder,
+  private static <T> Decoder<IdentifiedLaneResponse<T>> decodeAndVisit(Decoder<IdentifiedLaneResponse<T>> decoder,
       ByteReader buffer,
       Supplier<LaneResponseVisitor<T>> visitor) throws DecoderException {
 
@@ -141,17 +143,17 @@ class PendingWritesTest {
     ByteReader reader = buffer.reader();
 
     // The first sync request will produce events that are interleaved with the operations
-    decoder = decode(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(1, 1)));
-    decoder = decode(decoder, reader, () -> expectEvent(MapOperation.update(1, 1)));
-    decoder = decode(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(2, 2)));
-    decoder = decode(decoder, reader, () -> expectEvent(MapOperation.remove(6)));
-    decoder = decode(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(3, 3)));
-    decoder = decode(decoder, reader, () -> expectSynced(firstRemote));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(1, 1)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectEvent(MapOperation.update(1, 1)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(2, 2)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectEvent(MapOperation.remove(6)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(3, 3)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSynced(firstRemote));
 
-    decoder = decode(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(1, 1)));
-    decoder = decode(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(2, 2)));
-    decoder = decode(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(3, 3)));
-    decode(decoder, reader, () -> expectSynced(secondRemote));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(1, 1)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(2, 2)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(3, 3)));
+    decodeAndVisit(decoder, reader, () -> expectSynced(secondRemote));
 
     assertTrue(reader.isEmpty());
     writeResult = pendingWrites.writeInto(0, state, buffer, integerForm, integerForm);
@@ -179,15 +181,15 @@ class PendingWritesTest {
         new MapOperationDecoder<>(integerForm, integerForm)));
     ByteReader reader = buffer.reader();
 
-    decoder = decode(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(1, 1)));
-    decoder = decode(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(2, 2)));
-    decoder = decode(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(3, 3)));
-    decoder = decode(decoder, reader, () -> expectSynced(firstRemote));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(1, 1)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(2, 2)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(firstRemote, MapOperation.update(3, 3)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSynced(firstRemote));
 
-    decoder = decode(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(1, 1)));
-    decoder = decode(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(2, 2)));
-    decoder = decode(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(3, 3)));
-    decode(decoder, reader, () -> expectSynced(secondRemote));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(1, 1)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(2, 2)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectSyncEvent(secondRemote, MapOperation.update(3, 3)));
+    decodeAndVisit(decoder, reader, () -> expectSynced(secondRemote));
 
     assertTrue(reader.isEmpty());
 
@@ -215,9 +217,9 @@ class PendingWritesTest {
         new MapOperationDecoder<>(integerForm, integerForm)));
     ByteReader reader = buffer.reader();
 
-    decoder = decode(decoder, reader, () -> expectEvent(MapOperation.update(1, 1)));
-    decoder = decode(decoder, reader, () -> expectEvent(MapOperation.remove(6)));
-    decode(decoder, reader, () -> expectEvent(MapOperation.clear()));
+    decoder = decodeAndVisit(decoder, reader, () -> expectEvent(MapOperation.update(1, 1)));
+    decoder = decodeAndVisit(decoder, reader, () -> expectEvent(MapOperation.remove(6)));
+    decodeAndVisit(decoder, reader, () -> expectEvent(MapOperation.clear()));
 
     assertTrue(reader.isEmpty());
 

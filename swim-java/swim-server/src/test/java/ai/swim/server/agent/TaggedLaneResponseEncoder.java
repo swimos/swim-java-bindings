@@ -18,6 +18,7 @@ public class TaggedLaneResponseEncoder<T> implements Encoder<TaggedLaneResponse<
     byte[] bytes = target.getLaneUri().getBytes(StandardCharsets.UTF_8);
     buffer.writeInteger(bytes.length);
     buffer.writeByteArray(bytes);
+    buffer.writeByte((byte) (target.isMapLike()?1:0));
     delegate.encode(target.getResponse(), buffer);
   }
 }

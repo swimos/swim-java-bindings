@@ -1,10 +1,12 @@
-package ai.swim.server.lanes.map.codec;
+package ai.swim.server.agent.lanes.map.codec;
 
 import ai.swim.codec.data.ByteReader;
 import ai.swim.codec.data.ByteWriter;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
 import ai.swim.server.lanes.map.MapOperation;
+import ai.swim.server.lanes.map.codec.MapOperationDecoder;
+import ai.swim.server.lanes.map.codec.MapOperationEncoder;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import ai.swim.structure.writer.std.ScalarWriters;
 import org.junit.jupiter.api.Test;

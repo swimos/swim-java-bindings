@@ -85,16 +85,21 @@ public final class MapLaneView<K, V> extends LaneView implements MapLane<K, V> {
   @Override
   public void clear() {
     model.clear();
+    onClear();
   }
 
   @Override
   public V update(K key, V value) {
-    return model.update(key, value);
+    V oldValue = model.update(key, value);
+    onUpdate(key,oldValue,value);
+    return oldValue;
   }
 
   @Override
   public V remove(K key) {
-    return model.remove(key);
+    V oldValue = model.remove(key);
+    onRemove(key,oldValue);
+    return oldValue;
   }
 
   @Override

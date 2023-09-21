@@ -1,9 +1,11 @@
-package ai.swim.server.lanes.models.response;
+package ai.swim.server.agent.lanes.models.response;
 
 import ai.swim.codec.Size;
 import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
+import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
+import ai.swim.server.lanes.models.response.LaneResponse;
 
 public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResponse<T>> {
   private Decoder<LaneResponse<T>> delegate;

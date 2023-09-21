@@ -1,8 +1,11 @@
-package ai.swim.server.lanes.map;
+package ai.swim.server.agent.lanes.map;
 
 import ai.swim.codec.data.ByteWriter;
 import ai.swim.codec.decoder.DecoderException;
 import ai.swim.server.agent.call.CallContext;
+import ai.swim.server.lanes.map.MapLaneModel;
+import ai.swim.server.lanes.map.MapLaneView;
+import ai.swim.server.lanes.map.MapOperation;
 import ai.swim.server.lanes.map.codec.MapOperationEncoder;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;

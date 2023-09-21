@@ -23,7 +23,7 @@ public class TestLaneServer extends AbstractSwimServerBuilder {
     }
   }
 
-  protected TestLaneServer(Map<String, AgentFactory<? extends AbstractAgent>> agentFactories,
+  public TestLaneServer(Map<String, AgentFactory<? extends AbstractAgent>> agentFactories,
       PlaneSchema<?> schema,
       ByteWriter requestBytes,
       ByteWriter responseBytes) {
@@ -41,6 +41,15 @@ public class TestLaneServer extends AbstractSwimServerBuilder {
 
     ByteWriter requestBytes = AgentFixture.encodeIter(inputs, new TaggedLaneRequestEncoder<>(encoder));
     ByteWriter responseBytes = AgentFixture.encodeIter(outputs, new TaggedLaneResponseEncoder<>(encoder));
+
+    return new TestLaneServer(agentFactories, planeSchema, requestBytes, responseBytes);
+  }
+
+  public static <P extends AbstractPlane, E> TestLaneServer build(Class<P> planeClass,
+      ByteWriter requestBytes,
+      ByteWriter responseBytes) throws SwimServerException {
+    PlaneSchema<P> planeSchema = reflectPlaneSchema(planeClass);
+    Map<String, AgentFactory<? extends AbstractAgent>> agentFactories = reflectAgentFactories(planeSchema);
 
     return new TestLaneServer(agentFactories, planeSchema, requestBytes, responseBytes);
   }
