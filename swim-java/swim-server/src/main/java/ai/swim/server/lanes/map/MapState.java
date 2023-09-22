@@ -89,7 +89,6 @@ public class MapState<K, V> implements State {
     return pendingWrites.writeInto(laneId, state, bytes, keyForm, valueForm);
   }
 
-  @Override
   public void sync(UUID uuid) {
     pendingWrites.pushSync(uuid, new HashSet<>(state.keySet()));
     collector.add(this);

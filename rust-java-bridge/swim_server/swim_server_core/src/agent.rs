@@ -3,6 +3,7 @@ use std::future::Future;
 use std::mem::size_of;
 use std::ops::{ControlFlow, Deref};
 use std::pin::Pin;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -19,7 +20,8 @@ use swim_api::agent::{Agent, AgentConfig, AgentContext, AgentInitResult};
 use swim_api::error::{AgentInitError, AgentTaskError, FrameIoError};
 use swim_api::meta::lane::LaneKind;
 use swim_api::protocol::agent::{
-    LaneRequest, StoreInitMessage, StoreInitMessageDecoder, StoreInitialized, StoreInitializedCodec,
+    LaneRequest, StoreInitMessage, StoreInitMessageDecoder, StoreInitialized,
+    StoreInitializedCodec, ValueLaneResponseDecoder,
 };
 use swim_api::protocol::WithLengthBytesCodec;
 use swim_form::structural::read::ReadError;
@@ -69,7 +71,7 @@ impl JavaExceptionHandler for ExceptionHandler {
 
         match deserialization.inspect(scope, throwable) {
             Some(err) => {
-                debug!("Detected deserialization erorr");
+                debug!("Detected deserialization error");
                 Some(AgentTaskError::DeserializationFailed(ReadError::Message(
                     err.to_string().into(),
                 )))
@@ -289,20 +291,9 @@ impl JavaAgentVTable {
         remote: Uuid,
     ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable { sync, handler, .. } = self;
-        let try_into = |num: u64| -> Result<i64, AgentTaskError> {
-            match num.try_into() {
-                Ok(n) => Ok(n),
-                Err(_) => {
-                    return Err(AgentTaskError::DeserializationFailed(
-                        ReadError::NumberOutOfRange,
-                    ))
-                }
-            }
-        };
-
         let (msb, lsb) = remote.as_u64_pair();
-        let msb = try_into(msb)?;
-        let lsb = try_into(lsb)?;
+        let msb = msb as i64;
+        let lsb = lsb as i64;
 
         sync.l().array::<ByteArray>().invoke(
             handler,
@@ -858,13 +849,16 @@ impl FfiAgentTask {
                         }
                         SuspendedRuntimeEvent::SuspendComplete(Ok(Ok(returned_data))) => {
                             trace!("Handling lane response");
-                            forward_lane_responses(
+                            if let ControlFlow::Break(()) = forward_lane_responses(
                                 &ffi_context,
                                 &java_agent,
                                 BytesMut::from_iter(returned_data),
                                 &mut lane_writers,
                             )
-                            .await?;
+                            .await?
+                            {
+                                break;
+                            }
                             debug!("Resuming agent runtime");
                             state = AgentTaskState::Running;
                         }
