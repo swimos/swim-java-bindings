@@ -24,7 +24,7 @@ import java.util.UUID;
 import static ai.swim.server.lanes.Lanes.demandLane;
 import static ai.swim.server.lanes.Lanes.valueLane;
 
-class DemandMapLaneTest {
+class DemandLaneTest {
   @SwimAgent("agentName")
   private static class TestAgent extends AbstractAgent {
     private int eventCount;

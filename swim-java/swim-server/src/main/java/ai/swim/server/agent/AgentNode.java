@@ -21,7 +21,7 @@ public class AgentNode {
   private final StateCollector collector;
   /**
    * A map containing a key that is a unique lane identifier that has been registered with the Rust runtime and a value
-   * that is an initalised {@link LaneModel} that has been registered with the {@link StateCollector} below.
+   * that is an initialised {@link LaneModel} that has been registered with the {@link StateCollector} below.
    */
   private final Map<Integer, LaneModel> lanes;
   /**
