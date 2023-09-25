@@ -262,7 +262,7 @@ impl JavaAgentVTable {
         scope: &Scope,
         agent_obj: JObject,
         lane_id: jint,
-        msg: ByteBufferGuard,
+        msg: ByteBufferGuard<BytesMut>,
     ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable {
             dispatch, handler, ..
@@ -318,7 +318,13 @@ impl JavaAgentVTable {
             .invoke(handler, scope, agent_obj, &[])
     }
 
-    fn init(&self, scope: &Scope, agent_obj: JObject, lane_id: jint, msg: ByteBufferGuard) {
+    fn init(
+        &self,
+        scope: &Scope,
+        agent_obj: JObject,
+        lane_id: jint,
+        msg: ByteBufferGuard<BytesMut>,
+    ) {
         let JavaAgentVTable { init, .. } = self;
         scope.invoke(init.v(), agent_obj, &[lane_id.into(), msg.into()])
     }

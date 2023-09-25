@@ -27,6 +27,8 @@ public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResp
         case LaneId:
           if (buffer.remaining() >= Size.INT) {
             laneId = buffer.getInteger();
+            // Discard the length as it is only used when writing to Rust.
+            buffer.getInteger();
             state = State.Delegated;
             break;
           } else {

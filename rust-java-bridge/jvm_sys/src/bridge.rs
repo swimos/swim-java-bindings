@@ -1,6 +1,6 @@
 use crate::env::JavaEnv;
 use crate::JniDefault;
-use bytebridge::{ByteCodec, FromBytesError};
+use bytebridge::{ByteCodec, ByteCodecExt, FromBytesError};
 use bytes::BytesMut;
 use jni::sys::jbyteArray;
 

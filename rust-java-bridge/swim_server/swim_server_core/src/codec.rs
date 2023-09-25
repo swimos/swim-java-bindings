@@ -21,7 +21,7 @@ type ValueReaderCodec = LaneCodec<WithLengthBytesCodec>;
 type MapReaderCodec = LaneCodec<MapMessageDecoder<RawMapOperationDecoder>>;
 
 const TAG_SIZE: usize = size_of::<u8>();
-const LEN_SIZE: usize = size_of::<i32>();
+const LEN_SIZE: usize = size_of::<i64>();
 
 pub enum LaneReaderCodec {
     Value(ValueReaderCodec),

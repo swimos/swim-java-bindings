@@ -22,6 +22,7 @@ use jni::sys::{jbyteArray, jvalue};
 use jni::{JNIEnv, JavaVM, MonitorGuard};
 use parking_lot::Mutex;
 use static_assertions::{assert_impl_all, assert_not_impl_all};
+use tokio::task::JoinError;
 use tracing::{debug, error};
 
 use crate::method::{
@@ -125,12 +126,12 @@ impl JavaEnv {
         }
     }
 
-    pub fn fatal_error<M>(&self, msg: M) -> !
+    pub fn fatal_error<E>(&self, err: E) -> !
     where
-        M: ToString,
+        E: Into<FatalError>,
     {
         let scope = self.enter_scope();
-        scope.fatal_error(msg)
+        scope.fatal_error(err)
     }
 }
 
@@ -383,6 +384,8 @@ pub enum FatalError {
     Io(#[from] std::io::Error),
     #[error("Java VM error: {0}")]
     JavaVm(#[from] jni::errors::Error),
+    #[error("Join error: {0}")]
+    Join(#[from] JoinError),
 }
 
 impl From<String> for FatalError {

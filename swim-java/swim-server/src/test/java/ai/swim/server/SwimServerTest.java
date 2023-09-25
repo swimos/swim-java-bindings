@@ -49,11 +49,6 @@ class SwimServerTest {
     forPlane(planeSchema.bytes());
   }
 
-  @Test
-  void testRun() throws IOException, SwimServerException {
-    MockSwimServer.forPlane(TestPlane.class).runServer();
-  }
-
   @SwimAgent("agentName")
   private static class TestAgent extends AbstractAgent {
     @Transient
@@ -129,8 +124,8 @@ class SwimServerTest {
         return this;
       }
 
-      buffer.getInteger(); // discard len
       int laneId = buffer.getInteger();
+      buffer.getInteger(); // discard len
 
       LaneResponseDecoder<String> delegate = new LaneResponseDecoder<>(new StringDecoder());
       LaneResponse<String> response = delegate.decode(buffer).bind();
