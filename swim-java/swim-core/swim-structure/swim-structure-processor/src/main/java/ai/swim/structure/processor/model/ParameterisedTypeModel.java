@@ -12,7 +12,6 @@ public class ParameterisedTypeModel extends Model {
 
   private final Mapping typeMapping;
   private final Model[] typeModels;
-
   public ParameterisedTypeModel(TypeMirror mirror,
       Element element,
       PackageElement packageElement,
