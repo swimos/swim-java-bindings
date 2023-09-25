@@ -1,8 +1,9 @@
-package ai.swim.server.lanes.map;
+package ai.swim.server.lanes;
 
 import ai.swim.codec.data.BufferOverflowException;
 import ai.swim.codec.data.ByteWriter;
-import ai.swim.server.lanes.WriteResult;
+import ai.swim.server.lanes.map.MapOperation;
+import ai.swim.server.lanes.map.MapSyncRequest;
 import ai.swim.server.lanes.map.codec.MapOperationEncoder;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponseEncoder;
@@ -10,8 +11,7 @@ import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.structure.writer.Writable;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Map;
-import java.util.Set;
+import java.util.Iterator;
 import java.util.UUID;
 
 /**
@@ -20,7 +20,7 @@ import java.util.UUID;
  * @param <K> map lane's key type.
  * @param <V> map lane's value type.
  */
-public class PendingWrites<K, V> {
+public class PendingMapWrites<K, V> {
   private final Deque<MapSyncRequest<K>> syncQueue;
   private final Deque<MapOperation<K, V>> operationQueue;
   private Bias bias;
@@ -29,7 +29,7 @@ public class PendingWrites<K, V> {
     Sync, Event
   }
 
-  public PendingWrites() {
+  public PendingMapWrites() {
     syncQueue = new ArrayDeque<>();
     operationQueue = new ArrayDeque<>();
     bias = Bias.Sync;
@@ -41,7 +41,7 @@ public class PendingWrites<K, V> {
    * @param remote UUID.
    * @param keys   that were contained in the map's state.
    */
-  public void pushSync(UUID remote, Set<K> keys) {
+  public void pushSync(UUID remote, Iterator<K> keys) {
     syncQueue.addLast(new MapSyncRequest<>(remote, keys));
   }
 
@@ -67,7 +67,7 @@ public class PendingWrites<K, V> {
    * @return the result of the operation.
    */
   public WriteResult writeInto(int laneId,
-      Map<K, V> state,
+      MapLookup<K, V> state,
       ByteWriter byteWriter,
       Writable<K> keyForm,
       Writable<V> valueForm) {

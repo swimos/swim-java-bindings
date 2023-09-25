@@ -1,4 +1,4 @@
-package ai.swim.server.lanes.demand;
+package ai.swim.server.agent.lanes.demand;
 
 import ai.swim.server.SwimServerException;
 import ai.swim.server.agent.AbstractAgent;
@@ -12,6 +12,7 @@ import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
 import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.annotations.Transient;
+import ai.swim.server.lanes.demand.DemandLane;
 import ai.swim.server.lanes.models.request.LaneRequest;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.value.ValueLane;
@@ -23,7 +24,7 @@ import java.util.UUID;
 import static ai.swim.server.lanes.Lanes.demandLane;
 import static ai.swim.server.lanes.Lanes.valueLane;
 
-class DemandLaneTest {
+class DemandMapLaneTest {
   @SwimAgent("agentName")
   private static class TestAgent extends AbstractAgent {
     private int eventCount;

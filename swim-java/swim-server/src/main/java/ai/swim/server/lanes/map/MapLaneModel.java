@@ -16,7 +16,7 @@ public final class MapLaneModel<K, V> extends LaneModel {
   private final MapLaneView<K, V> view;
   private final Form<K> keyForm;
   private final Form<V> valueForm;
-  private final MapState<K, V> state;
+  private final MapLaneState<K, V> state;
   private final OperationDispatcher<V, K> operationDispatcher;
   private final Initialiser<V, K> initVisitor;
 
@@ -24,7 +24,7 @@ public final class MapLaneModel<K, V> extends LaneModel {
     this.view = view;
     this.keyForm = view.keyForm();
     this.valueForm = view.valueForm();
-    this.state = new MapState<>(laneId, keyForm, valueForm, collector);
+    this.state = new MapLaneState<>(laneId, keyForm, valueForm, collector);
     this.operationDispatcher = new OperationDispatcher<>(state, view);
     this.initVisitor = new Initialiser<>(state);
   }

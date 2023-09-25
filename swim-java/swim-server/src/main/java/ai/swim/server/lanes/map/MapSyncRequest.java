@@ -2,6 +2,7 @@ package ai.swim.server.lanes.map;
 
 import ai.swim.codec.data.BufferOverflowException;
 import ai.swim.codec.data.ByteWriter;
+import ai.swim.server.lanes.MapLookup;
 import ai.swim.server.lanes.map.codec.MapOperationEncoder;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponseEncoder;
@@ -14,9 +15,9 @@ import java.util.UUID;
 
 public class MapSyncRequest<K> {
   private final UUID remote;
-  private final Set<K> keys;
+  private final Iterator<K> keys;
 
-  public MapSyncRequest(UUID remote, Set<K> keys) {
+  public MapSyncRequest(UUID remote, Iterator<K> keys) {
     this.remote = remote;
     this.keys = keys;
   }
@@ -25,22 +26,21 @@ public class MapSyncRequest<K> {
       ByteWriter byteWriter,
       Writable<K> keyForm,
       Writable<V> valueForm,
-      Map<K, V> state) throws BufferOverflowException {
+      MapLookup<K, V> state) throws BufferOverflowException {
     IdentifiedLaneResponseEncoder<MapOperation<K, V>> encoder = new IdentifiedLaneResponseEncoder<>(new MapOperationEncoder<>(
         keyForm,
         valueForm));
-    Iterator<K> keyIter = keys.iterator();
 
-    if (keyIter.hasNext()) {
-      while (keyIter.hasNext()) {
-        K key = keyIter.next();
+    if (keys.hasNext()) {
+      while (keys.hasNext()) {
+        K key = keys.next();
         V value = state.get(key);
 
         if (value != null) {
           encoder.encode(
               new IdentifiedLaneResponse<>(laneId, LaneResponse.syncEvent(remote, MapOperation.update(key, value))),
               byteWriter);
-          keyIter.remove();
+          keys.remove();
           return false;
         }
       }
