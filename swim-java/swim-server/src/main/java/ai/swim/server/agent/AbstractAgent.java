@@ -3,7 +3,7 @@ package ai.swim.server.agent;
 /**
  * Base agent class for implementing Swim Agents.
  */
-public abstract class AbstractAgent  {
+public abstract class AbstractAgent {
   private final AgentContext context;
 
   protected AbstractAgent(AgentContext context) {

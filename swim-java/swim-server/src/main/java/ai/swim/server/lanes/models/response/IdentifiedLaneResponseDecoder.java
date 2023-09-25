@@ -6,15 +6,9 @@ import ai.swim.server.codec.DecoderException;
 import ai.swim.server.codec.Size;
 
 public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResponse<T>> {
-  enum State {
-    LaneId,
-    Delegated
-  }
-
   private Decoder<LaneResponse<T>> delegate;
   private State state;
   private int laneId;
-
   public IdentifiedLaneResponseDecoder(Decoder<LaneResponse<T>> delegate) {
     this.delegate = delegate;
     this.state = State.LaneId;
@@ -48,5 +42,10 @@ public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResp
   @Override
   public Decoder<IdentifiedLaneResponse<T>> reset() {
     return new IdentifiedLaneResponseDecoder<>(delegate.reset());
+  }
+
+  enum State {
+    LaneId,
+    Delegated
   }
 }

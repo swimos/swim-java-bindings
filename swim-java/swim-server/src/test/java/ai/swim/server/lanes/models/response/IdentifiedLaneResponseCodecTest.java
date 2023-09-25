@@ -11,6 +11,25 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class IdentifiedLaneResponseCodecTest {
 
+  @Test
+  void roundTrip() throws DecoderException {
+    Bytes bytes = new Bytes();
+
+    IdentifiedLaneResponseEncoder<Integer> encoder = new IdentifiedLaneResponseEncoder<>(new IntEncoder());
+    encoder.encode(new IdentifiedLaneResponse<>(1, LaneResponse.event(13)), bytes);
+
+    Decoder<IdentifiedLaneResponse<Integer>> decoder = new IdentifiedLaneResponseDecoder<>(new LaneResponseDecoder<>(new IntDecoder()));
+    decoder = decoder.decode(bytes);
+
+    if (decoder.isDone()) {
+      IdentifiedLaneResponse<Integer> response = decoder.bind();
+      assertEquals(1, response.getLaneId());
+      assertEquals(LaneResponse.event(13), response.getLaneResponse());
+    } else {
+      fail("Unconsumed input");
+    }
+  }
+
   private static class IntDecoder extends Decoder<Integer> {
     @Override
     public Decoder<Integer> decode(Bytes buffer) {
@@ -31,25 +50,6 @@ class IdentifiedLaneResponseCodecTest {
     @Override
     public void encode(Integer target, Bytes buffer) {
       buffer.writeInteger(target);
-    }
-  }
-
-  @Test
-  void roundTrip() throws DecoderException {
-    Bytes bytes = new Bytes();
-
-    IdentifiedLaneResponseEncoder<Integer> encoder = new IdentifiedLaneResponseEncoder<>(new IntEncoder());
-    encoder.encode(new IdentifiedLaneResponse<>(1, LaneResponse.event(13)), bytes);
-
-    Decoder<IdentifiedLaneResponse<Integer>> decoder = new IdentifiedLaneResponseDecoder<>(new LaneResponseDecoder<>(new IntDecoder()));
-    decoder = decoder.decode(bytes);
-
-    if (decoder.isDone()) {
-      IdentifiedLaneResponse<Integer> response = decoder.bind();
-      assertEquals(1, response.getLaneId());
-      assertEquals(LaneResponse.event(13), response.getLaneResponse());
-    } else {
-      fail("Unconsumed input");
     }
   }
 

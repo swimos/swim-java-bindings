@@ -128,9 +128,10 @@ class AutoStructuralWriterTest {
     assertEquals(Value.of(
         List.of(Value.ofAttr(
             "ComplexFields",
-            Value.ofItems(List.of(Item.of(Value.of(13)),
-                                  Item.of(Value.of("node"), Value.of("node")),
-                                  Item.of(Value.of("lane"), Value.of("lane")))))),
+            Value.ofItems(List.of(
+                Item.of(Value.of(13)),
+                Item.of(Value.of("node"), Value.of("node")),
+                Item.of(Value.of("lane"), Value.of("lane")))))),
         List.of(
             Item.of(Value.of("first"), Value.of(1)),
             Item.of(Value.of("second"), Value.of("second")))), value);
@@ -203,9 +204,10 @@ class AutoStructuralWriterTest {
     Value expected = Value.of(
         Value.ofAttr(
             "ValueClass",
-            Value.ofItems(Item.of(Value.of("host"), Value.of("swim.ai")),
-                          Item.of(Value.of("lane"), Value.of("lane_uri")),
-                          Item.of(Value.of("node"), Value.of("node_uri")))),
+            Value.ofItems(
+                Item.of(Value.of("host"), Value.of("swim.ai")),
+                Item.of(Value.of("lane"), Value.of("lane_uri")),
+                Item.of(Value.of("node"), Value.of("node_uri")))),
         Item.of(Value.of(13)));
     ValueClass valueClass = new ValueClass(13, "lane_uri", "node_uri", "swim.ai");
 
@@ -334,10 +336,11 @@ class AutoStructuralWriterTest {
             Item.of(
                 Value.of("value"),
                 Value.of("hello", Item.valueItem(1), Item.valueItem(2), Item.valueItem(3)))),
-        writable.asValue(new ValueFieldClass(Value.of("hello",
-                                                      Item.valueItem(1),
-                                                      Item.valueItem(2),
-                                                      Item.valueItem(3)))));
+        writable.asValue(new ValueFieldClass(Value.of(
+            "hello",
+            Item.valueItem(1),
+            Item.valueItem(2),
+            Item.valueItem(3)))));
   }
 
   @Test

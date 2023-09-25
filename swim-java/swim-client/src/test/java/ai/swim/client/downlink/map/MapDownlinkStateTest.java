@@ -14,7 +14,6 @@
 
 package ai.swim.client.downlink.map;
 
-import ai.swim.client.downlink.map.MapDownlinkState;
 import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;

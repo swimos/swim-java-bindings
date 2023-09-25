@@ -99,11 +99,12 @@ public abstract class Builder {
       TypeMirror recognizerType = recognizer.boxedType(context.getProcessingEnvironment());
 
       DeclaredType memberRecognizingBuilder = typeUtils.getDeclaredType(fieldFieldRecognizingBuilder, recognizerType);
-      FieldSpec.Builder fieldSpec = FieldSpec.builder(TypeName.get(memberRecognizingBuilder),
-                                                      context
-                                                          .getFormatter()
-                                                          .fieldBuilderName(recognizer.getName().toString()),
-                                                      Modifier.PRIVATE);
+      FieldSpec.Builder fieldSpec = FieldSpec.builder(
+          TypeName.get(memberRecognizingBuilder),
+          context
+              .getFormatter()
+              .fieldBuilderName(recognizer.getName().toString()),
+          Modifier.PRIVATE);
 
       fieldSpecs.add(fieldSpec.build());
     }

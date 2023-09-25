@@ -33,19 +33,65 @@ class AgentTest {
     }
   }
 
+  private static native void runNativeAgent(byte[] inputs,
+      byte[] expectedResponses,
+      AbstractSwimServerBuilder server,
+      byte[] planeSpec);
+
+  private static <E> Bytes encodeIter(Iterable<E> iterator, Encoder<E> encoder) {
+    Bytes requestBytes = new Bytes();
+
+    for (E e : iterator) {
+      encoder.encode(e, requestBytes);
+    }
+
+    return requestBytes;
+  }
+
+  private static void writeInt(int v, Bytes into) {
+    byte[] bytes = Integer.toString(v).getBytes(StandardCharsets.UTF_8);
+    into.writeLong(bytes.length);
+    into.writeByteArray(bytes);
+  }
+
+  @Test
+  void agentResponses() throws SwimServerException, IOException {
+    TestServer
+        .test(
+            TestPlane.class,
+            List.of(new TaggedLaneRequest<>("numLane", LaneRequest.command(2))),
+            List.of(
+                new TaggedLaneResponse<>("numLane", LaneResponse.event(2)),
+                new TaggedLaneResponse<>("plusOne", LaneResponse.event(3)),
+                new TaggedLaneResponse<>("minusOne", LaneResponse.event(1))))
+        .run();
+  }
+
+  @Test
+  void dynamicLaneOpens() throws SwimServerException, IOException {
+    TestServer.test(
+        DynamicTestPlane.class,
+        List.of(
+            new TaggedLaneRequest<>("numLane", LaneRequest.command(13)),
+            new TaggedLaneRequest<>("numLane", LaneRequest.command(14))),
+        List.of(
+            new TaggedLaneResponse<>("numLane", LaneResponse.event(13)),
+            new TaggedLaneResponse<>("dynamic", LaneResponse.event(15)),
+            new TaggedLaneResponse<>("numLane", LaneResponse.event(14)),
+            new TaggedLaneResponse<>("dynamic", LaneResponse.event(16)))).run();
+  }
+
   @SwimAgent
   private static class TestAgent extends AbstractAgent {
     @Transient
     @SwimLane
-    private final ValueLaneView<Integer> numLane = valueLane(Integer.class).onEvent(this::forward);
-
-    @Transient
-    @SwimLane
     private final ValueLane<Integer> plusOne = valueLane(Integer.class);
-
     @Transient
     @SwimLane
     private final ValueLane<Integer> minusOne = valueLane(Integer.class);
+    @Transient
+    @SwimLane
+    private final ValueLaneView<Integer> numLane = valueLane(Integer.class).onEvent(this::forward);
 
     private TestAgent(AgentContext context) {
       super(context);
@@ -61,21 +107,6 @@ class AgentTest {
   private static class TestPlane extends AbstractPlane {
     @SwimRoute("agent")
     private TestAgent agent;
-  }
-
-  private static native void runNativeAgent(byte[] inputs,
-      byte[] expectedResponses,
-      AbstractSwimServerBuilder server,
-      byte[] planeSpec);
-
-  private static <E> Bytes encodeIter(Iterable<E> iterator, Encoder<E> encoder) {
-    Bytes requestBytes = new Bytes();
-
-    for (E e : iterator) {
-      encoder.encode(e, requestBytes);
-    }
-
-    return requestBytes;
   }
 
   private static class TestServer extends AbstractSwimServerBuilder {
@@ -111,25 +142,6 @@ class AgentTest {
     }
   }
 
-  private static void writeInt(int v, Bytes into) {
-    byte[] bytes = Integer.toString(v).getBytes(StandardCharsets.UTF_8);
-    into.writeLong(bytes.length);
-    into.writeByteArray(bytes);
-  }
-
-  @Test
-  void agentResponses() throws SwimServerException, IOException {
-    TestServer
-        .test(
-            TestPlane.class,
-            List.of(new TaggedLaneRequest<>("numLane", LaneRequest.command(2))),
-            List.of(
-                new TaggedLaneResponse<>("numLane", LaneResponse.event(2)),
-                new TaggedLaneResponse<>("plusOne", LaneResponse.event(3)),
-                new TaggedLaneResponse<>("minusOne", LaneResponse.event(1))))
-        .run();
-  }
-
   @SwimAgent
   private static class DynamicTestAgent extends AbstractAgent {
     @Transient
@@ -157,19 +169,5 @@ class AgentTest {
   private static class DynamicTestPlane extends AbstractPlane {
     @SwimRoute("agent")
     private DynamicTestAgent agent;
-  }
-
-  @Test
-  void dynamicLaneOpens() throws SwimServerException, IOException {
-    TestServer.test(
-        DynamicTestPlane.class,
-        List.of(
-            new TaggedLaneRequest<>("numLane", LaneRequest.command(13)),
-            new TaggedLaneRequest<>("numLane", LaneRequest.command(14))),
-        List.of(
-            new TaggedLaneResponse<>("numLane", LaneResponse.event(13)),
-            new TaggedLaneResponse<>("dynamic", LaneResponse.event(15)),
-            new TaggedLaneResponse<>("numLane", LaneResponse.event(14)),
-            new TaggedLaneResponse<>("dynamic", LaneResponse.event(16)))).run();
   }
 }

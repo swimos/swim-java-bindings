@@ -16,6 +16,14 @@ public class LaneSchema {
     this.laneId = laneId;
   }
 
+  public static LaneSchema reflectLane(Class<?> type, boolean isTransient, int laneId) {
+    if (ValueLane.class.isAssignableFrom(type)) {
+      return new LaneSchema(isTransient, LaneKind.Value, laneId);
+    } else {
+      throw new IllegalArgumentException("Unsupported lane type: " + type);
+    }
+  }
+
   public boolean isTransient() {
     return isTransient;
   }
@@ -55,13 +63,5 @@ public class LaneSchema {
 
   public int getLaneId() {
     return laneId;
-  }
-
-  public static LaneSchema reflectLane(Class<?> type, boolean isTransient, int laneId) {
-    if (ValueLane.class.isAssignableFrom(type)) {
-      return new LaneSchema(isTransient, LaneKind.Value, laneId);
-    } else {
-      throw new IllegalArgumentException("Unsupported lane type: " + type);
-    }
   }
 }

@@ -31,7 +31,6 @@ import ai.swim.structure.FormParser;
 import ai.swim.structure.Recon;
 import ai.swim.structure.annotations.AutoForm;
 import org.junit.jupiter.api.Test;
-
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +40,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -58,7 +56,7 @@ public class MapDownlinkTest extends FfiTest {
       OnUnlinked onUnlinked,
       DispatchTake take,
       DispatchDrop drop
-  ) throws SwimClientException;
+                                         ) throws SwimClientException;
 
   private static native long lifecycleTest(
       Trigger lock,
@@ -74,7 +72,7 @@ public class MapDownlinkTest extends FfiTest {
       OnUnlinked onUnlinked,
       DispatchTake take,
       DispatchDrop drop
-  ) throws SwimClientException;
+                                          ) throws SwimClientException;
 
   String parseString(ByteBuffer buffer) {
     Input input = Input.byteBuffer(buffer);
@@ -128,7 +126,7 @@ public class MapDownlinkTest extends FfiTest {
           assertEquals(3, n);
           dropInvoked.addAndGet(1);
         }
-    );
+                );
 
     assertEquals(1, linkedInvoked.get());
     assertEquals(1, syncedInvoked.get());
@@ -158,7 +156,7 @@ public class MapDownlinkTest extends FfiTest {
         null,
         null,
         null
-    );
+                            );
 
     awaitTrigger(lock, 5, "downlink");
     dropRuntime(ptr);
@@ -183,7 +181,7 @@ public class MapDownlinkTest extends FfiTest {
         null,
         null,
         null
-    );
+                            );
 
     awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
@@ -209,7 +207,7 @@ public class MapDownlinkTest extends FfiTest {
         null,
         null,
         null
-    );
+                            );
 
     awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
@@ -235,7 +233,7 @@ public class MapDownlinkTest extends FfiTest {
         null,
         null,
         null
-    );
+                            );
 
     awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
@@ -261,7 +259,7 @@ public class MapDownlinkTest extends FfiTest {
         null,
         null,
         null
-    );
+                            );
 
     awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
@@ -287,7 +285,7 @@ public class MapDownlinkTest extends FfiTest {
         null,
         null,
         null
-    );
+                            );
 
     awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
@@ -313,7 +311,7 @@ public class MapDownlinkTest extends FfiTest {
         invoked::countDown,
         null,
         null
-    );
+                            );
 
     awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
@@ -339,7 +337,7 @@ public class MapDownlinkTest extends FfiTest {
         null,
         (a, b) -> invoked.countDown(),
         null
-    );
+                            );
 
     awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
@@ -365,14 +363,19 @@ public class MapDownlinkTest extends FfiTest {
         null,
         null,
         (a, b) -> invoked.countDown()
-    );
+                            );
 
     awaitTrigger(lock, 5, "downlink");
     awaitLatch(invoked, 5, "lifecycle");
     dropRuntime(ptr);
   }
 
-  <K, V> void runTestOk(Class<K> keyClass, Class<V> valueClass, int removeCount, ConcurrentLinkedDeque<Update<K, V>> syncEvents, ConcurrentLinkedDeque<MapMessage> events, Map<K, V> finalState) throws InterruptedException, SwimClientException {
+  <K, V> void runTestOk(Class<K> keyClass,
+      Class<V> valueClass,
+      int removeCount,
+      ConcurrentLinkedDeque<Update<K, V>> syncEvents,
+      ConcurrentLinkedDeque<MapMessage> events,
+      Map<K, V> finalState) throws InterruptedException, SwimClientException {
     StringBuilder input = new StringBuilder();
     input.append("@linked(node:node,lane:lane)\n");
 
@@ -414,21 +417,30 @@ public class MapDownlinkTest extends FfiTest {
             linkState.set(LinkState.Linked);
             linked.countDown();
           } else {
-            fail(String.format("Illegal downlink state for a linked callback %s, latch count: %s", linkState.get(), linked.getCount()));
+            fail(String.format(
+                "Illegal downlink state for a linked callback %s, latch count: %s",
+                linkState.get(),
+                linked.getCount()));
           }
         })
         .setOnUpdate((key, state, previous, value) -> {
           if (linkState.get() == LinkState.Synced && update.getCount() != 0) {
             update.countDown();
           } else {
-            fail(String.format("Illegal downlink state for an update callback %s, latch count: %s", linkState.get(), update.getCount()));
+            fail(String.format(
+                "Illegal downlink state for an update callback %s, latch count: %s",
+                linkState.get(),
+                update.getCount()));
           }
         })
         .setOnRemove((key, state, value) -> {
           if (linkState.get() == LinkState.Synced && remove.getCount() != 0) {
             remove.countDown();
           } else {
-            fail(String.format("Illegal downlink state for a remove callback %s, latch count: %s", linkState.get(), remove.getCount()));
+            fail(String.format(
+                "Illegal downlink state for a remove callback %s, latch count: %s",
+                linkState.get(),
+                remove.getCount()));
           }
         })
         .setOnClear((state) -> {
@@ -436,7 +448,10 @@ public class MapDownlinkTest extends FfiTest {
             clear.countDown();
             assertEquals(finalState, state);
           } else {
-            fail(String.format("Illegal downlink state for a clear callback %s, latch count: %s", linkState.get(), clear.getCount()));
+            fail(String.format(
+                "Illegal downlink state for a clear callback %s, latch count: %s",
+                linkState.get(),
+                clear.getCount()));
           }
         })
         .setOnSynced((value -> {
@@ -444,7 +459,10 @@ public class MapDownlinkTest extends FfiTest {
             linkState.set(LinkState.Synced);
             synced.countDown();
           } else {
-            fail(String.format("Illegal downlink state for a synced callback %s, latch count: %s", linkState.get(), synced.getCount()));
+            fail(String.format(
+                "Illegal downlink state for a synced callback %s, latch count: %s",
+                linkState.get(),
+                synced.getCount()));
           }
         }))
         .setOnUnlinked(() -> {
@@ -452,11 +470,17 @@ public class MapDownlinkTest extends FfiTest {
             linkState.set(LinkState.Unlinked);
             unlinked.countDown();
           } else {
-            fail(String.format("Illegal downlink state for an unlinked callback %s, latch count: %s", linkState.get(), unlinked.getCount()));
+            fail(String.format(
+                "Illegal downlink state for an unlinked callback %s, latch count: %s",
+                linkState.get(),
+                unlinked.getCount()));
           }
         });
 
-    MapDownlinkState<K, V> state = new MapDownlinkState<>(Form.forClass(keyClass), Form.forClass(valueClass), lifecycle.getOnRemove());
+    MapDownlinkState<K, V> state = new MapDownlinkState<>(
+        Form.forClass(keyClass),
+        Form.forClass(valueClass),
+        lifecycle.getOnRemove());
 
     long ptr = lifecycleTest(
         lock,
@@ -472,7 +496,7 @@ public class MapDownlinkTest extends FfiTest {
         lifecycle.getOnUnlinked(),
         state.take(),
         state.drop()
-    );
+                            );
 
     awaitLatch(linked, 5, "linked");
     awaitLatch(synced, 5, "synced");
@@ -497,22 +521,22 @@ public class MapDownlinkTest extends FfiTest {
             MapMessage.update("3", 3),
             MapMessage.update("4", 4),
             MapMessage.update("5", 5)
-        )),
+                                           )),
         new ConcurrentLinkedDeque<>(List.of(
             MapMessage.remove("5"),
             MapMessage.remove("4"),
             MapMessage.update("6", 6),
             MapMessage.update("7", 7),
             MapMessage.clear()
-        )),
+                                           )),
         Map.of(
             "1", 1,
             "2", 2,
             "3", 3,
             "6", 6,
             "7", 7
-        )
-    );
+              )
+             );
   }
 
   @Test
@@ -527,7 +551,7 @@ public class MapDownlinkTest extends FfiTest {
             MapMessage.update(3, new SubClassA(3, "c")),
             MapMessage.update(4, new SubClassA(4, "d")),
             MapMessage.update(5, new SubClassA(5, "e"))
-        )),
+                                           )),
         new ConcurrentLinkedDeque<>(List.of(
             MapMessage.remove(5),
             MapMessage.remove(4),
@@ -536,13 +560,13 @@ public class MapDownlinkTest extends FfiTest {
             MapMessage.take(4),
             MapMessage.drop(1),
             MapMessage.clear()
-        )),
+                                           )),
         Map.of(
             2, new SubClassA(2, "b"),
             3, new SubClassA(3, "c"),
             6, new SubClassA(6, "f")
-        )
-    );
+              )
+             );
   }
 
   @AutoForm(subTypes = {

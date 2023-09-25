@@ -96,9 +96,10 @@ public class AutoStructuralGenericTest {
 
     assertThrows(
         RecognizerException.class,
-        () -> new ClazzRecognizer<>(RecognizerTypeParameter.from(Throwable.class),
-                                    RecognizerTypeParameter.from(Integer.class),
-                                    RecognizerTypeParameter.from(Long.class)));
+        () -> new ClazzRecognizer<>(
+            RecognizerTypeParameter.from(Throwable.class),
+            RecognizerTypeParameter.from(Integer.class),
+            RecognizerTypeParameter.from(Long.class)));
   }
 
   @Test

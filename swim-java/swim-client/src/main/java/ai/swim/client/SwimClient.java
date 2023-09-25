@@ -16,13 +16,13 @@ package ai.swim.client;
 
 import ai.swim.client.downlink.map.MapDownlinkBuilder;
 import ai.swim.client.downlink.value.ValueDownlinkBuilder;
+import ai.swim.lang.ffi.AtomicDestructor;
+import ai.swim.lang.ffi.NativeLoader;
+import ai.swim.lang.ffi.NativeResource;
 import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import java.io.IOException;
 import java.util.Arrays;
-import ai.swim.lang.ffi.AtomicDestructor;
-import ai.swim.lang.ffi.NativeLoader;
-import ai.swim.lang.ffi.NativeResource;
 
 /**
  * A SwimClient class used for opening downlinks.
@@ -102,7 +102,11 @@ public class SwimClient implements NativeResource, AutoCloseable {
    * @param <V>       The type of the downlink's value.
    * @return A map downlink builder.
    */
-  public <K, V> MapDownlinkBuilder<K, V> mapDownlink(String host, String node, String lane, Class<K> keyForm, Class<V> valueForm) {
+  public <K, V> MapDownlinkBuilder<K, V> mapDownlink(String host,
+      String node,
+      String lane,
+      Class<K> keyForm,
+      Class<V> valueForm) {
     return new MapDownlinkBuilder<>(Handle.create(runtime), keyForm, valueForm, host, node, lane);
   }
 }

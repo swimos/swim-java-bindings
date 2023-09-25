@@ -70,14 +70,16 @@ class ReconParserPartsTest {
     attrOkDoneTest("@attrName()", new ParserTransition(ReadEvent.startAttribute("attrName"), Action.pushAttr()));
     attrOkDoneTest(
         "@attrName{}",
-        new ParserTransition(ReadEvent.startAttribute("attrName"),
-                             ReadEvent.endAttribute(),
-                             new ParseEvent(ParseState.AfterAttr)));
+        new ParserTransition(
+            ReadEvent.startAttribute("attrName"),
+            ReadEvent.endAttribute(),
+            new ParseEvent(ParseState.AfterAttr)));
     attrOkDoneTest(
         "@attrName",
-        new ParserTransition(ReadEvent.startAttribute("attrName"),
-                             ReadEvent.endAttribute(),
-                             new ParseEvent(ParseState.AfterAttr)));
+        new ParserTransition(
+            ReadEvent.startAttribute("attrName"),
+            ReadEvent.endAttribute(),
+            new ParseEvent(ParseState.AfterAttr)));
   }
 
   void attrsContTest(String input, ParserTransition expected) {
@@ -106,14 +108,16 @@ class ReconParserPartsTest {
     attrsContTest("@attrName(", new ParserTransition(ReadEvent.startAttribute("attrName"), Action.pushAttr()));
     attrsContTest(
         "@attrName{",
-        new ParserTransition(ReadEvent.startAttribute("attrName"),
-                             ReadEvent.endAttribute(),
-                             new ParseEvent(ParseState.AfterAttr)));
+        new ParserTransition(
+            ReadEvent.startAttribute("attrName"),
+            ReadEvent.endAttribute(),
+            new ParseEvent(ParseState.AfterAttr)));
     attrsContTest(
         "@attrName",
-        new ParserTransition(ReadEvent.startAttribute("attrName"),
-                             ReadEvent.endAttribute(),
-                             new ParseEvent(ParseState.AfterAttr)));
+        new ParserTransition(
+            ReadEvent.startAttribute("attrName"),
+            ReadEvent.endAttribute(),
+            new ParseEvent(ParseState.AfterAttr)));
   }
 
   @Test
@@ -138,9 +142,10 @@ class ReconParserPartsTest {
   void parseNotAfterItemTest() {
     parseNotAfterItemExec(
         ":1, b:2)3",
-        new ParserTransition(ReadEvent.extant(),
-                             ReadEvent.slot(),
-                             new ParseEvent(ParseState.RecordBodySlot)));
+        new ParserTransition(
+            ReadEvent.extant(),
+            ReadEvent.slot(),
+            new ParseEvent(ParseState.RecordBodySlot)));
     parseNotAfterItemExec("}", new ParserTransition(ReadEvent.endRecord(), Action.popAfterItem()));
     parseNotAfterItemExec(
         "\"abc\"",

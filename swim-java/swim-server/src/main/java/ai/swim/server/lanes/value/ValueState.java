@@ -7,7 +7,6 @@ import ai.swim.server.lanes.WriteResult;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponseEncoder;
 import ai.swim.server.lanes.models.response.LaneResponse;
-import ai.swim.server.lanes.models.response.LaneResponseEncoder;
 import ai.swim.server.lanes.state.State;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
