@@ -326,7 +326,7 @@ impl<'l> Scope<'l> {
         system_call(vm, || env.convert_byte_array(array))
     }
 
-    pub fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b>
+    pub fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b, B>
     where
         B: BufPtr,
         'l: 'b,
@@ -336,8 +336,8 @@ impl<'l> Scope<'l> {
             env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len())
         });
         ByteBufferGuard {
-            _buf: Default::default(),
             buffer,
+            _buf: Default::default(),
         }
     }
 }
@@ -364,8 +364,11 @@ impl From<&str> for FatalError {
     }
 }
 
-impl<'b> From<ByteBufferGuard<'b>> for JValue<'b> {
-    fn from(value: ByteBufferGuard<'b>) -> Self {
+impl<'b, B> From<ByteBufferGuard<'b, B>> for JValue<'b>
+where
+    B: BufPtr,
+{
+    fn from(value: ByteBufferGuard<'b, B>) -> Self {
         unsafe { JValue::Object(JObject::from_raw(value.buffer.into_raw())) }
     }
 }
@@ -373,9 +376,12 @@ impl<'b> From<ByteBufferGuard<'b>> for JValue<'b> {
 /// Guard that binds the lifetime of the JByteBuffer to the backing data.
 #[must_use]
 #[derive(Clone, Copy)]
-pub struct ByteBufferGuard<'b> {
-    _buf: PhantomData<&'b mut Vec<u8>>,
+pub struct ByteBufferGuard<'b, B>
+where
+    B: BufPtr,
+{
     buffer: JByteBuffer<'b>,
+    _buf: PhantomData<&'b mut B>,
 }
 
 fn system_call<F, O>(vm: &Arc<JavaVM>, f: F) -> O
