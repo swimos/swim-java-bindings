@@ -16,9 +16,10 @@ package ai.swim.codec;
 
 import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
-
 import static ai.swim.codec.parsers.DataParser.blob;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DataParserTest {
 
@@ -55,7 +56,9 @@ class DataParserTest {
     blobTestOk("%YWJj", "abc".getBytes());
     blobTestOk("%TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQu", "Lorem ipsum dolor sit amet.".getBytes());
     blobTestOk("%YWJj)", "abc".getBytes());
-    blobTestOk("%QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODk=", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".getBytes());
+    blobTestOk(
+        "%QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODk=",
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".getBytes());
   }
 
   @Test
@@ -64,7 +67,9 @@ class DataParserTest {
     feedIncremental("%YWI=", "ab".getBytes());
     feedIncremental("%YWJj", "abc".getBytes());
     feedIncremental("%TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQu", "Lorem ipsum dolor sit amet.".getBytes());
-    feedIncremental("%QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODk=", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".getBytes());
+    feedIncremental(
+        "%QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODk=",
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".getBytes());
   }
 
   @Test

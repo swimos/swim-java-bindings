@@ -17,7 +17,6 @@ package ai.swim.structure.processor.writer;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeVariableName;
-
 import javax.lang.model.element.TypeParameterElement;
 import java.util.Collection;
 import java.util.List;
@@ -26,7 +25,10 @@ import java.util.stream.Collectors;
 
 public class WriterUtils {
 
-  public static void writeIndexSwitchBlock(CodeBlock.Builder body, String switchOn, int startAt, BiFunction<Integer, Integer, String> caseWriter) {
+  public static void writeIndexSwitchBlock(CodeBlock.Builder body,
+      String switchOn,
+      int startAt,
+      BiFunction<Integer, Integer, String> caseWriter) {
     body.beginControlFlow("switch ($L)", switchOn);
 
     int i = startAt;
@@ -48,7 +50,12 @@ public class WriterUtils {
 
   public static List<TypeVariableName> typeParametersToTypeVariable(Collection<? extends TypeParameterElement> typeParameters) {
     return typeParameters.stream().map(tp -> {
-      TypeName[] bounds = tp.getBounds().stream().map(TypeName::get).collect(Collectors.toList()).toArray(new TypeName[]{});
+      TypeName[] bounds = tp
+          .getBounds()
+          .stream()
+          .map(TypeName::get)
+          .collect(Collectors.toList())
+          .toArray(new TypeName[] {});
       return TypeVariableName.get(tp.asType().toString(), bounds);
     }).collect(Collectors.toList());
   }

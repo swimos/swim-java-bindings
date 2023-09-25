@@ -22,7 +22,6 @@ import ai.swim.structure.processor.writer.WriterUtils;
 import ai.swim.structure.processor.writer.recognizerForm.Lookups;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import com.squareup.javapoet.CodeBlock;
-
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
@@ -93,7 +92,7 @@ public class HeaderIndexFn extends Emitter {
             return String.format("case \"%s\":\r\n\t return %s;\r\n", recognizer.propertyName(), i);
           }
         }
-    );
+                                     );
 
     body.endControlFlow();
     body.addStatement("return null");

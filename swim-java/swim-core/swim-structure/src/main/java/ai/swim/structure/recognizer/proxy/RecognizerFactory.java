@@ -4,7 +4,6 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerException;
 import ai.swim.structure.recognizer.structural.StructuralRecognizer;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.function.Supplier;
@@ -15,7 +14,10 @@ class RecognizerFactory<T> {
   private final boolean isStructural;
   private final Class<T> targetClass;
 
-  private RecognizerFactory(Class<T> targetClass, Supplier<Recognizer<?>> supplier, Constructor<Recognizer<?>> typedConstructor, boolean isStructural) {
+  private RecognizerFactory(Class<T> targetClass,
+      Supplier<Recognizer<?>> supplier,
+      Constructor<Recognizer<?>> typedConstructor,
+      boolean isStructural) {
     this.targetClass = targetClass;
     this.supplier = supplier;
     this.typedConstructor = typedConstructor;
@@ -23,7 +25,9 @@ class RecognizerFactory<T> {
   }
 
   @SuppressWarnings("unchecked")
-  public static <T, R extends Recognizer<T>> RecognizerFactory<T> buildFrom(Class<T> targetClass, Class<R> recognizerClass, Supplier<Recognizer<?>> supplier) {
+  public static <T, R extends Recognizer<T>> RecognizerFactory<T> buildFrom(Class<T> targetClass,
+      Class<R> recognizerClass,
+      Supplier<Recognizer<?>> supplier) {
     Constructor<Recognizer<?>> typedConstructor = null;
     boolean isStructural = false;
 
@@ -41,7 +45,9 @@ class RecognizerFactory<T> {
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  public static RecognizerFactory buildFromAny(Class<?> targetClass, Class<? extends Recognizer> clazz, Supplier<Recognizer<?>> supplier) {
+  public static RecognizerFactory buildFromAny(Class<?> targetClass,
+      Class<? extends Recognizer> clazz,
+      Supplier<Recognizer<?>> supplier) {
     return buildFrom(targetClass, clazz, supplier);
   }
 

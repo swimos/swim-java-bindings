@@ -3,9 +3,7 @@ package ai.swim.structure.recognizer.structural;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
-
 import static ai.swim.structure.RecognizerTestUtil.runTest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -19,7 +17,7 @@ class EnumRecognizerTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     Level level = runTest(recognizer, events);
     assertEquals(level, Level.Warn);

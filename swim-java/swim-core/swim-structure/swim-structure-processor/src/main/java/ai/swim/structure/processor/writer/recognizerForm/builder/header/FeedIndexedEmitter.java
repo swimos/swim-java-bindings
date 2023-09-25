@@ -18,7 +18,6 @@ import ai.swim.structure.processor.model.FieldModel;
 import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import com.squareup.javapoet.CodeBlock;
-
 import java.util.List;
 
 /**

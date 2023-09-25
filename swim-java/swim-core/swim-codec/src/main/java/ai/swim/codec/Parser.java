@@ -20,7 +20,6 @@ import ai.swim.codec.parsers.Preceded;
 import ai.swim.codec.parsers.combinators.AndThen;
 import ai.swim.codec.parsers.combinators.MappedParser;
 import ai.swim.codec.parsers.combinators.TryMappedParser;
-
 import java.util.function.Function;
 
 /**

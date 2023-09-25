@@ -15,16 +15,25 @@
 package ai.swim.structure.processor.writer.writerForm;
 
 import ai.swim.structure.annotations.AutoloadedWriter;
-import com.squareup.javapoet.*;
-
+import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.TypeVariableName;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-
-import static ai.swim.structure.processor.writer.writerForm.Lookups.*;
+import static ai.swim.structure.processor.writer.writerForm.Lookups.STRUCTURAL_WRITER_CLASS;
+import static ai.swim.structure.processor.writer.writerForm.Lookups.WRITABLE_CLASS;
+import static ai.swim.structure.processor.writer.writerForm.Lookups.WRITABLE_WRITE_INTO;
 
 /**
  * Abstract class writer for shared functionality between concrete and abstract class writables.
@@ -81,7 +90,11 @@ public abstract class ClassWriter {
     builder.returns(writerType);
     builder.addAnnotation(Override.class);
     builder.addParameter(ParameterSpec.builder(TypeName.get(root.asType()), "from").build());
-    builder.addParameter(ParameterSpec.builder(ParameterizedTypeName.get(ClassName.get(writableTypeElement), writerType), "structuralWriter").build());
+    builder.addParameter(ParameterSpec
+                             .builder(
+                                 ParameterizedTypeName.get(ClassName.get(writableTypeElement), writerType),
+                                 "structuralWriter")
+                             .build());
 
     return builder.addCode(writeIntoBody()).build();
   }

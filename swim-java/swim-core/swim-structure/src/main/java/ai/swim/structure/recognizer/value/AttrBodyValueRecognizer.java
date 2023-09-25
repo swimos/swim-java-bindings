@@ -21,7 +21,6 @@ import ai.swim.structure.value.Item;
 import ai.swim.structure.value.Record;
 import ai.swim.structure.value.Value;
 import ai.swim.structure.value.ValueItem;
-
 import java.util.List;
 
 class AttrBodyValueRecognizer extends ValueRecognizer {

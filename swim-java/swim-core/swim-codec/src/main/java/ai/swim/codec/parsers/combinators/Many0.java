@@ -2,7 +2,6 @@ package ai.swim.codec.parsers.combinators;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
-
 import java.util.ArrayList;
 import java.util.List;
 

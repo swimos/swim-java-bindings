@@ -20,11 +20,14 @@ import ai.swim.structure.value.Item;
 import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.proxy.WriterProxy;
 import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
-
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SuppressWarnings("unchecked")
@@ -44,7 +47,9 @@ class AutoStructuralWriterTest {
     Writable<SimpleClassOne> writable = proxy.lookup(SimpleClassOne.class);
     Value value = writable.asValue(new SimpleClassOne(1));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("SimpleClassOne")), List.of(Item.of(Value.of("first"), Value.of(1)))), value);
+    assertEquals(
+        Value.of(List.of(Value.ofAttr("SimpleClassOne")), List.of(Item.of(Value.of("first"), Value.of(1)))),
+        value);
   }
 
   @Test
@@ -52,7 +57,11 @@ class AutoStructuralWriterTest {
     Writable<SimpleClassTwo> writable = proxy.lookup(SimpleClassTwo.class);
     Value value = writable.asValue(new SimpleClassTwo(1, "second"));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("SimpleClassTwo")), List.of(Item.of(Value.of("first"), Value.of(1)), Item.of(Value.of("second"), Value.of("second")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr("SimpleClassTwo")),
+        List.of(
+            Item.of(Value.of("first"), Value.of(1)),
+            Item.of(Value.of("second"), Value.of("second")))), value);
   }
 
   @Test
@@ -60,7 +69,11 @@ class AutoStructuralWriterTest {
     Writable<AttrClass> writable = proxy.lookup(AttrClass.class);
     Value value = writable.asValue(new AttrClass(true, 1, "second"));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("AttrClass"), Value.ofAttr("manipulatedField", Value.of(true))), List.of(Item.of(Value.of("first"), Value.of(1)), Item.of(Value.of("second"), Value.of("second")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr("AttrClass"), Value.ofAttr("manipulatedField", Value.of(true))),
+        List.of(
+            Item.of(Value.of("first"), Value.of(1)),
+            Item.of(Value.of("second"), Value.of("second")))), value);
   }
 
   @Test
@@ -68,7 +81,11 @@ class AutoStructuralWriterTest {
     Writable<HeaderBodyClass> writable = proxy.lookup(HeaderBodyClass.class);
     Value value = writable.asValue(new HeaderBodyClass(true, 1, "second"));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("HeaderBodyClass", Value.of(true))), List.of(Item.of(Value.of("first"), Value.of(1)), Item.of(Value.of("second"), Value.of("second")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr("HeaderBodyClass", Value.of(true))),
+        List.of(
+            Item.of(Value.of("first"), Value.of(1)),
+            Item.of(Value.of("second"), Value.of("second")))), value);
   }
 
   @Test
@@ -76,7 +93,15 @@ class AutoStructuralWriterTest {
     Writable<HeaderClass> writable = proxy.lookup(HeaderClass.class);
     Value value = writable.asValue(new HeaderClass(true, 1, "second"));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("HeaderClass", Value.ofItems(List.of(Item.of(Value.of("manipulatedField"), Value.of(true)))))), List.of(Item.of(Value.of("first"), Value.of(1)), Item.of(Value.of("second"), Value.of("second")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr(
+            "HeaderClass",
+            Value.ofItems(List.of(Item.of(
+                Value.of("manipulatedField"),
+                Value.of(true)))))),
+        List.of(
+            Item.of(Value.of("first"), Value.of(1)),
+            Item.of(Value.of("second"), Value.of("second")))), value);
   }
 
   @Test
@@ -84,7 +109,15 @@ class AutoStructuralWriterTest {
     Writable<HeaderClass2> writable = proxy.lookup(HeaderClass2.class);
     Value value = writable.asValue(new HeaderClass2("node", "lane", 1, "second"));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("HeaderClass2", Value.ofItems(List.of(Item.of(Value.of("node"), Value.of("node")), Item.of(Value.of("lane"), Value.of("lane")))))), List.of(Item.of(Value.of("first"), Value.of(1)), Item.of(Value.of("second"), Value.of("second")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr(
+            "HeaderClass2",
+            Value.ofItems(List.of(
+                Item.of(Value.of("node"), Value.of("node")),
+                Item.of(Value.of("lane"), Value.of("lane")))))),
+        List.of(
+            Item.of(Value.of("first"), Value.of(1)),
+            Item.of(Value.of("second"), Value.of("second")))), value);
   }
 
   @Test
@@ -92,7 +125,16 @@ class AutoStructuralWriterTest {
     Writable<ComplexFields> writable = proxy.lookup(ComplexFields.class);
     Value value = writable.asValue(new ComplexFields(13, "node", "lane", 1, "second"));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("ComplexFields", Value.ofItems(List.of(Item.of(Value.of(13)), Item.of(Value.of("node"), Value.of("node")), Item.of(Value.of("lane"), Value.of("lane")))))), List.of(Item.of(Value.of("first"), Value.of(1)), Item.of(Value.of("second"), Value.of("second")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr(
+            "ComplexFields",
+            Value.ofItems(List.of(
+                Item.of(Value.of(13)),
+                Item.of(Value.of("node"), Value.of("node")),
+                Item.of(Value.of("lane"), Value.of("lane")))))),
+        List.of(
+            Item.of(Value.of("first"), Value.of(1)),
+            Item.of(Value.of("second"), Value.of("second")))), value);
   }
 
   @Test
@@ -100,7 +142,11 @@ class AutoStructuralWriterTest {
     Writable<RenamedField> writable = proxy.lookup(RenamedField.class);
     Value value = writable.asValue(new RenamedField(1, "second"));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("RenamedField")), List.of(Item.of(Value.of("renamed"), Value.of(1)), Item.of(Value.of("second"), Value.of("second")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr("RenamedField")),
+        List.of(
+            Item.of(Value.of("renamed"), Value.of(1)),
+            Item.of(Value.of("second"), Value.of("second")))), value);
   }
 
   @Test
@@ -108,7 +154,10 @@ class AutoStructuralWriterTest {
     Writable<RenamedClass> writable = proxy.lookup(RenamedClass.class);
     Value value = writable.asValue(new RenamedClass(1, "second"));
 
-    assertEquals(Value.of(Value.ofAttr("SomeOtherName"), Item.of(Value.of("first"), Value.of(1)), Item.of(Value.of("second"), Value.of("second"))), value);
+    assertEquals(Value.of(
+        Value.ofAttr("SomeOtherName"),
+        Item.of(Value.of("first"), Value.of(1)),
+        Item.of(Value.of("second"), Value.of("second"))), value);
   }
 
   @Test
@@ -116,7 +165,14 @@ class AutoStructuralWriterTest {
     Writable<Outer> writable = proxy.lookup(Outer.class);
     Value value = writable.asValue(new Outer(new Inner(13, "things")));
 
-    assertEquals(Value.of(Value.ofAttr("Outer"), Item.of(Value.of("inner"), Value.of(Value.ofAttr("Inner"), Item.of(Value.of("first"), Value.of(13)), Item.of(Value.of("second"), Value.of("things"))))), value);
+    assertEquals(Value.of(
+        Value.ofAttr("Outer"),
+        Item.of(
+            Value.of("inner"),
+            Value.of(
+                Value.ofAttr("Inner"),
+                Item.of(Value.of("first"), Value.of(13)),
+                Item.of(Value.of("second"), Value.of("things"))))), value);
   }
 
   @Test
@@ -124,7 +180,9 @@ class AutoStructuralWriterTest {
     Writable<BodyReplaced> writable = proxy.lookup(BodyReplaced.class);
     Value value = writable.asValue(new BodyReplaced(1, "second"));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("BodyReplaced", Value.ofItems(Item.of(Value.of("first"), Value.of(1))))), List.of(Item.of(Value.of("second")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr("BodyReplaced", Value.ofItems(Item.of(Value.of("first"), Value.of(1))))),
+        List.of(Item.of(Value.of("second")))), value);
   }
 
   @Test
@@ -132,12 +190,25 @@ class AutoStructuralWriterTest {
     Writable<OuterBody> writable = proxy.lookup(OuterBody.class);
     Value value = writable.asValue(new OuterBody("val", new InnerBody(13, "things")));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("OuterBody", Value.ofItems(Item.of(Value.of("var"), Value.of("val")))), Value.ofAttr("InnerBody")), List.of(Item.of(Value.of("first"), Value.of(13)), Item.of(Value.of("second"), Value.of("things")))), value);
+    assertEquals(Value.of(
+        List.of(
+            Value.ofAttr("OuterBody", Value.ofItems(Item.of(Value.of("var"), Value.of("val")))),
+            Value.ofAttr("InnerBody")),
+        List.of(
+            Item.of(Value.of("first"), Value.of(13)),
+            Item.of(Value.of("second"), Value.of("things")))), value);
   }
 
   @Test
   void polymorphic() {
-    Value expected = Value.of(Value.ofAttr("ValueClass", Value.ofItems(Item.of(Value.of("host"), Value.of("swim.ai")), Item.of(Value.of("lane"), Value.of("lane_uri")), Item.of(Value.of("node"), Value.of("node_uri")))), Item.of(Value.of(13)));
+    Value expected = Value.of(
+        Value.ofAttr(
+            "ValueClass",
+            Value.ofItems(
+                Item.of(Value.of("host"), Value.of("swim.ai")),
+                Item.of(Value.of("lane"), Value.of("lane_uri")),
+                Item.of(Value.of("node"), Value.of("node_uri")))),
+        Item.of(Value.of(13)));
     ValueClass valueClass = new ValueClass(13, "lane_uri", "node_uri", "swim.ai");
 
     assertEquals(expected, proxy.lookup(HostIFace.class).asValue(valueClass));
@@ -150,7 +221,12 @@ class AutoStructuralWriterTest {
   void genericClass() {
     Writable<GenericClassSlot<?>> genericClassWritable = proxy.lookup((Class<GenericClassSlot<?>>) (Class<?>) GenericClassSlot.class);
     Value actual = genericClassWritable.asValue(new GenericClassSlot<>("node_uri", "lane_uri", 13, 15));
-    assertEquals(Value.of(Value.ofAttr("GenericClassSlot"), Item.of(Value.of("node"), Value.of("node_uri")), Item.of(Value.of("lane"), Value.of("lane_uri")), Item.of(Value.of("valueA"), Value.of(13)), Item.of(Value.of("valueB"), Value.of(15))), actual);
+    assertEquals(Value.of(
+        Value.ofAttr("GenericClassSlot"),
+        Item.of(Value.of("node"), Value.of("node_uri")),
+        Item.of(Value.of("lane"), Value.of("lane_uri")),
+        Item.of(Value.of("valueA"), Value.of(13)),
+        Item.of(Value.of("valueB"), Value.of(15))), actual);
   }
 
   // Tests that a writable works when the generics are wildcard types and that the generic is looked up again when it
@@ -159,13 +235,30 @@ class AutoStructuralWriterTest {
   void genericClassMixedInputs() {
     Writable<GenericClassSlot<?>> genericClassWritable = proxy.lookup((Class<GenericClassSlot<?>>) (Class<?>) GenericClassSlot.class);
     Value actual = genericClassWritable.asValue(new GenericClassSlot<>("node_uri", "lane_uri", 13, 15));
-    assertEquals(Value.of(Value.ofAttr("GenericClassSlot"), Item.of(Value.of("node"), Value.of("node_uri")), Item.of(Value.of("lane"), Value.of("lane_uri")), Item.of(Value.of("valueA"), Value.of(13)), Item.of(Value.of("valueB"), Value.of(15))), actual);
+    assertEquals(Value.of(
+        Value.ofAttr("GenericClassSlot"),
+        Item.of(Value.of("node"), Value.of("node_uri")),
+        Item.of(Value.of("lane"), Value.of("lane_uri")),
+        Item.of(Value.of("valueA"), Value.of(13)),
+        Item.of(Value.of("valueB"), Value.of(15))), actual);
 
     actual = genericClassWritable.asValue(new GenericClassSlot<>("node_uri", "lane_uri", 13, List.of(1.1, 2.2, 3.3)));
-    assertEquals(Value.of(Value.ofAttr("GenericClassSlot"), Item.of(Value.of("node"), Value.of("node_uri")), Item.of(Value.of("lane"), Value.of("lane_uri")), Item.of(Value.of("valueA"), Value.of(13)), Item.of(Value.of("valueB"), Value.ofItems(Item.valueItem(1.1), Item.valueItem(2.2), Item.valueItem(3.3)))), actual);
+    assertEquals(Value.of(
+        Value.ofAttr("GenericClassSlot"),
+        Item.of(Value.of("node"), Value.of("node_uri")),
+        Item.of(Value.of("lane"), Value.of("lane_uri")),
+        Item.of(Value.of("valueA"), Value.of(13)),
+        Item.of(
+            Value.of("valueB"),
+            Value.ofItems(Item.valueItem(1.1), Item.valueItem(2.2), Item.valueItem(3.3)))), actual);
 
     actual = genericClassWritable.asValue(new GenericClassSlot<>("node_uri", "lane_uri", "stringy", 13L));
-    assertEquals(Value.of(Value.ofAttr("GenericClassSlot"), Item.of(Value.of("node"), Value.of("node_uri")), Item.of(Value.of("lane"), Value.of("lane_uri")), Item.of(Value.of("valueA"), Value.of("stringy")), Item.of(Value.of("valueB"), Value.of(13L))), actual);
+    assertEquals(Value.of(
+        Value.ofAttr("GenericClassSlot"),
+        Item.of(Value.of("node"), Value.of("node_uri")),
+        Item.of(Value.of("lane"), Value.of("lane_uri")),
+        Item.of(Value.of("valueA"), Value.of("stringy")),
+        Item.of(Value.of("valueB"), Value.of(13L))), actual);
   }
 
   @Test
@@ -179,31 +272,75 @@ class AutoStructuralWriterTest {
     Writable<MapList<?, ?>> genericClassWritable = proxy.lookup((Class<MapList<?, ?>>) (Class<?>) MapList.class);
     Value actual = genericClassWritable.asValue(new MapList<>(List.of(firstMap, secondMap)));
 
-    assertEquals(Value.of(Value.ofAttr("MapList"), Item.of(Value.of("list"), Value.ofItems(Item.of(Value.ofItems(Item.of(Value.of("a"), Value.of(1)))), Item.of(Value.ofItems(Item.of(Value.of("b"), Value.of(2L)), Item.of(Value.of("c"), Value.of(3.3))))))), actual);
+    assertEquals(Value.of(
+        Value.ofAttr("MapList"),
+        Item.of(
+            Value.of("list"),
+            Value.ofItems(
+                Item.of(Value.ofItems(Item.of(Value.of("a"), Value.of(1)))),
+                Item.of(Value.ofItems(
+                    Item.of(Value.of("b"), Value.of(2L)),
+                    Item.of(Value.of("c"), Value.of(3.3))))))), actual);
   }
 
   @Test
   void genericArrayClass() {
     Writable<GenericArrayClass<?>> arrayClass = proxy.lookup((Class<GenericArrayClass<?>>) (Class<?>) GenericArrayClass.class);
-    Value actual = arrayClass.asValue(new GenericArrayClass<>(new Number[]{1L, 1.1, 3.3, 4.4d}));
+    Value actual = arrayClass.asValue(new GenericArrayClass<>(new Number[] {1L, 1.1, 3.3, 4.4d}));
 
-    assertEquals(Value.of(Value.ofAttr("GenericArrayClass"), Item.of(Value.of("numbers"), Value.ofItems(Item.valueItem(1L), Item.valueItem(1.1), Item.valueItem(3.3), Item.valueItem(4.4d)))), actual);
+    assertEquals(Value.of(
+        Value.ofAttr("GenericArrayClass"),
+        Item.of(
+            Value.of("numbers"),
+            Value.ofItems(
+                Item.valueItem(1L),
+                Item.valueItem(1.1),
+                Item.valueItem(3.3),
+                Item.valueItem(4.4d)))), actual);
   }
 
   @Test
   void writeValueFieldClass() {
     Writable<ValueFieldClass> writable = proxy.lookup(ValueFieldClass.class);
 
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.extant())), writable.asValue(new ValueFieldClass(Value.extant())));
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(13))), writable.asValue(new ValueFieldClass(Value.of(13))));
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(13L))), writable.asValue(new ValueFieldClass(Value.of(13L))));
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(13f))), writable.asValue(new ValueFieldClass(Value.of(13f))));
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(13d))), writable.asValue(new ValueFieldClass(Value.of(13d))));
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(true))), writable.asValue(new ValueFieldClass(Value.of(true))));
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(BigInteger.TEN))), writable.asValue(new ValueFieldClass(Value.of(BigInteger.TEN))));
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(BigDecimal.TEN))), writable.asValue(new ValueFieldClass(Value.of(BigDecimal.TEN))));
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(new byte[]{1, 2, 3}))), writable.asValue(new ValueFieldClass(Value.of(new byte[]{1, 2, 3}))));
-    assertEquals(Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of("hello", Item.valueItem(1), Item.valueItem(2), Item.valueItem(3)))), writable.asValue(new ValueFieldClass(Value.of("hello", Item.valueItem(1), Item.valueItem(2), Item.valueItem(3)))));
+    assertEquals(
+        Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.extant())),
+        writable.asValue(new ValueFieldClass(Value.extant())));
+    assertEquals(
+        Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(13))),
+        writable.asValue(new ValueFieldClass(Value.of(13))));
+    assertEquals(
+        Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(13L))),
+        writable.asValue(new ValueFieldClass(Value.of(13L))));
+    assertEquals(
+        Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(13f))),
+        writable.asValue(new ValueFieldClass(Value.of(13f))));
+    assertEquals(
+        Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(13d))),
+        writable.asValue(new ValueFieldClass(Value.of(13d))));
+    assertEquals(
+        Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(true))),
+        writable.asValue(new ValueFieldClass(Value.of(true))));
+    assertEquals(
+        Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(BigInteger.TEN))),
+        writable.asValue(new ValueFieldClass(Value.of(BigInteger.TEN))));
+    assertEquals(
+        Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(BigDecimal.TEN))),
+        writable.asValue(new ValueFieldClass(Value.of(BigDecimal.TEN))));
+    assertEquals(
+        Value.of("ValueFieldClass", Item.of(Value.of("value"), Value.of(new byte[] {1, 2, 3}))),
+        writable.asValue(new ValueFieldClass(Value.of(new byte[] {1, 2, 3}))));
+    assertEquals(
+        Value.of(
+            "ValueFieldClass",
+            Item.of(
+                Value.of("value"),
+                Value.of("hello", Item.valueItem(1), Item.valueItem(2), Item.valueItem(3)))),
+        writable.asValue(new ValueFieldClass(Value.of(
+            "hello",
+            Item.valueItem(1),
+            Item.valueItem(2),
+            Item.valueItem(3)))));
   }
 
   @Test
@@ -211,7 +348,13 @@ class AutoStructuralWriterTest {
     Writable<GenericHeader<?>> writable = proxy.lookup((Class<GenericHeader<?>>) (Class<?>) GenericHeader.class);
     Value value = writable.asValue(new GenericHeader<>("node_uri", "lane_uri", 13));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("GenericHeader", Value.ofItems(List.of(Item.of(Value.of("value"), Value.of(13)))))), List.of(Item.of(Value.of("node"), Value.of("node_uri")), Item.of(Value.of("lane"), Value.of("lane_uri")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr(
+            "GenericHeader",
+            Value.ofItems(List.of(Item.of(Value.of("value"), Value.of(13)))))),
+        List.of(
+            Item.of(Value.of("node"), Value.of("node_uri")),
+            Item.of(Value.of("lane"), Value.of("lane_uri")))), value);
   }
 
   @Test
@@ -219,7 +362,11 @@ class AutoStructuralWriterTest {
     Writable<GenericHeaderBody<?>> writable = proxy.lookup((Class<GenericHeaderBody<?>>) (Class<?>) GenericHeaderBody.class);
     Value value = writable.asValue(new GenericHeaderBody<>("node_uri", "lane_uri", 13));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("GenericHeaderBody", Value.of(13))), List.of(Item.of(Value.of("node"), Value.of("node_uri")), Item.of(Value.of("lane"), Value.of("lane_uri")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr("GenericHeaderBody", Value.of(13))),
+        List.of(
+            Item.of(Value.of("node"), Value.of("node_uri")),
+            Item.of(Value.of("lane"), Value.of("lane_uri")))), value);
   }
 
   @Test
@@ -227,7 +374,11 @@ class AutoStructuralWriterTest {
     Writable<GenericAttr<?>> writable = proxy.lookup((Class<GenericAttr<?>>) (Class<?>) GenericAttr.class);
     Value value = writable.asValue(new GenericAttr<>("node_uri", "lane_uri", 13));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("GenericAttr"), Value.ofAttr("value", Value.of(13))), List.of(Item.of(Value.of("node"), Value.of("node_uri")), Item.of(Value.of("lane"), Value.of("lane_uri")))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr("GenericAttr"), Value.ofAttr("value", Value.of(13))),
+        List.of(
+            Item.of(Value.of("node"), Value.of("node_uri")),
+            Item.of(Value.of("lane"), Value.of("lane_uri")))), value);
   }
 
   @Test
@@ -235,7 +386,13 @@ class AutoStructuralWriterTest {
     Writable<GenericBody<?>> writable = proxy.lookup((Class<GenericBody<?>>) (Class<?>) GenericBody.class);
     Value value = writable.asValue(new GenericBody<>("node_uri", "lane_uri", 13));
 
-    assertEquals(Value.of(List.of(Value.ofAttr("GenericBody", Value.ofItems(Item.of(Value.of("node"), Value.of("node_uri")), Item.of(Value.of("lane"), Value.of("lane_uri"))))), List.of(Item.valueItem(13))), value);
+    assertEquals(Value.of(
+        List.of(Value.ofAttr(
+            "GenericBody",
+            Value.ofItems(
+                Item.of(Value.of("node"), Value.of("node_uri")),
+                Item.of(Value.of("lane"), Value.of("lane_uri"))))),
+        List.of(Item.valueItem(13))), value);
   }
 
   @Test
@@ -245,11 +402,11 @@ class AutoStructuralWriterTest {
     assertEquals(
         Value.of("tagA", Item.of(Value.of("fieldA"), Value.of(1)), Item.of(Value.of("b"), Value.of(2))),
         writable.asValue(EnumForm.A)
-    );
+                );
     assertEquals(
         Value.of("B", Item.of(Value.of("fieldA"), Value.of(3)), Item.of(Value.of("b"), Value.of(4))),
         writable.asValue(EnumForm.B)
-    );
+                );
   }
 
   @Test
@@ -257,11 +414,11 @@ class AutoStructuralWriterTest {
     assertEquals(
         Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
         proxy.lookup((Class<EnumInterface<String>>) (Class<?>) EnumInterface.class).asValue(ChildEnum.A)
-    );
+                );
     assertEquals(
         Value.of("A", Item.of(Value.of("value"), Value.of("aValue"))),
         proxy.lookup(ChildEnum.class).asValue(ChildEnum.A)
-    );
+                );
   }
 
   @AutoForm
@@ -431,7 +588,9 @@ class AutoStructuralWriterTest {
         return false;
       }
       AttrClass attrClass = (AttrClass) o;
-      return manipulatedField == attrClass.manipulatedField && first == attrClass.first && Objects.equals(second, attrClass.second);
+      return manipulatedField == attrClass.manipulatedField && first == attrClass.first && Objects.equals(
+          second,
+          attrClass.second);
     }
 
     @Override
@@ -470,7 +629,9 @@ class AutoStructuralWriterTest {
         return false;
       }
       HeaderBodyClass attrClass = (HeaderBodyClass) o;
-      return manipulatedField == attrClass.manipulatedField && first == attrClass.first && Objects.equals(second, attrClass.second);
+      return manipulatedField == attrClass.manipulatedField && first == attrClass.first && Objects.equals(
+          second,
+          attrClass.second);
     }
 
     @Override
@@ -509,7 +670,9 @@ class AutoStructuralWriterTest {
         return false;
       }
       HeaderClass attrClass = (HeaderClass) o;
-      return manipulatedField == attrClass.manipulatedField && first == attrClass.first && Objects.equals(second, attrClass.second);
+      return manipulatedField == attrClass.manipulatedField && first == attrClass.first && Objects.equals(
+          second,
+          attrClass.second);
     }
 
     @Override
@@ -546,7 +709,11 @@ class AutoStructuralWriterTest {
         return false;
       }
       HeaderClass2 that = (HeaderClass2) o;
-      return first == that.first && Objects.equals(node, that.node) && Objects.equals(lane, that.lane) && Objects.equals(second, that.second);
+      return first == that.first && Objects.equals(node, that.node) && Objects.equals(
+          lane,
+          that.lane) && Objects.equals(
+          second,
+          that.second);
     }
 
     @Override
@@ -592,7 +759,11 @@ class AutoStructuralWriterTest {
         return false;
       }
       ComplexFields that = (ComplexFields) o;
-      return count == that.count && first == that.first && Objects.equals(node, that.node) && Objects.equals(lane, that.lane) && Objects.equals(second, that.second);
+      return count == that.count && first == that.first && Objects.equals(node, that.node) && Objects.equals(
+          lane,
+          that.lane) && Objects.equals(
+          second,
+          that.second);
     }
 
     @Override
@@ -1019,7 +1190,11 @@ class AutoStructuralWriterTest {
         return false;
       }
       GenericClassSlot<?> that = (GenericClassSlot<?>) o;
-      return Objects.equals(node, that.node) && Objects.equals(lane, that.lane) && Objects.equals(valueA, that.valueA) && Objects.equals(valueB, that.valueB);
+      return Objects.equals(node, that.node) && Objects.equals(lane, that.lane) && Objects.equals(
+          valueA,
+          that.valueA) && Objects.equals(
+          valueB,
+          that.valueB);
     }
 
     @Override

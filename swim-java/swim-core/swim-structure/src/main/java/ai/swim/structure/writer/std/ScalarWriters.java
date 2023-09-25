@@ -16,7 +16,6 @@ package ai.swim.structure.writer.std;
 
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicBoolean;

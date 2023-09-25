@@ -17,7 +17,6 @@ package ai.swim.codec.parsers;
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BinaryOperator;
@@ -35,7 +34,9 @@ public class MapReduce<I, O> extends Parser<Optional<O>> {
     this.reduce = reduce;
   }
 
-  public static <O, T> Parser<Optional<T>> mapReduce(Parser<List<O>> parser, Function<O, T> map, BinaryOperator<T> reduce) {
+  public static <O, T> Parser<Optional<T>> mapReduce(Parser<List<O>> parser,
+      Function<O, T> map,
+      BinaryOperator<T> reduce) {
     return new MapReduce<>(parser, map, reduce);
   }
 

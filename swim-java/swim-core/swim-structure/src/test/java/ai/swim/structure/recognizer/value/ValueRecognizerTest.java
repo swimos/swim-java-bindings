@@ -19,10 +19,10 @@ import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.value.Item;
 import ai.swim.structure.value.Value;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class ValueRecognizerTest {
   @Test
@@ -39,7 +39,7 @@ class ValueRecognizerTest {
         ReadEvent.slot(),
         ReadEvent.number(2),
         ReadEvent.endRecord()
-    );
+                                    );
 
     for (int i = 0; i < events.size(); i++) {
       recognizer = recognizer.feedEvent(events.get(i));
@@ -52,8 +52,8 @@ class ValueRecognizerTest {
             List.of(
                 Item.of(Value.of("a"), Value.of(1)),
                 Item.of(Value.of("b"), Value.of(2))
-            )
-        );
+                   )
+                                 );
 
         assertEquals(expected, recognizer.bind());
       } else if (recognizer.isError()) {
@@ -82,7 +82,7 @@ class ValueRecognizerTest {
         ReadEvent.number(5),
         ReadEvent.endRecord(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     for (int i = 0; i < events.size(); i++) {
       recognizer = recognizer.feedEvent(events.get(i));
@@ -96,8 +96,8 @@ class ValueRecognizerTest {
                     Item.of(Value.of(1)),
                     Item.of(Value.of(2)),
                     Item.of(Value.ofItems(List.of(Item.of(Value.of(1.1f)))))
-                )
-            ))),
+                       )
+                                                      ))),
             List.of(
                 Item.of(Value.of("text")),
                 Item.of(Value.of(
@@ -105,10 +105,10 @@ class ValueRecognizerTest {
                     List.of(
                         Item.of(Value.of(3)),
                         Item.of(Value.of(5))
-                    )
-                ))
-            )
-        );
+                           )
+                                ))
+                   )
+                                 );
 
         assertEquals(expected, recognizer.bind());
       } else if (recognizer.isError()) {

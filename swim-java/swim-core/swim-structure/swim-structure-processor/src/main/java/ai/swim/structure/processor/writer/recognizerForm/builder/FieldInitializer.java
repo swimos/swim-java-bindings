@@ -19,7 +19,6 @@ import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import ai.swim.structure.processor.writer.recognizerForm.recognizer.RecognizerTransformation;
 import com.squareup.javapoet.CodeBlock;
-
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.FIELD_RECOGNIZING_BUILDER_CLASS;
 
 /**
@@ -41,6 +40,12 @@ public class FieldInitializer extends Emitter {
 
   @Override
   public String toString() {
-    return CodeBlock.of("new $L<>($L$L)", FIELD_RECOGNIZING_BUILDER_CLASS, fieldModel.instantiate(context.getInitializer(), inConstructor), new RecognizerTransformation(fieldModel)).toString();
+    return CodeBlock
+        .of(
+            "new $L<>($L$L)",
+            FIELD_RECOGNIZING_BUILDER_CLASS,
+            fieldModel.instantiate(context.getInitializer(), inConstructor),
+            new RecognizerTransformation(fieldModel))
+        .toString();
   }
 }

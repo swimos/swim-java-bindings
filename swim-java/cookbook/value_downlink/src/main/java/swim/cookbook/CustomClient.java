@@ -39,7 +39,7 @@ final class CustomClient {
         "unit/foo",
         "lane",
         Integer.class
-    );
+                                                                );
 
     // Using this builder, we can register callbacks that will be invoked for the various lifecycle events that occur
     // when running the downlink.

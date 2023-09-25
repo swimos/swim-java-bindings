@@ -109,10 +109,11 @@ public class WriterTypeInitializer implements TypeInitializer {
     CodeBlock classTy = CodeBlock.of("(Class<$T>) (Class<?>) Object.class", initializedComponentType.getMirror());
     return new InitializedType(
         model.getType(),
-        CodeBlock.of("new $T($L, $L)",
-                     className,
-                     initializedComponentType.getInitializer(),
-                     classTy));
+        CodeBlock.of(
+            "new $T($L, $L)",
+            className,
+            initializedComponentType.getInitializer(),
+            classTy));
   }
 
   @Override

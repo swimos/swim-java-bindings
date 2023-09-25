@@ -15,7 +15,6 @@
 package ai.swim.structure.processor.model.accessor;
 
 import com.squareup.javapoet.CodeBlock;
-
 import javax.lang.model.element.ExecutableElement;
 
 public class MethodAccessor extends Accessor {

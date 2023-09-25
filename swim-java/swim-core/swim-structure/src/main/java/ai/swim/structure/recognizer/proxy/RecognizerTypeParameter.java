@@ -17,7 +17,6 @@ package ai.swim.structure.recognizer.proxy;
 import ai.swim.structure.TypeParameter;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.untyped.UntypedRecognizer;
-
 import java.util.function.Supplier;
 
 public abstract class RecognizerTypeParameter<T> extends TypeParameter<Recognizer<T>> {

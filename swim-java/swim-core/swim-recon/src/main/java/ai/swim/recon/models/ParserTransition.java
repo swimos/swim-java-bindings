@@ -16,7 +16,6 @@ package ai.swim.recon.models;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.models.state.Action;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;

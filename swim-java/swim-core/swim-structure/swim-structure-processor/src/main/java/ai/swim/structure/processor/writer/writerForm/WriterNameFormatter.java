@@ -2,7 +2,6 @@ package ai.swim.structure.processor.writer.writerForm;
 
 
 import ai.swim.structure.processor.writer.NameFormatter;
-
 import javax.lang.model.element.PackageElement;
 
 public class WriterNameFormatter extends NameFormatter {

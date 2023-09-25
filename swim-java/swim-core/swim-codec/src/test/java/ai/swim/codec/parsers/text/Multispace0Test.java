@@ -3,7 +3,6 @@ package ai.swim.codec.parsers.text;
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
-
 import static ai.swim.codec.parsers.text.Multispace0.multispace0;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

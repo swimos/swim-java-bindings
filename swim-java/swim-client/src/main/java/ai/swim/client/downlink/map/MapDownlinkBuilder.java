@@ -23,7 +23,6 @@ import ai.swim.client.lifecycle.OnRemove;
 import ai.swim.client.lifecycle.OnSynced;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.client.lifecycle.OnUpdate;
-
 import java.util.Map;
 import java.util.Objects;
 
@@ -37,7 +36,12 @@ public class MapDownlinkBuilder<K, V> {
   private final MapDownlinkLifecycle<K, V> lifecycle;
   private DownlinkConfig downlinkConfig;
 
-  public MapDownlinkBuilder(Handle handle, Class<K> keyType, Class<V> valueType, String host, String node, String lane) {
+  public MapDownlinkBuilder(Handle handle,
+      Class<K> keyType,
+      Class<V> valueType,
+      String host,
+      String node,
+      String lane) {
     this.handle = handle;
     this.keyType = keyType;
     this.valueType = valueType;

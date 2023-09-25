@@ -20,13 +20,13 @@ import ai.swim.structure.recognizer.proxy.RecognizerProxy;
 import ai.swim.structure.value.Item;
 import ai.swim.structure.value.Value;
 import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @SuppressWarnings("unchecked")
 class RecognizerBridgeTest {
@@ -49,7 +49,7 @@ class RecognizerBridgeTest {
 
   @Test
   void transformBlob() {
-    assertArrayEquals(proxy.lookup(byte[].class).transform(Value.of(new byte[]{1, 2, 3})), new byte[]{1, 2, 3});
+    assertArrayEquals(proxy.lookup(byte[].class).transform(Value.of(new byte[] {1, 2, 3})), new byte[] {1, 2, 3});
   }
 
   @Test
@@ -60,76 +60,82 @@ class RecognizerBridgeTest {
   @Test
   void optFields() {
     Recognizer<Clazz<Integer, Integer>> rec = proxy.lookup((Class<Clazz<Integer, Integer>>) (Class<?>) Clazz.class);
-    assertEquals(rec.transform(
+    assertEquals(
+        rec.transform(
             Value.of(
                 List.of(Value.ofAttr("Clazz")),
                 List.of(
                     Item.of(Value.of("first"), Value.of(2)),
                     Item.of(Value.of("second"), Value.of(3))
-                ))
-        ),
+                       ))
+                     ),
         new Clazz<>(2, 3)
-    );
+                );
 
     rec = rec.reset();
-    assertEquals(rec.transform(
+    assertEquals(
+        rec.transform(
             Value.of(
                 List.of(Value.ofAttr("Clazz")),
                 List.of(Item.of(Value.of("second"), Value.of(3))))
-        ),
+                     ),
         new Clazz<>(null, 3)
-    );
+                );
 
     rec = rec.reset();
-    assertEquals(rec.transform(
+    assertEquals(
+        rec.transform(
             Value.of(
                 List.of(Value.ofAttr("Clazz")),
                 List.of(
                     Item.of(Value.of("first"), Value.extant()),
                     Item.of(Value.of("second"), Value.of(3))
-                ))
-        ),
+                       ))
+                     ),
         new Clazz<>(null, 3)
-    );
+                );
 
     rec = rec.reset();
-    assertEquals(rec.transform(
+    assertEquals(
+        rec.transform(
             Value.of(
                 List.of(Value.ofAttr("Clazz")),
                 List.of(Item.of(Value.of("first"), Value.of(2))))
-        ),
+                     ),
         new Clazz<>(2, null)
-    );
+                );
 
     rec = rec.reset();
-    assertEquals(rec.transform(
+    assertEquals(
+        rec.transform(
             Value.of(
                 List.of(Value.ofAttr("Clazz")),
                 List.of(
                     Item.of(Value.of("first"), Value.of(2)),
                     Item.of(Value.of("second"), Value.extant())
-                ))
-        ),
+                       ))
+                     ),
         new Clazz<>(2, null)
-    );
+                );
 
     rec = rec.reset();
     assertEquals(
         rec.transform(Value.ofAttrs(List.of(Value.ofAttr("Clazz")))),
         new Clazz<>(null, null)
-    );
+                );
 
     rec = rec.reset();
-    assertEquals(rec.transform(
+    assertEquals(
+        rec.transform(
             Value.of(
                 List.of(Value.ofAttr("Clazz")),
                 List.of(
                     Item.of(Value.of("first"), Value.extant()),
                     Item.of(Value.of("second"), Value.extant())
-                ))
-        ),
+                       ))
+                     ),
         new Clazz<>(null, null)
-    );
+                );
   }
 
   @Test
@@ -147,10 +153,10 @@ class RecognizerBridgeTest {
                     Item.of(Value.of(1)),
                     Item.of(Value.of(2)),
                     Item.of(Value.of(3))
-                )))
-            )
-        ))
-    );
+                                                                      )))
+                   )
+                              ))
+                );
   }
 
   @AutoForm

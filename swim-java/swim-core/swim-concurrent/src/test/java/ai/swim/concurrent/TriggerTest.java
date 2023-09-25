@@ -1,4 +1,4 @@
-package  ai.swim.concurrent;
+package ai.swim.concurrent;
 
 import org.junit.jupiter.api.Test;
 import java.util.concurrent.BrokenBarrierException;

@@ -4,7 +4,6 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.recognizer.FirstOf;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.SimpleAttrBodyRecognizer;
-
 import java.util.ArrayList;
 import java.util.List;
 

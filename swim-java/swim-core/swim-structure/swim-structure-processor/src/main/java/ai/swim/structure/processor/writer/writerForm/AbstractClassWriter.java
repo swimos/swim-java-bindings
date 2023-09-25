@@ -18,7 +18,6 @@ import ai.swim.structure.processor.model.Model;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.TypeName;
-
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
@@ -29,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-
 import static ai.swim.structure.processor.writer.writerForm.Lookups.WRITER_EXCEPTION;
 
 /**
@@ -80,7 +78,9 @@ public class AbstractClassWriter extends ClassWriter {
       TypeMirror erasedType = typeUtils.erasure(type);
       DeclaredType writableType = typeUtils.getDeclaredType(typeElement, erasedType);
 
-      return FieldSpec.builder(TypeName.get(writableType), subtypeWritableLut.get(type.toString()), Modifier.PRIVATE).build();
+      return FieldSpec
+          .builder(TypeName.get(writableType), subtypeWritableLut.get(type.toString()), Modifier.PRIVATE)
+          .build();
     }).collect(Collectors.toList());
   }
 
@@ -97,7 +97,7 @@ public class AbstractClassWriter extends ClassWriter {
       String writableField = subtypeWritableLut.get(writableType.toString());
 
       TypeMirror erasedType = typeUtils.erasure(writableType);
-      controlFn.accept("$L (from instanceof $T)", new Object[]{controlKind, erasedType});
+      controlFn.accept("$L (from instanceof $T)", new Object[] {controlKind, erasedType});
 
       body.beginControlFlow("if ($L == null)", writableField);
       body.addStatement("$L = getProxy().lookup($T.class)", writableField, erasedType);

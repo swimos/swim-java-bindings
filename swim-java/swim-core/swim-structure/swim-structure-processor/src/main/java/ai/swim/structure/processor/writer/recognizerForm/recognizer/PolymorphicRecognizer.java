@@ -17,8 +17,12 @@ package ai.swim.structure.processor.writer.recognizerForm.recognizer;
 import ai.swim.structure.annotations.AutoloadedRecognizer;
 import ai.swim.structure.processor.model.Model;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
-import com.squareup.javapoet.*;
-
+import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.TypeVariableName;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
@@ -27,7 +31,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.List;
-
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.POLYMORPHIC_RECOGNIZER;
 import static ai.swim.structure.processor.writer.recognizerForm.Lookups.RECOGNIZER_CLASS;
 

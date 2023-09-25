@@ -2,7 +2,6 @@ package ai.swim.structure.processor.model;
 
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.processor.writer.Writable;
-
 import javax.lang.model.element.Element;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;

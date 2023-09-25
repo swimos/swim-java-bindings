@@ -15,7 +15,6 @@
 package ai.swim.structure.value;
 
 import ai.swim.structure.value.num.NumberValue;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;

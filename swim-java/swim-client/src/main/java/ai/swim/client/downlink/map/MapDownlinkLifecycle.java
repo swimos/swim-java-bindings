@@ -20,7 +20,6 @@ import ai.swim.client.lifecycle.OnRemove;
 import ai.swim.client.lifecycle.OnSynced;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.client.lifecycle.OnUpdate;
-
 import java.util.Map;
 
 public class MapDownlinkLifecycle<K, V> {

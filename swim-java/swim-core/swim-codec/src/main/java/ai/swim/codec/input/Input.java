@@ -1,7 +1,6 @@
 package ai.swim.codec.input;
 
 import ai.swim.codec.location.Location;
-
 import java.nio.ByteBuffer;
 
 /**

@@ -2,7 +2,6 @@ package ai.swim.recon.event.number;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.event.ReadEventVisitor;
-
 import java.util.Objects;
 
 public class ReadLongValue extends ReadEvent {

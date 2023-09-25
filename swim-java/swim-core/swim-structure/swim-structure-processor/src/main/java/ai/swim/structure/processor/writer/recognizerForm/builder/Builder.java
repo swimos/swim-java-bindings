@@ -23,7 +23,6 @@ import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
@@ -32,8 +31,10 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.ArrayList;
 import java.util.List;
-
-import static ai.swim.structure.processor.writer.recognizerForm.Lookups.*;
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.RECOGNIZING_BUILDER_CLASS;
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.RECOGNIZING_BUILDER_FEED_INDEX;
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.RECOGNIZING_BUILDER_RESET;
+import static ai.swim.structure.processor.writer.recognizerForm.Lookups.TYPE_READ_EVENT;
 
 /**
  * Recognizer builder shared functionality for use between class and header builders.
@@ -98,7 +99,12 @@ public abstract class Builder {
       TypeMirror recognizerType = recognizer.boxedType(context.getProcessingEnvironment());
 
       DeclaredType memberRecognizingBuilder = typeUtils.getDeclaredType(fieldFieldRecognizingBuilder, recognizerType);
-      FieldSpec.Builder fieldSpec = FieldSpec.builder(TypeName.get(memberRecognizingBuilder), context.getFormatter().fieldBuilderName(recognizer.getName().toString()), Modifier.PRIVATE);
+      FieldSpec.Builder fieldSpec = FieldSpec.builder(
+          TypeName.get(memberRecognizingBuilder),
+          context
+              .getFormatter()
+              .fieldBuilderName(recognizer.getName().toString()),
+          Modifier.PRIVATE);
 
       fieldSpecs.add(fieldSpec.build());
     }

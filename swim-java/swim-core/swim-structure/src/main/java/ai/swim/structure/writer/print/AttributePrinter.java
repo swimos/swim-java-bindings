@@ -14,10 +14,14 @@
 
 package ai.swim.structure.writer.print;
 
-import ai.swim.structure.writer.*;
+import ai.swim.structure.writer.BodyWriter;
+import ai.swim.structure.writer.HeaderWriter;
+import ai.swim.structure.writer.StringUtils;
+import ai.swim.structure.writer.StructuralWriter;
+import ai.swim.structure.writer.SuppressingWriter;
+import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.header.WritableHeader;
 import ai.swim.structure.writer.print.strategy.PrintStrategy;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Base64;
@@ -246,7 +250,11 @@ public class AttributePrinter implements HeaderWriter<String>, BodyWriter<String
           writer.writeUnchecked(String.format("%s%s)", value, printStrategy.attrBodyPadding()));
         }
       } else {
-        writer.writeUnchecked(String.format("(%s%s%s)", printStrategy.attrBodyPadding(), value, printStrategy.attrBodyPadding()));
+        writer.writeUnchecked(String.format(
+            "(%s%s%s)",
+            printStrategy.attrBodyPadding(),
+            value,
+            printStrategy.attrBodyPadding()));
       }
     }
 

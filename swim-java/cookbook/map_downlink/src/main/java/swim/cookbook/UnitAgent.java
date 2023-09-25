@@ -18,7 +18,6 @@ import swim.api.SwimLane;
 import swim.api.agent.AbstractAgent;
 import swim.api.lane.MapLane;
 import swim.concurrent.TimerRef;
-
 import java.util.Random;
 
 /**
@@ -30,7 +29,7 @@ public class UnitAgent extends AbstractAgent {
    * A simple map lane with integer keys and string values.
    */
   @SwimLane("lane")
-  MapLane<Integer, String> mapLane = this.<Integer,String>mapLane()
+  MapLane<Integer, String> mapLane = this.<Integer, String>mapLane()
       // Register a lifecycle event that is invoked when map sets a new key-value pair.
       .didUpdate((key, newValue, oldValue) -> {
         System.out.printf("Set key '%s' from '%s' to '%s'\n", key, oldValue, newValue);

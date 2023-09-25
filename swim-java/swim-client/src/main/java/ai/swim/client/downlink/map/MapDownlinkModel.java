@@ -17,7 +17,6 @@ package ai.swim.client.downlink.map;
 import ai.swim.client.Handle;
 import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.DownlinkConfig;
-import ai.swim.client.downlink.TriConsumer;
 import ai.swim.client.downlink.map.dispatch.DispatchDrop;
 import ai.swim.client.downlink.map.dispatch.DispatchOnClear;
 import ai.swim.client.downlink.map.dispatch.DispatchOnRemove;
@@ -27,9 +26,6 @@ import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.concurrent.Trigger;
 import ai.swim.structure.Form;
-import java.nio.ByteBuffer;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public final class MapDownlinkModel<K, V> extends MapDownlink<K, V> {
   private MapDownlinkModel(Trigger trigger, MapDownlinkState<K, V> state) {
@@ -58,28 +54,30 @@ public final class MapDownlinkModel<K, V> extends MapDownlink<K, V> {
       Class<V> valueType,
       MapDownlinkLifecycle<K, V> lifecycle,
       DownlinkConfig downlinkConfig) throws SwimClientException {
-    MapDownlinkState<K, V> state = new MapDownlinkState<>(Form.forClass(keyType),
-                                                          Form.forClass(valueType),
-                                                          lifecycle.getOnRemove());
+    MapDownlinkState<K, V> state = new MapDownlinkState<>(
+        Form.forClass(keyType),
+        Form.forClass(valueType),
+        lifecycle.getOnRemove());
     Trigger trigger = new Trigger();
     MapDownlinkModel<K, V> downlink = new MapDownlinkModel<>(trigger, state);
 
     try {
-      open(handle.get(),
-           downlink,
-           downlinkConfig.toArray(),
-           trigger,
-           host,
-           node,
-           lane,
-           lifecycle.getOnLinked(),
-           state.wrapOnSynced(lifecycle.getOnSynced()),
-           state.wrapOnUpdate(lifecycle.getOnUpdate()),
-           state.wrapOnRemove(lifecycle.getOnRemove()),
-           state.wrapOnClear(lifecycle.getOnClear()),
-           lifecycle.getOnUnlinked(),
-           state.take(),
-           state.drop());
+      open(
+          handle.get(),
+          downlink,
+          downlinkConfig.toArray(),
+          trigger,
+          host,
+          node,
+          lane,
+          lifecycle.getOnLinked(),
+          state.wrapOnSynced(lifecycle.getOnSynced()),
+          state.wrapOnUpdate(lifecycle.getOnUpdate()),
+          state.wrapOnRemove(lifecycle.getOnRemove()),
+          state.wrapOnClear(lifecycle.getOnClear()),
+          lifecycle.getOnUnlinked(),
+          state.take(),
+          state.drop());
     } finally {
       handle.drop();
     }

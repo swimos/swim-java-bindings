@@ -15,9 +15,7 @@
 package ai.swim.codec.parsers.text;
 
 import ai.swim.codec.Parser;
-
 import java.util.Optional;
-
 import static ai.swim.codec.parsers.OptParser.opt;
 import static ai.swim.codec.parsers.text.EqChar.eqChar;
 

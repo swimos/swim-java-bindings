@@ -11,7 +11,10 @@ import ai.swim.structure.recognizer.structural.tag.TagSpec;
 
 public class LabelledClassRecognizer<T> extends ClassRecognizer<LabelledClassRecognizer.State, LabelledFieldKey, T> {
 
-  public LabelledClassRecognizer(TagSpec tagSpec, RecognizingBuilder<T> builder, int fieldCount, IndexFn<LabelledFieldKey> indexFn) {
+  public LabelledClassRecognizer(TagSpec tagSpec,
+      RecognizingBuilder<T> builder,
+      int fieldCount,
+      IndexFn<LabelledFieldKey> indexFn) {
     super(tagSpec, builder, fieldCount, indexFn, State.Init);
   }
 
@@ -92,10 +95,14 @@ public class LabelledClassRecognizer<T> extends ClassRecognizer<LabelledClassRec
       Integer idx = this.indexFn.selectIndex(LabelledFieldKey.attr(startAttribute.value()));
 
       if (idx == null) {
-        return Recognizer.error(new RuntimeException(String.format("Unexpected field: \"%s\"", startAttribute.value())));
+        return Recognizer.error(new RuntimeException(String.format(
+            "Unexpected field: \"%s\"",
+            startAttribute.value())));
       } else {
         if (this.bitSet.get(idx)) {
-          return Recognizer.error(new RuntimeException(String.format("Duplicate field: \"%s\"", startAttribute.value())));
+          return Recognizer.error(new RuntimeException(String.format(
+              "Duplicate field: \"%s\"",
+              startAttribute.value())));
         } else {
           this.index = idx;
           this.state = State.AttrItem;

@@ -21,11 +21,13 @@ import ai.swim.structure.processor.schema.PartitionedFields;
 import ai.swim.structure.processor.writer.Emitter;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerContext;
 import ai.swim.structure.processor.writer.recognizerForm.RecognizerNameFormatter;
-import com.squareup.javapoet.*;
-
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeVariableName;
 import javax.lang.model.type.TypeMirror;
 import java.util.List;
-
 import static ai.swim.structure.processor.writer.recognizerForm.builder.BuilderWriter.typeParametersToVariables;
 
 /**
@@ -69,13 +71,18 @@ public class BindEmitter extends Emitter {
       if (fieldDiscriminate.isHeader()) {
         FieldDiscriminant.HeaderFields headerFields = (FieldDiscriminant.HeaderFields) fieldDiscriminate;
 
-        List<TypeVariableName> mappedTypeParameters = typeParametersToVariables(fields.headerSpec.typeParameters(), model.getTypeParameters(), context.getRoot());
+        List<TypeVariableName> mappedTypeParameters = typeParametersToVariables(
+            fields.headerSpec.typeParameters(),
+            model.getTypeParameters(),
+            context.getRoot());
         ClassName headerElement = ClassName.bestGuess(formatter.headerCanonicalName());
 
         if (mappedTypeParameters.isEmpty()) {
           body.addStatement("$T header = this.headerBuilder.bind()", headerElement);
         } else {
-          body.addStatement("$T header = this.headerBuilder.bind()", ParameterizedTypeName.get(headerElement, mappedTypeParameters.toArray(TypeName[]::new)));
+          body.addStatement(
+              "$T header = this.headerBuilder.bind()",
+              ParameterizedTypeName.get(headerElement, mappedTypeParameters.toArray(TypeName[]::new)));
         }
 
         for (FieldModel field : headerFields.getFields()) {
@@ -93,7 +100,9 @@ public class BindEmitter extends Emitter {
         String fieldName = formatter.fieldBuilderName(field.getName().toString());
 
         if (field.isOptional()) {
-          field.getAccessor().writeSet(body, "obj", String.format("this.%s.bindOr(%s)", fieldName, field.defaultValue()));
+          field
+              .getAccessor()
+              .writeSet(body, "obj", String.format("this.%s.bindOr(%s)", fieldName, field.defaultValue()));
         } else {
           field.getAccessor().writeSet(body, "obj", String.format("this.%s.bind()", fieldName));
         }

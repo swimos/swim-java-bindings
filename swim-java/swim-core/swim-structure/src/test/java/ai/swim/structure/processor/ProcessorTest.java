@@ -11,10 +11,8 @@ import ai.swim.structure.recognizer.structural.labelled.LabelledClassRecognizer;
 import ai.swim.structure.recognizer.structural.labelled.LabelledFieldKey;
 import ai.swim.structure.recognizer.structural.tag.FixedTagSpec;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Objects;
-
 import static ai.swim.structure.RecognizerTestUtil.runTest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,7 +34,7 @@ public class ProcessorTest {
         ReadEvent.slot(),
         ReadEvent.number(2),
         ReadEvent.endRecord()
-    );
+                                    );
 
     SimpleClass simpleClass = runTest(recognizer, events);
     SimpleClass expected = new SimpleClass("valueA", 2);
@@ -56,7 +54,7 @@ public class ProcessorTest {
         ReadEvent.slot(),
         ReadEvent.text("valueA"),
         ReadEvent.endRecord()
-    );
+                                    );
 
     SimpleClassSkippedField simpleClass = runTest(recognizer, events);
     SimpleClassSkippedField expected = new SimpleClassSkippedField("valueA");
@@ -79,7 +77,7 @@ public class ProcessorTest {
         ReadEvent.slot(),
         ReadEvent.text("valueA"),
         ReadEvent.endRecord()
-    );
+                                    );
 
     try {
       runTest(recognizer, events);
@@ -107,7 +105,7 @@ public class ProcessorTest {
         ReadEvent.slot(),
         ReadEvent.number(4),
         ReadEvent.endRecord()
-    );
+                                    );
 
     ListClass listClass = runTest(recognizer, events);
     ListClass expected = new ListClass(List.of(1, 2, 3), 4);
@@ -137,7 +135,7 @@ public class ProcessorTest {
         ReadEvent.text("stringy"),
         ReadEvent.endRecord(),
         ReadEvent.endRecord()
-    );
+                                        );
 
     Dependant actual = runTest(recognizer, readEvents);
     Dependant expected = new Dependant(new WrittenDependant("stringy"));
@@ -156,7 +154,7 @@ public class ProcessorTest {
         ReadEvent.slot(),
         ReadEvent.number(13),
         ReadEvent.endRecord()
-    );
+                                    );
 
     RenamedFieldClass obj = runTest(recognizer, events);
     RenamedFieldClass expected = new RenamedFieldClass(13);
@@ -176,7 +174,7 @@ public class ProcessorTest {
         ReadEvent.slot(),
         ReadEvent.number(13),
         ReadEvent.endRecord()
-    );
+                                    );
 
     TagClass obj = runTest(recognizer, events);
     TagClass expected = new TagClass(13);
@@ -196,7 +194,7 @@ public class ProcessorTest {
         ReadEvent.slot(),
         ReadEvent.number(13),
         ReadEvent.endRecord()
-    );
+                                    );
 
     try {
       runTest(recognizer, events);
@@ -218,7 +216,7 @@ public class ProcessorTest {
         ReadEvent.slot(),
         ReadEvent.text("value"),
         ReadEvent.endRecord()
-    );
+                                    );
 
     OptionalFieldClass optionalFieldClass = runTest(recognizer, events);
     OptionalFieldClass expected = new OptionalFieldClass("value");
@@ -242,7 +240,7 @@ public class ProcessorTest {
         ReadEvent.slot(),
         ReadEvent.text("value"),
         ReadEvent.endRecord()
-    );
+                                    );
 
     OptionalFieldClass optionalFieldClass = runTest(recognizer, events);
     OptionalFieldClass expected = new OptionalFieldClass(1, "value");
@@ -460,16 +458,20 @@ public class ProcessorTest {
     private Recognizer<WrittenDependant> recognizer;
 
     public WrittenDependantRecognizer() {
-      this.recognizer = new LabelledClassRecognizer<>(new FixedTagSpec(WrittenDependant.class.getSimpleName()), new WrittenDependantBuilder(), 1, (key) -> {
-        if (key.isItem()) {
-          LabelledFieldKey.ItemFieldKey itemFieldKey = (LabelledFieldKey.ItemFieldKey) key;
-          if ("a".equals(itemFieldKey.getName())) {
-            return 0;
-          }
-          throw new RuntimeException("Unexpected key: " + key);
-        }
-        return null;
-      });
+      this.recognizer = new LabelledClassRecognizer<>(
+          new FixedTagSpec(WrittenDependant.class.getSimpleName()),
+          new WrittenDependantBuilder(),
+          1,
+          (key) -> {
+            if (key.isItem()) {
+              LabelledFieldKey.ItemFieldKey itemFieldKey = (LabelledFieldKey.ItemFieldKey) key;
+              if ("a".equals(itemFieldKey.getName())) {
+                return 0;
+              }
+              throw new RuntimeException("Unexpected key: " + key);
+            }
+            return null;
+          });
     }
 
     private WrittenDependantRecognizer(Recognizer<WrittenDependant> recognizer) {

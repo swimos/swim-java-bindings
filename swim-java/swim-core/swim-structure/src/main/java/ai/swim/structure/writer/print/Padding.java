@@ -15,7 +15,6 @@
 package ai.swim.structure.writer.print;
 
 import ai.swim.structure.writer.WriterException;
-
 import java.io.IOException;
 import java.io.Writer;
 

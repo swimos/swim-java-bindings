@@ -4,9 +4,7 @@ import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import ai.swim.codec.input.StringInput;
 import org.junit.jupiter.api.Test;
-
 import java.util.function.Predicate;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

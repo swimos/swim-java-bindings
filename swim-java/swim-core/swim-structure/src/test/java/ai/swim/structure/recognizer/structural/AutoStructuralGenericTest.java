@@ -9,12 +9,12 @@ import ai.swim.structure.recognizer.RecognizerException;
 import ai.swim.structure.recognizer.proxy.RecognizerTypeParameter;
 import ai.swim.structure.recognizer.std.ScalarRecognizer;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AutoStructuralGenericTest {
 
@@ -29,7 +29,11 @@ public class AutoStructuralGenericTest {
     assertEquals(parser.bind(), new NestedGenerics<>(1, new Typed<>(2, "text"), true));
   }
 
-  <G extends Number, A extends Number, T extends CharSequence> void runNestedTestOk(RecognizerTypeParameter<G> gTy, RecognizerTypeParameter<A> aTy, RecognizerTypeParameter<T> tTy, String input, NestedGenerics<G, A, T> expected) {
+  <G extends Number, A extends Number, T extends CharSequence> void runNestedTestOk(RecognizerTypeParameter<G> gTy,
+      RecognizerTypeParameter<A> aTy,
+      RecognizerTypeParameter<T> tTy,
+      String input,
+      NestedGenerics<G, A, T> expected) {
     Recognizer<NestedGenerics<G, A, T>> recognizer = new NestedGenericsRecognizer<>(gTy, aTy, tTy);
     Parser<NestedGenerics<G, A, T>> parser = new FormParser<>(recognizer);
 
@@ -45,7 +49,7 @@ public class AutoStructuralGenericTest {
         RecognizerTypeParameter.from(String.class),
         "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
         new NestedGenerics<>(1, new Typed<>(2, "text"), true)
-    );
+                   );
 
     runNestedTestOk(
         null,
@@ -53,7 +57,7 @@ public class AutoStructuralGenericTest {
         null,
         "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
         new NestedGenerics<>(1, new Typed<>(2, "text"), true)
-    );
+                   );
 
     runNestedTestOk(
         null,
@@ -61,10 +65,13 @@ public class AutoStructuralGenericTest {
         null,
         "@gen{generic:1,a:@Typed{a:2,t:text},c:true}",
         new NestedGenerics<>(1, new Typed<>(2, "text"), true)
-    );
+                   );
   }
 
-  <G extends Number, A extends Number, T extends CharSequence> void runNestedTestErr(RecognizerTypeParameter<G> gTy, RecognizerTypeParameter<A> aTy, RecognizerTypeParameter<T> tTy, String input) {
+  <G extends Number, A extends Number, T extends CharSequence> void runNestedTestErr(RecognizerTypeParameter<G> gTy,
+      RecognizerTypeParameter<A> aTy,
+      RecognizerTypeParameter<T> tTy,
+      String input) {
     Recognizer<NestedGenerics<G, A, T>> recognizer = new NestedGenericsRecognizer<>(gTy, aTy, tTy);
     Parser<NestedGenerics<G, A, T>> parser = new FormParser<>(recognizer);
 
@@ -79,15 +86,20 @@ public class AutoStructuralGenericTest {
         RecognizerTypeParameter.from(Integer.class),
         RecognizerTypeParameter.from(String.class),
         "@gen{generic:1,a:@Typed{a:2,t:1},c:true}"
-    );
+                    );
     runNestedTestErr(
         null,
         null,
         null,
         "@gen{generic:1,a:@Typed{a:\"\",t:1},c:true}"
-    );
+                    );
 
-    assertThrows(RecognizerException.class, () -> new ClazzRecognizer<>(RecognizerTypeParameter.from(Throwable.class), RecognizerTypeParameter.from(Integer.class), RecognizerTypeParameter.from(Long.class)));
+    assertThrows(
+        RecognizerException.class,
+        () -> new ClazzRecognizer<>(
+            RecognizerTypeParameter.from(Throwable.class),
+            RecognizerTypeParameter.from(Integer.class),
+            RecognizerTypeParameter.from(Long.class)));
   }
 
   @Test

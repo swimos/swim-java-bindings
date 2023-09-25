@@ -3,14 +3,14 @@ package ai.swim.structure.recognizer.untyped;
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
 import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UntypedRecognizerTest {
 
@@ -25,10 +25,10 @@ class UntypedRecognizerTest {
   @Test
   void readsScalars() {
     Recognizer<?> recognizer = new UntypedRecognizer<>();
-    recognizer = recognizer.feedEvent(ReadEvent.blob(new byte[]{1, 2, 3}));
+    recognizer = recognizer.feedEvent(ReadEvent.blob(new byte[] {1, 2, 3}));
 
     assertTrue(recognizer.isDone());
-    assertArrayEquals((byte[]) recognizer.bind(), new byte[]{1, 2, 3});
+    assertArrayEquals((byte[]) recognizer.bind(), new byte[] {1, 2, 3});
 
     singleEventOk(ReadEvent.bool(true), true);
     singleEventOk(ReadEvent.number(1), 1);
@@ -62,7 +62,7 @@ class UntypedRecognizerTest {
     List<ReadEvent> events = List.of(
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     multipleEventsOk(events, Collections.emptyList());
   }
@@ -73,7 +73,7 @@ class UntypedRecognizerTest {
         ReadEvent.startBody(),
         ReadEvent.number(1),
         ReadEvent.endRecord()
-    );
+                                    );
 
     multipleEventsOk(events, List.of(1));
   }
@@ -86,7 +86,7 @@ class UntypedRecognizerTest {
         ReadEvent.number(2),
         ReadEvent.number(3),
         ReadEvent.endRecord()
-    );
+                                    );
 
     multipleEventsOk(events, List.of(1, 2, 3));
   }
@@ -99,7 +99,7 @@ class UntypedRecognizerTest {
         ReadEvent.slot(),
         ReadEvent.number(1),
         ReadEvent.endRecord()
-    );
+                                    );
 
     multipleEventsOk(events, Map.of(1, 1));
   }
@@ -115,7 +115,7 @@ class UntypedRecognizerTest {
         ReadEvent.slot(),
         ReadEvent.number(2),
         ReadEvent.endRecord()
-    );
+                                    );
 
     multipleEventsOk(events, Map.of(1, 1, 2, 2));
   }
@@ -144,12 +144,12 @@ class UntypedRecognizerTest {
         ReadEvent.endRecord(),
 
         ReadEvent.endRecord()
-    );
+                                    );
     multipleEventsOk(events, List.of(
         Map.of(1, 1),
         Map.of(2, 2),
         Map.of(3, 3)
-    ));
+                                    ));
   }
 
   @Test
@@ -182,13 +182,13 @@ class UntypedRecognizerTest {
         ReadEvent.endRecord(),
 
         ReadEvent.endRecord()
-    );
+                                    );
 
     multipleEventsOk(events, Map.of(
         1, List.of(1, 2, 3),
         2, List.of(4, 5, 6),
         3, List.of(7, 8, 9)
-    ));
+                                   ));
   }
 
   void testFail(List<ReadEvent> events) {
@@ -209,7 +209,7 @@ class UntypedRecognizerTest {
     testFail(List.of(
         ReadEvent.startBody(),
         ReadEvent.slot()
-    ));
+                    ));
     testFail(List.of(ReadEvent.startAttribute("bad")));
     testFail(List.of(ReadEvent.endRecord()));
     testFail(List.of(
@@ -220,6 +220,6 @@ class UntypedRecognizerTest {
         ReadEvent.number(2),
         ReadEvent.slot(),
         ReadEvent.slot()
-    ));
+                    ));
   }
 }

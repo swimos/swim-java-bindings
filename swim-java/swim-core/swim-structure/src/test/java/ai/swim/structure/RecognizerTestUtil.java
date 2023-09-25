@@ -16,7 +16,6 @@ package ai.swim.structure;
 
 import ai.swim.recon.event.ReadEvent;
 import ai.swim.structure.recognizer.Recognizer;
-
 import java.util.List;
 
 public class RecognizerTestUtil {

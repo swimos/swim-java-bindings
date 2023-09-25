@@ -10,28 +10,13 @@ import java.util.Arrays;
  */
 public class ParameterisedTypeModel extends Model {
 
-  /**
-   * An enumeration over {@link ParameterisedTypeModel} kinds for discrimination.
-   */
-  public enum Mapping {
-    /**
-     * java.util.List
-     */
-    List,
-    /**
-     * java.util.Map
-     */
-    Map
-  }
-
   private final Mapping typeMapping;
   private final Model[] typeModels;
-
   public ParameterisedTypeModel(TypeMirror mirror,
-                                Element element,
-                                PackageElement packageElement,
-                                Mapping typeMapping,
-                                Model... typeModels) {
+      Element element,
+      PackageElement packageElement,
+      Mapping typeMapping,
+      Model... typeModels) {
     super(mirror, element, packageElement);
     this.typeMapping = typeMapping;
     this.typeModels = typeModels;
@@ -60,5 +45,19 @@ public class ParameterisedTypeModel extends Model {
         "typeMapping=" + typeMapping +
         ", typeModels=" + Arrays.toString(typeModels) +
         '}';
+  }
+
+  /**
+   * An enumeration over {@link ParameterisedTypeModel} kinds for discrimination.
+   */
+  public enum Mapping {
+    /**
+     * java.util.List
+     */
+    List,
+    /**
+     * java.util.Map
+     */
+    Map
   }
 }

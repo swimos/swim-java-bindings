@@ -22,7 +22,6 @@ import ai.swim.structure.writer.HeaderWriter;
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.header.WritableHeader;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 

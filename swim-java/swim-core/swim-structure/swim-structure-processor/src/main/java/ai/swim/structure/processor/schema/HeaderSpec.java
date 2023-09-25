@@ -1,7 +1,6 @@
 package ai.swim.structure.processor.schema;
 
 import ai.swim.structure.processor.model.FieldModel;
-
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;

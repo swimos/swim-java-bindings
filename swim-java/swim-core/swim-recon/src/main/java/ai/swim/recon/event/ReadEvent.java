@@ -15,10 +15,14 @@
 package ai.swim.recon.event;
 
 import ai.swim.codec.parsers.number.TypedNumber;
-import ai.swim.recon.event.number.*;
+import ai.swim.recon.event.number.ReadBigDecimalValue;
+import ai.swim.recon.event.number.ReadBigIntValue;
+import ai.swim.recon.event.number.ReadDoubleValue;
+import ai.swim.recon.event.number.ReadFloatValue;
+import ai.swim.recon.event.number.ReadIntValue;
+import ai.swim.recon.event.number.ReadLongValue;
 import ai.swim.recon.models.ParserTransition;
 import ai.swim.recon.models.state.Action;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 

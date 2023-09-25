@@ -16,10 +16,8 @@ package ai.swim.codec.parsers.number;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
-
 import static ai.swim.codec.parsers.combinators.Peek.peek;
 import static ai.swim.codec.parsers.text.OneOf.oneOf;
 
@@ -38,7 +36,11 @@ public final class NumberParser extends Parser<TypedNumber> {
     this.floatLiteralBuilder = floatLiteralBuilder;
   }
 
-  static Parser<TypedNumber> parse(Input input, boolean isNegative, long value, Stage stage, StringBuilder floatLiteralBuilder) {
+  static Parser<TypedNumber> parse(Input input,
+      boolean isNegative,
+      long value,
+      Stage stage,
+      StringBuilder floatLiteralBuilder) {
     int c;
     if (stage == Stage.Sign) {
       if (input.isContinuation()) {
@@ -135,7 +137,9 @@ public final class NumberParser extends Parser<TypedNumber> {
     return new NumberParser(isNegative, value, stage, floatLiteralBuilder);
   }
 
-  private static Parser<TypedNumber> parseLiteralFloat(StringBuilder floatLiteralBuilder, boolean isNegative, Input input) {
+  private static Parser<TypedNumber> parseLiteralFloat(StringBuilder floatLiteralBuilder,
+      boolean isNegative,
+      Input input) {
     String fs = floatLiteralBuilder.toString();
     if ("nan".equalsIgnoreCase(fs) && !isNegative) {
       return Parser.done(TypedNumber.floatNumber(Float.NaN));
@@ -154,7 +158,7 @@ public final class NumberParser extends Parser<TypedNumber> {
     return preceded(
         peek(oneOf('-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.')),
         new NumberParser(false, 0, Stage.Sign, null)
-    );
+                   );
   }
 
   public static boolean isFloatChar(int c) {

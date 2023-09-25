@@ -1,7 +1,6 @@
 package ai.swim.structure.processor.model;
 
 import com.squareup.javapoet.CodeBlock;
-
 import javax.lang.model.type.TypeMirror;
 
 /**

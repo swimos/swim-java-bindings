@@ -15,16 +15,18 @@
 package ai.swim.structure.writer;
 
 import ai.swim.structure.Recon;
-import ai.swim.structure.value.*;
+import ai.swim.structure.value.Attr;
+import ai.swim.structure.value.Item;
+import ai.swim.structure.value.Record;
+import ai.swim.structure.value.Text;
+import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.value.ValueStructuralWritable;
 import org.junit.jupiter.api.Test;
-
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ReconTest {
@@ -55,7 +57,7 @@ class ReconTest {
     test(Value.of(0.0d), "0.0", "0.0", "0.0");
     test(Value.of(BigInteger.TEN), "10", "10", "10");
     test(Value.of(BigDecimal.valueOf(13.14)), "13.14", "13.14", "13.14");
-    test(Value.of(new byte[]{1, 2, 3, 4, 5}), "%AQIDBAU=", "%AQIDBAU=", "%AQIDBAU=");
+    test(Value.of(new byte[] {1, 2, 3, 4, 5}), "%AQIDBAU=", "%AQIDBAU=", "%AQIDBAU=");
   }
 
   @Test
@@ -67,32 +69,33 @@ class ReconTest {
         "{ 1 }",
         "{1}",
         "{\n    1\n}"
-    );
+        );
 
     test(
         Value.ofItems(List.of(Value.ofItem(Value.of("name"), Value.of(1)))),
         "{ name: 1 }",
         "{name:1}",
         "{\n    name: 1\n}"
-    );
+        );
 
     test(
         Value.ofItems(List.of(Item.valueItem(1), Item.valueItem(2), Item.valueItem(3))),
         "{ 1, 2, 3 }",
         "{1,2,3}",
         "{\n    1,\n    2,\n    3\n}"
-    );
+        );
 
-    test(Value.ofItems(List.of(
-                Value.ofItem(Value.of("first"), Value.of(1)),
-                Value.ofItem(Value.of("second"), Value.of(2)),
-                Value.ofItem(Value.of("third"), Value.of(3))
-            )
-        ),
+    test(
+        Value.ofItems(List.of(
+                          Value.ofItem(Value.of("first"), Value.of(1)),
+                          Value.ofItem(Value.of("second"), Value.of(2)),
+                          Value.ofItem(Value.of("third"), Value.of(3))
+                             )
+                     ),
         "{ first: 1, second: 2, third: 3 }",
         "{first:1,second:2,third:3}",
         "{\n    first: 1,\n    second: 2,\n    third: 3\n}"
-    );
+        );
   }
 
   @Test
@@ -102,93 +105,96 @@ class ReconTest {
         "@tag",
         "@tag",
         "@tag"
-    );
+        );
 
     test(
         Value.ofAttrs(List.of(Value.ofAttr("tag", Value.of(1)))),
         "@tag(1)",
         "@tag(1)",
         "@tag(1)"
-    );
+        );
 
     test(
         Value.ofAttrs(List.of(Value.ofAttr("tag", Value.record(0, 0)))),
         "@tag({})",
         "@tag({})",
         "@tag({})"
-    );
+        );
 
     test(
         Value.ofAttrs(List.of(Value.ofAttr("tag", Value.ofItems(List.of(Item.valueItem(1)))))),
         "@tag({ 1 })",
         "@tag({1})",
         "@tag({\n    1\n})"
-    );
+        );
 
     test(
         Value.ofAttrs(
-            List.of(Value.ofAttr("tag",
-                Value.ofItems(List.of(Value.ofItem(Text.of("name"), Value.of(1)))))
-            )
-        ),
+            List.of(Value.ofAttr(
+                        "tag",
+                        Value.ofItems(List.of(Value.ofItem(Text.of("name"), Value.of(1)))))
+                   )
+                     ),
         "@tag(name: 1)",
         "@tag(name:1)",
         "@tag(name: 1)"
-    );
+        );
 
     test(
         Value.ofAttrs(
-            List.of(Value.ofAttr("tag",
-                Value.ofItems(
-                    List.of(Item.valueItem(1), Item.valueItem(2), Item.valueItem(3))
-                ))
-            )
-        ),
+            List.of(Value.ofAttr(
+                        "tag",
+                        Value.ofItems(
+                            List.of(Item.valueItem(1), Item.valueItem(2), Item.valueItem(3))
+                                     ))
+                   )
+                     ),
         "@tag(1, 2, 3)",
         "@tag(1,2,3)",
         "@tag(1, 2, 3)"
-    );
+        );
 
     test(
         Value.ofAttrs(
-            List.of(Value.ofAttr("tag",
-                Value.ofItems(
-                    List.of(Item.valueItem(1), Value.ofItem(Value.of("slot"), Value.of(2)), Item.valueItem(3))
-                ))
-            )
-        ),
+            List.of(Value.ofAttr(
+                        "tag",
+                        Value.ofItems(
+                            List.of(Item.valueItem(1), Value.ofItem(Value.of("slot"), Value.of(2)), Item.valueItem(3))
+                                     ))
+                   )
+                     ),
         "@tag(1, slot: 2, 3)",
         "@tag(1,slot:2,3)",
         "@tag(1, slot: 2, 3)"
-    );
+        );
   }
 
   @Test
   void nestedNoAttributeRecords() {
     Value inner = Value.ofItems(
         List.of(Item.valueItem(1), Item.valueItem(2), Item.valueItem(3))
-    );
+                               );
 
     test(
         Value.ofItems(List.of(Value.ofItem(inner))),
         "{ { 1, 2, 3 } }",
         "{{1,2,3}}",
         "{\n    {\n        1,\n        2,\n        3\n    }\n}"
-    );
+        );
 
     test(
         Value.ofItems(List.of(Value.ofItem(Text.of("name"), inner))),
         "{ name: { 1, 2, 3 } }",
         "{name:{1,2,3}}",
         "{\n    name: {\n        1,\n        2,\n        3\n    }\n}"
-    );
+        );
 
     test(
         Value.ofItems(List.of(Item.valueItem(1), Item.valueItem(2), Value.ofItem(inner))),
         "{ 1, 2, { 1, 2, 3 } }",
         "{1,2,{1,2,3}}",
         "{\n    1,\n    2,\n    {\n        1,\n        2,\n        3\n    }\n}"
-    );
+        );
   }
 
   @Test
@@ -202,21 +208,21 @@ class ReconTest {
         "@first { 1, name: 2, true }",
         "@first{1,name:2,true}",
         "@first {\n    1,\n    name: 2,\n    true\n}"
-    );
+        );
 
     test(
         Value.of(List.of(first), List.of(Item.valueItem(1))),
         "@first 1",
         "@first 1",
         "@first 1"
-    );
+        );
 
     test(
         Value.of(List.of(first, second), items),
         "@first @second(1) { 1, name: 2, true }",
         "@first@second(1){1,name:2,true}",
         "@first @second(1) {\n    1,\n    name: 2,\n    true\n}"
-    );
+        );
   }
 
   @Test
@@ -226,11 +232,11 @@ class ReconTest {
     List<Item> items = List.of(Item.valueItem(1), Value.ofItem(Value.of("name"), Value.of(2)), Item.valueItem(true));
     Record record = Value.ofAttrs(
         List.of(Value.ofAttr("tag", Value.of(
-                List.of(first),
-                items
-            )
-        ))
-    );
+                                 List.of(first),
+                                 items
+                                            )
+                            ))
+                                 );
 
 
     test(
@@ -238,29 +244,29 @@ class ReconTest {
         "@tag(@first { 1, name: 2, true })",
         "@tag(@first{1,name:2,true})",
         "@tag(@first {\n    1,\n    name: 2,\n    true\n})"
-    );
+        );
 
     test(
         Value.ofAttrs(
             List.of(Value.ofAttr("tag", Value.of(
                 List.of(first),
                 List.of(Item.valueItem(1))
-            )))),
+                                                )))),
         "@tag(@first 1)",
         "@tag(@first 1)",
         "@tag(@first 1)"
-    );
+        );
 
     test(
         Value.ofAttrs(
             List.of(Value.ofAttr("tag", Value.of(
                 List.of(first, second),
                 items
-            )))),
+                                                )))),
         "@tag(@first @second(1) { 1, name: 2, true })",
         "@tag(@first@second(1){1,name:2,true})",
         "@tag(@first @second(1) {\n    1,\n    name: 2,\n    true\n})"
-    );
+        );
 
     test(
         Value.ofAttrs(
@@ -271,16 +277,16 @@ class ReconTest {
                     Value.ofItem(Value.of(
                         List.of(first, second),
                         items
-                    )),
+                                         )),
                     Value.ofItem(Text.of("slot"), Value.of(2)),
                     Item.valueItem(3)
-                )
-            )))
-        ),
+                       )
+                                                )))
+                     ),
         "@tag(1, @first @second(1) { 1, name: 2, true }, slot: 2, 3)",
         "@tag(1,@first@second(1){1,name:2,true},slot:2,3)",
         "@tag(1, @first @second(1) {\n    1,\n    name: 2,\n    true\n}, slot: 2, 3)"
-    );
+        );
   }
 
 }

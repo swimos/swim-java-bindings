@@ -2,7 +2,6 @@ package ai.swim.structure.processor.writer.recognizerForm;
 
 
 import ai.swim.structure.processor.writer.NameFormatter;
-
 import javax.lang.model.element.PackageElement;
 
 public class RecognizerNameFormatter extends NameFormatter {
@@ -29,7 +28,11 @@ public class RecognizerNameFormatter extends NameFormatter {
    * Returns a static class canonical representation of a header builder. E.g, "ai.swim.Prop.HeaderBuilder".
    */
   public String headerBuilderCanonicalName() {
-    return String.format("%s.%s.%s", this.packageElement.getQualifiedName(), this.recognizerClassName(), this.headerBuilderClassName());
+    return String.format(
+        "%s.%s.%s",
+        this.packageElement.getQualifiedName(),
+        this.recognizerClassName(),
+        this.headerBuilderClassName());
   }
 
   /**
@@ -43,7 +46,11 @@ public class RecognizerNameFormatter extends NameFormatter {
    * Returns a static class canonical representation of a header. E.g, "ai.swim.Prop.Header".
    */
   public String headerCanonicalName() {
-    return String.format("%s.%s.%sHeader", this.packageElement.getQualifiedName(), this.recognizerClassName(), this.name);
+    return String.format(
+        "%s.%s.%sHeader",
+        this.packageElement.getQualifiedName(),
+        this.recognizerClassName(),
+        this.name);
   }
 
   /**

@@ -2,7 +2,6 @@ package ai.swim.codec.input;
 
 import ai.swim.codec.location.Location;
 import ai.swim.codec.location.StringLocation;
-
 import java.util.Objects;
 
 public class StringInput extends Input {
@@ -126,7 +125,9 @@ public class StringInput extends Input {
       return false;
     }
     StringInput that = (StringInput) o;
-    return line == that.line && column == that.column && index == that.index && offset == that.offset && Objects.equals(data, that.data);
+    return line == that.line && column == that.column && index == that.index && offset == that.offset && Objects.equals(
+        data,
+        that.data);
   }
 
   @Override
@@ -165,7 +166,9 @@ public class StringInput extends Input {
       this.line = stringInput.line;
       this.offset = 0;
     } else {
-      throw new UnsupportedOperationException("Cannot extend a StringInput from a: " + input.getClass().getCanonicalName());
+      throw new UnsupportedOperationException("Cannot extend a StringInput from a: " + input
+          .getClass()
+          .getCanonicalName());
     }
   }
 
@@ -174,7 +177,8 @@ public class StringInput extends Input {
     Objects.requireNonNull(from);
     if (from instanceof StringInput) {
       StringInput stringInput = (StringInput) from;
-      return new StringInput(this.data + stringInput.data, this.line, this.column, this.index, this.offset).setPartial(stringInput.isPartial);
+      return new StringInput(this.data + stringInput.data, this.line, this.column, this.index, this.offset).setPartial(
+          stringInput.isPartial);
     } else {
       throw new IllegalArgumentException("Cannot extend a StringInput from a: " + from.getClass().getCanonicalName());
     }

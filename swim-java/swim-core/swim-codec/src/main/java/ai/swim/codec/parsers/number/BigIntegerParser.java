@@ -16,7 +16,6 @@ package ai.swim.codec.parsers.number;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
-
 import java.math.BigInteger;
 
 final class BigIntegerParser extends Parser<TypedNumber> {

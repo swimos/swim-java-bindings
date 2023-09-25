@@ -1,7 +1,12 @@
 package ai.swim.structure.processor;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.*;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -25,7 +30,11 @@ public class Utils {
    * @param <A>        the type of the annotation.
    * @return a matching method or null if one was not found.
    */
-  public static <A extends Annotation> ExecutableElement accessorFor(List<ExecutableElement> methods, String prefix, Name name, Class<A> annotation, Predicate<A> predicate) {
+  public static <A extends Annotation> ExecutableElement accessorFor(List<ExecutableElement> methods,
+      String prefix,
+      Name name,
+      Class<A> annotation,
+      Predicate<A> predicate) {
     for (ExecutableElement method : methods) {
       String methodName = method.getSimpleName().toString().toLowerCase();
       String fieldName = name.toString().toLowerCase();

@@ -19,7 +19,6 @@ import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.print.strategy.PrettyPrintStrategy;
 import ai.swim.structure.writer.print.strategy.PrintStrategy;
 import ai.swim.structure.writer.value.ValueStructuralWriter;
-
 import java.io.StringWriter;
 
 /**

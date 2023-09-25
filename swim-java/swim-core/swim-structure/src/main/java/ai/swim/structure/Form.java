@@ -21,7 +21,6 @@ import ai.swim.structure.value.Value;
 import ai.swim.structure.writer.StructuralWriter;
 import ai.swim.structure.writer.Writable;
 import ai.swim.structure.writer.proxy.WriterProxy;
-
 import java.util.function.Function;
 
 public final class Form<T> extends Recognizer<T> implements Writable<T> {

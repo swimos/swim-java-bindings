@@ -8,12 +8,10 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
 import ai.swim.structure.recognizer.Recognizer;
 import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -48,19 +46,34 @@ public class AutoStructuralTest {
 
   @Test
   void testNested() {
-    runTestOk(new OuterRecognizer(), new Outer("node_uri", new Inner(1034, "inside")), "@Outer(node: node_uri) @Inner { first: 1034, second: inside }");
+    runTestOk(
+        new OuterRecognizer(),
+        new Outer("node_uri", new Inner(1034, "inside")),
+        "@Outer(node: node_uri) @Inner { first: 1034, second: inside }");
   }
 
   @Test
   void testComplexHeader() {
-    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3(6, node: node_uri, lane: lane_uri) { first: -34, second: \"name\" }");
-    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3(6, lane: lane_uri, node: node_uri) { first: -34, second: \"name\" }");
-    runTestOk(new Prop3Recognizer(), new Prop3(6, "node_uri", "lane_uri", -34, "name"), "@Prop3({6, lane: lane_uri, node: node_uri}) { first: -34, second: \"name\" }");
+    runTestOk(
+        new Prop3Recognizer(),
+        new Prop3(6, "node_uri", "lane_uri", -34, "name"),
+        "@Prop3(6, node: node_uri, lane: lane_uri) { first: -34, second: \"name\" }");
+    runTestOk(
+        new Prop3Recognizer(),
+        new Prop3(6, "node_uri", "lane_uri", -34, "name"),
+        "@Prop3(6, lane: lane_uri, node: node_uri) { first: -34, second: \"name\" }");
+    runTestOk(
+        new Prop3Recognizer(),
+        new Prop3(6, "node_uri", "lane_uri", -34, "name"),
+        "@Prop3({6, lane: lane_uri, node: node_uri}) { first: -34, second: \"name\" }");
   }
 
   @Test
   void envelopes() {
-    runTestOk(new EnvelopeRecognizer(), new CommandMessage("node_uri", "lane_uri", 13), "@command(node:node_uri,lane:lane_uri){13}");
+    runTestOk(
+        new EnvelopeRecognizer(),
+        new CommandMessage("node_uri", "lane_uri", 13),
+        "@command(node:node_uri,lane:lane_uri){13}");
     runTestOk(new EnvelopeRecognizer(), new AuthRequest(13), "@auth{13}");
   }
 
@@ -525,7 +538,11 @@ public class AutoStructuralTest {
         return false;
       }
       Prop3 prop3 = (Prop3) o;
-      return count == prop3.count && first == prop3.first && Objects.equals(node, prop3.node) && Objects.equals(lane, prop3.lane) && Objects.equals(second, prop3.second);
+      return count == prop3.count && first == prop3.first && Objects.equals(node, prop3.node) && Objects.equals(
+          lane,
+          prop3.lane) && Objects.equals(
+          second,
+          prop3.second);
     }
 
     @Override
@@ -594,7 +611,9 @@ public class AutoStructuralTest {
         return false;
       }
       LaneAddressed that = (LaneAddressed) o;
-      return Objects.equals(nodeUri, that.nodeUri) && Objects.equals(laneUri, that.laneUri) && Objects.equals(body, that.body);
+      return Objects.equals(nodeUri, that.nodeUri) && Objects.equals(laneUri, that.laneUri) && Objects.equals(
+          body,
+          that.body);
     }
 
     @Override

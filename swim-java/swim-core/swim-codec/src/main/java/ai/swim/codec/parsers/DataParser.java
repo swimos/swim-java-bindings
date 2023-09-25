@@ -16,9 +16,7 @@ package ai.swim.codec.parsers;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
-
 import java.util.Base64;
-
 import static ai.swim.codec.parsers.text.EqChar.eqChar;
 
 public final class DataParser extends Parser<byte[]> {

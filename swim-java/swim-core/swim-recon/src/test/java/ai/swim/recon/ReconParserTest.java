@@ -6,11 +6,11 @@ import ai.swim.recon.event.ReadEvent;
 import ai.swim.recon.result.ParseResult;
 import ai.swim.recon.result.ResultError;
 import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class ReconParserTest {
 
@@ -83,7 +83,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    ));
+                                      ));
     runTestOk("@tag(a:1,b:abc,c:\"string\")", List.of(
         ReadEvent.startAttribute("tag"),
         ReadEvent.text("a"),
@@ -98,9 +98,10 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    ));
+                                                     ));
 
-    runTestOk("@tag(a:\"abc\")",
+    runTestOk(
+        "@tag(a:\"abc\")",
         List.of(
             ReadEvent.startAttribute("tag"),
             ReadEvent.text("a"),
@@ -109,8 +110,8 @@ class ReconParserTest {
             ReadEvent.endAttribute(),
             ReadEvent.startBody(),
             ReadEvent.endRecord()
-        )
-    );
+               )
+             );
 
     runTestOk("\"string\"", List.of(ReadEvent.text("string")));
   }
@@ -149,7 +150,7 @@ class ReconParserTest {
         ReadEvent.text("two"),
         ReadEvent.number(3),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{1,two,3}", events);
     runTestOk("{ 1, two, 3}", events);
@@ -164,21 +165,21 @@ class ReconParserTest {
         ReadEvent.text("two"),
         ReadEvent.number(3),
         ReadEvent.endRecord()
-    ));
+                                 ));
     runTestOk("{1,,3}", List.of(
         ReadEvent.startBody(),
         ReadEvent.number(1),
         ReadEvent.extant(),
         ReadEvent.number(3),
         ReadEvent.endRecord()
-    ));
+                               ));
     runTestOk("{1,two,}", List.of(
         ReadEvent.startBody(),
         ReadEvent.number(1),
         ReadEvent.text("two"),
         ReadEvent.extant(),
         ReadEvent.endRecord()
-    ));
+                                 ));
   }
 
   @Test
@@ -189,7 +190,7 @@ class ReconParserTest {
         ReadEvent.text("two"),
         ReadEvent.number(3),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{1\ntwo\n3}", events);
     runTestOk("{\n\t1\n\ttwo\n\t3\n}", events);
@@ -203,7 +204,7 @@ class ReconParserTest {
         ReadEvent.slot(),
         ReadEvent.number(1),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{name:1}", events);
     runTestOk("{ name: 1 }", events);
@@ -218,7 +219,7 @@ class ReconParserTest {
         ReadEvent.slot(),
         ReadEvent.extant(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{name:}", events);
     runTestOk("{ name: }", events);
@@ -233,7 +234,7 @@ class ReconParserTest {
         ReadEvent.slot(),
         ReadEvent.number(1),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{:1}", events);
     runTestOk("{ : 1 }", events);
@@ -254,7 +255,7 @@ class ReconParserTest {
         ReadEvent.slot(),
         ReadEvent.number(3),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{first:1,second:two,third:3}", events);
     runTestOk("{ first: 1, second: two, third: 3 }", events);
@@ -274,7 +275,7 @@ class ReconParserTest {
         ReadEvent.slot(),
         ReadEvent.number(3),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{first:1,second:,:3}", events);
     runTestOk("{ first: 1, second: , : 3 }", events);
@@ -291,7 +292,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@tag", events);
     runTestOk("@tag {}", events);
@@ -305,7 +306,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@name(2)", events);
     runTestOk("@name(2) {}", events);
@@ -321,7 +322,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@name(a:true)", events);
     runTestOk("@name(a:true) {}", events);
@@ -345,7 +346,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@name(a:,b:,c:)", events);
     runTestOk("@name(a:\nb:\nc:\n)", events);
@@ -366,7 +367,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@name(1, a: true,)", events);
     runTestOk("@name(1, a: true,) {}", events);
@@ -383,7 +384,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@first@second", events);
     runTestOk("@first@second {}", events);
@@ -400,7 +401,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@first(1)@second(2)", events);
     runTestOk("@first(1)@second(2) {}", events);
@@ -417,7 +418,7 @@ class ReconParserTest {
         ReadEvent.startBody(),
         ReadEvent.endRecord(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{{},{},{}}", events);
   }
@@ -434,12 +435,12 @@ class ReconParserTest {
         ReadEvent.endRecord(),
         ReadEvent.number(1),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{\n" +
-        "            { 4, slot: word }\n" +
-        "            1\n" +
-        "        }", events);
+                  "            { 4, slot: word }\n" +
+                  "            1\n" +
+                  "        }", events);
   }
 
   @Test
@@ -451,7 +452,7 @@ class ReconParserTest {
         ReadEvent.startBody(),
         ReadEvent.endRecord(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{ @inner }", events);
     runTestOk("{ @inner {} }", events);
@@ -467,7 +468,7 @@ class ReconParserTest {
         ReadEvent.startBody(),
         ReadEvent.endRecord(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{ @inner(0) }", events);
     runTestOk("{ @inner(0) {} }", events);
@@ -484,7 +485,7 @@ class ReconParserTest {
         ReadEvent.endRecord(),
         ReadEvent.text("after"),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{ @inner(0), after }", events);
     runTestOk("{ @inner(0) {}, after }", events);
@@ -499,7 +500,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@outer({})", events);
   }
@@ -517,7 +518,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@outer({ 4, slot: word })", events);
   }
@@ -533,7 +534,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@outer(@inner)", events);
     runTestOk("@outer(@inner {})", events);
@@ -551,7 +552,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@outer(@inner(0))", events);
     runTestOk("@outer(@inner(0) {})", events);
@@ -570,7 +571,7 @@ class ReconParserTest {
         ReadEvent.endAttribute(),
         ReadEvent.startBody(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@outer(@inner(0), 3)", events);
     runTestOk("@outer(@inner(0) {}, 3)", events);
@@ -590,7 +591,7 @@ class ReconParserTest {
         ReadEvent.endRecord(),
         ReadEvent.number(5),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{1, {2, {3, 4}}, 5}", events);
   }
@@ -611,7 +612,7 @@ class ReconParserTest {
         ReadEvent.number(2),
         ReadEvent.endRecord(),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("{@key {1}: @value {2}}", events);
   }
@@ -641,7 +642,7 @@ class ReconParserTest {
         ReadEvent.startBody(),
         ReadEvent.text("value"),
         ReadEvent.endRecord()
-    );
+                                    );
 
     runTestOk("@update(key:keyvalue)value", events);
   }

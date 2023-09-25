@@ -17,7 +17,6 @@ package ai.swim.codec.parsers.combinators;
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
 import ai.swim.codec.input.Input;
-
 import java.util.function.Function;
 
 public class TryMappedParser<I, O> extends Parser<O> {

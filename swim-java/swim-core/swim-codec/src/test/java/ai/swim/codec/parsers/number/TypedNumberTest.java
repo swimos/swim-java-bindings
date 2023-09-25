@@ -3,10 +3,8 @@ package ai.swim.codec.parsers.number;
 import ai.swim.codec.Parser;
 import ai.swim.codec.input.Input;
 import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,7 +22,9 @@ class TypedNumberTest {
     } else if (number instanceof BigInteger) {
       return TypedNumber.bigIntNumber((BigInteger) number);
     } else {
-      throw new AssertionError("Unimplemented typed number from number conversion: " + number.getClass().getSimpleName());
+      throw new AssertionError("Unimplemented typed number from number conversion: " + number
+          .getClass()
+          .getSimpleName());
     }
   }
 
