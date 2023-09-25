@@ -16,10 +16,6 @@ package ai.swim.client.downlink.map;
 
 import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.FfiTest;
-import ai.swim.client.downlink.map.MapDownlinkLifecycle;
-import ai.swim.client.downlink.map.MapDownlinkState;
-import ai.swim.client.downlink.map.MapMessage;
-import ai.swim.client.downlink.map.Routine;
 import ai.swim.client.downlink.map.dispatch.DispatchDrop;
 import ai.swim.client.downlink.map.dispatch.DispatchOnClear;
 import ai.swim.client.downlink.map.dispatch.DispatchOnRemove;
@@ -376,11 +372,11 @@ public class MapDownlinkTest extends FfiTest {
     dropRuntime(ptr);
   }
 
-  <K, V> void runTestOk(Class<K> keyClass, Class<V> valueClass, int removeCount, ConcurrentLinkedDeque<ai.swim.client.downlink.map.Update<K, V>> syncEvents, ConcurrentLinkedDeque<ai.swim.client.downlink.map.MapMessage> events, Map<K, V> finalState) throws InterruptedException, SwimClientException {
+  <K, V> void runTestOk(Class<K> keyClass, Class<V> valueClass, int removeCount, ConcurrentLinkedDeque<Update<K, V>> syncEvents, ConcurrentLinkedDeque<MapMessage> events, Map<K, V> finalState) throws InterruptedException, SwimClientException {
     StringBuilder input = new StringBuilder();
     input.append("@linked(node:node,lane:lane)\n");
 
-    for (ai.swim.client.downlink.map.Update<K, V> event : syncEvents) {
+    for (Update<K, V> event : syncEvents) {
       input.append(String.format("@event(node:node,lane:lane){%s}\n", Recon.toStringCompact(event)));
     }
 
@@ -389,7 +385,7 @@ public class MapDownlinkTest extends FfiTest {
     int updateCount = 0;
     int clearCount = 0;
 
-    for (ai.swim.client.downlink.map.MapMessage event : events) {
+    for (MapMessage event : events) {
       if (event.isUpdate()) {
         updateCount += 1;
       } else if (event.isClear()) {
@@ -496,18 +492,18 @@ public class MapDownlinkTest extends FfiTest {
         Integer.class,
         2,
         new ConcurrentLinkedDeque<>(List.of(
-            ai.swim.client.downlink.map.MapMessage.update("1", 1),
-            ai.swim.client.downlink.map.MapMessage.update("2", 2),
-            ai.swim.client.downlink.map.MapMessage.update("3", 3),
-            ai.swim.client.downlink.map.MapMessage.update("4", 4),
-            ai.swim.client.downlink.map.MapMessage.update("5", 5)
+            MapMessage.update("1", 1),
+            MapMessage.update("2", 2),
+            MapMessage.update("3", 3),
+            MapMessage.update("4", 4),
+            MapMessage.update("5", 5)
         )),
         new ConcurrentLinkedDeque<>(List.of(
-            ai.swim.client.downlink.map.MapMessage.remove("5"),
-            ai.swim.client.downlink.map.MapMessage.remove("4"),
-            ai.swim.client.downlink.map.MapMessage.update("6", 6),
-            ai.swim.client.downlink.map.MapMessage.update("7", 7),
-            ai.swim.client.downlink.map.MapMessage.clear()
+            MapMessage.remove("5"),
+            MapMessage.remove("4"),
+            MapMessage.update("6", 6),
+            MapMessage.update("7", 7),
+            MapMessage.clear()
         )),
         Map.of(
             "1", 1,
@@ -526,19 +522,19 @@ public class MapDownlinkTest extends FfiTest {
         SuperClass.class,
         4,
         new ConcurrentLinkedDeque<>(List.of(
-            ai.swim.client.downlink.map.MapMessage.update(1, new SubClassA(1, "a")),
-            ai.swim.client.downlink.map.MapMessage.update(2, new SubClassA(2, "b")),
-            ai.swim.client.downlink.map.MapMessage.update(3, new SubClassA(3, "c")),
-            ai.swim.client.downlink.map.MapMessage.update(4, new SubClassA(4, "d")),
-            ai.swim.client.downlink.map.MapMessage.update(5, new SubClassA(5, "e"))
+            MapMessage.update(1, new SubClassA(1, "a")),
+            MapMessage.update(2, new SubClassA(2, "b")),
+            MapMessage.update(3, new SubClassA(3, "c")),
+            MapMessage.update(4, new SubClassA(4, "d")),
+            MapMessage.update(5, new SubClassA(5, "e"))
         )),
         new ConcurrentLinkedDeque<>(List.of(
-            ai.swim.client.downlink.map.MapMessage.remove(5),
-            ai.swim.client.downlink.map.MapMessage.remove(4),
-            ai.swim.client.downlink.map.MapMessage.update(6, new SubClassA(6, "f")),
-            ai.swim.client.downlink.map.MapMessage.update(7, new SubClassA(7, "g")),
-            ai.swim.client.downlink.map.MapMessage.take(4),
-            ai.swim.client.downlink.map.MapMessage.drop(1),
+            MapMessage.remove(5),
+            MapMessage.remove(4),
+            MapMessage.update(6, new SubClassA(6, "f")),
+            MapMessage.update(7, new SubClassA(7, "g")),
+            MapMessage.take(4),
+            MapMessage.drop(1),
             MapMessage.clear()
         )),
         Map.of(
