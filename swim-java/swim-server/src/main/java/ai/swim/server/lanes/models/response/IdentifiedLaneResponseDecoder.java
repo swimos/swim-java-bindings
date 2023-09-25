@@ -9,6 +9,7 @@ public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResp
   private Decoder<LaneResponse<T>> delegate;
   private State state;
   private int laneId;
+
   public IdentifiedLaneResponseDecoder(Decoder<LaneResponse<T>> delegate) {
     this.delegate = delegate;
     this.state = State.LaneId;
