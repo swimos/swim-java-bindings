@@ -134,6 +134,20 @@ impl JavaEnv {
     }
 }
 
+/// A wrapper around a JNI Environment interface that provides similar functionality to the JNI
+/// crate but catches unsuccessful system calls and aborts the process. Without this, there is a lot
+/// of noise around JNI calls created by attaching the thread to the JVM, executing the JNI calls
+/// and handling the response.
+///
+/// Note: see the corresponding documentation in the JNI crate for the implemented methods.
+///
+/// # Implementation
+/// -  JNI transitions are automatically managed by first creating a new local frame, executing the
+/// call and then popping off the frame.
+/// - Object methods are executed with a 'JavaExceptionHandler' that is invoked if the JNI call
+/// returns with 'Err(Error::JavaException)'. Implementations choose how to handle the exception and
+/// may elect to abort the process.
+/// - Java Method resolution and caching.
 #[derive(Clone)]
 pub struct Scope<'l> {
     vm: Arc<JavaVM>,
@@ -324,12 +338,12 @@ impl<'l> Scope<'l> {
 
     #[cold]
     #[inline(never)]
-    pub fn fatal_error<M>(&self, msg: M) -> !
+    pub fn fatal_error<E>(&self, err: E) -> !
     where
-        M: ToString,
+        E: Into<FatalError>,
     {
         let Scope { vm, .. } = self;
-        abort_vm(vm.clone(), StringError(msg.to_string()))
+        abort_vm(vm.clone(), err.into())
     }
 
     pub fn new_global_ref<O>(&self, obj: O) -> GlobalRef
@@ -345,43 +359,62 @@ impl<'l> Scope<'l> {
         system_call(vm, || env.convert_byte_array(array))
     }
 
-    pub unsafe fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b>
+    pub fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b, B>
     where
         B: BufPtr,
         'l: 'b,
     {
         let Scope { vm, env, .. } = self;
-        let buffer = system_call(vm, || {
+        let buffer = system_call(vm, || unsafe {
             env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len())
         });
         ByteBufferGuard {
-            _buf: Default::default(),
             buffer,
+            _buf: Default::default(),
         }
     }
 }
 
-/// Guard that binds the lifetime of the JByteBuffer to the backing data.
-pub struct ByteBufferGuard<'b> {
-    _buf: PhantomData<&'b mut Vec<u8>>,
-    buffer: JByteBuffer<'b>,
+#[derive(thiserror::Error, Debug)]
+pub enum FatalError {
+    #[error("{0}")]
+    Custom(String),
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Java VM error: {0}")]
+    JavaVm(#[from] jni::errors::Error),
 }
 
-impl<'b> From<ByteBufferGuard<'b>> for JValue<'b> {
-    fn from(value: ByteBufferGuard<'b>) -> Self {
+impl From<String> for FatalError {
+    fn from(value: String) -> Self {
+        FatalError::Custom(value)
+    }
+}
+
+impl From<&str> for FatalError {
+    fn from(value: &str) -> Self {
+        FatalError::Custom(value.to_string())
+    }
+}
+
+impl<'b, B> From<ByteBufferGuard<'b, B>> for JValue<'b>
+where
+    B: BufPtr,
+{
+    fn from(value: ByteBufferGuard<'b, B>) -> Self {
         unsafe { JValue::Object(JObject::from_raw(value.buffer.into_raw())) }
     }
 }
 
-#[derive(Debug)]
-pub struct StringError(pub String);
-
-impl StdError for StringError {}
-
-impl Display for StringError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str(self.0.as_str())
-    }
+/// Guard that binds the lifetime of the JByteBuffer to the backing data.
+#[must_use]
+#[derive(Clone, Copy)]
+pub struct ByteBufferGuard<'b, B>
+where
+    B: BufPtr,
+{
+    buffer: JByteBuffer<'b>,
+    _buf: PhantomData<&'b mut B>,
 }
 
 fn system_call<F, O>(vm: &Arc<JavaVM>, f: F) -> O
@@ -548,10 +581,7 @@ impl JavaExceptionHandler for AbortingHandler {
     fn inspect(&self, scope: &Scope, _throwable: JThrowable) -> Option<Self::Err> {
         let _r = scope.exception_describe();
 
-        abort_vm(
-            scope.vm.clone(),
-            StringError("An exception was not handled".into()),
-        )
+        abort_vm(scope.vm.clone(), FatalError::JavaVm(Error::JavaException))
     }
 }
 

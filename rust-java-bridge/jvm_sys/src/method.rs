@@ -17,6 +17,7 @@ use jni::errors::Error as JError;
 use jni::errors::Error::WrongJValueType;
 use jni::objects::{GlobalRef, JMethodID, JObject, JString, JValue};
 use jni::signature::TypeSignature;
+use std::any::type_name;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -208,7 +209,11 @@ where
 {
     match f() {
         Ok(o) => o,
-        Err(e) => scope.fatal_error(format!("Unexpected return type: {}", e)),
+        Err(e) => scope.fatal_error(format!(
+            "Unexpected return type: {}. Expected {}",
+            e,
+            type_name::<O>()
+        )),
     }
 }
 
