@@ -12,23 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::value::Notification;
+use std::io::ErrorKind;
+use std::str::FromStr;
+
 use bytes::BytesMut;
 use futures_util::future::try_join3;
 use futures_util::SinkExt;
 use jni::objects::JString;
 use jni::sys::jbyteArray;
 use jni::sys::jobject;
-use jni::JavaVM;
-use jvm_sys::jni_try;
-use jvm_sys::vm::utils::VmExt;
-use jvm_sys_tests::run_test;
-use std::io::ErrorKind;
-use std::sync::Arc;
 use swim_api::downlink::{Downlink, DownlinkConfig};
 use swim_api::protocol::downlink::{DownlinkNotification, DownlinkNotificationEncoder};
-use swim_client_core::downlink::DownlinkConfigurations;
-use swim_client_core::{client_fn, SwimClient};
 use swim_model::address::Address;
 use swim_model::Blob;
 use swim_recon::parser::{parse_recognize, Span};
@@ -38,6 +32,15 @@ use swim_utilities::non_zero_usize;
 use tokio::io::AsyncReadExt;
 use tokio::runtime::Runtime;
 use tokio_util::codec::FramedWrite;
+use url::{ParseError, Url};
+
+use jvm_sys::env::JavaEnv;
+use jvm_sys::jni_try;
+use jvm_sys_tests::run_test;
+use swim_client_core::downlink::DownlinkConfigurations;
+use swim_client_core::{client_fn, SwimClient};
+
+use crate::value::Notification;
 
 mod map;
 mod value;
@@ -69,7 +72,7 @@ client_fn! {
 
 fn lifecycle_test<'a, D>(
     downlink: D,
-    vm: Arc<JavaVM>,
+    env: JavaEnv,
     lock: jobject,
     input: JString<'a>,
     host: JString<'a>,
@@ -80,14 +83,22 @@ fn lifecycle_test<'a, D>(
 where
     D: Downlink + Send + 'static,
 {
-    let env = vm.expect_env();
-    let host = env.get_string(host).unwrap();
-    let node = env.get_string(node).unwrap();
-    let lane = env.get_string(lane).unwrap();
+    let (host, node, lane) =
+        match env.with_env_throw("ai/swim/client/SwimClientException", move |scope| {
+            let host = Url::from_str(scope.get_rust_string(host).as_str())?;
+            let node = scope.get_rust_string(node);
+            let lane = scope.get_rust_string(lane);
+            Ok::<(Url, String, String), ParseError>((host, node, lane))
+        }) {
+            Ok((host, node, lane)) => (host, node, lane),
+            Err(()) => {
+                return std::ptr::null_mut();
+            }
+        };
 
     let (input_tx, input_rx) = byte_channel(non_zero_usize!(128));
     let (output_tx, mut output_rx) = byte_channel(non_zero_usize!(128));
-    let input = env.get_string(input).unwrap().to_str().unwrap().to_string();
+    let input = env.with_env(|scope| scope.get_rust_string(input));
 
     let write_task = async move {
         let mut framed = FramedWrite::new(input_tx, DownlinkNotificationEncoder);
@@ -135,11 +146,7 @@ where
     };
 
     let downlink_task = downlink.run(
-        Address::new(
-            Some(host.to_str().unwrap().into()),
-            node.to_str().unwrap().into(),
-            lane.to_str().unwrap().into(),
-        ),
+        Address::new(Some(host.to_string().into()), node.into(), lane.into()),
         DownlinkConfig {
             events_when_not_synced,
             terminate_on_unlinked: false,
@@ -170,6 +177,6 @@ client_fn! {
             env.convert_byte_array(config).map(BytesMut::from_iter)
         };
 
-        let _r = DownlinkConfigurations::try_from_bytes(&mut config_bytes, &env);
+        DownlinkConfigurations::try_from_bytes(&mut config_bytes).expect("Invalid bytes");
     }
 }

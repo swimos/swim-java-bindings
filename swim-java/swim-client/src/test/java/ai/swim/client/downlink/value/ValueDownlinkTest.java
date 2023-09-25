@@ -23,6 +23,7 @@ import ai.swim.structure.Form;
 import ai.swim.structure.Recon;
 import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
+import ai.swim.structure.recognizer.RecognizerException;
 import org.junit.jupiter.api.Test;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -58,7 +59,7 @@ class ValueDownlinkTest extends FfiTest {
   void simpleOpen() throws InterruptedException {
     Trigger trigger = new Trigger();
 
-    long ptr = lifecycleTest(trigger, "", "host", "node", "lane", null, null, null, null, null);
+    long ptr = lifecycleTest(trigger, "", "ws://swim.ai", "node", "lane", null, null, null, null, null);
 
     awaitTrigger(trigger, 5, "downlink");
     dropRuntime(ptr);
@@ -173,7 +174,7 @@ class ValueDownlinkTest extends FfiTest {
 
     long ptr = lifecycleTest(lock,
                              input.toString(),
-                             "host",
+                             "ws://swim.ai",
                              "node",
                              "lane",
                              state.wrapOnEvent(lifecycle.getOnEvent()),
@@ -358,7 +359,7 @@ class ValueDownlinkTest extends FfiTest {
 
     long ptr = driveDownlink(valueDownlink,
                              stoppedBarrier,
-                             null,
+                             new Trigger(),
                              "ws://127.0.0.1",
                              "node",
                              "lane",
@@ -404,9 +405,9 @@ class ValueDownlinkTest extends FfiTest {
       Throwable cause = e.getCause();
 
       assertNotNull(cause);
-      assertTrue(cause instanceof RuntimeException);
+      assertTrue(cause instanceof RecognizerException);
       assertEquals(
-          "java.lang.RuntimeException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}",
+          "ai.swim.structure.recognizer.RecognizerException: Found 'ReadTextValue{value='blah'}', expected: 'Integer' at: StringLocation{line=0, column=0, offset=4}",
           cause.getMessage());
     } finally {
       dropSwimClient(ptr);

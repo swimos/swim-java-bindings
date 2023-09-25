@@ -15,43 +15,36 @@
 use bytes::BytesMut;
 use futures_util::future::BoxFuture;
 use futures_util::StreamExt;
-use jni::errors::Error;
 use jni::sys::jobject;
 use swim_api::downlink::{Downlink, DownlinkConfig, DownlinkKind};
-use swim_api::error::{DownlinkTaskError, FrameIoError};
-use swim_api::protocol::downlink::DownlinkNotification;
+use swim_api::error::DownlinkTaskError;
+use swim_api::protocol::downlink::{DownlinkNotification};
+use swim_model::{Text};
 use swim_model::address::Address;
-use swim_model::Text;
 use swim_utilities::io::byte_channel::{ByteReader, ByteWriter};
 use tokio_util::codec::FramedRead;
 
-use jvm_sys::vm::utils::VmExt;
-use jvm_sys::vm::SpannedError;
+use jvm_sys::env::JavaEnv;
 
 use crate::downlink::decoder::ValueDlNotDecoder;
 use crate::downlink::value::lifecycle::ValueDownlinkLifecycle;
-use crate::downlink::{ErrorHandlingConfig, FfiFailureHandler};
-use crate::SharedVm;
 
 mod lifecycle;
 
 pub struct FfiValueDownlink {
-    vm: SharedVm,
+    env: JavaEnv,
     lifecycle: ValueDownlinkLifecycle,
-    handler: Box<dyn FfiFailureHandler>,
 }
 
 impl FfiValueDownlink {
     pub fn create(
-        vm: SharedVm,
+        env: JavaEnv,
         on_event: jobject,
         on_linked: jobject,
         on_set: jobject,
         on_synced: jobject,
         on_unlinked: jobject,
-        error_mode: ErrorHandlingConfig,
-    ) -> Result<FfiValueDownlink, Error> {
-        let env = vm.get_env()?;
+    ) -> FfiValueDownlink {
         let lifecycle = ValueDownlinkLifecycle::from_parts(
             &env,
             on_event,
@@ -59,12 +52,8 @@ impl FfiValueDownlink {
             on_set,
             on_synced,
             on_unlinked,
-        )?;
-        Ok(FfiValueDownlink {
-            vm,
-            lifecycle,
-            handler: error_mode.as_handler(),
-        })
+        );
+        FfiValueDownlink { env, lifecycle }
     }
 }
 
@@ -81,16 +70,8 @@ impl Downlink for FfiValueDownlink {
         output: ByteWriter,
     ) -> BoxFuture<'static, Result<(), DownlinkTaskError>> {
         Box::pin(async move {
-            let FfiValueDownlink {
-                vm,
-                lifecycle,
-                handler,
-            } = self;
-            match run_ffi_value_downlink(vm, lifecycle, path, config, input, output).await {
-                Ok(()) => Ok(()),
-                Err(RuntimeError::Downlink(err)) => Err(err),
-                Err(RuntimeError::Ffi(err)) => handler.on_failure(err),
-            }
+            let FfiValueDownlink { env, lifecycle } = self;
+            run_ffi_value_downlink(env, lifecycle, path, config, input, output).await
         })
     }
 
@@ -111,37 +92,14 @@ enum LinkState {
     Synced,
 }
 
-enum RuntimeError {
-    Downlink(DownlinkTaskError),
-    Ffi(SpannedError),
-}
-
-impl From<FrameIoError> for RuntimeError {
-    fn from(value: FrameIoError) -> Self {
-        RuntimeError::Downlink(DownlinkTaskError::BadFrame(value))
-    }
-}
-
-impl From<DownlinkTaskError> for RuntimeError {
-    fn from(value: DownlinkTaskError) -> Self {
-        RuntimeError::Downlink(value)
-    }
-}
-
-impl From<SpannedError> for RuntimeError {
-    fn from(value: SpannedError) -> Self {
-        RuntimeError::Ffi(value)
-    }
-}
-
 async fn run_ffi_value_downlink(
-    vm: SharedVm,
+    env: JavaEnv,
     mut lifecycle: ValueDownlinkLifecycle,
     _path: Address<Text>,
     config: DownlinkConfig,
     input: ByteReader,
     _output: ByteWriter,
-) -> Result<(), RuntimeError> {
+) -> Result<(), DownlinkTaskError> {
     let DownlinkConfig {
         events_when_not_synced,
         terminate_on_unlinked,
@@ -153,7 +111,6 @@ async fn run_ffi_value_downlink(
     let mut ffi_buffer = BytesMut::new();
 
     while let Some(result) = framed_read.next().await {
-        let env = vm.expect_env();
         match result? {
             DownlinkNotification::Linked => {
                 if matches!(&state, LinkState::Unlinked) {

@@ -150,7 +150,7 @@ public class MapDownlinkTest extends FfiTest {
     long ptr = lifecycleTest(
         lock,
         "",
-        "host",
+        "ws://swim.ai",
         "node",
         "lane",
         null,
@@ -175,7 +175,7 @@ public class MapDownlinkTest extends FfiTest {
     long ptr = lifecycleTest(
         lock,
         "@linked(node:node, lane:lane)",
-        "host",
+        "ws://swim.ai",
         "node",
         "lane",
         invoked::countDown,
@@ -201,7 +201,7 @@ public class MapDownlinkTest extends FfiTest {
     long ptr = lifecycleTest(
         lock,
         "@linked(node:node, lane:lane)\n@synced(node:node, lane:lane)",
-        "host",
+        "ws://swim.ai",
         "node",
         "lane",
         null,
@@ -227,7 +227,7 @@ public class MapDownlinkTest extends FfiTest {
     long ptr = lifecycleTest(
         lock,
         "@linked(node:node, lane:lane)\n@event(node:node, lane:lane)@update(key:key)1",
-        "host",
+        "ws://swim.ai",
         "node",
         "lane",
         null,
@@ -253,7 +253,7 @@ public class MapDownlinkTest extends FfiTest {
     long ptr = lifecycleTest(
         lock,
         "@linked(node:node, lane:lane)\n@event(node:node, lane:lane)@remove(key:key)",
-        "host",
+        "ws://swim.ai",
         "node",
         "lane",
         null,
@@ -279,7 +279,7 @@ public class MapDownlinkTest extends FfiTest {
     long ptr = lifecycleTest(
         lock,
         "@linked(node:node, lane:lane)\n@event(node:node, lane:lane)@clear",
-        "host",
+        "ws://swim.ai",
         "node",
         "lane",
         null,
@@ -305,7 +305,7 @@ public class MapDownlinkTest extends FfiTest {
     long ptr = lifecycleTest(
         lock,
         "@unlinked(node:node, lane:lane)",
-        "host",
+        "ws://swim.ai",
         "node",
         "lane",
         null,
@@ -331,7 +331,7 @@ public class MapDownlinkTest extends FfiTest {
     long ptr = lifecycleTest(
         lock,
         "@linked(node:node, lane:lane)\n@event(node:node, lane:lane)@take(5)",
-        "host",
+        "ws://swim.ai",
         "node",
         "lane",
         null,
@@ -357,7 +357,7 @@ public class MapDownlinkTest extends FfiTest {
     long ptr = lifecycleTest(
         lock,
         "@linked(node:node, lane:lane)\n@event(node:node, lane:lane)@drop(5)",
-        "host",
+        "ws://swim.ai",
         "node",
         "lane",
         null,
@@ -464,7 +464,7 @@ public class MapDownlinkTest extends FfiTest {
     long ptr = lifecycleTest(
         lock,
         input.toString(),
-        "host",
+        "ws://swim.ai",
         "node",
         "lane",
         lifecycle.getOnLinked(),

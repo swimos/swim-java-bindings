@@ -40,4 +40,9 @@ public class Utils {
     return builder.toString();
   }
 
+  public static void flushOutputStreams() {
+    System.out.flush();
+    System.err.flush();
+  }
+
 }

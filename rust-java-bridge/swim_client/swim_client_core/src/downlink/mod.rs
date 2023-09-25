@@ -12,17 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use swim_api::error::DownlinkTaskError;
-
-use bytes::{Buf, BytesMut};
-use jni::JNIEnv;
-use jvm_sys::jni_try;
-use jvm_sys::vm::SpannedError;
 use std::mem::size_of;
 use std::num::NonZeroUsize;
 use std::time::Duration;
+
+use bytes::{Buf, BytesMut};
 use swim_api::downlink::DownlinkConfig;
 use swim_runtime::downlink::{DownlinkOptions, DownlinkRuntimeConfig};
+
+use jvm_sys::method::JavaObjectMethodDef;
 
 const CONFIG_LEN: usize = size_of::<u64>() * 5 + size_of::<u8>() * 4;
 
@@ -31,59 +29,43 @@ pub mod map;
 pub mod value;
 mod vtable;
 
-#[derive(Copy, Clone, Debug)]
-pub enum ErrorHandlingConfig {
-    Ignore,
-    Report,
-    Abort,
-}
 
-impl ErrorHandlingConfig {
-    pub fn as_handler(&self) -> Box<dyn FfiFailureHandler> {
-        match self {
-            ErrorHandlingConfig::Report => Box::new(ReportingHandler),
-            ErrorHandlingConfig::Abort => Box::new(AbortingHandler),
-            ErrorHandlingConfig::Ignore => Box::new(SinkingHandler),
-        }
-    }
-}
-
-pub trait FfiFailureHandler: Send + Sync {
-    fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError>;
-}
-
-impl FfiFailureHandler for Box<dyn FfiFailureHandler> {
-    fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError> {
-        (**self).on_failure(err)
-    }
-}
-
-struct AbortingHandler;
-impl FfiFailureHandler for AbortingHandler {
-    fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError> {
-        #[cold]
-        #[inline(never)]
-        fn abort(err: SpannedError) -> ! {
-            err.panic()
-        }
-
-        abort(err);
-    }
-}
-
-struct ReportingHandler;
-impl FfiFailureHandler for ReportingHandler {
-    fn on_failure(&self, err: SpannedError) -> Result<(), DownlinkTaskError> {
-        Err(DownlinkTaskError::Custom(Box::new(err)))
-    }
-}
-
-struct SinkingHandler;
-impl FfiFailureHandler for SinkingHandler {
-    fn on_failure(&self, _err: SpannedError) -> Result<(), DownlinkTaskError> {
-        Ok(())
-    }
-}
+pub const ON_LINKED: JavaObjectMethodDef =
+    JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnLinked", "onLinked", "()V");
+pub const ON_UNLINKED: JavaObjectMethodDef =
+    JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnUnlinked", "onUnlinked", "()V");
+pub const CONSUMER_ACCEPT: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "java/util/function/Consumer",
+    "accept",
+    "(Ljava/lang/Object;)V",
+);
+pub const DISPATCH_ON_UPDATE: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchOnUpdate",
+    "onUpdate",
+    "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Z)V",
+);
+pub const DISPATCH_ON_REMOVE: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchOnRemove",
+    "onRemove",
+    "(Ljava/nio/ByteBuffer;Z)V",
+);
+pub const DISPATCH_ON_CLEAR: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchOnClear",
+    "onClear",
+    "(Z)V",
+);
+pub const DISPATCH_TAKE: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchTake",
+    "take",
+    "(IZ)V",
+);
+pub const DISPATCH_DROP: JavaObjectMethodDef = JavaObjectMethodDef::new(
+    "ai/swim/client/downlink/map/dispatch/DispatchDrop",
+    "drop",
+    "(IZ)V",
+);
+pub const ROUTINE_EXEC: JavaObjectMethodDef =
+    JavaObjectMethodDef::new("ai/swim/client/downlink/map/Routine", "exec", "()V");
 
 /// A wrapper around a downlink runtime configuration, downlink configuration and downlink options
 /// that can be parsed from a Java-provided byte array of the following format:
@@ -116,18 +98,7 @@ impl Default for DownlinkConfigurations {
 }
 
 impl DownlinkConfigurations {
-    #[allow(clippy::result_unit_err)]
-    pub fn try_from_bytes(buf: &mut BytesMut, env: &JNIEnv) -> Result<DownlinkConfigurations, ()> {
-        Ok(jni_try!(
-            env,
-            "Failed to parse downlink configuration",
-            Self::from_bytes_internal(buf),
-            Err(())
-        ))
-    }
-
-    // Split into its own function for testing.
-    fn from_bytes_internal(buf: &mut BytesMut) -> Result<DownlinkConfigurations, String> {
+    pub fn try_from_bytes(buf: &mut BytesMut) -> Result<DownlinkConfigurations, String> {
         if buf.len() != CONFIG_LEN {
             return Err("Invalid buffer length".to_string());
         };
@@ -179,12 +150,14 @@ fn parse_bool(buf: &mut BytesMut) -> Result<bool, String> {
 
 #[cfg(test)]
 mod test {
-    use crate::downlink::DownlinkConfigurations;
-    use bytes::{BufMut, BytesMut};
     use std::time::Duration;
+
+    use bytes::{BufMut, BytesMut};
     use swim_api::downlink::DownlinkConfig;
     use swim_runtime::downlink::{DownlinkOptions, DownlinkRuntimeConfig};
     use swim_utilities::non_zero_usize;
+
+    use crate::downlink::DownlinkConfigurations;
 
     #[test]
     fn parse_valid_config() {
@@ -200,7 +173,7 @@ mod test {
         buf.put_u8(0b11); // downlink options
 
         let config =
-            DownlinkConfigurations::from_bytes_internal(&mut buf).expect("Expected a valid config");
+            DownlinkConfigurations::try_from_bytes(&mut buf).expect("Expected a valid config");
         assert_eq!(
             config,
             DownlinkConfigurations {
@@ -235,7 +208,7 @@ mod test {
         buf.put_u8(0);
 
         assert_eq!(
-            DownlinkConfigurations::from_bytes_internal(&mut buf).unwrap_err(),
+            DownlinkConfigurations::try_from_bytes(&mut buf).unwrap_err(),
             "Invalid non-zero integer: 0"
         );
     }
@@ -254,7 +227,7 @@ mod test {
         buf.put_u8(0b111);
 
         assert_eq!(
-            DownlinkConfigurations::from_bytes_internal(&mut buf).unwrap_err(),
+            DownlinkConfigurations::try_from_bytes(&mut buf).unwrap_err(),
             "Invalid downlink options bits: 111"
         );
     }
@@ -263,7 +236,7 @@ mod test {
     fn parse_invalid_length() {
         let mut buf = BytesMut::new();
         assert_eq!(
-            DownlinkConfigurations::from_bytes_internal(&mut buf).unwrap_err(),
+            DownlinkConfigurations::try_from_bytes(&mut buf).unwrap_err(),
             "Invalid buffer length"
         );
 
@@ -272,7 +245,7 @@ mod test {
             buf.set_len(123);
         }
         assert_eq!(
-            DownlinkConfigurations::from_bytes_internal(&mut buf).unwrap_err(),
+            DownlinkConfigurations::try_from_bytes(&mut buf).unwrap_err(),
             "Invalid buffer length"
         );
     }

@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::downlink::{DownlinkConfigurations, ErrorHandlingConfig};
-use client_runtime::RemotePath;
+use crate::downlink::DownlinkConfigurations;
 use client_runtime::{
     start_runtime, DownlinkErrorKind, DownlinkRuntimeError, RawHandle, Transport,
 };
+pub use client_runtime::{ClientConfig, RemotePath};
 use jni::objects::{GlobalRef, JValue};
-use jni::JNIEnv;
-use jni::JavaVM;
+use jvm_sys::env::{JavaEnv, SpannedError};
 #[cfg(feature = "deflate")]
 use ratchet::deflate::{DeflateConfig, DeflateExtProvider};
 #[cfg(not(feature = "deflate"))]
@@ -44,20 +43,16 @@ use tokio::net::TcpStream;
 use tokio::runtime::{Builder, Handle, Runtime};
 use tokio::task::JoinHandle;
 
-pub use client_runtime::ClientConfig;
-use jvm_sys::vm::method::{JavaObjectMethod, JavaObjectMethodDef};
-use jvm_sys::vm::utils::VmExt;
-use jvm_sys::vm::{with_local_frame_null, SpannedError};
+use jvm_sys::method::JavaMethodExt;
+use jvm_sys::vtable::Trigger;
 pub use macros::*;
+
 pub mod downlink;
 mod macros;
 pub use macros::*;
 
-pub type SharedVm = Arc<JavaVM>;
-
 pub struct SwimClient {
-    error_mode: ErrorHandlingConfig,
-    vm: SharedVm,
+    env: JavaEnv,
     runtime: Runtime,
     stop_tx: trigger::Sender,
     // todo: implement clone on RawHandle and remove this arc
@@ -68,11 +63,10 @@ pub struct SwimClient {
 impl SwimClient {
     pub fn with_transport<Net, Ws>(
         runtime: Runtime,
-        vm: JavaVM,
+        env: JavaEnv,
         transport: Transport<Net, Ws>,
         transport_buffer_size: NonZeroUsize,
         registration_buffer_size: NonZeroUsize,
-        error_mode: ErrorHandlingConfig,
     ) -> SwimClient
     where
         Net: ClientConnections,
@@ -97,8 +91,7 @@ impl SwimClient {
         };
 
         SwimClient {
-            error_mode,
-            vm: Arc::new(vm),
+            env,
             runtime,
             stop_tx,
             downlinks_handle: Arc::new(handle),
@@ -106,7 +99,7 @@ impl SwimClient {
         }
     }
 
-    pub fn new(vm: JavaVM, config: ClientConfig) -> SwimClient {
+    pub fn new(env: JavaEnv, config: ClientConfig) -> SwimClient {
         let runtime = Builder::new_multi_thread()
             .enable_all()
             .build()
@@ -139,18 +132,16 @@ impl SwimClient {
         );
         SwimClient::with_transport(
             runtime,
-            vm,
+            env,
             transport,
             transport_buffer_size,
             registration_buffer_size,
-            ErrorHandlingConfig::Report,
         )
     }
 
     pub fn handle(&self) -> ClientHandle {
         ClientHandle {
-            error_mode: self.error_mode,
-            vm: self.vm.clone(),
+            env: self.env.clone(),
             tokio_handle: self.runtime.handle().clone(),
             downlinks_handle: self.downlinks_handle.clone(),
         }
@@ -200,21 +191,14 @@ fn build_networking(
 
 #[derive(Clone)]
 pub struct ClientHandle {
-    error_mode: ErrorHandlingConfig,
-    vm: SharedVm,
+    env: JavaEnv,
     tokio_handle: Handle,
     downlinks_handle: Arc<RawHandle>,
 }
 
 impl ClientHandle {
-    pub fn error_mode(&self) -> ErrorHandlingConfig {
-        self.error_mode
-    }
-}
-
-impl ClientHandle {
-    pub fn vm(&self) -> SharedVm {
-        self.vm.clone()
+    pub fn env(&self) -> JavaEnv {
+        self.env.clone()
     }
 
     pub fn tokio_handle(&self) -> Handle {
@@ -234,7 +218,7 @@ impl ClientHandle {
         D: Downlink + Send + Sync + 'static,
     {
         let ClientHandle {
-            vm,
+            env,
             tokio_handle,
             downlinks_handle,
             ..
@@ -253,20 +237,20 @@ impl ClientHandle {
             downlink,
         ));
 
-        let vm = vm.clone();
+        let env = env.clone();
         match result {
             Ok(receiver) => {
-                spawn_monitor(tokio_handle, vm, receiver, downlink_ref, stopped_barrier);
+                spawn_monitor(tokio_handle, env, receiver, downlink_ref, stopped_barrier);
                 Ok(())
             }
             Err(e) => {
                 // any errors will have already been logged by the runtime
-                let env = vm.expect_env();
-                env.throw_new(
-                    "java/lang/Exception",
-                    format!("Failed to spawn downlink: {:?}", e),
-                )
-                .expect("Failed to throw exception");
+                env.with_env(|scope| {
+                    scope.throw_new(
+                        "java/lang/Exception",
+                        format!("Failed to spawn downlink: {:?}", e),
+                    );
+                });
                 Err(())
             }
         }
@@ -275,7 +259,7 @@ impl ClientHandle {
 
 fn spawn_monitor(
     tokio_handle: &Handle,
-    vm: SharedVm,
+    env: JavaEnv,
     receiver: promise::Receiver<Result<(), DownlinkRuntimeError>>,
     downlink_ref: GlobalRef,
     stopped_barrier: GlobalRef,
@@ -284,8 +268,6 @@ fn spawn_monitor(
         let result = receiver
             .await
             .map_err(|_| DownlinkRuntimeError::new(DownlinkErrorKind::Terminated));
-        let env = vm.expect_env();
-
         match result {
             Ok(arc_result) => {
                 if let Err(e) = arc_result.as_ref() {
@@ -299,28 +281,24 @@ fn spawn_monitor(
     });
 }
 
-fn notify_stopped(env: &JNIEnv, stopped_barrier: GlobalRef) {
-    let mut countdown = JavaObjectMethodDef::new("ai/swim/concurrent/Trigger", "trigger", "()V")
-        .initialise(env)
-        .expect("Failed to initialise countdown latch method");
-
-    if let Err(e) = countdown.invoke(env, &stopped_barrier, &[]) {
-        env.fatal_error(&e.to_string());
-    }
+fn notify_stopped(env: &JavaEnv, stopped_barrier: GlobalRef) {
+    env.with_env(|scope| {
+        let countdown = scope.resolve(Trigger::TRIGGER);
+        scope.invoke(countdown.v(), &stopped_barrier, &[]);
+    });
 }
 
-fn set_exception(env: &JNIEnv, downlink_ref: GlobalRef, cause: &DownlinkRuntimeError) {
-    with_local_frame_null(env, None, || {
+fn set_exception(env: &JavaEnv, downlink_ref: GlobalRef, cause: &DownlinkRuntimeError) {
+    env.with_env(|scope| {
         let cause_message = match cause.downcast_ref::<DownlinkTaskError>() {
             Some(DownlinkTaskError::Custom(cause)) => match cause.downcast_ref::<SpannedError>() {
                 Some(spanned) => {
-                    env.set_field(
+                    scope.set_field(
                         &downlink_ref,
                         "cause",
                         "Ljava/lang/Throwable;",
                         JValue::Object(spanned.cause_throwable.as_obj()),
-                    )
-                    .expect("Failed to report downlink exception cause");
+                    );
                     spanned.cause.clone()
                 }
                 None => cause.to_string(),
@@ -328,15 +306,12 @@ fn set_exception(env: &JNIEnv, downlink_ref: GlobalRef, cause: &DownlinkRuntimeE
             _ => cause.to_string(),
         };
 
-        let cause = env
-            .new_string(cause_message)
-            .expect("Failed to allocate java string");
-        env.set_field(
+        let cause = scope.new_string(cause_message);
+        scope.set_field(
             &downlink_ref,
             "message",
             "Ljava/lang/String;",
             JValue::Object(cause.into()),
-        )
-        .expect("Failed to report downlink exception message");
+        );
     });
 }
