@@ -38,6 +38,16 @@ assert_impl_all!(JavaEnv: Send, Sync);
 // assertion is added just to ensure that an unsafe implementation isn't added.
 assert_not_impl_all!(Scope: Send, Sync);
 
+const VOID_NO_ARGS_SIG: &str = "()V";
+const FLUSH_OUTPUT_STREAMS: &str = "flushOutputStreams";
+const EXCEPTION_UTILS_CLASS: &str = "ai/swim/lang/ffi/ExceptionUtils";
+const JAVA_CLASS: &str = "java/lang/Class";
+const CLASS_IS_ASSIGNABLE_FROM: &str = "isAssignableFrom";
+const CLASS_IS_ASSIGNABLE_FROM_SIG: &str = "(Ljava/lang/Class;)Z";
+const STACK_TRACE_STRING: &str = "stackTraceString";
+const STACK_TRACE_STRING_SIG: &str = "(Ljava/lang/Throwable;)Ljava/lang/String;";
+const PRINT_STACK_TRACE: &str = "printStackTrace";
+
 #[derive(Debug, Clone)]
 pub struct JavaEnv {
     vm: Arc<JavaVM>,
@@ -479,9 +489,9 @@ fn abort_unexpected_sys_exception(vm: Arc<JavaVM>) -> ! {
 #[inline(never)]
 fn flush_output_streams(env: &JNIEnv) {
     let r = env.call_static_method(
-        "ai/swim/lang/ffi/ExceptionUtils",
-        "flushOutputStreams",
-        "()V",
+        EXCEPTION_UTILS_CLASS,
+        FLUSH_OUTPUT_STREAMS,
+        VOID_NO_ARGS_SIG,
         &[],
     );
     if r.is_err() {
@@ -549,9 +559,9 @@ impl NotTypeOfExceptionHandler {
             (
                 class,
                 scope.resolve((
-                    "java/lang/Class",
-                    "isAssignableFrom",
-                    "(Ljava/lang/Class;)Z",
+                    JAVA_CLASS,
+                    CLASS_IS_ASSIGNABLE_FROM,
+                    CLASS_IS_ASSIGNABLE_FROM_SIG,
                 )),
             )
         });
@@ -601,9 +611,9 @@ impl IsTypeOfExceptionHandler {
             (
                 class,
                 scope.resolve((
-                    "java/lang/Class",
-                    "isAssignableFrom",
-                    "(Ljava/lang/Class;)Z",
+                    JAVA_CLASS,
+                    CLASS_IS_ASSIGNABLE_FROM,
+                    CLASS_IS_ASSIGNABLE_FROM_SIG,
                 )),
             )
         });
@@ -699,9 +709,9 @@ fn handle_exception(
     scope.exception_clear();
 
     let stack_trace_obj = scope.call_static_method(
-        "ai/swim/lang/ffi/ExceptionUtils",
-        "stackTraceString",
-        "(Ljava/lang/Throwable;)Ljava/lang/String;",
+        EXCEPTION_UTILS_CLASS,
+        STACK_TRACE_STRING,
+        STACK_TRACE_STRING_SIG,
         &[throwable.into()],
     );
     let stack_trace_str_obj = match stack_trace_obj.l() {
@@ -754,7 +764,7 @@ where
 fn print_exception_stack_trace(scope: &Scope, throwable: &JThrowable) {
     if let Err(e) = scope
         .env
-        .call_method(*throwable, "printStackTrace", "()V", &[])
+        .call_method(*throwable, PRINT_STACK_TRACE, VOID_NO_ARGS_SIG, &[])
     {
         error!(error = ?e, "Failed to print exception stack trace");
         abort_vm(scope.vm.clone(), e);

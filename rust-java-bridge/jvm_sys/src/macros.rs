@@ -17,9 +17,11 @@ use std::io::Write;
 
 use jni::JNIEnv;
 
+pub const RUNTIME_EXCEPTION: &str = "java/lang/RuntimeException";
+
 #[macro_export]
 macro_rules! jni_try {
-    ($env:ident, $class:tt, $msg:tt, $expr:expr, $ret:expr $(,)?) => {{
+    ($env:ident, $class:expr, $msg:tt, $expr:expr, $ret:expr $(,)?) => {{
         let env_ref = $env;
 
         match $expr {
@@ -32,16 +34,16 @@ macro_rules! jni_try {
             }
         }
     }};
-    ($env:ident, $class:tt, $msg:tt, $expr:expr, $(,)?) => {{
+    ($env:ident, $class:expr, $msg:tt, $expr:expr, $(,)?) => {{
         $crate::jni_try!($env, $class, $msg, $expr, ())
     }};
     ($env:ident, $msg:tt, $expr:expr $(,)?) => {
-        $crate::jni_try!($env, "java/lang/RuntimeException", $msg, $expr, ())
+        $crate::jni_try!($env, $crate::RUNTIME_EXCEPTION, $msg, $expr, ())
     };
     ($env:ident, $msg:tt, $expr:expr, $ret:expr $(,)?) => {
         $crate::jni_try!(
             $env,
-            "java/lang/RuntimeException",
+            $crate::RUNTIME_EXCEPTION,
             $msg,
             $expr,
             $ret
