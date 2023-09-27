@@ -124,7 +124,7 @@ async fn run_ffi_value_downlink(
                     state = LinkState::Synced;
                 }
                 _ => {
-                    return Err(DownlinkTaskError::SyncedWithNoValue.into());
+                    return Err(DownlinkTaskError::SyncedWithNoValue);
                 }
             },
             DownlinkNotification::Event { body } => {

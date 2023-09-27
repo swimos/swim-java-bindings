@@ -673,7 +673,7 @@ fn infer_docs(attrs: &[Attribute], documentation: &mut Documentation) -> Result<
                         v,
                         format!(
                             "Invalid documentation type: {}",
-                            v.to_token_stream().to_string()
+                            v.to_token_stream()
                         ),
                     ))
                 }

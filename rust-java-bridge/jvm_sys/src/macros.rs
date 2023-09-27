@@ -160,7 +160,7 @@ where
 
     match env.exception_check() {
         Ok(true) => {
-            let _r = write!(writer, "Unhandled exception. Printing and clearing it\n");
+            let _r = writeln!(writer, "Unhandled exception. Printing and clearing it");
             describe(
                 &mut writer,
                 env.exception_describe(),

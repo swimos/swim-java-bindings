@@ -132,7 +132,10 @@ impl JavaEnv {
         let scope = self.enter_scope();
         match exec(scope.clone()) {
             Ok(o) => Ok(o),
-            Err(e) => Err(scope.throw_new(class, e.to_string())),
+            Err(e) => {
+                scope.throw_new(class, e.to_string());
+                Err(())
+            },
         }
     }
 
@@ -592,7 +595,7 @@ impl JavaExceptionHandler for AbortingHandler {
     type Err = Infallible;
 
     fn inspect(&self, scope: &Scope, _throwable: JThrowable) -> Option<Self::Err> {
-        let _r = scope.exception_describe();
+        scope.exception_describe();
 
         abort_vm(scope.vm.clone(), FatalError::JavaVm(Error::JavaException))
     }
@@ -746,7 +749,7 @@ where
 
                 scope.exception_clear();
 
-                match exception_handler.inspect(&scope, throwable.clone()) {
+                match exception_handler.inspect(&scope, throwable) {
                     Some(e) => Err(e),
                     None => {
                         error!("An exception was not handled by the provided handler. Aborting");
@@ -783,7 +786,7 @@ where
 
 fn get_exception_message(scope: &Scope, throwable: JThrowable) -> String {
     let Scope { resolver, .. } = &scope;
-    let method = resolver.resolve(&scope, Throwable::GET_MESSAGE);
+    let method = resolver.resolve(scope, Throwable::GET_MESSAGE);
     let message = scope.invoke(method.l(), throwable, &[]);
 
     scope.get_rust_string(JString::from(message))

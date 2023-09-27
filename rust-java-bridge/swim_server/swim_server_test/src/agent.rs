@@ -70,7 +70,7 @@ where
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         if !src.has_remaining() {
-            return Ok(None);
+            Ok(None)
         } else {
             let uri_len = src.get_i32() as usize;
             let lane_uri = std::str::from_utf8(src.split_to(uri_len).as_ref())
