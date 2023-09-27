@@ -60,12 +60,6 @@ impl Encoder<MapOperation<BytesMut, BytesMut>> for MapOperationBytesEncoder {
         match item {
             MapOperation::Update { key, value } => {
                 let total_len = key.len() + value.len() + LEN_SIZE + TAG_SIZE;
-                println!("Total len 2: {}", total_len);
-                println!("key len 2: {}", key.len());
-                println!("value len 2: {}", value.len());
-
-                // int/i32 overflow is handled in Java
-
                 dst.reserve(total_len + LEN_SIZE);
                 dst.put_u64(u64::try_from(total_len).expect(Self::OVERSIZE_RECORD));
                 dst.put_u8(Self::UPDATE);

@@ -134,7 +134,7 @@ class AgentTest {
     }
 
     private void onEvent(int ev) {
-      parity.update(ev, ev % 2 == 0);
+      parity.put(ev, ev % 2 == 0);
     }
   }
 

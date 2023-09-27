@@ -1,10 +1,10 @@
 package ai.swim.server.lanes.map;
 
 public class OperationDispatcher<V, K> implements MapOperationVisitor<K, V> {
-  private final MapState<K, V> state;
+  private final MapLaneState<K, V> state;
   private final MapLaneView<K, V> view;
 
-  public OperationDispatcher(MapState<K, V> state, MapLaneView<K, V> view) {
+  public OperationDispatcher(MapLaneState<K, V> state, MapLaneView<K, V> view) {
     this.state = state;
     this.view = view;
   }

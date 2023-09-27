@@ -86,11 +86,11 @@ public class MapLaneTest {
     @Transient
     @SwimLane
     private final MapLane<String, Integer> mapLane = mapLane(String.class, Integer.class).onClear(() -> {
-      System.out.println("On clear");
+
     }).onRemove(((key, value) -> {
-      System.out.printf("On remote: %s -> %s%n", key, value);
+
     })).onUpdate(((key, oldValue, newValue) -> {
-      System.out.printf("On update: %s -> %s -> %s%n", key, oldValue, newValue);
+
     }));
 
     private TestAgent(AgentContext context) {
