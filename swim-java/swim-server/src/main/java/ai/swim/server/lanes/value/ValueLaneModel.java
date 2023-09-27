@@ -14,9 +14,23 @@ import ai.swim.structure.recognizer.RecognizerException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
+/**
+ * {@link ValueLane} {@link LaneModel} implementation.
+ *
+ * @param <T> the type of the {@link ValueLane}'s event.
+ */
 public final class ValueLaneModel<T> extends LaneModel {
+  /**
+   * {@link LaneView} into the lane.
+   */
   private final ValueLaneView<T> view;
+  /**
+   * Form for T.
+   */
   private final Form<T> form;
+  /**
+   * The state of the lane.
+   */
   private final ValueState<T> state;
 
   public ValueLaneModel(int laneId, ValueLaneView<T> view, StateCollector collector) {
@@ -66,11 +80,6 @@ public final class ValueLaneModel<T> extends LaneModel {
   @Override
   public LaneView getLaneView() {
     return view;
-  }
-
-  @Override
-  public WriteResult writeToBuffer(Bytes bytes) {
-    return state.writeInto(bytes);
   }
 
   public T get() {

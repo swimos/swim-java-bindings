@@ -24,14 +24,6 @@ public class LaneSchema {
     }
   }
 
-  public boolean isTransient() {
-    return isTransient;
-  }
-
-  public LaneKind getLaneKind() {
-    return laneKind;
-  }
-
   @Override
   public String toString() {
     return "LaneSchema{" + "isTransient=" + isTransient + ", laneKind=" + laneKind + ", laneId=" + laneId + '}';

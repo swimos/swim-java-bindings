@@ -5,6 +5,11 @@ import ai.swim.server.codec.Encoder;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * An abstract lane response which may be either a command, sync, sync complete, or event response.
+ *
+ * @param <T> the response's event type.
+ */
 public abstract class LaneResponse<T> {
   public static final byte COMMAND = 0;
   public static final byte SYNC = 1;
@@ -31,6 +36,12 @@ public abstract class LaneResponse<T> {
     return new Synced<>(remote);
   }
 
+  /**
+   * Encodes this response using {@code encoder} and into {@code buffer}.
+   *
+   * @param encoder for this response's event type.
+   * @param buffer  to encode into.
+   */
   public abstract void encode(Encoder<T> encoder, Bytes buffer);
 
   @Override

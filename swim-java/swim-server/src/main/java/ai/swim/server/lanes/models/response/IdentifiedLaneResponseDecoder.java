@@ -5,6 +5,11 @@ import ai.swim.server.codec.Decoder;
 import ai.swim.server.codec.DecoderException;
 import ai.swim.server.codec.Size;
 
+/**
+ * A decoder for decoding {@link IdentifiedLaneResponse}'s.
+ *
+ * @param <T> the lane response's event type.
+ */
 public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResponse<T>> {
   private Decoder<LaneResponse<T>> delegate;
   private State state;

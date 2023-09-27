@@ -7,6 +7,11 @@ import java.util.UUID;
 import static ai.swim.server.lanes.models.response.LaneResponse.TAG_LEN;
 import static ai.swim.server.lanes.models.response.LaneResponse.UUID_LEN;
 
+/**
+ * An abstract lane request which may be either a command, sync, or sync complete request.
+ *
+ * @param <T> the request's event type.
+ */
 public abstract class LaneRequest<T> {
 
   public static final byte COMMAND = 0;
@@ -25,6 +30,12 @@ public abstract class LaneRequest<T> {
     return new Sync<>(remote);
   }
 
+  /**
+   * Encodes this request using {@code encoder} and into {@code buffer}.
+   *
+   * @param encoder for this request's event type.
+   * @param buffer  to encode into.
+   */
   public abstract void encode(Encoder<T> encoder, Bytes buffer);
 
   @Override

@@ -3,6 +3,14 @@ package ai.swim.server.lanes;
 import ai.swim.server.lanes.value.ValueLaneView;
 import ai.swim.structure.Form;
 
+/**
+ * Class for creating new Swim Lanes.
+ * <p>
+ * The lanes returned by the methods within this class are returned as uninitialised and must be placed within a class
+ * which extends from {@link ai.swim.server.agent.AbstractAgent}, is annotated with {@link ai.swim.server.annotations.SwimAgent}
+ * and the lane itself must be annotated with {@link ai.swim.server.annotations.SwimLane} for automatic initialisation
+ * on the agent.
+ */
 public class Lanes {
   /**
    * Returns a new Value Lane that encodes and decodes {@code T} events.

@@ -7,10 +7,27 @@ import ai.swim.server.lanes.lifecycle.OnSet;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
 
+/**
+ * {@link ValueLane} and {@link LaneView} implementation.
+ *
+ * @param <T> the type of the {@link ValueLane}'s event.
+ */
 public final class ValueLaneView<T> extends LaneView implements ValueLane<T> {
+  /**
+   * Form for T.
+   */
   private final Form<T> form;
+  /**
+   * {@link OnSet} handler.
+   */
   private OnSet<T> onSet;
+  /**
+   * {@link OnEvent} handler.
+   */
   private OnEvent<T> onEvent;
+  /**
+   * Lane model for dispatching events and retrieving the lane's current state.
+   */
   private ValueLaneModel<T> model;
 
   public ValueLaneView(Form<T> form) {

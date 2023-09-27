@@ -2,6 +2,10 @@ package ai.swim.server.lanes.models.response;
 
 import java.util.Objects;
 
+/**
+ * A {@link LaneResponse} which is tagged with its lane id.
+ * @param <T> the responses event type.
+ */
 public class IdentifiedLaneResponse<T> {
   private final int laneId;
   private final LaneResponse<T> laneResponse;

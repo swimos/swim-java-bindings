@@ -8,6 +8,7 @@ import ai.swim.server.lanes.value.ValueLane;
 import ai.swim.server.lanes.value.ValueLaneModel;
 import ai.swim.server.lanes.value.ValueLaneView;
 import ai.swim.server.schema.AgentSchema;
+import ai.swim.server.schema.LaneSchema;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -27,7 +28,14 @@ import java.util.Objects;
  * @param <A>
  */
 public class AgentFactory<A extends AbstractAgent> {
+  /**
+   * Constructor for producing new instances of the agent. This constructor must be provided with only an {@link AgentContext}
+   * parameter.
+   */
   private final Constructor<A> constructor;
+  /**
+   * Mapping of laneUri -> {@link LaneSchema}.
+   */
   private final Map<String, Integer> laneMappings;
 
   private AgentFactory(Constructor<A> constructor, Map<String, Integer> laneMappings) {
@@ -148,6 +156,11 @@ public class AgentFactory<A extends AbstractAgent> {
     }
   }
 
+  /**
+   * Returns the runtime-derived ID for the lane URI.
+   *
+   * @throws IllegalArgumentException if the lane URI is not contained in the lane mappings.
+   */
   public int idFor(String laneUri) {
     Integer id = this.laneMappings.get(laneUri);
     if (id == null) {

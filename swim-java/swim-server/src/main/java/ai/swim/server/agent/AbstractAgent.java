@@ -24,6 +24,11 @@ public abstract class AbstractAgent {
 
   }
 
+  /**
+   * Returns the {@link AgentContext} scoped to this agent.
+   *
+   * @return this agent's {@link AgentContext}
+   */
   public AgentContext getContext() {
     return context;
   }
