@@ -70,7 +70,9 @@ public final class DemandMapLaneView<K, V> extends LaneView implements DemandMap
   public void cueKey(K key) {
     V value = onCueKey(key);
     if (value != null) {
-      model.pushEvent(key, value);
+      model.pushUpdateEvent(key, value);
+    } else {
+      model.pushRemoveEvent(key);
     }
   }
 

@@ -37,8 +37,12 @@ public final class DemandMapLaneModel<K, V> extends LaneModel {
     return view;
   }
 
-  public void pushEvent(K key, V value) {
-    state.pushEvent(key, value);
+  public void pushUpdateEvent(K key, V value) {
+    state.pushUpdateEvent(key, value);
+  }
+
+  public void pushRemoveEvent(K key) {
+    state.pushRemoveEvent(key);
   }
 
 }

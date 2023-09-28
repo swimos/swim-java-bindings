@@ -37,8 +37,13 @@ public class DemandMapState<K, V> implements State {
     collector.add(this);
   }
 
-  public void pushEvent(K key, V value) {
+  public void pushUpdateEvent(K key, V value) {
     pendingWrites.pushOperation(MapOperation.update(key, value));
+    collector.add(this);
+  }
+
+  public void pushRemoveEvent(K key) {
+    pendingWrites.pushOperation(MapOperation.remove(key));
     collector.add(this);
   }
 
