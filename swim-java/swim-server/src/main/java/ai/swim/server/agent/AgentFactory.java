@@ -10,6 +10,8 @@ import ai.swim.server.lanes.demandmap.DemandMapLaneView;
 import ai.swim.server.lanes.map.MapLane;
 import ai.swim.server.lanes.map.MapLaneView;
 import ai.swim.server.lanes.state.StateCollector;
+import ai.swim.server.lanes.supply.SupplyLane;
+import ai.swim.server.lanes.supply.SupplyLaneView;
 import ai.swim.server.lanes.value.ValueLane;
 import ai.swim.server.lanes.value.ValueLaneView;
 import ai.swim.server.schema.AgentSchema;
@@ -126,6 +128,8 @@ public class AgentFactory<A extends AbstractAgent> {
       return reflectDemandLane(agent, laneUri, laneId, field, collector);
     } else if (DemandMapLane.class.isAssignableFrom(type)) {
       return reflectDemandMapLane(agent, laneUri, laneId, field, collector);
+    } else if (SupplyLane.class.isAssignableFrom(type)) {
+      return reflectSupplyLane(agent, laneUri, laneId, field, collector);
     } else {
       throw unsupportedLaneType(type, agent.getClass());
     }
@@ -177,6 +181,19 @@ public class AgentFactory<A extends AbstractAgent> {
       StateCollector collector) {
     try {
       MapLaneView<?, ?> laneView = (MapLaneView<?, ?>) field.get(agent);
+      return laneView.initLaneModel(collector, laneId);
+    } catch (IllegalAccessException e) {
+      throw laneInitFailure(agent, laneUri, e);
+    }
+  }
+
+  private static LaneModel reflectSupplyLane(AbstractAgent agent,
+      String laneUri,
+      int laneId,
+      Field field,
+      StateCollector collector) {
+    try {
+      SupplyLaneView<?> laneView = (SupplyLaneView<?>) field.get(agent);
       return laneView.initLaneModel(collector, laneId);
     } catch (IllegalAccessException e) {
       throw laneInitFailure(agent, laneUri, e);

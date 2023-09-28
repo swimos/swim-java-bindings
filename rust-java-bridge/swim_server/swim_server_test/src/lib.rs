@@ -76,9 +76,7 @@ impl AgentContext for TestAgentContext {
             match lane_kind.uplink_kind() {
                 UplinkKind::Value => guard.push_value_channel(tx_in, rx_out, lane_uri.to_string()),
                 UplinkKind::Map => guard.push_map_channel(tx_in, rx_out, lane_uri.to_string()),
-                UplinkKind::Supply => {
-                    panic!("Unexpected supply uplink")
-                }
+                UplinkKind::Supply => guard.push_value_channel(tx_in, rx_out, lane_uri.to_string()),
             }
 
             Ok((tx_out, rx_in))

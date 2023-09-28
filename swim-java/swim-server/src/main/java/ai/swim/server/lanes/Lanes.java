@@ -3,6 +3,7 @@ package ai.swim.server.lanes;
 import ai.swim.server.lanes.demand.DemandLaneView;
 import ai.swim.server.lanes.demandmap.DemandMapLaneView;
 import ai.swim.server.lanes.map.MapLaneView;
+import ai.swim.server.lanes.supply.SupplyLaneView;
 import ai.swim.server.lanes.value.ValueLaneView;
 import ai.swim.structure.Form;
 
@@ -103,5 +104,27 @@ public class Lanes {
     return new DemandMapLaneView<>(Form.forClass(keyClass), Form.forClass(valueClass));
   }
 
+
+  /**
+   * Returns a new Supply Lane.
+   *
+   * @param form for encoding and decoding {@code T}
+   * @param <T>  the lane's event type.
+   * @return a new Supply Lane.
+   */
+  public static <T> SupplyLaneView<T> supplyLane(Form<T> form) {
+    return new SupplyLaneView<>(form);
+  }
+
+  /**
+   * Returns a new Supply Lane.
+   *
+   * @param clazz class of {@code T}.
+   * @param <T>   the lane's event type.
+   * @return a new Supply Lane.
+   */
+  public static <T> SupplyLaneView<T> supplyLane(Class<T> clazz) {
+    return supplyLane(Form.forClass(clazz));
+  }
 
 }
