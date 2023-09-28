@@ -135,7 +135,7 @@ impl JavaEnv {
             Err(e) => {
                 scope.throw_new(class, e.to_string());
                 Err(())
-            },
+            }
         }
     }
 

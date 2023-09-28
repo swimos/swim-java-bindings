@@ -11,7 +11,6 @@ use futures::{Sink, Stream};
 use futures_util::future::BoxFuture;
 use futures_util::stream::{unfold, FuturesUnordered, SelectAll};
 use futures_util::{FutureExt, SinkExt};
-use jni::errors::Error as JavaError;
 use jni::objects::{GlobalRef, JObject, JThrowable, JValue};
 use jni::sys::{jint, jobject};
 use swim_api::agent::{Agent, AgentConfig, AgentContext, AgentInitResult};
@@ -49,6 +48,9 @@ use crate::java_context::JavaAgentContext;
 use crate::spec::{AgentSpec, LaneKindRepr, LaneSpec};
 use crate::FfiContext;
 
+/// Agent exception handler. Handles any exceptions thrown when dispatching events to the agent.
+///
+/// Any deserialization exceptions or user-code exceptions will cause the agent to terminate.
 #[derive(Debug)]
 struct ExceptionHandler {
     user: NotTypeOfExceptionHandler,
@@ -81,10 +83,14 @@ impl JavaExceptionHandler for ExceptionHandler {
     }
 }
 
+/// Factory for constructing new Java agents.
 #[derive(Debug, Clone)]
 pub struct AgentFactory {
+    /// Handle to the ai/swim/server/AbstractSwimServerBuilder#agentFor method
     new_agent_method: InitialisedJavaObjectMethod,
+    /// Global reference to the AbstractSwimServerBuilder object
     factory: GlobalRef,
+    /// Shared agent VTable for providing to new Rust agent instances
     vtable: Arc<JavaAgentVTable>,
 }
 
@@ -95,6 +101,11 @@ impl AgentFactory {
         "(Ljava/lang/String;J)Lai/swim/server/agent/AgentView;",
     );
 
+    /// Constructs a new AgentFactory instance.
+    ///
+    /// # Arguments:
+    /// `env`: - Java Environment for initializing the factory with.
+    /// `factory`: Global Reference to a AbstractSwimServerBuilder object
     pub fn new(env: &JavaEnv, factory: GlobalRef) -> AgentFactory {
         AgentFactory {
             new_agent_method: env.initialise(Self::NEW_AGENT),
@@ -103,6 +114,12 @@ impl AgentFactory {
         }
     }
 
+    /// Instantiates a new Java agent view.
+    ///
+    /// # Arguments:
+    /// `env`: - Java Environment for initializing the agent.
+    /// `uri`: the URI of the agent
+    /// `ctx`: a new Java agent context to instantiate the agent with
     pub fn agent_for(
         &self,
         env: &JavaEnv,
@@ -134,6 +151,10 @@ impl AgentFactory {
     }
 }
 
+/// A reference to an instantiated Java agent view.
+///
+/// The methods provided in the implementation mold their arguments to the expected types in the
+/// agent's VTable.
 #[derive(Debug, Clone)]
 pub struct JavaAgentRef {
     agent_obj: GlobalRef,
@@ -145,6 +166,7 @@ impl JavaAgentRef {
         JavaAgentRef { agent_obj, vtable }
     }
 
+    /// Invokes AgentView#didStart
     fn did_start(&self, env: &JavaEnv) -> Result<(), AgentTaskError> {
         trace!("Invoking agent did_start method");
 
@@ -152,12 +174,23 @@ impl JavaAgentRef {
         env.with_env(|scope| vtable.did_start(&scope, agent_obj.as_obj()))
     }
 
+    /// Invokes AgentView#didStop
     fn did_stop(&self, env: &JavaEnv) -> Result<(), AgentTaskError> {
         trace!("Invoking agent did_stop method");
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| vtable.did_stop(&scope, agent_obj.as_obj()))
     }
 
+    /// Invokes AgentView#dispatch
+    ///
+    /// # Arguments
+    /// `env`: - Java Environment for dispatching the method invocation.
+    /// `lane_id`: - the ID of the lane to dispatch to
+    /// `msg`: the payload to dispatch to the agent
+    ///
+    /// # Returns
+    /// Either a series of encoded IdentifiedLaneResponses or an agent task error produced by the exception
+    /// handler.
     fn dispatch(
         &self,
         env: &JavaEnv,
@@ -172,12 +205,28 @@ impl JavaAgentRef {
         })
     }
 
+    /// Invokes AgentView#sync
+    ///
+    /// # Arguments
+    /// `env`: - Java Environment for dispatching the method invocation.
+    /// `lane_id`: - the ID of the lane to dispatch to
+    /// `remote`: the UUID of the remote that requested to sync
+    ///
+    /// # Returns
+    /// Either a series of encoded IdentifiedLaneResponses or an agent task error produced by the exception
+    /// handler.
     fn sync(&self, env: &JavaEnv, lane_id: i32, remote: Uuid) -> Result<Vec<u8>, AgentTaskError> {
         trace!(lane_id, remote = %remote, "Dispatching sync for lane");
         let JavaAgentRef { agent_obj, vtable } = self;
         env.with_env(|scope| vtable.sync(&scope, agent_obj.as_obj(), lane_id, remote))
     }
 
+    /// Invokes AgentView#init
+    ///
+    /// # Arguments
+    /// `env`: - Java Environment for dispatching the method invocation.
+    /// `lane_id`: - the ID of the lane to dispatch to
+    /// `msg`: the store initialisation payload
     fn init(&self, env: &JavaEnv, lane_id: i32, mut msg: BytesMut) {
         trace!(lane_id, "Initialising lane");
         let JavaAgentRef { agent_obj, vtable } = self;
@@ -187,6 +236,14 @@ impl JavaAgentRef {
         })
     }
 
+    /// Invokes AgentView#flushState
+    ///
+    /// # Arguments
+    /// `env`: - Java Environment for dispatching the method invocation.
+    ///
+    /// # Returns
+    /// Either a series of encoded IdentifiedLaneResponses or an agent task error produced by the exception
+    /// handler.
     fn flush_state(&self, env: &JavaEnv) -> Result<Vec<u8>, AgentTaskError> {
         trace!("Flushing agent state");
         let JavaAgentRef { agent_obj, vtable } = self;
@@ -194,14 +251,24 @@ impl JavaAgentRef {
     }
 }
 
+/// VTable of initialised Java object methods on an ai/swim/server/agent/AgentView.
+///
+/// It is recommended that calls made to this are made through a blocking runtime.
 #[derive(Debug)]
 pub struct JavaAgentVTable {
+    /// ai/swim/server/agent/AgentView#didStart
     did_start: InitialisedJavaObjectMethod,
+    /// ai/swim/server/agent/AgentView#didStop
     did_stop: InitialisedJavaObjectMethod,
+    /// ai/swim/server/agent/AgentView#dispatch
     dispatch: InitialisedJavaObjectMethod,
+    /// ai/swim/server/agent/AgentView#sync
     sync: InitialisedJavaObjectMethod,
+    /// ai/swim/server/agent/AgentView#init
     init: InitialisedJavaObjectMethod,
+    /// ai/swim/server/agent/AgentView#flushState
     flush_state: InitialisedJavaObjectMethod,
+    /// Exception handler used when invoking any of the methods
     handler: ExceptionHandler,
 }
 
@@ -243,6 +310,11 @@ impl JavaAgentVTable {
         }
     }
 
+    /// Invokes AgentView#didStart
+    ///
+    /// # Arguments
+    /// `scope`: - Attached java environment interface
+    /// `agent_obj`: the agent instance
     fn did_start(&self, scope: &Scope, agent_obj: JObject) -> Result<(), AgentTaskError> {
         let JavaAgentVTable {
             did_start, handler, ..
@@ -250,6 +322,11 @@ impl JavaAgentVTable {
         did_start.v().invoke(handler, scope, agent_obj, &[])
     }
 
+    /// Invokes AgentView#didStop
+    ///
+    /// # Arguments
+    /// `scope`: - Attached java environment interface    
+    /// `agent_obj`: the agent instance
     fn did_stop(&self, scope: &Scope, agent_obj: JObject) -> Result<(), AgentTaskError> {
         let JavaAgentVTable {
             did_stop, handler, ..
@@ -257,6 +334,18 @@ impl JavaAgentVTable {
         did_stop.v().invoke(handler, scope, agent_obj, &[])
     }
 
+    /// Invokes AgentView#dispatch
+    ///
+    /// # Arguments
+    /// `scope`: - Attached java environment interface    
+    /// `agent_obj`: the agent instance
+    /// `lane_id`: the lane to dispatch `msg` to
+    /// `msg`: the payload to dispatch to the lane. This must be valid for the duration of the JNI
+    /// call
+    ///
+    /// # Returns
+    /// Either a series of encoded IdentifiedLaneResponses or an agent task error produced by the exception
+    /// handler.
     fn dispatch(
         &self,
         scope: &Scope,
@@ -275,6 +364,17 @@ impl JavaAgentVTable {
         )
     }
 
+    /// Invokes AgentView#sync
+    ///
+    /// # Arguments
+    /// `scope`: - Attached java environment interface    
+    /// `agent_obj`: the agent instance
+    /// `lane_id`: - the ID of the lane to dispatch to
+    /// `remote`: the UUID of the remote that requested to sync
+    ///
+    /// # Returns
+    /// Either a series of encoded IdentifiedLaneResponses or an agent task error produced by the exception
+    /// handler.
     fn sync(
         &self,
         scope: &Scope,
@@ -306,6 +406,15 @@ impl JavaAgentVTable {
         )
     }
 
+    /// Invokes AgentView#flushState
+    ///
+    /// # Arguments
+    /// `scope`: - Attached java environment interface    
+    /// `agent_obj`: the agent instance
+    ///
+    /// # Returns
+    /// Either a series of encoded IdentifiedLaneResponses or an agent task error produced by the exception
+    /// handler.
     fn flush_state(&self, scope: &Scope, agent_obj: JObject) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable {
             flush_state,
@@ -318,6 +427,14 @@ impl JavaAgentVTable {
             .invoke(handler, scope, agent_obj, &[])
     }
 
+    /// Invokes AgentView#init
+    ///
+    /// # Arguments
+    /// `scope`: - Attached java environment interface    
+    /// `agent_obj`: the agent instance
+    /// `lane_id`: - the ID of the lane to dispatch to
+    /// `msg`: the payload to dispatch to the lane. This must be valid for the duration of the JNI
+    /// call
     fn init(
         &self,
         scope: &Scope,
@@ -330,10 +447,18 @@ impl JavaAgentVTable {
     }
 }
 
+/// Java Swim Agent implementation.
+///
+/// This serves as the link between the Rust and the Java runtimes. Instances of this type are
+/// constructed by deserializing msgpack representations provided by the Java runtime and then
+/// attaching them to a corresponding RoutePattern.
 #[derive(Debug, Clone)]
 pub struct FfiAgentDef {
+    /// FFI context for access to automatically-managed JniEnvs.
     ffi_context: FfiContext,
+    /// The deserialized agent specification from Java.
     spec: AgentSpec,
+    /// Factory for instantiating new instances of the agent.
     agent_factory: AgentFactory,
 }
 
@@ -406,6 +531,24 @@ impl Agent for FfiAgentDef {
     }
 }
 
+/// Initializes a new instance of the agent's definition.
+///
+/// This function will add all of the lanes defined by `spec` to the runtime and initialize them
+/// with any data available in the lane's corresponding store. It does not invoke any registered
+/// lifecycle events on the agent.
+///
+/// # Arguments:
+/// `ffi_context`: FFI context for access to automatically-managed JniEnvs.
+/// `spec`: deserialized msgpack representation of the Java agent.
+/// `route`: the route that the agent serves
+/// `route_params`: parameters extracted from the route URI.
+/// `config`: configuration parameters for the agent.
+/// `context`: context through which the Rust agent can interact with the runtime.
+/// `java_agent`: reference to the instantiated agent instance.
+/// `runtime_requests`: mpsc receiver for the Java agent to communicate with the agent runtime.
+///
+/// # Returns
+/// Either an agent task or an error if there was an issue initializing the agent.
 async fn initialize_agent(
     ffi_context: FfiContext,
     spec: AgentSpec,
@@ -499,12 +642,17 @@ async fn initialize_agent(
     })
 }
 
+/// An initialized lane.
 struct InitializedLane {
+    /// The type of the lane.
     kind: LaneKindRepr,
+    /// IO channel to attach to the runtime.
     io: (ByteWriter, ByteReader),
+    /// The ID of the lane.
     id: i32,
 }
 
+/// Produces a stream of store initialisation frames from 'decoder' read from 'reader'.
 fn init_stream<'a, D>(
     reader: &'a mut ByteReader,
     decoder: D,
@@ -528,7 +676,20 @@ where
     })
 }
 
+/// Trait for defining how to initialise a lane in the Java runtime.
 trait JavaItemInitializer {
+    /// Consume a stream of events from a lane initializer and dispatch them to a lane in the Java
+    /// runtime.
+    ///
+    /// The event stream will close when there are no more events to consume from the lane
+    /// initializer.
+    ///
+    /// # Arguments
+    /// `context`: Java FFI context.
+    /// `stream`: a stream of events to consume.
+    ///
+    /// # Returns
+    /// `Ok(())`: if the lane initialisation was successful.  
     fn initialize<'l, S>(
         &'l self,
         context: FfiContext,
@@ -538,6 +699,9 @@ trait JavaItemInitializer {
         S: Stream<Item = Result<BytesMut, FrameIoError>> + Send + 'l;
 }
 
+/// Value-like lane initializer.
+///
+/// Consumes the last message from the initializer stream and dispatches it to the agent.
 struct JavaValueLikeLaneInitializer {
     agent_obj: JavaAgentRef,
     lane_id: i32,
@@ -571,6 +735,15 @@ impl JavaItemInitializer for JavaValueLikeLaneInitializer {
     }
 }
 
+/// Initializes a lane from a stream of store events.
+///
+/// # Arguments:
+/// `context`: FFI context.
+/// `initializer`: the initializer o invoke with the store event stream.
+/// `kind`: the type of the lane.
+/// `io`: the lane's IO channel.
+/// `decoder`: for decoding the store event stream.
+/// `id`: the lane's ID.
 async fn run_lane_initializer<I, D>(
     context: FfiContext,
     initializer: I,
@@ -603,42 +776,103 @@ where
     }
 }
 
+/// Agent lane identifier.
 #[derive(Clone)]
 struct LaneIdentifier {
+    /// The lane's unique ID.
     id: i32,
+    /// The lane's name.
     str: Text,
 }
 
+/// The current state of the agent runtime task.
 enum AgentTaskState {
+    /// The runtime task is listening for events from peers and waiting to dispatch them.
     Running,
+    /// The runtime task has suspended after dispatching an event.
+    ///
+    /// When in this state, the runtime will not process any incoming requests. It will, however,
+    /// listen and handle any requests that are made from the Java runtime through its corresponding
+    /// ai/swim/server/agent/AgentContext instance.
+    ///
+    /// Inner argument is a JoinHandle created after spawning a blocking task which will complete
+    /// with either a dispatch response containing a series of encoded IdentifiedLaneResponses or an agent
+    /// task error if the invocation failed.
     Suspended(JoinHandle<Result<Vec<u8>, AgentTaskError>>),
 }
 
+/// Runtime events created through listening for lane requests.
 #[derive(Debug)]
 enum RuntimeEvent {
-    Request { id: i32, request: TaggedLaneRequest },
-    RequestError { id: i32, error: FrameIoError },
+    /// A request to dispatch an event to a lane.
+    Request {
+        /// The lane ID.
+        id: i32,
+        /// The lane request.
+        request: TaggedLaneRequest,
+    },
+    /// Failed to decode a lane request.
+    RequestError {
+        /// The lane ID.
+        id: i32,
+        /// The error produced when decoding the request.
+        error: FrameIoError,
+    },
 }
 
+/// Runtime events created when the agent runtime was in a suspended state.
 enum SuspendedRuntimeEvent {
+    /// A possible request made by the Java agent runtime.
+    ///
+    /// This will be a `None` variant if the Java context channel was closed.
     Request(Option<AgentRuntimeRequest>),
+    /// A suspended call has completed.
+    ///
+    /// The inner value may be one of the following states:
+    /// `Ok(Ok(v))`: the call completed successfully and returned a possible series of
+    /// IdentifiedLaneResponses to forward to the lane receivers.
+    /// `Ok(Err(e))`: the call produced an exception which was handled by the exception handler and
+    /// it has produced this error.
+    /// `Err(e)`: either the task failed to be spawned or it panicked.
     SuspendComplete(Result<Result<Vec<u8>, AgentTaskError>, JoinError>),
 }
 
+/// Agent bridge task between the Rust runtime and Java implementation.
 struct FfiAgentTask {
+    /// Java FFI context.
     ffi_context: FfiContext,
+    /// `route`: the route that the agent serves
     route: RouteUri,
+    /// `route_params`: parameters extracted from the route URI.
     route_params: HashMap<String, String>,
+    /// `context`: context through which the agent can interact with the runtime.
     config: AgentConfig,
+    /// Lane identifier lookup. LaneID -> Lane URI.
     lane_identifiers: HashMap<i32, Text>,
+    /// Java agent object reference.
     java_agent: JavaAgentRef,
+    /// Lane reader tasks.
     lane_readers: SelectAll<LaneReader>,
+    /// Lane writer lookup. Lane ID -> writer.
     lane_writers: HashMap<i32, ByteWriter>,
+    /// Java context request communication receiver.
     runtime_requests: mpsc::Receiver<AgentRuntimeRequest>,
+    /// `context`: context through which the Rust agent can interact with the runtime.
     agent_context: Box<dyn AgentContext + Send>,
 }
 
 impl FfiAgentTask {
+    /// Runs this agent.
+    ///
+    /// # Implementation detail:
+    /// - Invokes AgentView#didStart and AgentView#didStop before staring and stopping the agent
+    /// if it does not encounter any errors.
+    /// - Dispatches events from the Rust runtime to the agent. Forwarding any lane responses
+    /// produced by the agent. When an event is dispatched, the runtime is suspended any no more
+    /// incoming requests from the Rust runtime are served. The agent runtime will now serve any
+    /// requests that are made from the Java runtime; such as opening a new lane.
+    /// - Any unhandled exceptions produced by user code in the Java runtime will cause this agent
+    /// to shutdown.
     async fn run(self) -> Result<(), AgentTaskError> {
         let FfiAgentTask {
             ffi_context,
@@ -791,6 +1025,13 @@ impl FfiAgentTask {
     }
 }
 
+/// Dispatches an event to the Java runtime if the provided request is either a command or sync
+/// variant.
+///
+/// The dispatched request will be spawned on Tokio's blocking pool and may possibly call back into
+/// the rust runtime. The callee of this function should transition the runtime to suspended if a
+/// JoinHandle is returned. Awaiting completion of the JoinHandle may yield a series of
+/// IdentifiedLaneResponses to forward to lane writers.   
 fn dispatch_request(
     context: FfiContext,
     agent_ref: JavaAgentRef,
@@ -816,34 +1057,32 @@ fn dispatch_request(
     }
 }
 
+/// Request types made from the Java runtime through the ai/swim/server/agent/AgentContext class.
 #[derive(Debug)]
 pub enum AgentRuntimeRequest {
-    OpenLane { uri: Text, spec: LaneSpec },
+    /// A request to open a new lane.
+    OpenLane {
+        /// The lane URI.
+        uri: Text,
+        /// The lane's specification
+        spec: LaneSpec,
+    },
 }
 
-enum FfiAgentError {
-    Java(JavaError),
-    Decode(FrameIoError),
-}
-
-impl From<std::io::Error> for FfiAgentError {
-    fn from(value: std::io::Error) -> Self {
-        FfiAgentError::Decode(FrameIoError::Io(value))
-    }
-}
-
-impl From<JavaError> for FfiAgentError {
-    fn from(value: JavaError) -> Self {
-        FfiAgentError::Java(value)
-    }
-}
-
-impl From<FrameIoError> for FfiAgentError {
-    fn from(value: FrameIoError) -> Self {
-        FfiAgentError::Decode(value)
-    }
-}
-
+/// Decodes and forwards IdentifiedLaneResponses from the Java runtime to their respective uplinks.
+///
+/// # Arguments:
+/// `ctx`: Java context.
+/// `agent_ref`: Java agent object reference.
+/// `data`: the buffer to decode.
+/// `lane_writers`: mapping from lane ID to uplink write channel.
+///
+/// # Returns
+/// A control flow representing what operation the runtime should take.
+///
+/// # Note
+/// If this function reads any invalid bytes from `data` then it will cause the process to abort as
+/// it indicates a codec bug.
 async fn forward_lane_responses(
     ctx: &FfiContext,
     agent_ref: &JavaAgentRef,
@@ -863,6 +1102,10 @@ async fn forward_lane_responses(
                         if writer.write_all(data.as_ref()).await.is_err() {
                             // if the writer has closed then it indicates that the runtime has
                             // shutdown and it is safe to sink the error.
+                            //
+                            // we don't need to worry about dropping any Java object references here
+                            // as they are all GlobalReferences that will automatically be freed
+                            // when they are dropped.
                             return Ok(ControlFlow::Break(()));
                         }
                     }

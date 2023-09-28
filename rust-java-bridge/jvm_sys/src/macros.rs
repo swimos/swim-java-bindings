@@ -73,7 +73,8 @@ macro_rules! jni_try {
 /// $exception_type) and a default value is returned for the function.
 #[macro_export]
 macro_rules! ffi_fn {
-    ($exception_class:tt, $name:tt ($env:ident, $class:ident $(,)? $($arg:ident: $ty:ty $(,)?)*) $(-> $ret:tt)? $body:block) => {
+    ($exception_class:tt, $(#[$attrs:meta])* fn $name:tt ($env:ident, $class:ident $(,)? $($arg:ident: $ty:ty $(,)?)*) $(-> $ret:tt)? $body:block) => {
+        $(#[$attrs])*
         #[no_mangle]
         pub extern "system" fn $name(
             $env:jni::JNIEnv,
@@ -88,8 +89,9 @@ macro_rules! ffi_fn {
             }
         }
     };
-    ($exception_class:tt, $prefix:tt, $name:tt ($env:ident, $class:ident $(,)? $($arg:ident: $ty:ty $(,)?)*) $(-> $ret:tt)? $body:block) => {
+    ($exception_class:tt, $prefix:tt, $(#[$attrs:meta])* fn $name:tt ($env:ident, $class:ident $(,)? $($arg:ident: $ty:ty $(,)?)*) $(-> $ret:tt)? $body:block) => {
         $crate::paste::item! {
+            $(#[$attrs])*
             #[no_mangle]
             pub extern "system" fn [< $prefix _ $name >](
                 $env:jni::JNIEnv,

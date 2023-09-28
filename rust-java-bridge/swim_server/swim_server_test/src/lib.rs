@@ -34,7 +34,7 @@ mod agent;
 const BUFFER_SIZE: NonZeroUsize = non_zero_usize!(128);
 
 server_fn! {
-    SwimServerTest_forPlane(
+    fn SwimServerTest_forPlane(
         env,
         _class,
         config: jbyteArray
@@ -290,15 +290,3 @@ mod tests {
         join!(agent, peer);
     }
 }
-
-// server_fn! {
-//     SwimServerTest_dynamicLanes(
-//         env,
-//         _class,
-//         input: JString,
-//     ) {
-//         let env = JavaEnv::new(env);
-//
-//         let _r = PlaneSpec::try_from_jbyte_array::<()>(&env, config);
-//     }
-// }

@@ -6,6 +6,8 @@ use jni::objects::JObject;
 use swim_server_app::{AgentExt, Server, ServerBuilder, ServerHandle};
 use swim_utilities::routing::route_pattern::RoutePattern;
 
+pub use agent::{AgentFactory, FfiAgentDef};
+pub use java_context::JavaAgentContext;
 use jvm_sys::env::JavaEnv;
 
 use crate::spec::PlaneSpec;
@@ -16,9 +18,9 @@ mod java_context;
 pub mod macros;
 pub mod spec;
 
-pub use agent::{AgentFactory, FfiAgentDef};
-pub use java_context::JavaAgentContext;
-
+/// Agent-scoped FFI context.
+///
+/// Placeholder for expansion.
 #[derive(Debug, Clone)]
 pub struct FfiContext {
     env: JavaEnv,
@@ -30,16 +32,27 @@ impl FfiContext {
     }
 }
 
+/// Constructs and runs a new Swim Server.
+///
+/// # Arguments
+/// - `env` - Java environment.
+/// - `server_obj` - JObject referencing an ai/swim/server/AbstractSwimServerBuilder instance. Used
+/// for instantiating new agents.
+/// - `plane_spec` - Specification of the plane. Detailing the agents and their respective agents.
+/// All agents contained in the spec must be available in the `server_obj`'s factory.
+///
+/// # Returns
+/// `0`: a handle to the server. Used for accessing its port and shutting down the server.
+/// `1`: the server's task future.
 pub async fn run_server(
     env: JavaEnv,
-    plane_obj: JObject<'_>,
+    server_obj: JObject<'_>,
     plane_spec: PlaneSpec,
 ) -> (ServerHandle, BoxFuture<'static, ()>) {
     let PlaneSpec { name, agent_specs } = plane_spec;
-
     let mut server = ServerBuilder::with_plane_name(name.as_str()).with_in_memory_store();
 
-    let factory = env.with_env(|scope| AgentFactory::new(&env, scope.new_global_ref(plane_obj)));
+    let factory = env.with_env(|scope| AgentFactory::new(&env, scope.new_global_ref(server_obj)));
     let ffi_context = FfiContext { env };
 
     for (uri, spec) in agent_specs {
