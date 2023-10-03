@@ -10,13 +10,13 @@ bytes = { workspace = true }
 jvm_sys = { workspace = true }
 
 tokio = { workspace = true, features = ["io-util", "rt-multi-thread"] }
-bytebridge = { path = "../../bytebridge/bytebridge", features = ["derive_java"] }
-swim_api = { path = "../../../swim-rust/api/swim_api" }
-swim_utilities = { path = "../../../swim-rust/swim_utilities", features = ["text"] }
-swim_model = { path = "../../../swim-rust/api/swim_model" }
-swim_form = { path = "../../../swim-rust/api/swim_form" }
-swim_recon = { path = "../../../swim-rust/api/formats/swim_recon", features = ["async_parser"] }
-swim_server_app = { path = "../../../swim-rust/server/swim_server_app"}
+bytebridge = { path = "../../../bytebridge/bytebridge", features = ["derive_java"] }
+swim_api = { path = "../../../../swim-rust/api/swim_api" }
+swim_utilities = { path = "../../../../swim-rust/swim_utilities", features = ["text"] }
+swim_model = { path = "../../../../swim-rust/api/swim_model" }
+swim_form = { path = "../../../../swim-rust/api/swim_form" }
+swim_recon = { path = "../../../../swim-rust/api/formats/swim_recon", features = ["async_parser"] }
+swim_server_app = { path = "../../../../swim-rust/server/swim_server_app"}
 jni = { workspace = true }
 byteorder = { workspace = true }
 rmp = { workspace = true }

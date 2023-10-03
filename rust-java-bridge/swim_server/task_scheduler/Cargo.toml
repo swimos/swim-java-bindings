@@ -1,0 +1,13 @@
+[package]
+name = "task_scheduler"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio-util = { workspace = true, features = ["time"] }
+pin-project = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }
+futures = { workspace = true }
+futures-util = { workspace = true }

@@ -11,8 +11,9 @@ members = [
     "swim_client/swim_client_core",
     "swim_client/swim_client_test",
     "swim_server",
-    "swim_server/swim_server_core",
-    "swim_server/swim_server_test",
+    "swim_server/core/swim_server_core",
+    "swim_server/core/swim_server_test",
+    "swim_server/task_scheduler"
 ]
 
 [workspace.dependencies]
@@ -43,6 +44,7 @@ tracing-futures = "0.2"
 rand = "0.8.5"
 uuid = "1.2"
 swim_utilities = { path = "../swim-rust/swim_utilities" }
+pin-project = "1.0.12"
 
 [workspace.dependencies.ratchet]
 package = "ratchet_rs"
