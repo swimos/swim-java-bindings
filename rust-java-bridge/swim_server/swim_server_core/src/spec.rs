@@ -1,21 +1,8 @@
-use bytes::BytesMut;
 use std::collections::HashMap;
-use std::str::FromStr;
-use std::sync::Arc;
 
-use futures_util::future::BoxFuture;
-use futures_util::FutureExt;
-use swim_api::agent::{Agent, AgentConfig, AgentContext, AgentInitResult, AgentTask};
-use swim_api::error::AgentInitError;
 use swim_api::meta::lane::LaneKind;
-use swim_utilities::routing::route_uri::RouteUri;
 
-use bytebridge::{ByteCodec, FromBytesError};
-use jvm_sys::method::JavaObjectMethodDef;
-
-struct AgentVTable {
-    on_start: JavaObjectMethodDef,
-}
+use bytebridge::ByteCodec;
 
 #[derive(ByteCodec, Debug, Clone)]
 pub struct PlaneSpec {

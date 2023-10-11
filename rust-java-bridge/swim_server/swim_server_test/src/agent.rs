@@ -10,7 +10,7 @@ use jni::objects::JObject;
 use jni::sys::{jbyteArray, jobject};
 use swim_api::agent::Agent;
 use swim_api::protocol::agent::{
-    LaneRequest, LaneRequestDecoder, LaneResponse, MapLaneResponseDecoder, ValueLaneResponseDecoder,
+    LaneRequestDecoder, MapLaneResponseDecoder, ValueLaneResponseDecoder,
 };
 use swim_api::protocol::map::{MapMessageDecoder, RawMapOperationDecoder};
 use swim_api::protocol::WithLengthBytesCodec;
@@ -18,8 +18,6 @@ use swim_utilities::routing::route_uri::RouteUri;
 use tokio::runtime::Builder;
 use tokio::sync::Notify;
 use tokio_util::codec::Decoder;
-use tracing::level_filters::LevelFilter;
-use tracing_subscriber::EnvFilter;
 
 use jvm_sys::bridge::JniByteCodec;
 use jvm_sys::env::JavaEnv;

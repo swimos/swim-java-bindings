@@ -1,11 +1,11 @@
-#![allow(warnings)]
-
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use jni::objects::JObject;
-use swim_server_app::{AgentExt, Server, ServerBuilder, ServerHandle};
+use swim_server_app::{Server, ServerBuilder, ServerHandle};
 use swim_utilities::routing::route_pattern::RoutePattern;
 
+pub use agent::{AgentFactory, FfiAgentDef};
+pub use java_context::JavaAgentContext;
 use jvm_sys::env::JavaEnv;
 
 use crate::spec::PlaneSpec;
@@ -15,9 +15,6 @@ mod codec;
 mod java_context;
 pub mod macros;
 pub mod spec;
-
-pub use agent::{AgentFactory, FfiAgentDef};
-pub use java_context::JavaAgentContext;
 
 #[derive(Debug, Clone)]
 pub struct FfiContext {

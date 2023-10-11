@@ -11,9 +11,9 @@ members = [
     "swim_client/swim_client_core",
     "swim_client/swim_client_test",
     "swim_server",
-    "swim_server/core/swim_server_core",
-    "swim_server/core/swim_server_test",
-    "swim_server/task_scheduler"
+    "swim_server/swim_server_core",
+    "swim_server/swim_server_test",
+    "utilities/*"
 ]
 
 [workspace.dependencies]

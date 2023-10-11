@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::task::{Context, Poll, Waker};
+use std::task::{Context, Poll};
 
 use bytes::BytesMut;
 use futures::{ready, Stream};
@@ -17,13 +17,12 @@ use swim_api::meta::lane::LaneKind;
 use swim_api::protocol::agent::{
     LaneRequest, LaneRequestEncoder, LaneResponse, MapLaneResponseDecoder, ValueLaneResponseDecoder,
 };
-use swim_api::protocol::map::{MapMessage, RawMapOperation, RawMapOperationMut};
+use swim_api::protocol::map::{MapMessage, RawMapOperationMut};
 use swim_api::store::StoreKind;
 use swim_utilities::io::byte_channel::{byte_channel, ByteReader, ByteWriter};
 use swim_utilities::non_zero_usize;
-use tokio::sync::{Mutex, MutexGuard, TryLockError};
+use tokio::sync::{Mutex, MutexGuard};
 use tokio_util::codec::{Encoder, FramedRead, FramedWrite};
-use tokio_util::either::Either;
 
 use jvm_sys::bridge::JniByteCodec;
 use jvm_sys::env::JavaEnv;
@@ -148,15 +147,6 @@ impl LaneResponseDiscriminant {
             }
         }
     }
-
-    fn expect_map(self) -> LaneResponse<RawMapOperationMut> {
-        match self {
-            LaneResponseDiscriminant::Value(_) => {
-                panic!("Expected a map message")
-            }
-            LaneResponseDiscriminant::Map(r) => r,
-        }
-    }
 }
 
 pub struct LaneRequestDiscriminantEncoder;
@@ -191,26 +181,6 @@ impl From<LaneRequest<BytesMut>> for LaneRequestDiscriminant {
 impl From<LaneRequest<MapMessage<BytesMut, BytesMut>>> for LaneRequestDiscriminant {
     fn from(value: LaneRequest<MapMessage<BytesMut, BytesMut>>) -> Self {
         LaneRequestDiscriminant::Map(value)
-    }
-}
-
-impl LaneRequestDiscriminant {
-    fn expect_value(self) -> LaneRequest<BytesMut> {
-        match self {
-            LaneRequestDiscriminant::Value(r) => r,
-            LaneRequestDiscriminant::Map(_) => {
-                panic!("Expected a value message")
-            }
-        }
-    }
-
-    fn expect_map(self) -> LaneRequest<MapMessage<BytesMut, BytesMut>> {
-        match self {
-            LaneRequestDiscriminant::Value(_) => {
-                panic!("Expected a map message")
-            }
-            LaneRequestDiscriminant::Map(r) => r,
-        }
     }
 }
 

@@ -351,7 +351,7 @@ impl<'l> Scope<'l> {
         system_call(vm, || env.convert_byte_array(array))
     }
 
-    pub fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b>
+    pub fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b, B>
     where
         B: BufPtr,
         'l: 'b,
@@ -405,19 +405,19 @@ unsafe impl JObjectFromByteBuffer for GlobalRefByteBuffer {
 /// Guard that binds the lifetime of the JByteBuffer to the backing data.
 #[must_use]
 #[derive(Clone, Copy)]
-pub struct ByteBufferGuard<'b> {
-    _buf: PhantomData<&'b mut Vec<u8>>,
+pub struct ByteBufferGuard<'b, B> {
+    _buf: PhantomData<&'b mut B>,
     buffer: JByteBuffer<'b>,
 }
 
-impl<'b> From<ByteBufferGuard<'b>> for JValue<'b> {
-    fn from(value: ByteBufferGuard<'b>) -> Self {
+impl<'b, B> From<ByteBufferGuard<'b, B>> for JValue<'b> {
+    fn from(value: ByteBufferGuard<'b, B>) -> Self {
         unsafe { JValue::Object(JObject::from_raw(value.buffer.into_raw())) }
     }
 }
 
-unsafe impl<'b> JObjectFromByteBuffer for ByteBufferGuard<'b> {
-    // This is unsafe due to the clone unbinding the object from the lifetime.
+unsafe impl<'b, B> JObjectFromByteBuffer for ByteBufferGuard<'b, B> {
+    // This is unsafe due to the clone unbinds the object from the lifetime.
     fn as_byte_buffer(&self) -> JObject {
         *self.buffer.deref()
     }
