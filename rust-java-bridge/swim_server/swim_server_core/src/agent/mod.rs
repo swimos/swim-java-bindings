@@ -1,3 +1,7 @@
+pub mod context;
+pub mod foreign;
+pub mod spec;
+
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::future::{ready, Future};
@@ -47,9 +51,10 @@ use jvm_sys::method::{
     ByteArray, InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
 };
 
+use crate::agent::context::JavaAgentContext;
+use crate::agent::foreign::{AgentVTable, JavaAgentRef, JavaAgentVTable};
+use crate::agent::spec::{AgentSpec, LaneKindRepr, LaneSpec};
 use crate::codec::{LaneReaderCodec, LaneResponseDecoder, LaneResponseElement};
-use crate::java_context::JavaAgentContext;
-use crate::spec::{AgentSpec, LaneKindRepr, LaneSpec};
 use crate::FfiContext;
 
 #[derive(Debug)]
@@ -71,7 +76,7 @@ impl JavaExceptionHandler for ExceptionHandler {
 
         match deserialization.inspect(scope, throwable) {
             Some(err) => {
-                debug!("Detected deserialization erorr");
+                debug!("Detected deserialization error");
                 Some(AgentTaskError::DeserializationFailed(ReadError::Message(
                     err.to_string().into(),
                 )))
@@ -134,246 +139,6 @@ impl AgentFactory {
                 JavaAgentRef::new(env.clone(), obj_ref, vtable.clone())
             })
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct JavaAgentRef {
-    env: JavaEnv,
-    agent_obj: GlobalRef,
-    vtable: Arc<JavaAgentVTable>,
-}
-
-impl JavaAgentRef {
-    fn new(env: JavaEnv, agent_obj: GlobalRef, vtable: Arc<JavaAgentVTable>) -> JavaAgentRef {
-        JavaAgentRef {
-            env,
-            agent_obj,
-            vtable,
-        }
-    }
-
-    fn did_start(&self) -> Result<(), AgentTaskError> {
-        trace!("Invoking agent did_start method");
-
-        let JavaAgentRef {
-            env,
-            agent_obj,
-            vtable,
-        } = self;
-        env.with_env(|scope| vtable.did_start(&scope, agent_obj.as_obj()))
-    }
-
-    fn did_stop(&self) -> Result<(), AgentTaskError> {
-        trace!("Invoking agent did_stop method");
-        let JavaAgentRef {
-            env,
-            agent_obj,
-            vtable,
-        } = self;
-        env.with_env(|scope| vtable.did_stop(&scope, agent_obj.as_obj()))
-    }
-
-    fn dispatch<T>(&self, lane_id: i32, buffer: &T, len: i32) -> Result<Vec<u8>, AgentTaskError>
-    where
-        T: JObjectFromByteBuffer,
-    {
-        trace!("Dispatching event to agent");
-        let JavaAgentRef {
-            env,
-            agent_obj,
-            vtable,
-        } = self;
-        env.with_env(|scope| {
-            let obj = buffer.as_byte_buffer();
-            vtable.dispatch(&scope, agent_obj.as_obj(), lane_id, obj, len)
-        })
-    }
-
-    fn sync(&self, lane_id: i32, remote: Uuid) -> Result<Vec<u8>, AgentTaskError> {
-        trace!(lane_id, remote = %remote, "Dispatching sync for lane");
-        let JavaAgentRef {
-            env,
-            agent_obj,
-            vtable,
-        } = self;
-        env.with_env(|scope| vtable.sync(&scope, agent_obj.as_obj(), lane_id, remote))
-    }
-
-    fn init(&self, lane_id: i32, mut msg: BytesMut) {
-        trace!(lane_id, "Initialising lane");
-        let JavaAgentRef {
-            env,
-            agent_obj,
-            vtable,
-        } = self;
-        env.with_env(|scope| {
-            let buffer = scope.new_direct_byte_buffer_exact(&mut msg);
-            vtable.init(&scope, agent_obj.as_obj(), lane_id, buffer)
-        })
-    }
-
-    fn flush_state(&self) -> Result<Vec<u8>, AgentTaskError> {
-        trace!("Flushing agent state");
-        let JavaAgentRef {
-            env,
-            agent_obj,
-            vtable,
-        } = self;
-        env.with_env(|scope| vtable.flush_state(&scope, agent_obj.as_obj()))
-    }
-
-    fn run_task(&self, id_msb: i64, id_lsb: i64) {
-        trace!(id_msb, id_lsb, "Running task");
-        let JavaAgentRef {
-            env,
-            agent_obj,
-            vtable,
-        } = self;
-        env.with_env(|scope| vtable.run_task(&scope, agent_obj.as_obj(), id_msb, id_lsb))
-    }
-}
-
-#[derive(Debug)]
-pub struct JavaAgentVTable {
-    did_start: InitialisedJavaObjectMethod,
-    did_stop: InitialisedJavaObjectMethod,
-    dispatch: InitialisedJavaObjectMethod,
-    sync: InitialisedJavaObjectMethod,
-    init: InitialisedJavaObjectMethod,
-    run_task: InitialisedJavaObjectMethod,
-    flush_state: InitialisedJavaObjectMethod,
-    handler: ExceptionHandler,
-}
-
-impl JavaAgentVTable {
-    const DID_START: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "didStart", "()V");
-    const DID_STOP: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "didStop", "()V");
-    const DISPATCH: JavaObjectMethodDef = JavaObjectMethodDef::new(
-        "ai/swim/server/agent/AgentView",
-        "dispatch",
-        "(ILjava/nio/ByteBuffer;I)[B",
-    );
-    const SYNC: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "sync", "(IJJ)[B");
-    const INIT: JavaObjectMethodDef = JavaObjectMethodDef::new(
-        "ai/swim/server/agent/AgentView",
-        "init",
-        "(ILjava/nio/ByteBuffer;)V",
-    );
-    const FLUSH_STATE: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "flushState", "()[B");
-    const RUN_TASK: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "runTask", "(II)V");
-
-    fn initialise(env: &JavaEnv) -> JavaAgentVTable {
-        JavaAgentVTable {
-            did_start: env.initialise(Self::DID_START),
-            did_stop: env.initialise(Self::DID_STOP),
-            dispatch: env.initialise(Self::DISPATCH),
-            sync: env.initialise(Self::SYNC),
-            init: env.initialise(Self::INIT),
-            run_task: env.initialise(Self::RUN_TASK),
-            flush_state: env.initialise(Self::FLUSH_STATE),
-            handler: ExceptionHandler {
-                user: NotTypeOfExceptionHandler::new(env, "ai/swim/server/agent/AgentException"),
-                deserialization: IsTypeOfExceptionHandler::new(
-                    env,
-                    "ai/swim/server/agent/AgentException",
-                ),
-            },
-        }
-    }
-
-    fn did_start(&self, scope: &Scope, agent_obj: JObject) -> Result<(), AgentTaskError> {
-        let JavaAgentVTable {
-            did_start, handler, ..
-        } = self;
-        did_start.v().invoke(handler, scope, agent_obj, &[])
-    }
-
-    fn did_stop(&self, scope: &Scope, agent_obj: JObject) -> Result<(), AgentTaskError> {
-        let JavaAgentVTable {
-            did_stop, handler, ..
-        } = self;
-        did_stop.v().invoke(handler, scope, agent_obj, &[])
-    }
-
-    fn dispatch(
-        &self,
-        scope: &Scope,
-        agent_obj: JObject,
-        lane_id: jint,
-        msg: JObject,
-        len: i32,
-    ) -> Result<Vec<u8>, AgentTaskError> {
-        let JavaAgentVTable {
-            dispatch, handler, ..
-        } = self;
-        dispatch.l().array::<ByteArray>().invoke(
-            handler,
-            scope,
-            agent_obj,
-            &[lane_id.into(), msg.into(), len.into()],
-        )
-    }
-
-    fn sync(
-        &self,
-        scope: &Scope,
-        agent_obj: JObject,
-        lane_id: jint,
-        remote: Uuid,
-    ) -> Result<Vec<u8>, AgentTaskError> {
-        let JavaAgentVTable { sync, handler, .. } = self;
-        let try_into = |num: u64| -> Result<i64, AgentTaskError> {
-            match num.try_into() {
-                Ok(n) => Ok(n),
-                Err(_) => {
-                    return Err(AgentTaskError::DeserializationFailed(
-                        ReadError::NumberOutOfRange,
-                    ))
-                }
-            }
-        };
-
-        let (msb, lsb) = remote.as_u64_pair();
-        let msb = try_into(msb)?;
-        let lsb = try_into(lsb)?;
-
-        sync.l().array::<ByteArray>().invoke(
-            handler,
-            scope,
-            agent_obj,
-            &[lane_id.into(), msb.into(), lsb.into()],
-        )
-    }
-
-    fn flush_state(&self, scope: &Scope, agent_obj: JObject) -> Result<Vec<u8>, AgentTaskError> {
-        let JavaAgentVTable {
-            flush_state,
-            handler,
-            ..
-        } = self;
-        flush_state
-            .l()
-            .array::<ByteArray>()
-            .invoke(handler, scope, agent_obj, &[])
-    }
-
-    fn init<B>(&self, scope: &Scope, agent_obj: JObject, lane_id: jint, msg: ByteBufferGuard<B>)
-    where
-        B: BufPtr,
-    {
-        let JavaAgentVTable { init, .. } = self;
-        scope.invoke(init.v(), agent_obj, &[lane_id.into(), msg.into()])
-    }
-
-    fn run_task(&self, scope: &Scope, agent_obj: JObject, id_msb: i64, id_lsb: i64) {
-        let JavaAgentVTable { run_task, .. } = self;
-        scope.invoke(run_task.v(), agent_obj, &[id_msb.into(), id_lsb.into()])
     }
 }
 
@@ -610,7 +375,7 @@ impl JavaValueLikeLaneInitializer {
 }
 
 impl JavaItemInitializer for JavaValueLikeLaneInitializer {
-    fn initialize<'l, S>(&'l self, stream: S) -> BoxFuture<'l, Result<(), FrameIoError>>
+    fn initialize<'l, S>(&'l mut self, stream: S) -> BoxFuture<'l, Result<(), FrameIoError>>
     where
         S: Stream<Item = Result<BytesMut, FrameIoError>> + Send + 'l,
     {
@@ -639,7 +404,7 @@ impl JavaMapLikeLaneInitializer {
 }
 
 impl JavaItemInitializer for JavaMapLikeLaneInitializer {
-    fn initialize<'l, S>(&'l self, stream: S) -> BoxFuture<'l, Result<(), FrameIoError>>
+    fn initialize<'l, S>(&'l mut self, stream: S) -> BoxFuture<'l, Result<(), FrameIoError>>
     where
         S: Stream<Item = Result<BytesMut, FrameIoError>> + Send + 'l,
     {

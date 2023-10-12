@@ -14,7 +14,7 @@ use tokio::net::TcpStream;
 use jvm_sys::bridge::JniByteCodec;
 use jvm_sys::env::JavaEnv;
 use jvm_sys::null_pointer_check_abort;
-use swim_server_core::spec::PlaneSpec;
+use swim_server_core::agent::spec::PlaneSpec;
 use swim_server_core::{run_server, server_fn};
 
 server_fn! {

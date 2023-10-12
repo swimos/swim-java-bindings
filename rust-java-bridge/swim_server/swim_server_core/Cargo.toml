@@ -26,3 +26,4 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 tracing = { workspace = true }
 tracing-futures = { workspace = true }
 uuid = { workspace = true }
+pin-project = { workspace = true }

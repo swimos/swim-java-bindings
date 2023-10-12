@@ -389,7 +389,7 @@ impl<'l> Scope<'l> {
 }
 
 #[must_use]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct GlobalRefByteBuffer(GlobalRef);
 
 pub unsafe trait JObjectFromByteBuffer {

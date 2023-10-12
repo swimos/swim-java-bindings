@@ -21,8 +21,8 @@ use tokio_util::codec::Decoder;
 
 use jvm_sys::bridge::JniByteCodec;
 use jvm_sys::env::JavaEnv;
-use swim_server_core::spec::AgentSpec;
-use swim_server_core::spec::PlaneSpec;
+use swim_server_core::agent::spec::AgentSpec;
+use swim_server_core::agent::spec::PlaneSpec;
 use swim_server_core::{server_fn, AgentFactory, FfiAgentDef, FfiContext};
 
 use crate::{LaneRequestDiscriminant, LaneResponseDiscriminant, TestAgentContext};

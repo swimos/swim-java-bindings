@@ -27,8 +27,8 @@ use tokio_util::codec::{Encoder, FramedRead, FramedWrite};
 use jvm_sys::bridge::JniByteCodec;
 use jvm_sys::env::JavaEnv;
 use jvm_sys::null_pointer_check_abort;
+use swim_server_core::agent::spec::PlaneSpec;
 use swim_server_core::server_fn;
-use swim_server_core::spec::PlaneSpec;
 
 mod agent;
 mod mock;

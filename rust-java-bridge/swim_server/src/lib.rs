@@ -3,9 +3,9 @@ use jni::sys::jbyteArray;
 
 use jvm_sys::bridge::JniByteCodec;
 use jvm_sys::null_pointer_check_abort;
+use swim_server_core::agent::context::JavaAgentContext;
+use swim_server_core::agent::spec::LaneSpec;
 use swim_server_core::server_fn;
-use swim_server_core::spec::LaneSpec;
-use swim_server_core::JavaAgentContext;
 
 server_fn! {
     agent_AgentContextFunctionTable_openLane(

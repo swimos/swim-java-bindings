@@ -203,7 +203,7 @@ mod tests {
     use bytes::{BufMut, Bytes, BytesMut};
     use tokio_util::codec::Decoder;
 
-    use crate::codec::{LaneResponseDecoder, LaneResponseDecoderState, LaneResponseElement};
+    use super::{LaneResponseDecoder, LaneResponseDecoderState, LaneResponseElement};
 
     #[test]
     fn empty() {

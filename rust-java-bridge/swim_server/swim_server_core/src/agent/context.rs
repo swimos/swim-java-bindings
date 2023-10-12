@@ -2,10 +2,9 @@ use std::time::Duration;
 
 use tokio::sync::mpsc;
 
-use jvm_sys::env::JavaEnv;
-
+use crate::agent::spec::LaneSpec;
 use crate::agent::AgentRuntimeRequest;
-use crate::spec::LaneSpec;
+use jvm_sys::env::JavaEnv;
 
 pub struct JavaAgentContext {
     env: JavaEnv,
