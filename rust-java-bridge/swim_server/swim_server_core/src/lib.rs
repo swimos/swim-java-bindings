@@ -7,42 +7,28 @@ use jni::objects::JObject;
 use swim_server_app::{Server, ServerBuilder, ServerHandle};
 use swim_utilities::routing::route_pattern::RoutePattern;
 
+use crate::agent::foreign::JavaAgentFactory;
 use crate::agent::spec::PlaneSpec;
-pub use agent::{AgentFactory, FfiAgentDef};
+pub use crate::agent::FfiAgentDef;
 use jvm_sys::env::JavaEnv;
 
 pub mod macros;
-
-#[derive(Debug, Clone)]
-pub struct FfiContext {
-    env: JavaEnv,
-}
-
-impl FfiContext {
-    pub fn new(env: JavaEnv) -> FfiContext {
-        FfiContext { env }
-    }
-}
 
 pub async fn run_server(
     env: JavaEnv,
     plane_obj: JObject<'_>,
     plane_spec: PlaneSpec,
 ) -> (ServerHandle, BoxFuture<'static, ()>) {
-    // let filter = EnvFilter::default().add_directive(LevelFilter::TRACE.into());
-    // tracing_subscriber::fmt().with_env_filter(filter).init();
-
     let PlaneSpec { name, agent_specs } = plane_spec;
-
     let mut server = ServerBuilder::with_plane_name(name.as_str()).with_in_memory_store();
 
-    let factory = env.with_env(|scope| AgentFactory::new(&env, scope.new_global_ref(plane_obj)));
-    let ffi_context = FfiContext { env };
+    let factory =
+        env.with_env(|scope| JavaAgentFactory::new(&env, scope.new_global_ref(plane_obj)));
 
     for (uri, spec) in agent_specs {
         server = server.add_route(
             RoutePattern::parse_str(uri.as_str()).unwrap(),
-            FfiAgentDef::new(ffi_context.clone(), spec, factory.clone()),
+            FfiAgentDef::new(env.clone(), spec, factory.clone()),
         );
     }
 

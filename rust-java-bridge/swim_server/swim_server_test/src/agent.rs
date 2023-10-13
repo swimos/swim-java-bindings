@@ -21,9 +21,10 @@ use tokio_util::codec::Decoder;
 
 use jvm_sys::bridge::JniByteCodec;
 use jvm_sys::env::JavaEnv;
+use swim_server_core::agent::foreign::JavaAgentFactory;
 use swim_server_core::agent::spec::AgentSpec;
 use swim_server_core::agent::spec::PlaneSpec;
-use swim_server_core::{server_fn, AgentFactory, FfiAgentDef, FfiContext};
+use swim_server_core::{server_fn, FfiAgentDef};
 
 use crate::{LaneRequestDiscriminant, LaneResponseDiscriminant, TestAgentContext};
 
@@ -170,9 +171,9 @@ async fn run_agent(
     // let filter = EnvFilter::default().add_directive(LevelFilter::TRACE.into());
     // tracing_subscriber::fmt().with_env_filter(filter).init();
 
-    let ffi_context = FfiContext::new(env.clone());
-    let factory = env.with_env(|scope| AgentFactory::new(&env, scope.new_global_ref(plane_obj)));
-    let agent = FfiAgentDef::new(ffi_context, spec, factory);
+    let factory =
+        env.with_env(|scope| JavaAgentFactory::new(&env, scope.new_global_ref(plane_obj)));
+    let agent = FfiAgentDef::new(env.clone(), spec, factory);
     let agent_context = TestAgentContext::default();
     let start_barrier = Arc::new(Notify::new());
 

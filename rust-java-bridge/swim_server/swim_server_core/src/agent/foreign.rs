@@ -1,33 +1,37 @@
 use std::future::Future;
+use std::ops::Deref;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use bytes::BytesMut;
 use futures::ready;
-use jni::objects::{GlobalRef, JObject};
-use jni::sys::jint;
+use jni::objects::{GlobalRef, JObject, JThrowable, JValue};
+use jni::sys::{jint, jobject};
 use pin_project::pin_project;
-use swim_api::error::AgentTaskError;
+use swim_api::error::{AgentInitError, AgentTaskError};
 use swim_form::structural::read::ReadError;
 use tokio::runtime::Handle;
+use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
-use tracing::trace;
+use tracing::{debug, trace};
 use uuid::Uuid;
 
 use jvm_sys::env::{
-    BufPtr, IsTypeOfExceptionHandler, JObjectFromByteBuffer, JavaEnv, NotTypeOfExceptionHandler,
-    Scope,
+    IsTypeOfExceptionHandler, JavaEnv, JavaExceptionHandler, NotTypeOfExceptionHandler, Scope,
 };
 use jvm_sys::method::{
     ByteArray, InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
 };
 
+use crate::agent::context::JavaAgentContext;
 use crate::agent::foreign::buffer::Dispatcher;
-use crate::agent::ExceptionHandler;
+use crate::agent::AgentRuntimeRequest;
 
-pub trait AgentVTable {
-    type Suspended<O>: Future<Output = Result<O, AgentTaskError>>;
+pub trait AgentVTable: Send + Sync + 'static {
+    type Suspended<O>: Future<Output = Result<O, AgentTaskError>> + Send
+    where
+        O: Send;
 
     fn did_start(&self) -> Self::Suspended<()>;
 
@@ -44,21 +48,131 @@ pub trait AgentVTable {
     fn run_task(&self, id_msb: i64, id_lsb: i64) -> Self::Suspended<()>;
 }
 
+pub trait RuntimeContext: Send + Sync + Clone + 'static {
+    fn fatal_error(&self, cause: impl ToString) -> AgentTaskError;
+}
+
+impl RuntimeContext for JavaEnv {
+    fn fatal_error(&self, cause: impl ToString) -> AgentTaskError {
+        self.fatal_error(cause)
+    }
+}
+
+pub trait AgentFactory {
+    type Agent: AgentVTable;
+    type Context: RuntimeContext;
+
+    fn agent_for(
+        &self,
+        ctx: Self::Context,
+        uri: impl AsRef<str>,
+        tx: mpsc::Sender<AgentRuntimeRequest>,
+    ) -> Result<Self::Agent, AgentInitError>;
+}
+
+#[derive(Debug, Clone)]
+pub struct JavaAgentFactory {
+    new_agent_method: InitialisedJavaObjectMethod,
+    factory: GlobalRef,
+    vtable: Arc<JavaAgentVTable>,
+}
+
+impl JavaAgentFactory {
+    const NEW_AGENT: JavaObjectMethodDef = JavaObjectMethodDef::new(
+        "ai/swim/server/AbstractSwimServerBuilder",
+        "agentFor",
+        "(Ljava/lang/String;J)Lai/swim/server/agent/AgentView;",
+    );
+
+    pub fn new(env: &JavaEnv, factory: GlobalRef) -> JavaAgentFactory {
+        JavaAgentFactory {
+            new_agent_method: env.initialise(Self::NEW_AGENT),
+            factory,
+            vtable: Arc::new(JavaAgentVTable::initialise(env)),
+        }
+    }
+}
+
+impl AgentFactory for JavaAgentFactory {
+    type Agent = JavaAgentRef;
+    type Context = JavaEnv;
+
+    fn agent_for(
+        &self,
+        env: Self::Context,
+        uri: impl AsRef<str>,
+        tx: mpsc::Sender<AgentRuntimeRequest>,
+    ) -> Result<Self::Agent, AgentInitError> {
+        let node_uri = uri.as_ref();
+        debug!(node_uri, "Attempting to create a new Java agent");
+
+        let JavaAgentFactory {
+            new_agent_method,
+            factory,
+            vtable,
+        } = self;
+
+        let agent = env.with_env(|scope| {
+            let java_agent_ctx = Box::leak(Box::new(JavaAgentContext::new(env.clone(), tx)));
+            let java_uri = scope.new_string(node_uri);
+            let obj_ref = unsafe {
+                scope.invoke(
+                    new_agent_method.l().global_ref(),
+                    factory.as_obj(),
+                    &[
+                        JValue::Object(java_uri.deref().clone()),
+                        JValue::Object(JObject::from_raw(
+                            java_agent_ctx as *mut _ as u64 as jobject,
+                        )),
+                    ],
+                )
+            };
+            JavaAgentRef::new(env.clone(), obj_ref, vtable.clone())
+        });
+        Ok(agent)
+    }
+}
+
+#[pin_project]
+struct AbortOnJoinError<O> {
+    env: JavaEnv,
+    #[pin]
+    inner: JoinHandle<O>,
+}
+
+impl<O> AbortOnJoinError<O> {
+    pub fn new(env: JavaEnv, inner: JoinHandle<O>) -> AbortOnJoinError<O> {
+        AbortOnJoinError { env, inner }
+    }
+}
+
+impl<O> Future for AbortOnJoinError<O> {
+    type Output = O;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let projected = self.project();
+        match ready!(projected.inner.poll(cx)) {
+            Ok(o) => Poll::Ready(o),
+            Err(e) => projected.env.fatal_error(e),
+        }
+    }
+}
+
 #[pin_project]
 pub struct BlockingJniCall<O> {
     #[pin]
-    inner: JoinHandle<Result<O, AgentTaskError>>,
+    inner: AbortOnJoinError<Result<O, AgentTaskError>>,
 }
 
 impl<O> BlockingJniCall<O> {
-    pub fn new<F>(func: F) -> BlockingJniCall<O>
+    pub fn new<F>(env: JavaEnv, func: F) -> BlockingJniCall<O>
     where
         F: FnOnce() -> Result<O, AgentTaskError> + Send + 'static,
         O: Send + 'static,
     {
         let handle = Handle::current();
         BlockingJniCall {
-            inner: handle.spawn_blocking(func),
+            inner: AbortOnJoinError::new(env, handle.spawn_blocking(func)),
         }
     }
 }
@@ -68,13 +182,12 @@ impl<O> Future for BlockingJniCall<O> {
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let projected = self.project();
-        let result = ready!(projected.inner.poll(cx));
-        Poll::Ready(result.unwrap())
+        projected.inner.poll(cx)
     }
 }
 
 impl AgentVTable for JavaAgentRef {
-    type Suspended<O> = BlockingJniCall<O>;
+    type Suspended<O> = BlockingJniCall<O> where O:Send;
 
     fn did_start(&self) -> Self::Suspended<()> {
         let JavaAgentRef {
@@ -88,7 +201,7 @@ impl AgentVTable for JavaAgentRef {
         let agent_obj = agent_obj.clone();
         let env = env.clone();
 
-        BlockingJniCall::new(move || {
+        BlockingJniCall::new(env.clone(), move || {
             trace!("Invoking agent did_start method");
             env.with_env(|scope| vtable.did_start(&scope, agent_obj.as_obj()))
         })
@@ -106,7 +219,7 @@ impl AgentVTable for JavaAgentRef {
         let agent_obj = agent_obj.clone();
         let env = env.clone();
 
-        BlockingJniCall::new(move || {
+        BlockingJniCall::new(env.clone(), move || {
             trace!("Invoking agent did_stop method");
             env.with_env(|scope| vtable.did_stop(&scope, agent_obj.as_obj()))
         })
@@ -142,7 +255,7 @@ impl AgentVTable for JavaAgentRef {
         let agent_obj = agent_obj.clone();
         let env = env.clone();
 
-        BlockingJniCall::new(move || {
+        BlockingJniCall::new(env.clone(), move || {
             trace!(lane_id, remote = %remote, "Dispatching sync for lane");
             env.with_env(|scope| vtable.sync(&scope, agent_obj.as_obj(), lane_id, remote))
         })
@@ -180,14 +293,29 @@ impl AgentVTable for JavaAgentRef {
         let agent_obj = agent_obj.clone();
         let env = env.clone();
 
-        BlockingJniCall::new(move || {
+        BlockingJniCall::new(env.clone(), move || {
             trace!("Flushing agent state");
             env.with_env(|scope| vtable.flush_state(&scope, agent_obj.as_obj()))
         })
     }
 
-    fn run_task(&self, _id_msb: i64, _id_lsb: i64) -> Self::Suspended<()> {
-        unimplemented!()
+    fn run_task(&self, id_msb: i64, id_lsb: i64) -> Self::Suspended<()> {
+        let JavaAgentRef {
+            env,
+            agent_obj,
+            vtable,
+            ..
+        } = self;
+
+        let vtable = vtable.clone();
+        let agent_obj = agent_obj.clone();
+        let env = env.clone();
+
+        BlockingJniCall::new(env.clone(), move || {
+            trace!("Flushing agent state");
+            env.with_env(|scope| vtable.run_task(&scope, agent_obj.as_obj(), id_msb, id_lsb));
+            Ok(())
+        })
     }
 }
 
@@ -199,7 +327,7 @@ mod buffer {
 
     use jvm_sys::env::{GlobalRefByteBuffer, JObjectFromByteBuffer, JavaEnv, Scope};
 
-    use crate::agent::foreign::BlockingJniCall;
+    use crate::agent::foreign::{AbortOnJoinError, BlockingJniCall};
 
     #[derive(Debug)]
     pub struct Dispatcher {
@@ -242,6 +370,7 @@ mod buffer {
             let runtime_handle = Handle::current();
 
             let handle = if msg.len() > buffer_content.capacity() {
+                let env = env.clone();
                 runtime_handle.spawn_blocking(move || {
                     env.with_env(|scope| {
                         let temp_buffer = scope.new_direct_byte_buffer_exact(&mut msg);
@@ -258,12 +387,15 @@ mod buffer {
                 buffer_content.extend_from_slice(msg.as_ref());
 
                 let byte_buffer = buffer_obj.clone();
+                let env = env.clone();
 
                 runtime_handle.spawn_blocking(move || {
                     env.with_env(|scope| method(scope, byte_buffer.as_byte_buffer()))
                 })
             };
-            BlockingJniCall { inner: handle }
+            BlockingJniCall {
+                inner: AbortOnJoinError { env, inner: handle },
+            }
         }
     }
 }
@@ -284,6 +416,38 @@ impl JavaAgentRef {
             env,
             agent_obj,
             vtable,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ExceptionHandler {
+    user: NotTypeOfExceptionHandler,
+    deserialization: IsTypeOfExceptionHandler,
+}
+
+impl JavaExceptionHandler for ExceptionHandler {
+    type Err = AgentTaskError;
+
+    fn inspect(&self, scope: &Scope, throwable: JThrowable) -> Option<Self::Err> {
+        let ExceptionHandler {
+            user,
+            deserialization,
+        } = self;
+
+        debug!("Inspecting error");
+
+        match deserialization.inspect(scope, throwable) {
+            Some(err) => {
+                debug!("Detected deserialization error");
+                Some(AgentTaskError::DeserializationFailed(ReadError::Message(
+                    err.to_string().into(),
+                )))
+            }
+            None => user.inspect(scope, throwable).map(|err| {
+                debug!("Detected user code error");
+                AgentTaskError::UserCodeError(Box::new(err))
+            }),
         }
     }
 }
