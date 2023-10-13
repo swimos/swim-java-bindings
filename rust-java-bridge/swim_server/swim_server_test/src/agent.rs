@@ -26,7 +26,7 @@ use swim_server_core::agent::spec::AgentSpec;
 use swim_server_core::agent::spec::PlaneSpec;
 use swim_server_core::{server_fn, FfiAgentDef};
 
-use crate::{LaneRequestDiscriminant, LaneResponseDiscriminant, TestAgentContext};
+use server_fixture::{LaneRequestDiscriminant, LaneResponseDiscriminant, TestAgentContext};
 
 server_fn! {
     agent_TestLaneServer_runNativeAgent(
@@ -168,9 +168,6 @@ async fn run_agent(
     inputs: Vec<u8>,
     outputs: Vec<u8>,
 ) {
-    // let filter = EnvFilter::default().add_directive(LevelFilter::TRACE.into());
-    // tracing_subscriber::fmt().with_env_filter(filter).init();
-
     let factory =
         env.with_env(|scope| JavaAgentFactory::new(&env, scope.new_global_ref(plane_obj)));
     let agent = FfiAgentDef::new(env.clone(), spec, factory);
@@ -178,7 +175,7 @@ async fn run_agent(
     let start_barrier = Arc::new(Notify::new());
 
     let producer_barrier = start_barrier.clone();
-    let producer_channels = agent_context.channels.clone();
+    let producer_channels = agent_context.channels();
     let producer_task = async move {
         producer_barrier.notified().await;
 
@@ -199,7 +196,7 @@ async fn run_agent(
     };
 
     let consumer_barrier = start_barrier.clone();
-    let mut consumer_channels = agent_context.channels.clone();
+    let mut consumer_channels = agent_context.channels();
     let consumer_task = async move {
         consumer_barrier.notified().await;
 

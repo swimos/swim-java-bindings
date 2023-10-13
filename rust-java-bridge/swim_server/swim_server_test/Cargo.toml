@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 swim_server_core = { path = "../swim_server_core" }
+server_fixture = { path = "../fixture" }
 jvm_sys = { path = "../../jvm_sys" }
 swim_server_app = { path = "../../../swim-rust/server/swim_server_app"}
 bytebridge = { workspace = true }

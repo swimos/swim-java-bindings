@@ -10,6 +10,7 @@ bytes = { workspace = true }
 jvm_sys = { workspace = true }
 interval_stream = { path = "../../utilities/interval_stream" }
 bytebridge = { path = "../../bytebridge/bytebridge", features = ["derive_java"] }
+server_fixture = { path = "../fixture" }
 
 tokio = { workspace = true, features = ["io-util", "rt-multi-thread"] }
 swim_api = { path = "../../../swim-rust/api/swim_api" }

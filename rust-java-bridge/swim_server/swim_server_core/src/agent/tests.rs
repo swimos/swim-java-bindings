@@ -1,16 +1,25 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
-use std::future::{ready, Ready};
+use std::future::{ready, Future, Ready};
+use std::str::FromStr;
 use std::sync::Arc;
 
 use bytes::BytesMut;
+use futures_util::future::join;
 use parking_lot::Mutex;
+use swim_api::agent::Agent;
 use swim_api::error::{AgentInitError, AgentTaskError};
+use swim_api::protocol::agent::LaneRequest;
+use swim_utilities::routing::route_uri::RouteUri;
 use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
 
+use server_fixture::{Channels, TestAgentContext};
+
 use crate::agent::foreign::{AgentFactory, AgentVTable, RuntimeContext};
+use crate::agent::spec::{AgentSpec, LaneKindRepr, LaneSpec};
 use crate::agent::AgentRuntimeRequest;
+use crate::FfiAgentDef;
 
 #[derive(thiserror::Error, Debug)]
 #[error("Fatal error: {0}")]
@@ -27,7 +36,7 @@ impl RuntimeContext for TestRuntimeContext {
 
 struct TestAgentFactoryInner {
     uri: String,
-    expected_events: VecDeque<VTableEvent>,
+    expected_events: Arc<Mutex<VecDeque<VTableEvent>>>,
     runtime_provider: oneshot::Sender<mpsc::Sender<AgentRuntimeRequest>>,
 }
 
@@ -38,7 +47,7 @@ struct TestAgentFactory {
 impl TestAgentFactory {
     fn new(
         uri: String,
-        expected_events: VecDeque<VTableEvent>,
+        expected_events: Arc<Mutex<VecDeque<VTableEvent>>>,
         runtime_provider: oneshot::Sender<mpsc::Sender<AgentRuntimeRequest>>,
     ) -> TestAgentFactory {
         TestAgentFactory {
@@ -73,9 +82,7 @@ impl AgentFactory for TestAgentFactory {
                     runtime_provider
                         .send(runtime_tx)
                         .expect("Failed to provide runtime channel");
-                    Ok(TestAgentVTable {
-                        expected_events: Mutex::new(expected_events),
-                    })
+                    Ok(TestAgentVTable { expected_events })
                 } else {
                     panic!("Unknown node URI requested: {}", requested_uri);
                 }
@@ -241,6 +248,7 @@ enum VTableEvent {
     RunTask(RunTaskProxy),
 }
 
+#[derive(Default)]
 struct VTableEventDeque {
     deque: VecDeque<VTableEvent>,
 }
@@ -295,7 +303,7 @@ impl VTableEventDeque {
 }
 
 struct TestAgentVTable {
-    expected_events: Mutex<VecDeque<VTableEvent>>,
+    expected_events: Arc<Mutex<VecDeque<VTableEvent>>>,
 }
 
 impl AgentVTable for TestAgentVTable {
@@ -328,7 +336,7 @@ impl AgentVTable for TestAgentVTable {
         match expected.pop_front() {
             Some(VTableEvent::Dispatch(proxy)) => ready(proxy.run((lane_id, buffer))),
             o => {
-                panic!("Expected a did stop event. Got: {:?}", o)
+                panic!("Expected a dispatch stop event. Got: {:?}", o)
             }
         }
     }
@@ -374,4 +382,64 @@ impl AgentVTable for TestAgentVTable {
     }
 }
 
-async fn run_agent() {}
+async fn run_agent<F, Fut>(
+    spec: AgentSpec,
+    shared_events: Arc<Mutex<VecDeque<VTableEvent>>>,
+    test: F,
+) where
+    F: FnOnce(mpsc::Sender<AgentRuntimeRequest>, Channels) -> Fut,
+    Fut: Future,
+{
+    let (runtime_tx, runtime_rx) = oneshot::channel();
+    let factory = TestAgentFactory::new("agent".to_string(), shared_events, runtime_tx);
+    let def = FfiAgentDef::new(TestRuntimeContext, spec, factory);
+    let agent_context = TestAgentContext::default();
+    let channels = agent_context.channels();
+
+    let agent_task = tokio::spawn(async move {
+        def.run(
+            RouteUri::from_str("agent").unwrap(),
+            Default::default(),
+            Default::default(),
+            Box::new(agent_context),
+        )
+        .await
+        .expect("Failed to initialise agent")
+        .await
+    });
+
+    let runtime_channel = runtime_rx.await.expect("No runtime channel received");
+
+    join(agent_task, test(runtime_channel, channels)).await;
+}
+
+#[tokio::test]
+async fn lifecycle_events() {
+    let mut expected = VTableEventDeque::default();
+    expected.add_did_start().add_did_stop();
+
+    let spec = AgentSpec::new(
+        "agent".to_string(),
+        HashMap::from([(
+            "lane".to_string(),
+            LaneSpec::new(true, 0, LaneKindRepr::Value),
+        )]),
+    );
+
+    let expected_events = Arc::new(Mutex::new(expected.deque));
+
+    run_agent(
+        spec,
+        expected_events.clone(),
+        |runtime_tx, channels| async move {
+            channels
+                .send("lane".to_string(), LaneRequest::<BytesMut>::InitComplete)
+                .await;
+            channels.drop_all().await;
+        },
+    )
+    .await;
+
+    let expected = &mut *expected_events.lock();
+    assert!(expected.is_empty());
+}
