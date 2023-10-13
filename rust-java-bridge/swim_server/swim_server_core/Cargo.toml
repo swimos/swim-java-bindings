@@ -27,3 +27,7 @@ tracing = { workspace = true }
 tracing-futures = { workspace = true }
 uuid = { workspace = true }
 pin-project = { workspace = true }
+
+[dev-dependencies]
+thiserror = { workspace = true }
+parking_lot = { workspace = true, features = ["send_guard"] }

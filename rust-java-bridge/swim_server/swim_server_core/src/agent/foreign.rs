@@ -59,7 +59,7 @@ impl RuntimeContext for JavaEnv {
 }
 
 pub trait AgentFactory {
-    type Agent: AgentVTable;
+    type VTable: AgentVTable;
     type Context: RuntimeContext;
 
     fn agent_for(
@@ -67,7 +67,7 @@ pub trait AgentFactory {
         ctx: Self::Context,
         uri: impl AsRef<str>,
         tx: mpsc::Sender<AgentRuntimeRequest>,
-    ) -> Result<Self::Agent, AgentInitError>;
+    ) -> Result<Self::VTable, AgentInitError>;
 }
 
 #[derive(Debug, Clone)]
@@ -94,7 +94,7 @@ impl JavaAgentFactory {
 }
 
 impl AgentFactory for JavaAgentFactory {
-    type Agent = JavaAgentRef;
+    type VTable = JavaAgentRef;
     type Context = JavaEnv;
 
     fn agent_for(
@@ -102,7 +102,7 @@ impl AgentFactory for JavaAgentFactory {
         env: Self::Context,
         uri: impl AsRef<str>,
         tx: mpsc::Sender<AgentRuntimeRequest>,
-    ) -> Result<Self::Agent, AgentInitError> {
+    ) -> Result<Self::VTable, AgentInitError> {
         let node_uri = uri.as_ref();
         debug!(node_uri, "Attempting to create a new Java agent");
 
@@ -187,7 +187,9 @@ impl<O> Future for BlockingJniCall<O> {
 }
 
 impl AgentVTable for JavaAgentRef {
-    type Suspended<O> = BlockingJniCall<O> where O:Send;
+    type Suspended<O> = BlockingJniCall<O>
+    where
+        O: Send;
 
     fn did_start(&self) -> Self::Suspended<()> {
         let JavaAgentRef {
