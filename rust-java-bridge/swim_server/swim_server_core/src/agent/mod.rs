@@ -1,14 +1,10 @@
-#[cfg(test)]
-mod tests;
-
 use std::collections::HashMap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 use std::future::{ready, Future};
 use std::mem::size_of;
 use std::ops::ControlFlow;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use std::time::Duration;
 
 use bytes::BytesMut;
 use futures::Stream;
@@ -39,6 +35,9 @@ use interval_stream::{IntervalStream, ScheduleDef, StreamItem};
 use crate::agent::foreign::{AgentFactory, AgentVTable, RuntimeContext};
 use crate::agent::spec::{AgentSpec, LaneSpec};
 use crate::codec::{LaneReaderCodec, LaneResponseDecoder, LaneResponseElement};
+
+#[cfg(test)]
+mod tests;
 
 pub mod context;
 pub mod foreign;
@@ -234,7 +233,7 @@ where
                 }
             }
             Err(OpenLaneError::FrameIo(error)) => {
-                return Err(AgentInitError::LaneInitializationFailure(error))
+                return Err(AgentInitError::LaneInitializationFailure(error));
             }
         }
     }
@@ -306,7 +305,8 @@ where
         Box::pin(async move {
             match try_last(stream).await? {
                 Some(body) => {
-                    agent_obj.init(*lane_id, body);
+                    // todo: add a new variant to FrameIoError to handle this
+                    agent_obj.init(*lane_id, body).await.expect("Init error");
                     Ok(())
                 }
                 None => Ok(()),
@@ -382,7 +382,7 @@ where
             writer
                 .send(StoreInitialized)
                 .await
-                .map_err(FrameIoError::Io)
+                .map_err(|e| FrameIoError::Io(e))
                 .map(move |_| InitializedLane { io: (tx, rx), id })
         }
         Err(e) => Err(e),
@@ -489,7 +489,7 @@ impl<A, C> FfiAgentTask<A, C> {
                         LaneRequest::InitComplete => continue,
                     };
 
-                    if let Some(ControlFlow::Break(())) = suspend(
+                    let suspend_result = suspend(
                         &mut agent_environment,
                         &agent_context,
                         &mut runtime_requests,
@@ -514,9 +514,13 @@ impl<A, C> FfiAgentTask<A, C> {
                             }
                         },
                     )
-                    .await?
-                    {
-                        return Ok(());
+                    .await?;
+                    match suspend_result {
+                        Some(ControlFlow::Break(())) | None => {
+                            debug!("Shutting down agent");
+                            break;
+                        }
+                        Some(ControlFlow::Continue(())) => continue,
                     }
                 }
                 Some(RuntimeEvent::RequestError { id, error }) => {
@@ -534,7 +538,7 @@ impl<A, C> FfiAgentTask<A, C> {
                         .ffi_agent
                         .run_task(task_def.id_msb, task_def.id_lsb);
 
-                    suspend(
+                    if suspend(
                         &mut agent_environment,
                         &agent_context,
                         &mut runtime_requests,
@@ -542,7 +546,12 @@ impl<A, C> FfiAgentTask<A, C> {
                         handle,
                         |_, _| ready(Ok(())),
                     )
-                    .await?;
+                    .await?
+                    .is_none()
+                    {
+                        debug!("Shutting down agent");
+                        break;
+                    }
                 }
             }
         }
@@ -556,6 +565,19 @@ impl<A, C> FfiAgentTask<A, C> {
 enum SuspendedRuntimeEvent<O> {
     Request(Option<AgentRuntimeRequest>),
     SuspendComplete(O),
+}
+
+impl<O> Debug for SuspendedRuntimeEvent<O> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SuspendedRuntimeEvent::Request(r) => {
+                write!(f, "SuspendedRuntimeEvent::Request({:?})", r)
+            }
+            SuspendedRuntimeEvent::SuspendComplete(_) => {
+                write!(f, "SuspendedRuntimeEvent::SuspendComplete")
+            }
+        }
+    }
 }
 
 async fn suspend<'l, F, O, H, HF, HR, A>(
@@ -576,8 +598,9 @@ where
 
     loop {
         let event: SuspendedRuntimeEvent<O> = select! {
-            suspend_result = (&mut fut) => SuspendedRuntimeEvent::SuspendComplete(suspend_result),
+            biased;
             request = runtime_requests.recv() => SuspendedRuntimeEvent::Request(request),
+            suspend_result = (&mut fut) => SuspendedRuntimeEvent::SuspendComplete(suspend_result),
         };
 
         match event {
@@ -599,11 +622,8 @@ where
                     AgentRuntimeRequest::ScheduleTask {
                         id_lsb,
                         id_msb,
-                        interval,
-                    } => task_scheduler.push(
-                        ScheduleDef::Infinite { interval },
-                        TaskDef { id_lsb, id_msb },
-                    ),
+                        schedule,
+                    } => task_scheduler.push(schedule, TaskDef { id_lsb, id_msb }),
                 }
             }
             SuspendedRuntimeEvent::Request(None) => {
@@ -627,7 +647,7 @@ pub enum AgentRuntimeRequest {
     ScheduleTask {
         id_lsb: i64,
         id_msb: i64,
-        interval: Duration,
+        schedule: ScheduleDef,
     },
 }
 
@@ -662,7 +682,9 @@ where
                     }
                 }
             }
-            Ok(None) => break Ok(ControlFlow::Continue(())),
+            Ok(None) => {
+                break Ok(ControlFlow::Continue(()));
+            }
             Err(_) => return Err(ctx.fatal_error("Agent received invalid bytes from runtime")),
         }
     }

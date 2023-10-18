@@ -7,11 +7,12 @@ use std::task::{Context, Poll};
 use bytes::BytesMut;
 use futures::{ready, Stream};
 use futures_util::future::BoxFuture;
-use futures_util::stream::FuturesUnordered;
-use futures_util::{FutureExt, SinkExt, StreamExt};
+use futures_util::stream::SelectAll;
+use futures_util::task::AtomicWaker;
+use futures_util::{FutureExt, SinkExt};
 use swim_api::agent::{AgentContext, LaneConfig, UplinkKind};
 use swim_api::downlink::DownlinkKind;
-use swim_api::error::{AgentRuntimeError, DownlinkRuntimeError, OpenStoreError};
+use swim_api::error::{AgentRuntimeError, DownlinkRuntimeError, FrameIoError, OpenStoreError};
 use swim_api::meta::lane::LaneKind;
 use swim_api::protocol::agent::{
     LaneRequest, LaneRequestEncoder, LaneResponse, MapLaneResponseDecoder, ValueLaneResponseDecoder,
@@ -20,6 +21,7 @@ use swim_api::protocol::map::{MapMessage, RawMapOperationMut};
 use swim_api::store::StoreKind;
 use swim_utilities::io::byte_channel::{byte_channel, ByteReader, ByteWriter};
 use swim_utilities::non_zero_usize;
+use tokio::io::AsyncWriteExt;
 use tokio::sync::{Mutex, MutexGuard};
 use tokio_util::codec::{Encoder, FramedRead, FramedWrite};
 
@@ -43,21 +45,24 @@ impl AgentContext for TestAgentContext {
         lane_kind: LaneKind,
         _config: LaneConfig,
     ) -> BoxFuture<'static, Result<(ByteWriter, ByteReader), AgentRuntimeError>> {
+        let waker = self.channels.waker.clone();
         let channels = self.channels.inner.clone();
         let lane_uri = name.to_string();
+
         async move {
-            let guard = &mut *channels.lock().await;
+            let inner = &mut *channels.lock().await;
             let (tx_in, rx_in) = byte_channel(BUFFER_SIZE);
             let (tx_out, rx_out) = byte_channel(BUFFER_SIZE);
 
             match lane_kind.uplink_kind() {
-                UplinkKind::Value => guard.push_value_channel(tx_in, rx_out, lane_uri.to_string()),
-                UplinkKind::Map => guard.push_map_channel(tx_in, rx_out, lane_uri.to_string()),
+                UplinkKind::Value => inner.push_value_channel(tx_in, rx_out, lane_uri.to_string()),
+                UplinkKind::Map => inner.push_map_channel(tx_in, rx_out, lane_uri.to_string()),
                 UplinkKind::Supply => {
                     panic!("Unexpected supply uplink")
                 }
             }
 
+            waker.wake();
             Ok((tx_out, rx_in))
         }
         .boxed()
@@ -84,6 +89,7 @@ impl AgentContext for TestAgentContext {
 
 #[derive(Default, Debug, Clone)]
 pub struct Channels {
+    waker: Arc<AtomicWaker>,
     inner: Arc<Mutex<ChannelsInner>>,
 }
 
@@ -93,7 +99,10 @@ impl Channels {
         let mut pin = unsafe { Pin::new_unchecked(&mut fut) };
         match pin.poll_unpin(cx) {
             Poll::Ready(guard) => Poll::Ready(guard),
-            Poll::Pending => Poll::Pending,
+            Poll::Pending => {
+                self.waker.register(cx.waker());
+                pin.poll_unpin(cx)
+            }
         }
     }
 
@@ -106,11 +115,19 @@ impl Channels {
         framed.send(request.into()).await.expect("Channel closed");
     }
 
+    pub async fn send_bytes(&self, lane_uri: String, buf: &[u8]) {
+        let mut guard = self.inner.lock().await;
+        let inner = &mut *guard;
+        let writer = inner.writers.get_mut(&lane_uri).expect("Missing channel");
+
+        writer.write_all(buf).await.expect("Channel closed");
+    }
+
     pub async fn drop_all(&self) {
         let mut guard = self.inner.lock().await;
         let inner = &mut *guard;
         inner.writers.clear();
-        inner.read_demux.clear();
+        inner.readers.clear();
     }
 }
 
@@ -128,6 +145,18 @@ impl LaneResponseDiscriminant {
                 panic!("Expected a value message")
             }
         }
+    }
+}
+
+impl From<LaneResponse<BytesMut>> for LaneResponseDiscriminant {
+    fn from(value: LaneResponse<BytesMut>) -> Self {
+        LaneResponseDiscriminant::Value(value)
+    }
+}
+
+impl From<LaneResponse<RawMapOperationMut>> for LaneResponseDiscriminant {
+    fn from(value: LaneResponse<RawMapOperationMut>) -> Self {
+        LaneResponseDiscriminant::Map(value)
     }
 }
 
@@ -174,25 +203,62 @@ impl Stream for Channels {
             let mut guard = ready!(self.poll_guard(cx));
             let inner = &mut *guard;
 
-            match ready!(Pin::new(&mut inner.read_demux).poll_next(cx)) {
-                Some(Some((uri, reader, resp))) => {
-                    return match resp {
-                        LaneResponseDiscriminant::Value(r) => {
-                            inner.push_value_reader(reader, uri.clone());
-                            Poll::Ready(Some((uri, LaneResponseDiscriminant::Value(r))))
-                        }
-                        LaneResponseDiscriminant::Map(r) => {
-                            inner.push_map_reader(reader, uri.clone());
-                            Poll::Ready(Some((uri, LaneResponseDiscriminant::Map(r))))
-                        }
-                    }
+            match ready!(Pin::new(&mut inner.readers).poll_next(cx)) {
+                Some(Ok(item)) => return Poll::Ready(Some(item)),
+                Some(Err(e)) => {
+                    panic!("Read error: {:?}", e);
                 }
-                Some(None) => {
-                    if inner.read_demux.is_empty() {
-                        return Poll::Pending;
-                    }
+                None => {
+                    return Poll::Ready(None);
                 }
-                None => return Poll::Ready(None),
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+struct TaggedLaneStream {
+    lane_uri: String,
+    decoder: LaneDecoder,
+}
+
+impl Stream for TaggedLaneStream {
+    type Item = Result<(String, LaneResponseDiscriminant), FrameIoError>;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let item = ready!(Pin::new(&mut self.decoder).poll_next(cx));
+        Poll::Ready(item.map(|resp| resp.map(|disc| (self.lane_uri.clone(), disc))))
+    }
+}
+
+#[derive(Debug)]
+enum LaneDecoder {
+    Value(FramedRead<ByteReader, ValueLaneResponseDecoder>),
+    Map(FramedRead<ByteReader, MapLaneResponseDecoder>),
+}
+
+impl LaneDecoder {
+    fn value(rx: ByteReader) -> LaneDecoder {
+        LaneDecoder::Value(FramedRead::new(rx, ValueLaneResponseDecoder::default()))
+    }
+
+    fn map(rx: ByteReader) -> LaneDecoder {
+        LaneDecoder::Map(FramedRead::new(rx, MapLaneResponseDecoder::default()))
+    }
+}
+
+impl Stream for LaneDecoder {
+    type Item = Result<LaneResponseDiscriminant, FrameIoError>;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        match self.as_mut().get_mut() {
+            LaneDecoder::Value(dec) => {
+                let item = ready!(Pin::new(dec).poll_next(cx));
+                Poll::Ready(item.map(|resp| resp.map(LaneResponseDiscriminant::Value)))
+            }
+            LaneDecoder::Map(dec) => {
+                let item = ready!(Pin::new(dec).poll_next(cx));
+                Poll::Ready(item.map(|resp| resp.map(LaneResponseDiscriminant::Map)))
             }
         }
     }
@@ -200,49 +266,25 @@ impl Stream for Channels {
 
 #[derive(Debug, Default)]
 struct ChannelsInner {
-    read_demux: FuturesUnordered<
-        BoxFuture<'static, Option<(String, ByteReader, LaneResponseDiscriminant)>>,
-    >,
+    readers: SelectAll<TaggedLaneStream>,
     writers: HashMap<String, ByteWriter>,
 }
 
 impl ChannelsInner {
     fn push_value_channel(&mut self, tx: ByteWriter, rx: ByteReader, lane_uri: String) {
-        self.push_value_reader(rx, lane_uri.clone());
+        self.readers.push(TaggedLaneStream {
+            lane_uri: lane_uri.clone(),
+            decoder: LaneDecoder::value(rx),
+        });
         self.writers.insert(lane_uri, tx);
     }
 
     fn push_map_channel(&mut self, tx: ByteWriter, rx: ByteReader, lane_uri: String) {
-        self.push_map_reader(rx, lane_uri.clone());
+        self.readers.push(TaggedLaneStream {
+            lane_uri: lane_uri.clone(),
+            decoder: LaneDecoder::map(rx),
+        });
         self.writers.insert(lane_uri, tx);
-    }
-
-    fn push_value_reader(&mut self, rx: ByteReader, lane_uri: String) {
-        self.read_demux.push(Box::pin(async move {
-            let mut decoder = FramedRead::new(rx, ValueLaneResponseDecoder::default());
-            match decoder.next().await {
-                Some(Ok(response)) => Some((
-                    lane_uri,
-                    decoder.into_inner(),
-                    LaneResponseDiscriminant::Value(response),
-                )),
-                None | Some(Err(_)) => None,
-            }
-        }));
-    }
-
-    fn push_map_reader(&mut self, rx: ByteReader, lane_uri: String) {
-        self.read_demux.push(Box::pin(async move {
-            let mut decoder = FramedRead::new(rx, MapLaneResponseDecoder::default());
-            match decoder.next().await {
-                Some(Ok(response)) => Some((
-                    lane_uri,
-                    decoder.into_inner(),
-                    LaneResponseDiscriminant::Map(response),
-                )),
-                None | Some(Err(_)) => None,
-            }
-        }));
     }
 }
 

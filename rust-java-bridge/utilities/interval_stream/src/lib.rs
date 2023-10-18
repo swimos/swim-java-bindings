@@ -11,6 +11,7 @@ use pin_project::pin_project;
 use tokio_util::time::delay_queue::Key;
 use tokio_util::time::DelayQueue;
 
+#[derive(Debug)]
 pub enum ScheduleDef {
     Once {
         after: Duration,

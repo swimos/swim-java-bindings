@@ -157,7 +157,9 @@ impl Decoder for LaneResponseDecoder {
                         match src.get_i8() {
                             0 => *more_available = false,
                             1 => *more_available = true,
-                            _ => return Err(ErrorKind::InvalidData.into()),
+                            _ => {
+                                return Err(ErrorKind::InvalidData.into());
+                            }
                         }
 
                         *state = LaneResponseDecoderState::ResponseHeader;
