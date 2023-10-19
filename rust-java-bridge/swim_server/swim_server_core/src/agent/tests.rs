@@ -26,7 +26,7 @@ use server_fixture::{Channels, TestAgentContext};
 
 use crate::agent::foreign::{AgentFactory, AgentVTable, RuntimeContext};
 use crate::agent::spec::{AgentSpec, LaneKindRepr, LaneSpec};
-use crate::agent::AgentRuntimeRequest;
+use crate::agent::{GuestConfig, GuestRuntimeRequest, TaskScheduler};
 use crate::FfiAgentDef;
 
 #[derive(thiserror::Error, Debug)]
@@ -45,7 +45,7 @@ impl RuntimeContext for TestRuntimeContext {
 struct TestAgentFactoryInner {
     uri: String,
     sender: VTableChannelSender,
-    runtime_provider: oneshot::Sender<mpsc::Sender<AgentRuntimeRequest>>,
+    runtime_provider: oneshot::Sender<mpsc::Sender<GuestRuntimeRequest>>,
 }
 
 struct TestAgentFactory {
@@ -56,7 +56,7 @@ impl TestAgentFactory {
     fn new(
         uri: String,
         sender: VTableChannelSender,
-        runtime_provider: oneshot::Sender<mpsc::Sender<AgentRuntimeRequest>>,
+        runtime_provider: oneshot::Sender<mpsc::Sender<GuestRuntimeRequest>>,
     ) -> TestAgentFactory {
         TestAgentFactory {
             inner: Arc::new(Mutex::new(Some(TestAgentFactoryInner {
@@ -76,7 +76,7 @@ impl AgentFactory for TestAgentFactory {
         &self,
         _ctx: Self::Context,
         uri: impl AsRef<str>,
-        runtime_tx: mpsc::Sender<AgentRuntimeRequest>,
+        runtime_tx: mpsc::Sender<GuestRuntimeRequest>,
     ) -> Result<Self::VTable, AgentInitError> {
         let inner = &mut *self.inner.lock();
         let requested_uri = uri.as_ref();
@@ -131,8 +131,7 @@ enum VTableRequest {
         promise: PromiseSender<Vec<u8>>,
     },
     RunTask {
-        id_msb: i64,
-        id_lsb: i64,
+        id: Uuid,
         promise: PromiseSender<()>,
     },
 }
@@ -259,20 +258,10 @@ impl VTableChannelReceiver {
         }
     }
 
-    async fn run_task(
-        &mut self,
-        expected_id_msb: i64,
-        expected_id_lsb: i64,
-        result: Result<(), AgentTaskError>,
-    ) {
+    async fn run_task(&mut self, expected_id: Uuid, result: Result<(), AgentTaskError>) {
         match self.rx.recv().await {
-            Some(VTableRequest::RunTask {
-                id_msb,
-                id_lsb,
-                promise,
-            }) => {
-                assert_eq!(expected_id_msb, id_msb);
-                assert_eq!(expected_id_lsb, id_lsb);
+            Some(VTableRequest::RunTask { id, promise }) => {
+                assert_eq!(id, expected_id);
                 promise.send(result).expect("VTable channel dropped")
             }
             Some(req) => {
@@ -384,15 +373,11 @@ impl AgentVTable for TestAgentVTable {
         })
     }
 
-    fn run_task(&self, id_msb: i64, id_lsb: i64) -> Self::Suspended<()> {
+    fn run_task(&self, id: Uuid) -> Self::Suspended<()> {
         let channel = self.channel.clone();
         Box::pin(async move {
             channel
-                .send(|promise| VTableRequest::RunTask {
-                    id_msb,
-                    promise,
-                    id_lsb,
-                })
+                .send(|promise| VTableRequest::RunTask { id, promise })
                 .await
         })
     }
@@ -506,12 +491,17 @@ async fn run_agent<F, Fut>(
     test: F,
 ) -> Result<(), AgentTaskError>
 where
-    F: FnOnce(mpsc::Sender<AgentRuntimeRequest>, Channels) -> Fut,
+    F: FnOnce(mpsc::Sender<GuestRuntimeRequest>, Channels) -> Fut,
     Fut: Future,
 {
     let (runtime_tx, runtime_rx) = oneshot::channel();
     let factory = TestAgentFactory::new("agent".to_string(), sender, runtime_tx);
-    let def = FfiAgentDef::new(TestRuntimeContext, spec, factory);
+    let def = FfiAgentDef::new(
+        TestRuntimeContext,
+        spec,
+        factory,
+        GuestConfig::java_default(),
+    );
     let agent_context = TestAgentContext::default();
     let channels = agent_context.channels();
 
@@ -579,10 +569,10 @@ async fn schedule_task_once() {
             .send("lane".to_string(), LaneRequest::<BytesMut>::Sync(id))
             .await;
 
+        let task_id = Uuid::from_u128(1);
         runtime_tx
-            .send(AgentRuntimeRequest::ScheduleTask {
-                id_lsb: 0,
-                id_msb: 0,
+            .send(GuestRuntimeRequest::ScheduleTask {
+                id: task_id,
                 schedule: ScheduleDef::Once {
                     after: Duration::from_nanos(1),
                 },
@@ -592,7 +582,7 @@ async fn schedule_task_once() {
 
         vtable_rx.did_start(Ok(())).await;
         vtable_rx.sync(0, id, Ok(Vec::new())).await;
-        vtable_rx.run_task(0, 0, Ok(())).await;
+        vtable_rx.run_task(task_id, Ok(())).await;
 
         channels.drop_all().await;
 
@@ -621,13 +611,13 @@ async fn schedule_task_interval() {
             .await;
 
         let run_count = 13;
+        let task_id = Uuid::from_u128(1);
 
         runtime_tx
-            .send(AgentRuntimeRequest::ScheduleTask {
-                id_lsb: 0,
-                id_msb: 0,
+            .send(GuestRuntimeRequest::ScheduleTask {
+                id: task_id,
                 schedule: ScheduleDef::Interval {
-                    run_count: 13,
+                    count: 13,
                     interval: Duration::from_nanos(1),
                 },
             })
@@ -638,7 +628,7 @@ async fn schedule_task_interval() {
         vtable_rx.sync(0, id, Ok(Vec::new())).await;
 
         for _ in 0..run_count {
-            vtable_rx.run_task(0, 0, Ok(())).await;
+            vtable_rx.run_task(task_id, Ok(())).await;
         }
 
         channels.drop_all().await;
@@ -667,10 +657,11 @@ async fn schedule_task_infinite() {
             .send("lane".to_string(), LaneRequest::<BytesMut>::Sync(id))
             .await;
 
+        let task_id = Uuid::from_u128(1);
+
         runtime_tx
-            .send(AgentRuntimeRequest::ScheduleTask {
-                id_lsb: 0,
-                id_msb: 0,
+            .send(GuestRuntimeRequest::ScheduleTask {
+                id: task_id,
                 schedule: ScheduleDef::Infinite {
                     interval: Duration::from_nanos(1),
                 },
@@ -682,35 +673,26 @@ async fn schedule_task_infinite() {
         vtable_rx.sync(0, id, Ok(Vec::new())).await;
 
         for _ in 0..10 {
-            vtable_rx.run_task(0, 0, Ok(())).await;
+            vtable_rx.run_task(task_id, Ok(())).await;
         }
 
         channels.drop_all().await;
 
-        drain_vtable_tasks(&mut vtable_rx.rx, 0, 0, || Ok(())).await;
+        drain_vtable_tasks(&mut vtable_rx.rx, task_id, || Ok(())).await;
     })
     .await;
 
     assert!(result.is_ok());
 }
 
-async fn drain_vtable_tasks<R>(
-    rx: &mut mpsc::Receiver<VTableRequest>,
-    expected_msb: i64,
-    expected_lsb: i64,
-    result: R,
-) where
+async fn drain_vtable_tasks<R>(rx: &mut mpsc::Receiver<VTableRequest>, task_id: Uuid, result: R)
+where
     R: Fn() -> Result<(), AgentTaskError>,
 {
     loop {
         match rx.recv().await {
-            Some(VTableRequest::RunTask {
-                id_msb,
-                id_lsb,
-                promise,
-            }) => {
-                assert_eq!(id_msb, expected_msb);
-                assert_eq!(id_lsb, expected_lsb);
+            Some(VTableRequest::RunTask { id, promise }) => {
+                assert_eq!(task_id, id);
                 promise.send(result()).expect("Channel closed unexpectedly")
             }
             Some(VTableRequest::DidStop { promise }) => {
@@ -744,10 +726,13 @@ async fn mixed_tasks() {
             .send("lane".to_string(), LaneRequest::<BytesMut>::Sync(id))
             .await;
 
+        let first_task = Uuid::from_u128(0);
+        let second_task = Uuid::from_u128(1);
+        let third_task = Uuid::from_u128(2);
+
         runtime_tx
-            .send(AgentRuntimeRequest::ScheduleTask {
-                id_lsb: 0,
-                id_msb: 0,
+            .send(GuestRuntimeRequest::ScheduleTask {
+                id: first_task,
                 schedule: ScheduleDef::Once {
                     after: Duration::from_nanos(1),
                 },
@@ -756,11 +741,10 @@ async fn mixed_tasks() {
             .expect("Runtime dropped");
 
         runtime_tx
-            .send(AgentRuntimeRequest::ScheduleTask {
-                id_lsb: 1,
-                id_msb: 1,
+            .send(GuestRuntimeRequest::ScheduleTask {
+                id: second_task,
                 schedule: ScheduleDef::Interval {
-                    run_count: 3,
+                    count: 3,
                     interval: Duration::from_millis(500),
                 },
             })
@@ -768,9 +752,8 @@ async fn mixed_tasks() {
             .expect("Runtime dropped");
 
         runtime_tx
-            .send(AgentRuntimeRequest::ScheduleTask {
-                id_lsb: 2,
-                id_msb: 2,
+            .send(GuestRuntimeRequest::ScheduleTask {
+                id: third_task,
                 schedule: ScheduleDef::Infinite {
                     interval: Duration::from_secs(2),
                 },
@@ -781,18 +764,18 @@ async fn mixed_tasks() {
         vtable_rx.did_start(Ok(())).await;
         vtable_rx.sync(0, id, Ok(Vec::new())).await;
 
-        vtable_rx.run_task(0, 0, Ok(())).await;
+        vtable_rx.run_task(first_task, Ok(())).await;
 
-        vtable_rx.run_task(1, 1, Ok(())).await;
-        vtable_rx.run_task(1, 1, Ok(())).await;
-        vtable_rx.run_task(1, 1, Ok(())).await;
+        vtable_rx.run_task(second_task, Ok(())).await;
+        vtable_rx.run_task(second_task, Ok(())).await;
+        vtable_rx.run_task(second_task, Ok(())).await;
 
-        vtable_rx.run_task(2, 2, Ok(())).await;
-        vtable_rx.run_task(2, 2, Ok(())).await;
+        vtable_rx.run_task(third_task, Ok(())).await;
+        vtable_rx.run_task(third_task, Ok(())).await;
 
         channels.drop_all().await;
 
-        drain_vtable_tasks(&mut vtable_rx.rx, 2, 2, || Ok(())).await;
+        drain_vtable_tasks(&mut vtable_rx.rx, third_task, || Ok(())).await;
     })
     .await;
 
@@ -1188,26 +1171,66 @@ async fn flush_error() {
 }
 
 #[tokio::test]
-async fn init_error() {
-    expect_error(false, |mut vtable_rx, channels| async move {
-        let mut buf = BytesMut::new();
-        let mut store_encoder = StoreInitMessageEncoder::value();
-        store_encoder
-            .encode(StoreInitMessage::Command(b"13"), &mut buf)
-            .expect("Encoding failed");
-        store_encoder
-            .encode(StoreInitMessage::<BytesMut>::InitComplete, &mut buf)
-            .expect("Encoding failed");
+async fn task_scheduler_cancel() {
+    let mut scheduler = TaskScheduler::default();
+    assert!(scheduler.is_empty());
 
-        channels.send_bytes("lane".to_string(), buf.as_ref()).await;
+    let task_id = Uuid::from_u128(0);
 
-        vtable_rx
-            .init(
-                0,
-                BytesMut::from("13"),
-                Err(AgentTaskError::UserCodeError(Box::new(Error))),
-            )
-            .await;
-    })
-    .await;
+    scheduler.push_task(
+        task_id,
+        ScheduleDef::Infinite {
+            interval: Duration::from_nanos(1),
+        },
+    );
+    assert!(!scheduler.is_empty());
+
+    // The wheel's key will not have changed since the stream has not been polled
+    scheduler.cancel_task(task_id);
+    assert!(scheduler.is_empty());
+
+    scheduler.push_task(
+        task_id,
+        ScheduleDef::Infinite {
+            interval: Duration::from_nanos(1),
+        },
+    );
+
+    let def = scheduler.next().await.expect("Task did not run");
+    assert_eq!(def.id, task_id);
+    assert!(!scheduler.is_empty());
+
+    let def = scheduler.next().await.expect("Task did not run");
+    assert_eq!(def.id, task_id);
+    assert!(!scheduler.is_empty());
+
+    scheduler.cancel_task(task_id);
+    assert!(scheduler.is_empty());
+}
+
+#[tokio::test]
+async fn task_scheduler_cancel2() {
+    let mut scheduler = TaskScheduler::default();
+    assert!(scheduler.is_empty());
+
+    let no_tasks = 1000;
+
+    for i in 0..no_tasks {
+        scheduler.push_task(
+            Uuid::from_u128(i),
+            ScheduleDef::Infinite {
+                interval: Duration::from_nanos(1),
+            },
+        );
+    }
+
+    for _ in 0..no_tasks {
+        let _def = scheduler.next().await;
+    }
+
+    for i in 0..no_tasks {
+        scheduler.cancel_task(Uuid::from_u128(i));
+    }
+
+    assert!(scheduler.is_empty());
 }

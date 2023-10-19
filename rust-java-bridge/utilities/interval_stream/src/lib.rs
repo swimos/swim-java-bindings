@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod tests;
-
 use std::fmt::{Debug, Formatter};
 use std::pin::Pin;
 use std::task::{ready, Context, Poll};
@@ -11,16 +8,27 @@ use pin_project::pin_project;
 use tokio_util::time::delay_queue::Key;
 use tokio_util::time::DelayQueue;
 
+#[cfg(test)]
+mod tests;
+
+/// Definition of a schedule to yield an item in an interval stream.
 #[derive(Debug)]
 pub enum ScheduleDef {
+    /// Yield an item once and only once.
     Once {
+        /// The duration which will elapse before the item is yielded.
         after: Duration,
     },
+    /// Yield an item forever with a fixed interval between the yields.
     Infinite {
+        /// The duration which will elapse before the item is yielded.
         interval: Duration,
     },
+    /// Yield an item a fixed number of times with a fixed interval between the yields.
     Interval {
-        run_count: usize,
+        /// The number of times the item will be yielded.
+        count: usize,
+        /// The duration which will elapse before the item is yielded.
         interval: Duration,
     },
 }
@@ -68,13 +76,10 @@ impl From<ScheduleDef> for Schedule {
                 interval: after,
             },
             ScheduleDef::Infinite { interval } => Schedule::Infinite { interval },
-            ScheduleDef::Interval {
-                run_count,
-                interval,
-            } => Schedule::Interval {
+            ScheduleDef::Interval { count, interval } => Schedule::Interval {
                 // Decremented by 1 for the first run.
-                // unwrap_or_default in case 'run_count' was already 0.
-                remaining: run_count.checked_sub(1).unwrap_or_default(),
+                // unwrap_or_default in case 'count' was already 0.
+                remaining: count.checked_sub(1).unwrap_or_default(),
                 interval,
             },
         }
@@ -104,6 +109,7 @@ where
     }
 }
 
+/// A stream which will yield elements at predefined intervals.
 #[pin_project]
 pub struct IntervalStream<T> {
     #[pin]
@@ -117,22 +123,34 @@ impl<T> IntervalStream<T> {
         }
     }
 
-    pub fn push(&mut self, def: ScheduleDef, item: T) {
+    /// Pushes a new item into the stream which will be yielded according to the provided schedule.
+    ///
+    /// # Returns
+    /// A key which may be used to remove the item from the stream. This is only valid until the
+    /// next call to 'poll_next' has been made if this item was yielded. If this item was yielded,
+    /// then this key has been invalidated and a new one may have been returned.
+    pub fn push(&mut self, def: ScheduleDef, item: T) -> Key {
         let strategy: Schedule = def.into();
         let interval = strategy.interval();
-        self.queue.insert(Cell::new(item, strategy), interval);
+        self.queue.insert(Cell::new(item, strategy), interval)
     }
 
+    /// Removes the item associated with the provided key and returns its value.
+    ///
+    /// # Panics
+    /// Panics if `key` is not contained in this interval stream.
     pub fn remove(&mut self, key: &Key) -> T {
         let expired = self.queue.remove(key);
         expired.into_inner().item
     }
 
+    /// Attempts to remove the item associated with the provided key.
     pub fn try_remove(&mut self, key: &Key) -> Option<T> {
         let expired = self.queue.try_remove(key);
         expired.map(|exp| exp.into_inner().item)
     }
 
+    /// Returns true if this interval stream is empty.
     pub fn is_empty(&self) -> bool {
         self.queue.is_empty()
     }
@@ -191,16 +209,21 @@ where
     }
 }
 
+/// An item which has been yielded by the stream.
 pub struct StreamItem<T> {
+    /// The item which was yielded.
     pub item: T,
+    /// The status of the item in the stream.
     pub status: ItemStatus,
 }
 
 impl<T> StreamItem<T> {
+    /// Returns true if this item has completed. I.e, it will not be yielded again.
     pub fn is_complete(&self) -> bool {
         matches!(self.status, ItemStatus::Complete)
     }
 
+    /// Returns true if this item will be yielded again from the stream.
     pub fn is_will_yield(&self) -> bool {
         matches!(self.status, ItemStatus::WillYield { .. })
     }
@@ -245,6 +268,7 @@ impl<T> Copy for StreamItem<T> where T: Copy {}
 
 impl<T> Eq for StreamItem<T> where T: Eq {}
 
+/// The status of an item in an interval stream.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum ItemStatus {
     /// The item will not be yielded again.

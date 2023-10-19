@@ -4,7 +4,7 @@ use std::future::{ready, Future};
 use std::mem::size_of;
 use std::ops::ControlFlow;
 use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::task::{ready, Context, Poll};
 
 use bytes::BytesMut;
 use futures::Stream;
@@ -27,10 +27,12 @@ use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
 use tokio::{pin, select};
 use tokio_util::codec::{Decoder, FramedRead, FramedWrite};
+use tokio_util::time::delay_queue::Key;
 use tracing::{debug, info, span, trace, Level};
 use tracing_futures::Instrument;
+use uuid::Uuid;
 
-use interval_stream::{IntervalStream, ScheduleDef, StreamItem};
+use interval_stream::{IntervalStream, ItemStatus, ScheduleDef, StreamItem};
 
 use crate::agent::foreign::{AgentFactory, AgentVTable, RuntimeContext};
 use crate::agent::spec::{AgentSpec, LaneSpec};
@@ -48,14 +50,21 @@ pub struct FfiAgentDef<C, F> {
     ffi_context: C,
     spec: AgentSpec,
     agent_factory: F,
+    guest_config: GuestConfig,
 }
 
 impl<C, F> FfiAgentDef<C, F> {
-    pub fn new(ffi_context: C, spec: AgentSpec, agent_factory: F) -> FfiAgentDef<C, F> {
+    pub fn new(
+        ffi_context: C,
+        spec: AgentSpec,
+        agent_factory: F,
+        guest_config: GuestConfig,
+    ) -> FfiAgentDef<C, F> {
         FfiAgentDef {
             ffi_context,
             spec,
             agent_factory,
+            guest_config,
         }
     }
 }
@@ -73,6 +82,7 @@ where
         context: Box<dyn AgentContext + Send>,
     ) -> BoxFuture<'static, AgentInitResult> {
         let FfiAgentDef {
+            guest_config,
             ffi_context,
             spec,
             agent_factory,
@@ -86,10 +96,12 @@ where
             agent_factory.agent_for(ffi_context.clone(), uri_string.as_str(), ffi_tx);
         let ffi_context = ffi_context.clone();
         let spec = spec.clone();
+        let guest_config = *guest_config;
 
         let task = async move {
             match create_result {
                 Ok(agent) => initialize_agent(
+                    guest_config,
                     ffi_context,
                     spec,
                     route,
@@ -199,6 +211,7 @@ where
 }
 
 async fn initialize_agent<A, C>(
+    guest_config: GuestConfig,
     ffi_context: C,
     spec: AgentSpec,
     route: RouteUri,
@@ -206,7 +219,7 @@ async fn initialize_agent<A, C>(
     config: AgentConfig,
     agent_context: Box<dyn AgentContext + Send>,
     ffi_agent: A,
-    runtime_requests: mpsc::Receiver<AgentRuntimeRequest>,
+    runtime_requests: mpsc::Receiver<GuestRuntimeRequest>,
 ) -> Result<FfiAgentTask<A, C>, AgentInitError>
 where
     A: AgentVTable,
@@ -214,6 +227,7 @@ where
     let AgentSpec { lane_specs, .. } = spec;
 
     let mut agent_environment = AgentEnvironment {
+        guest_config,
         _route: route,
         _route_params: route_params,
         config,
@@ -400,17 +414,36 @@ enum RuntimeEvent {
         error: FrameIoError,
     },
     ScheduledEvent {
-        event: StreamItem<TaskDef>,
+        event: TaskDef,
     },
 }
 
 #[derive(Clone, Debug)]
 struct TaskDef {
-    id_lsb: i64,
-    id_msb: i64,
+    id: Uuid,
+}
+
+/// Guest language configuration.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct GuestConfig {
+    /// The maximum message size that the guest language is capable of processing.
+    ///
+    /// For Java, this is ~ 2 ^ size_of::<i32>() - 8.
+    max_message_size: u64,
+}
+
+impl GuestConfig {
+    pub fn java_default() -> GuestConfig {
+        GuestConfig {
+            // This is the maximum array size that Java can handle. It varies by VM so it may be
+            // better to reflect ArrayList#MAX_ARRAY_SIZE and provide it at runtime.
+            max_message_size: (2 ^ size_of::<i32>() - 8) as u64,
+        }
+    }
 }
 
 struct AgentEnvironment<V> {
+    guest_config: GuestConfig,
     _route: RouteUri,
     _route_params: HashMap<String, String>,
     config: AgentConfig,
@@ -423,7 +456,7 @@ struct AgentEnvironment<V> {
 struct FfiAgentTask<A, C> {
     ffi_context: C,
     agent_environment: AgentEnvironment<A>,
-    runtime_requests: mpsc::Receiver<AgentRuntimeRequest>,
+    runtime_requests: mpsc::Receiver<GuestRuntimeRequest>,
     agent_context: Box<dyn AgentContext + Send>,
 }
 
@@ -444,7 +477,8 @@ impl<A, C> FfiAgentTask<A, C> {
 
         agent_environment.ffi_agent.did_start().await?;
 
-        let mut task_scheduler = IntervalStream::<TaskDef>::default();
+        let mut task_scheduler = TaskScheduler::default();
+        let max_message_size = agent_environment.guest_config.max_message_size;
 
         loop {
             let event: Option<RuntimeEvent> = if task_scheduler.is_empty() {
@@ -464,7 +498,7 @@ impl<A, C> FfiAgentTask<A, C> {
                             Err(error) => RuntimeEvent::RequestError { id, error }
                         }
                     }),
-                    task = task_scheduler.next() => task.map(|event| RuntimeEvent::ScheduledEvent {event})
+                    task = task_scheduler.next() => task.map(|event| RuntimeEvent::ScheduledEvent { event })
                 }
             };
 
@@ -474,9 +508,8 @@ impl<A, C> FfiAgentTask<A, C> {
                 Some(RuntimeEvent::Request { id, request }) => {
                     let handle = match request {
                         LaneRequest::Command(msg) => {
-                            if i32::try_from(msg.len()).is_err() {
-                                // todo: the peer should be unlinked
-                                unimplemented!("oversized messages");
+                            if msg.len() as u64 > max_message_size {
+                                continue;
                             }
 
                             trace!("Received a command request");
@@ -533,10 +566,7 @@ impl<A, C> FfiAgentTask<A, C> {
                 }
                 None => break,
                 Some(RuntimeEvent::ScheduledEvent { event }) => {
-                    let task_def = event.item;
-                    let handle = agent_environment
-                        .ffi_agent
-                        .run_task(task_def.id_msb, task_def.id_lsb);
+                    let handle = agent_environment.ffi_agent.run_task(event.id);
 
                     if suspend(
                         &mut agent_environment,
@@ -563,7 +593,7 @@ impl<A, C> FfiAgentTask<A, C> {
 }
 
 enum SuspendedRuntimeEvent<O> {
-    Request(Option<AgentRuntimeRequest>),
+    Request(Option<GuestRuntimeRequest>),
     SuspendComplete(O),
 }
 
@@ -580,12 +610,98 @@ impl<O> Debug for SuspendedRuntimeEvent<O> {
     }
 }
 
+/// Scheduler for delaying tasks to be run in a guest runtime. Task ID's are pushed into this
+/// scheduler with an associated schedule at which the IDs will be yielded at.
+#[derive(Default)]
+struct TaskScheduler {
+    /// The queue of delayed tasks.
+    tasks: IntervalStream<TaskDef>,
+    /// Map of task IDs and their associated keys in the `IntervalStream's` `DelayQueue`. This is
+    /// required as task keys may change each time the task is reinserted back in to the `IntervalStream`
+    /// after it has been run.   
+    keys: HashMap<Uuid, Key>,
+}
+
+impl TaskScheduler {
+    /// Returns true if there are no tasks scheduled.
+    fn is_empty(&self) -> bool {
+        self.tasks.is_empty()
+    }
+
+    /// Schedules a new task to be run using the provided schedule.
+    ///
+    /// # Arguments:
+    /// - `id`: the ID of the task registered in the guest runtime.
+    /// - `schedule`: the schedule to yield the tasks at.
+    fn push_task(&mut self, id: Uuid, schedule: ScheduleDef) {
+        let TaskScheduler { tasks, keys } = self;
+        let key = tasks.push(schedule, TaskDef { id });
+        keys.insert(id, key);
+    }
+
+    /// Cancels the task associated with `id`.
+    fn cancel_task(&mut self, id: Uuid) {
+        let TaskScheduler { tasks, keys } = self;
+        match keys.get(&id) {
+            Some(key) => {
+                tasks.remove(key);
+            }
+            None => {
+                panic!("Missing key for task ID: {}", id)
+            }
+        }
+    }
+}
+
+impl Stream for TaskScheduler {
+    type Item = TaskDef;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let status = ready!(Pin::new(&mut self.tasks).poll_next(cx));
+        match status {
+            Some(item) => {
+                let StreamItem { item, status } = item;
+                let id = item.id;
+                match status {
+                    ItemStatus::Complete => {
+                        self.keys.remove(&id);
+                        Poll::Ready(Some(item))
+                    }
+                    ItemStatus::WillYield { key } => {
+                        self.keys.insert(id, key);
+                        Poll::Ready(Some(item))
+                    }
+                }
+            }
+            None => Poll::Ready(None),
+        }
+    }
+}
+
+/// Suspends the runtime and awaits any requests from the guest language. No incoming requests from
+/// the Rust runtime are processed until the suspended function has completed.
+///
+/// # Arguments
+/// `agent_environment`: the state of the agent and its associated configuration.
+/// `agent_context`: the context that has been provided to the agent.
+/// `runtime_requests`: the channel that the guest language can use to make requests to the Rust
+/// runtime. If this channel is dropped then the agent will stop.
+/// `task_scheduler`: a scheduler for suspending tasks. Any requests made by the guest language to
+/// suspend a task will be inserted into this.
+/// `suspended_task`: the suspended function. Once this has completed, `followed_by` will be invoked
+/// with the output of `suspended_task`. This argument should be a function that is being executed
+/// on Tokio's blocking pool.
+/// `followed_by`: the next function to invoke if no errors have been encountered.
+///
+/// # Returns
+/// Returns `None` if `runtime_requests` has been dropped. This indicates that the agent should
+/// shutdown. Returns `Some` if the runtime was not dropped.
 async fn suspend<'l, F, O, H, HF, HR, A>(
     agent_environment: &'l mut AgentEnvironment<A>,
     agent_context: &Box<dyn AgentContext + Send>,
-    runtime_requests: &mut mpsc::Receiver<AgentRuntimeRequest>,
-    task_scheduler: &mut IntervalStream<TaskDef>,
-    fut: F,
+    runtime_requests: &mut mpsc::Receiver<GuestRuntimeRequest>,
+    task_scheduler: &mut TaskScheduler,
+    suspended_task: F,
     followed_by: H,
 ) -> Result<Option<HR>, AgentTaskError>
 where
@@ -594,20 +710,20 @@ where
     HF: Future<Output = Result<HR, AgentTaskError>> + 'l,
     A: AgentVTable,
 {
-    pin!(fut);
+    pin!(suspended_task);
 
     loop {
         let event: SuspendedRuntimeEvent<O> = select! {
             biased;
             request = runtime_requests.recv() => SuspendedRuntimeEvent::Request(request),
-            suspend_result = (&mut fut) => SuspendedRuntimeEvent::SuspendComplete(suspend_result),
+            suspend_result = (&mut suspended_task) => SuspendedRuntimeEvent::SuspendComplete(suspend_result),
         };
 
         match event {
             SuspendedRuntimeEvent::Request(Some(request)) => {
                 trace!(request = ?request, "Agent runtime received a request");
                 match request {
-                    AgentRuntimeRequest::OpenLane { uri, spec } => {
+                    GuestRuntimeRequest::OpenLane { uri, spec } => {
                         match open_lane(spec, uri.as_str(), agent_context, agent_environment).await
                         {
                             Ok(()) => continue,
@@ -619,11 +735,10 @@ where
                             }
                         }
                     }
-                    AgentRuntimeRequest::ScheduleTask {
-                        id_lsb,
-                        id_msb,
-                        schedule,
-                    } => task_scheduler.push(schedule, TaskDef { id_lsb, id_msb }),
+                    GuestRuntimeRequest::ScheduleTask { id, schedule } => {
+                        task_scheduler.push_task(id, schedule);
+                    }
+                    GuestRuntimeRequest::CancelTask { id } => task_scheduler.cancel_task(id),
                 }
             }
             SuspendedRuntimeEvent::Request(None) => {
@@ -638,17 +753,12 @@ where
     }
 }
 
+/// Requests from the
 #[derive(Debug)]
-pub enum AgentRuntimeRequest {
-    OpenLane {
-        uri: Text,
-        spec: LaneSpec,
-    },
-    ScheduleTask {
-        id_lsb: i64,
-        id_msb: i64,
-        schedule: ScheduleDef,
-    },
+pub enum GuestRuntimeRequest {
+    OpenLane { uri: Text, spec: LaneSpec },
+    ScheduleTask { id: Uuid, schedule: ScheduleDef },
+    CancelTask { id: Uuid },
 }
 
 async fn forward_lane_responses<C, A>(

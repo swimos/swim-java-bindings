@@ -2,18 +2,19 @@ use std::time::Duration;
 
 use interval_stream::ScheduleDef;
 use tokio::sync::mpsc;
+use uuid::Uuid;
 
 use crate::agent::spec::LaneSpec;
-use crate::agent::AgentRuntimeRequest;
+use crate::agent::GuestRuntimeRequest;
 use jvm_sys::env::JavaEnv;
 
 pub struct JavaAgentContext {
     env: JavaEnv,
-    tx: mpsc::Sender<AgentRuntimeRequest>,
+    tx: mpsc::Sender<GuestRuntimeRequest>,
 }
 
 impl JavaAgentContext {
-    pub fn new(env: JavaEnv, tx: mpsc::Sender<AgentRuntimeRequest>) -> JavaAgentContext {
+    pub fn new(env: JavaEnv, tx: mpsc::Sender<GuestRuntimeRequest>) -> JavaAgentContext {
         JavaAgentContext { env, tx }
     }
 
@@ -24,7 +25,7 @@ impl JavaAgentContext {
     pub fn open_lane(&self, uri: String, spec: LaneSpec) {
         let JavaAgentContext { env, tx, .. } = self;
         env.with_env_expect(|_| {
-            tx.blocking_send(AgentRuntimeRequest::OpenLane {
+            tx.blocking_send(GuestRuntimeRequest::OpenLane {
                 uri: uri.into(),
                 spec,
             })
@@ -35,8 +36,8 @@ impl JavaAgentContext {
         &self,
         resume_after_seconds: u64,
         resume_after_nanos: u32,
-        id_msb: i64,
-        id_lsb: i64,
+        id_msb: u64,
+        id_lsb: u64,
     ) {
         self.schedule(
             id_msb,
@@ -51,8 +52,8 @@ impl JavaAgentContext {
         &self,
         interval_seconds: u64,
         interval_nanos: u32,
-        id_msb: i64,
-        id_lsb: i64,
+        id_msb: u64,
+        id_lsb: u64,
     ) {
         self.schedule(
             id_msb,
@@ -65,29 +66,37 @@ impl JavaAgentContext {
 
     pub fn repeat_task(
         &self,
-        run_count: usize,
+        count: usize,
         interval_seconds: u64,
         interval_nanos: u32,
-        id_msb: i64,
-        id_lsb: i64,
+        id_msb: u64,
+        id_lsb: u64,
     ) {
         self.schedule(
             id_msb,
             id_lsb,
             ScheduleDef::Interval {
-                run_count,
+                count,
                 interval: Duration::new(interval_seconds, interval_nanos),
             },
         )
     }
 
-    fn schedule(&self, id_msb: i64, id_lsb: i64, schedule: ScheduleDef) {
+    fn schedule(&self, id_msb: u64, id_lsb: u64, schedule: ScheduleDef) {
         let JavaAgentContext { env, tx, .. } = self;
         env.with_env_expect(|_| {
-            tx.blocking_send(AgentRuntimeRequest::ScheduleTask {
-                id_lsb,
-                id_msb,
+            tx.blocking_send(GuestRuntimeRequest::ScheduleTask {
+                id: Uuid::from_u64_pair(id_msb, id_lsb),
                 schedule,
+            })
+        });
+    }
+
+    pub fn cancel_task(&self, id_msb: u64, id_lsb: u64) {
+        let JavaAgentContext { env, tx, .. } = self;
+        env.with_env_expect(|_| {
+            tx.blocking_send(GuestRuntimeRequest::CancelTask {
+                id: Uuid::from_u64_pair(id_msb, id_lsb),
             })
         });
     }

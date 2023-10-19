@@ -26,7 +26,7 @@ use jvm_sys::method::{
 
 use crate::agent::context::JavaAgentContext;
 use crate::agent::foreign::buffer::Dispatcher;
-use crate::agent::AgentRuntimeRequest;
+use crate::agent::GuestRuntimeRequest;
 
 pub trait AgentVTable: Send + Sync + 'static {
     type Suspended<O>: Future<Output = Result<O, AgentTaskError>> + Send
@@ -45,7 +45,7 @@ pub trait AgentVTable: Send + Sync + 'static {
 
     fn flush_state(&self) -> Self::Suspended<Vec<u8>>;
 
-    fn run_task(&self, id_msb: i64, id_lsb: i64) -> Self::Suspended<()>;
+    fn run_task(&self, id: Uuid) -> Self::Suspended<()>;
 }
 
 pub trait RuntimeContext: Send + Sync + Clone + 'static {
@@ -66,7 +66,7 @@ pub trait AgentFactory {
         &self,
         ctx: Self::Context,
         uri: impl AsRef<str>,
-        tx: mpsc::Sender<AgentRuntimeRequest>,
+        tx: mpsc::Sender<GuestRuntimeRequest>,
     ) -> Result<Self::VTable, AgentInitError>;
 }
 
@@ -101,7 +101,7 @@ impl AgentFactory for JavaAgentFactory {
         &self,
         env: Self::Context,
         uri: impl AsRef<str>,
-        tx: mpsc::Sender<AgentRuntimeRequest>,
+        tx: mpsc::Sender<GuestRuntimeRequest>,
     ) -> Result<Self::VTable, AgentInitError> {
         let node_uri = uri.as_ref();
         debug!(node_uri, "Attempting to create a new Java agent");
@@ -301,7 +301,7 @@ impl AgentVTable for JavaAgentRef {
         })
     }
 
-    fn run_task(&self, id_msb: i64, id_lsb: i64) -> Self::Suspended<()> {
+    fn run_task(&self, id: Uuid) -> Self::Suspended<()> {
         let JavaAgentRef {
             env,
             agent_obj,
@@ -315,7 +315,10 @@ impl AgentVTable for JavaAgentRef {
 
         BlockingJniCall::new(env.clone(), move || {
             trace!("Flushing agent state");
-            env.with_env(|scope| vtable.run_task(&scope, agent_obj.as_obj(), id_msb, id_lsb));
+            let (id_msb, id_lsb) = id.as_u64_pair();
+            env.with_env(|scope| {
+                vtable.run_task(&scope, agent_obj.as_obj(), id_msb as i64, id_lsb as i64)
+            });
             Ok(())
         })
     }
@@ -486,7 +489,7 @@ impl JavaAgentVTable {
     const FLUSH_STATE: JavaObjectMethodDef =
         JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "flushState", "()[B");
     const RUN_TASK: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "runTask", "(II)V");
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "runTask", "(IIZ)V");
 
     pub fn initialise(env: &JavaEnv) -> JavaAgentVTable {
         JavaAgentVTable {

@@ -18,7 +18,7 @@ async fn remove() {
         let mut stream = IntervalStream::new();
         stream.push(
             ScheduleDef::Interval {
-                run_count: 13,
+                count: 13,
                 interval: Duration::from_millis(100),
             },
             13,
@@ -74,7 +74,7 @@ async fn interval() {
         let mut stream = IntervalStream::new();
         stream.push(
             ScheduleDef::Interval {
-                run_count,
+                count: run_count,
                 interval: Duration::from_millis(100),
             },
             13,
@@ -133,7 +133,7 @@ async fn heterogeneous_schedules() {
         );
         stream.push(
             ScheduleDef::Interval {
-                run_count: 3,
+                count: 3,
                 interval: Duration::from_millis(600),
             },
             StreamKey(2),
