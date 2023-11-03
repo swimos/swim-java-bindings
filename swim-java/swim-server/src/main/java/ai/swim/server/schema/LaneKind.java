@@ -3,7 +3,7 @@ package ai.swim.server.schema;
 import org.msgpack.core.MessageBufferPacker;
 import java.io.IOException;
 
-/**
+/*
  * Lane Kinds.
  * <p>
  * Note: the constants contained in this enumeration directly map to the Rust {@code LaneKindRepr} and any changes made

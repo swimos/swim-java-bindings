@@ -38,7 +38,7 @@ impl FfiContext {
 /// - `env` - Java environment.
 /// - `server_obj` - JObject referencing an ai/swim/server/AbstractSwimServerBuilder instance. Used
 /// for instantiating new agents.
-/// - `plane_spec` - Specification of the plane. Detailing the agents and their respective agents.
+/// - `plane_spec` - Specification of the plane. Detailing the agents and their respective lanes.
 /// All agents contained in the spec must be available in the `server_obj`'s factory.
 ///
 /// # Returns

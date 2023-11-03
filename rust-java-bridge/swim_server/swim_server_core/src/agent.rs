@@ -251,22 +251,22 @@ impl JavaAgentRef {
     }
 }
 
-/// VTable of initialised Java object methods on an ai/swim/server/agent/AgentView.
+/// VTable of initialised Java object methods on an `ai/swim/server/agent/AgentView`.
 ///
 /// It is recommended that calls made to this are made through a blocking runtime.
 #[derive(Debug)]
 pub struct JavaAgentVTable {
-    /// ai/swim/server/agent/AgentView#didStart
+    /// `ai/swim/server/agent/AgentView#didStart`
     did_start: InitialisedJavaObjectMethod,
-    /// ai/swim/server/agent/AgentView#didStop
+    /// `ai/swim/server/agent/AgentView#didStop`
     did_stop: InitialisedJavaObjectMethod,
-    /// ai/swim/server/agent/AgentView#dispatch
+    /// `ai/swim/server/agent/AgentView#dispatch`
     dispatch: InitialisedJavaObjectMethod,
-    /// ai/swim/server/agent/AgentView#sync
+    /// `ai/swim/server/agent/AgentView#sync`
     sync: InitialisedJavaObjectMethod,
-    /// ai/swim/server/agent/AgentView#init
+    /// `ai/swim/server/agent/AgentView#init`
     init: InitialisedJavaObjectMethod,
-    /// ai/swim/server/agent/AgentView#flushState
+    /// `ai/swim/server/agent/AgentView#flushState`
     flush_state: InitialisedJavaObjectMethod,
     /// Exception handler used when invoking any of the methods
     handler: ExceptionHandler,
@@ -310,7 +310,7 @@ impl JavaAgentVTable {
         }
     }
 
-    /// Invokes AgentView#didStart
+    /// Invokes `AgentView#didStart`
     ///
     /// # Arguments
     /// `scope`: - Attached java environment interface
@@ -322,7 +322,7 @@ impl JavaAgentVTable {
         did_start.v().invoke(handler, scope, agent_obj, &[])
     }
 
-    /// Invokes AgentView#didStop
+    /// Invokes `AgentView#didStop`
     ///
     /// # Arguments
     /// `scope`: - Attached java environment interface    
@@ -334,7 +334,7 @@ impl JavaAgentVTable {
         did_stop.v().invoke(handler, scope, agent_obj, &[])
     }
 
-    /// Invokes AgentView#dispatch
+    /// Invokes `AgentView#dispatch`
     ///
     /// # Arguments
     /// `scope`: - Attached java environment interface    
@@ -344,7 +344,8 @@ impl JavaAgentVTable {
     /// call
     ///
     /// # Returns
-    /// Either a series of encoded IdentifiedLaneResponses or an agent task error produced by the exception
+    /// Either a series of encoded [`IdentifiedLaneResponses`] or an agent task error produced by
+    /// the exception
     /// handler.
     fn dispatch(
         &self,
@@ -364,7 +365,7 @@ impl JavaAgentVTable {
         )
     }
 
-    /// Invokes AgentView#sync
+    /// Invokes `AgentView#sync`
     ///
     /// # Arguments
     /// `scope`: - Attached java environment interface    
@@ -373,8 +374,8 @@ impl JavaAgentVTable {
     /// `remote`: the UUID of the remote that requested to sync
     ///
     /// # Returns
-    /// Either a series of encoded IdentifiedLaneResponses or an agent task error produced by the exception
-    /// handler.
+    /// Either a series of encoded `IdentifiedLaneResponses` or an agent task error produced by the
+    /// exception handler.
     fn sync(
         &self,
         scope: &Scope,
@@ -406,15 +407,15 @@ impl JavaAgentVTable {
         )
     }
 
-    /// Invokes AgentView#flushState
+    /// Invokes `AgentView#flushState`
     ///
     /// # Arguments
     /// `scope`: - Attached java environment interface    
     /// `agent_obj`: the agent instance
     ///
     /// # Returns
-    /// Either a series of encoded IdentifiedLaneResponses or an agent task error produced by the exception
-    /// handler.
+    /// Either a series of encoded `IdentifiedLaneResponses` or an agent task error produced by the
+    /// exception handler.
     fn flush_state(&self, scope: &Scope, agent_obj: JObject) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable {
             flush_state,
@@ -427,7 +428,7 @@ impl JavaAgentVTable {
             .invoke(handler, scope, agent_obj, &[])
     }
 
-    /// Invokes AgentView#init
+    /// Invokes `AgentView#init`
     ///
     /// # Arguments
     /// `scope`: - Attached java environment interface    
@@ -793,11 +794,11 @@ enum AgentTaskState {
     ///
     /// When in this state, the runtime will not process any incoming requests. It will, however,
     /// listen and handle any requests that are made from the Java runtime through its corresponding
-    /// ai/swim/server/agent/AgentContext instance.
+    /// `ai/swim/server/agent/AgentContext` instance.
     ///
     /// Inner argument is a JoinHandle created after spawning a blocking task which will complete
-    /// with either a dispatch response containing a series of encoded IdentifiedLaneResponses or an agent
-    /// task error if the invocation failed.
+    /// with either a dispatch response containing a series of encoded [`IdentifiedLaneResponses`]
+    /// or an agent task error if the invocation failed.
     Suspended(JoinHandle<Result<Vec<u8>, AgentTaskError>>),
 }
 
@@ -865,7 +866,7 @@ impl FfiAgentTask {
     /// Runs this agent.
     ///
     /// # Implementation detail:
-    /// - Invokes AgentView#didStart and AgentView#didStop before staring and stopping the agent
+    /// - Invokes `AgentView#didStart` and `AgentView#didStop` before staring and stopping the agent
     /// if it does not encounter any errors.
     /// - Dispatches events from the Rust runtime to the agent. Forwarding any lane responses
     /// produced by the agent. When an event is dispatched, the runtime is suspended any no more
@@ -1030,8 +1031,8 @@ impl FfiAgentTask {
 ///
 /// The dispatched request will be spawned on Tokio's blocking pool and may possibly call back into
 /// the rust runtime. The callee of this function should transition the runtime to suspended if a
-/// JoinHandle is returned. Awaiting completion of the JoinHandle may yield a series of
-/// IdentifiedLaneResponses to forward to lane writers.   
+/// [`JoinHandle`] is returned. Awaiting completion of the JoinHandle may yield a series of
+/// [`IdentifiedLaneResponses`] to forward to lane writers.   
 fn dispatch_request(
     context: FfiContext,
     agent_ref: JavaAgentRef,
@@ -1057,7 +1058,7 @@ fn dispatch_request(
     }
 }
 
-/// Request types made from the Java runtime through the ai/swim/server/agent/AgentContext class.
+/// Request types made from the Java runtime through the `ai/swim/server/agent/AgentContext` class.
 #[derive(Debug)]
 pub enum AgentRuntimeRequest {
     /// A request to open a new lane.
@@ -1069,7 +1070,7 @@ pub enum AgentRuntimeRequest {
     },
 }
 
-/// Decodes and forwards IdentifiedLaneResponses from the Java runtime to their respective uplinks.
+/// Decodes and forwards [`IdentifiedLaneResponses`] from the Java runtime to their respective uplinks.
 ///
 /// # Arguments:
 /// `ctx`: Java context.

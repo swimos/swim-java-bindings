@@ -39,7 +39,7 @@ impl LaneReaderCodec {
     }
 }
 
-/// Map operation encoder that operates directly on BytesMut instead of bounds of StructuralWritable.
+/// Map operation encoder that operates directly on [`BytesMut`] instead of bounds of [`StructuralWritable`].
 struct MapOperationBytesEncoder;
 
 impl MapOperationBytesEncoder {
@@ -129,12 +129,12 @@ enum LaneResponseDecoderState {
     },
 }
 
-/// Item yielded by a LaneResponseDecoder.
+/// Item yielded by a [`LaneResponseDecoder`].
 #[derive(PartialEq, Debug)]
 pub enum LaneResponseElement {
-    /// More data should be fetched by invoking AgentView#flushState.
+    /// More data should be fetched by invoking `AgentView#flushState`.
     Feed,
-    /// A LaneResponse produced by a lane.
+    /// A response produced by a lane.
     Response {
         /// The lane that produced the response.
         lane_id: i32,
@@ -143,10 +143,10 @@ pub enum LaneResponseElement {
     },
 }
 
-/// ai/swim/server/lanes/models/response/IdentifiedLaneResponse decoder.
+/// `ai/swim/server/lanes/models/response/IdentifiedLaneResponse` decoder.
 ///
 /// The decoder implementation yields either LaneResponseElement::Feed if the Java runtime has
-/// signalled that more data is available if another AgentView#flushState call is made, or
+/// signalled that more data is available if another `AgentView#flushState` call is made, or
 /// LaneResponseElement::Response with a lane ID to forward the data to.
 ///
 /// Any errors that this decoder yields should be considered a codec bug and the process should be
