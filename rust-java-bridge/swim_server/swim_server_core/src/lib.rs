@@ -9,7 +9,7 @@ use swim_utilities::routing::route_pattern::RoutePattern;
 
 use crate::agent::foreign::JavaAgentFactory;
 use crate::agent::spec::PlaneSpec;
-pub use crate::agent::FfiAgentDef;
+pub use crate::agent::GuestAgentDef;
 use crate::agent::GuestConfig;
 use jvm_sys::env::JavaEnv;
 
@@ -29,7 +29,7 @@ pub async fn run_server(
     for (uri, spec) in agent_specs {
         server = server.add_route(
             RoutePattern::parse_str(uri.as_str()).unwrap(),
-            FfiAgentDef::new(
+            GuestAgentDef::new(
                 env.clone(),
                 spec,
                 factory.clone(),

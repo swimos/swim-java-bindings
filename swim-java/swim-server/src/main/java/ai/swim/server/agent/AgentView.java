@@ -1,8 +1,10 @@
 package ai.swim.server.agent;
 
 import ai.swim.codec.decoder.DecoderException;
+import ai.swim.server.agent.task.TaskRegistry;
 import ai.swim.server.lanes.state.StateCollector;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 
 /**
  * A wrapper around a user-defined {@link AbstractAgent} and the lanes that it contains.
@@ -41,7 +43,7 @@ public class AgentView {
    *
    * @param laneIdx the URI of the lane.
    * @param buffer  the event data.
-   * @param len the number of elements written into the buffer
+   * @param len     the number of elements written into the buffer
    * @throws AgentException if an error is encountered when deserialising the envelope.
    */
   public byte[] dispatch(int laneIdx, ByteBuffer buffer, int len) throws DecoderException {
@@ -75,6 +77,7 @@ public class AgentView {
    * Invoked when the agent is started.
    */
   public void didStart() {
+    node.setState(AgentState.Running);
     this.agent.didStart();
   }
 
@@ -83,6 +86,7 @@ public class AgentView {
    */
   public void didStop() {
     this.agent.didStop();
+    node.setState(AgentState.Stopped);
   }
 
   /**
@@ -92,6 +96,11 @@ public class AgentView {
    */
   public byte[] flushState() {
     return node.flushState();
+  }
+
+  public void runTask(int idMsb, int idLsb, boolean remove) {
+    TaskRegistry taskRegistry = node.getTaskRegistry();
+    taskRegistry.runTask(new UUID(idMsb, idLsb), remove);
   }
 
   public AgentNode getNode() {

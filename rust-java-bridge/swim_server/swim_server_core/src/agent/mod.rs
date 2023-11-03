@@ -28,13 +28,13 @@ use tokio::sync::mpsc;
 use tokio::{pin, select};
 use tokio_util::codec::{Decoder, FramedRead, FramedWrite};
 use tokio_util::time::delay_queue::Key;
-use tracing::{debug, info, span, trace, Level};
+use tracing::{debug, error, info, span, trace, Level};
 use tracing_futures::Instrument;
 use uuid::Uuid;
 
 use interval_stream::{IntervalStream, ItemStatus, ScheduleDef, StreamItem};
 
-use crate::agent::foreign::{AgentFactory, AgentVTable, RuntimeContext};
+use crate::agent::foreign::{GuestAgentFactory, GuestAgentVTable, GuestRuntimeContext};
 use crate::agent::spec::{AgentSpec, LaneSpec};
 use crate::codec::{LaneReaderCodec, LaneResponseDecoder, LaneResponseElement};
 
@@ -46,22 +46,22 @@ pub mod foreign;
 pub mod spec;
 
 #[derive(Debug, Clone)]
-pub struct FfiAgentDef<C, F> {
-    ffi_context: C,
+pub struct GuestAgentDef<C, F> {
+    guest_context: C,
     spec: AgentSpec,
     agent_factory: F,
     guest_config: GuestConfig,
 }
 
-impl<C, F> FfiAgentDef<C, F> {
+impl<C, F> GuestAgentDef<C, F> {
     pub fn new(
-        ffi_context: C,
+        guest_context: C,
         spec: AgentSpec,
         agent_factory: F,
         guest_config: GuestConfig,
-    ) -> FfiAgentDef<C, F> {
-        FfiAgentDef {
-            ffi_context,
+    ) -> GuestAgentDef<C, F> {
+        GuestAgentDef {
+            guest_context,
             spec,
             agent_factory,
             guest_config,
@@ -69,10 +69,10 @@ impl<C, F> FfiAgentDef<C, F> {
     }
 }
 
-impl<C, F> Agent for FfiAgentDef<C, F>
+impl<C, F> Agent for GuestAgentDef<C, F>
 where
-    F: AgentFactory<Context = C>,
-    C: RuntimeContext,
+    F: GuestAgentFactory<Context = C>,
+    C: GuestRuntimeContext,
 {
     fn run(
         &self,
@@ -81,20 +81,20 @@ where
         config: AgentConfig,
         context: Box<dyn AgentContext + Send>,
     ) -> BoxFuture<'static, AgentInitResult> {
-        let FfiAgentDef {
+        let GuestAgentDef {
             guest_config,
-            ffi_context,
+            guest_context,
             spec,
             agent_factory,
         } = self;
 
-        // todo: channel size from config
-        let (ffi_tx, ffi_rx) = mpsc::channel(8);
+        // todo: channel size from config/replace with a SPSC channel
+        let (guest_tx, guest_rx) = mpsc::channel(8);
 
         let uri_string = route.to_string();
         let create_result =
-            agent_factory.agent_for(ffi_context.clone(), uri_string.as_str(), ffi_tx);
-        let ffi_context = ffi_context.clone();
+            agent_factory.agent_for(guest_context.clone(), uri_string.as_str(), guest_tx);
+        let guest_context = guest_context.clone();
         let spec = spec.clone();
         let guest_config = *guest_config;
 
@@ -102,14 +102,14 @@ where
             match create_result {
                 Ok(agent) => initialize_agent(
                     guest_config,
-                    ffi_context,
+                    guest_context,
                     spec,
                     route,
                     route_params,
                     config,
                     context,
                     agent,
-                    ffi_rx,
+                    guest_rx,
                 )
                 .await
                 .map(|task| task.run().boxed()),
@@ -143,15 +143,15 @@ async fn open_lane<A>(
     spec: LaneSpec,
     uri: &str,
     context: &Box<dyn AgentContext + Send>,
-    agent_environment: &mut AgentEnvironment<A>,
+    agent_environment: &mut GuestEnvironment<A>,
 ) -> Result<(), OpenLaneError>
 where
-    A: AgentVTable,
+    A: GuestAgentVTable,
 {
-    let AgentEnvironment {
+    let GuestEnvironment {
         config,
         lane_identifiers,
-        ffi_agent,
+        guest_agent,
         lane_readers,
         lane_writers,
         ..
@@ -182,7 +182,7 @@ where
     } else {
         let (reader, id, tx) = if lane_kind_repr.map_like() {
             let InitializedLane { io: (tx, rx), id } = run_lane_initializer(
-                MapLikeLaneNativeInitializer::new(ffi_agent, spec.lane_idx),
+                MapLikeLaneGuestInitializer::new(guest_agent, spec.lane_idx),
                 (tx, rx),
                 WithLengthBytesCodec::default(),
                 lane_idx,
@@ -192,7 +192,7 @@ where
             (LaneReader::map(id, rx), id, tx)
         } else {
             let InitializedLane { io: (tx, rx), id } = run_lane_initializer(
-                ValueLikeLaneNativeInitializer::new(ffi_agent, spec.lane_idx),
+                ValueLikeLaneGuestInitializer::new(guest_agent, spec.lane_idx),
                 (tx, rx),
                 WithLengthBytesCodec::default(),
                 lane_idx,
@@ -212,27 +212,27 @@ where
 
 async fn initialize_agent<A, C>(
     guest_config: GuestConfig,
-    ffi_context: C,
+    guest_context: C,
     spec: AgentSpec,
     route: RouteUri,
     route_params: HashMap<String, String>,
     config: AgentConfig,
     agent_context: Box<dyn AgentContext + Send>,
-    ffi_agent: A,
+    guest_agent: A,
     runtime_requests: mpsc::Receiver<GuestRuntimeRequest>,
-) -> Result<FfiAgentTask<A, C>, AgentInitError>
+) -> Result<GuestAgentTask<A, C>, AgentInitError>
 where
-    A: AgentVTable,
+    A: GuestAgentVTable,
 {
     let AgentSpec { lane_specs, .. } = spec;
 
-    let mut agent_environment = AgentEnvironment {
+    let mut agent_environment = GuestEnvironment {
         guest_config,
         _route: route,
         _route_params: route_params,
         config,
         lane_identifiers: HashMap::new(),
-        ffi_agent,
+        guest_agent,
         lane_readers: SelectAll::new(),
         lane_writers: HashMap::new(),
     };
@@ -254,8 +254,8 @@ where
 
     debug!("Agent initialised");
 
-    Ok(FfiAgentTask {
-        ffi_context,
+    Ok(GuestAgentTask {
+        guest_context,
         agent_context,
         agent_environment,
         runtime_requests,
@@ -290,32 +290,32 @@ where
     })
 }
 
-trait NativeItemInitializer {
+trait GuestItemInitializer {
     fn initialize<'s, S>(&'s mut self, stream: S) -> BoxFuture<Result<(), FrameIoError>>
     where
         S: Stream<Item = Result<BytesMut, FrameIoError>> + Send + 's;
 }
 
-struct ValueLikeLaneNativeInitializer<'a, A> {
+struct ValueLikeLaneGuestInitializer<'a, A> {
     agent_obj: &'a mut A,
     lane_id: i32,
 }
 
-impl<'a, A> ValueLikeLaneNativeInitializer<'a, A> {
-    pub fn new(agent_obj: &'a mut A, lane_id: i32) -> ValueLikeLaneNativeInitializer<'a, A> {
-        ValueLikeLaneNativeInitializer { agent_obj, lane_id }
+impl<'a, A> ValueLikeLaneGuestInitializer<'a, A> {
+    pub fn new(agent_obj: &'a mut A, lane_id: i32) -> ValueLikeLaneGuestInitializer<'a, A> {
+        ValueLikeLaneGuestInitializer { agent_obj, lane_id }
     }
 }
 
-impl<'a, A> NativeItemInitializer for ValueLikeLaneNativeInitializer<'a, A>
+impl<'a, A> GuestItemInitializer for ValueLikeLaneGuestInitializer<'a, A>
 where
-    A: AgentVTable,
+    A: GuestAgentVTable,
 {
     fn initialize<'s, S>(&'s mut self, stream: S) -> BoxFuture<Result<(), FrameIoError>>
     where
         S: Stream<Item = Result<BytesMut, FrameIoError>> + Send + 's,
     {
-        let ValueLikeLaneNativeInitializer { agent_obj, lane_id } = self;
+        let ValueLikeLaneGuestInitializer { agent_obj, lane_id } = self;
         Box::pin(async move {
             match try_last(stream).await? {
                 Some(body) => {
@@ -329,26 +329,26 @@ where
     }
 }
 
-struct MapLikeLaneNativeInitializer<'a, A> {
+struct MapLikeLaneGuestInitializer<'a, A> {
     agent_obj: &'a mut A,
     lane_id: i32,
 }
 
-impl<'a, A> MapLikeLaneNativeInitializer<'a, A> {
-    pub fn new(agent_obj: &'a mut A, lane_id: i32) -> MapLikeLaneNativeInitializer<'a, A> {
-        MapLikeLaneNativeInitializer { agent_obj, lane_id }
+impl<'a, A> MapLikeLaneGuestInitializer<'a, A> {
+    pub fn new(agent_obj: &'a mut A, lane_id: i32) -> MapLikeLaneGuestInitializer<'a, A> {
+        MapLikeLaneGuestInitializer { agent_obj, lane_id }
     }
 }
 
-impl<'a, A> NativeItemInitializer for MapLikeLaneNativeInitializer<'a, A>
+impl<'a, A> GuestItemInitializer for MapLikeLaneGuestInitializer<'a, A>
 where
-    A: AgentVTable,
+    A: GuestAgentVTable,
 {
     fn initialize<'s, S>(&'s mut self, stream: S) -> BoxFuture<Result<(), FrameIoError>>
     where
         S: Stream<Item = Result<BytesMut, FrameIoError>> + Send + 's,
     {
-        let MapLikeLaneNativeInitializer { agent_obj, lane_id } = self;
+        let MapLikeLaneGuestInitializer { agent_obj, lane_id } = self;
         Box::pin(async move {
             pin_mut!(stream);
             // Event buffer to reduce the number of FFI calls to initialise the lane.
@@ -385,7 +385,7 @@ async fn run_lane_initializer<'a, I, D>(
 ) -> Result<InitializedLane, FrameIoError>
 where
     D: Decoder<Item = BytesMut> + Send,
-    I: NativeItemInitializer,
+    I: GuestItemInitializer,
     FrameIoError: From<D::Error>,
 {
     let (mut tx, mut rx) = io;
@@ -442,32 +442,32 @@ impl GuestConfig {
     }
 }
 
-struct AgentEnvironment<V> {
+struct GuestEnvironment<V> {
     guest_config: GuestConfig,
+    guest_agent: V,
     _route: RouteUri,
     _route_params: HashMap<String, String>,
     config: AgentConfig,
     lane_identifiers: HashMap<i32, Text>,
-    ffi_agent: V,
     lane_readers: SelectAll<LaneReader>,
     lane_writers: HashMap<i32, ByteWriter>,
 }
 
-struct FfiAgentTask<A, C> {
-    ffi_context: C,
-    agent_environment: AgentEnvironment<A>,
+struct GuestAgentTask<A, C> {
+    guest_context: C,
+    agent_environment: GuestEnvironment<A>,
     runtime_requests: mpsc::Receiver<GuestRuntimeRequest>,
     agent_context: Box<dyn AgentContext + Send>,
 }
 
-impl<A, C> FfiAgentTask<A, C> {
+impl<A, C> GuestAgentTask<A, C> {
     async fn run(self) -> Result<(), AgentTaskError>
     where
-        A: AgentVTable,
-        C: RuntimeContext,
+        A: GuestAgentVTable,
+        C: GuestRuntimeContext,
     {
-        let FfiAgentTask {
-            ffi_context,
+        let GuestAgentTask {
+            guest_context,
             mut agent_environment,
             mut runtime_requests,
             agent_context,
@@ -475,10 +475,25 @@ impl<A, C> FfiAgentTask<A, C> {
 
         info!("Running agent");
 
-        agent_environment.ffi_agent.did_start().await?;
-
         let mut task_scheduler = TaskScheduler::default();
         let max_message_size = agent_environment.guest_config.max_message_size;
+
+        let did_start_call = agent_environment.guest_agent.did_start();
+
+        if suspend(
+            &mut agent_environment,
+            &agent_context,
+            &mut runtime_requests,
+            &mut task_scheduler,
+            did_start_call,
+            |_, _| ready(Ok(())),
+        )
+        .await?
+        .is_none()
+        {
+            error!("Guest context handle dropped");
+            return Ok(());
+        }
 
         loop {
             let event: Option<RuntimeEvent> = if task_scheduler.is_empty() {
@@ -502,7 +517,7 @@ impl<A, C> FfiAgentTask<A, C> {
                 }
             };
 
-            debug!(event = ?event, "FFI agent task received runtime event");
+            debug!(event = ?event, "Guest agent task received runtime event");
 
             match event {
                 Some(RuntimeEvent::Request { id, request }) => {
@@ -513,11 +528,11 @@ impl<A, C> FfiAgentTask<A, C> {
                             }
 
                             trace!("Received a command request");
-                            agent_environment.ffi_agent.dispatch(id, msg)
+                            agent_environment.guest_agent.dispatch(id, msg)
                         }
                         LaneRequest::Sync(remote_id) => {
                             trace!("Received a sync request");
-                            agent_environment.ffi_agent.sync(id, remote_id)
+                            agent_environment.guest_agent.sync(id, remote_id)
                         }
                         LaneRequest::InitComplete => continue,
                     };
@@ -533,8 +548,8 @@ impl<A, C> FfiAgentTask<A, C> {
                                 Ok(responses) => {
                                     trace!("Handling lane response");
                                     let r = forward_lane_responses(
-                                        &ffi_context,
-                                        &agent_environment.ffi_agent,
+                                        &guest_context,
+                                        &agent_environment.guest_agent,
                                         BytesMut::from_iter(responses),
                                         &mut agent_environment.lane_writers,
                                     )
@@ -566,7 +581,7 @@ impl<A, C> FfiAgentTask<A, C> {
                 }
                 None => break,
                 Some(RuntimeEvent::ScheduledEvent { event }) => {
-                    let handle = agent_environment.ffi_agent.run_task(event.id);
+                    let handle = agent_environment.guest_agent.run_task(event.id);
 
                     if suspend(
                         &mut agent_environment,
@@ -586,7 +601,16 @@ impl<A, C> FfiAgentTask<A, C> {
             }
         }
 
-        agent_environment.ffi_agent.did_stop().await?;
+        let did_stop_call = agent_environment.guest_agent.did_stop();
+        suspend(
+            &mut agent_environment,
+            &agent_context,
+            &mut runtime_requests,
+            &mut task_scheduler,
+            did_stop_call,
+            |_, _| ready(Ok(())),
+        )
+        .await?;
 
         Ok(())
     }
@@ -697,7 +721,7 @@ impl Stream for TaskScheduler {
 /// Returns `None` if `runtime_requests` has been dropped. This indicates that the agent should
 /// shutdown. Returns `Some` if the runtime was not dropped.
 async fn suspend<'l, F, O, H, HF, HR, A>(
-    agent_environment: &'l mut AgentEnvironment<A>,
+    agent_environment: &'l mut GuestEnvironment<A>,
     agent_context: &Box<dyn AgentContext + Send>,
     runtime_requests: &mut mpsc::Receiver<GuestRuntimeRequest>,
     task_scheduler: &mut TaskScheduler,
@@ -706,9 +730,9 @@ async fn suspend<'l, F, O, H, HF, HR, A>(
 ) -> Result<Option<HR>, AgentTaskError>
 where
     F: Future<Output = O>,
-    H: FnOnce(&'l mut AgentEnvironment<A>, O) -> HF,
+    H: FnOnce(&'l mut GuestEnvironment<A>, O) -> HF,
     HF: Future<Output = Result<HR, AgentTaskError>> + 'l,
-    A: AgentVTable,
+    A: GuestAgentVTable,
 {
     pin!(suspended_task);
 
@@ -753,12 +777,28 @@ where
     }
 }
 
-/// Requests from the
+/// Requests from the guest runtime to the host.
 #[derive(Debug)]
 pub enum GuestRuntimeRequest {
-    OpenLane { uri: Text, spec: LaneSpec },
-    ScheduleTask { id: Uuid, schedule: ScheduleDef },
-    CancelTask { id: Uuid },
+    /// Open a new lane
+    OpenLane {
+        /// The URI of the lane
+        uri: Text,
+        /// The specification of the lane.
+        spec: LaneSpec,
+    },
+    /// Schedule a new task
+    ScheduleTask {
+        /// The ID of the task
+        id: Uuid,
+        /// The execution schedule of the task
+        schedule: ScheduleDef,
+    },
+    /// Cancel a previously scheduled task
+    CancelTask {
+        /// The ID of the task
+        id: Uuid,
+    },
 }
 
 async fn forward_lane_responses<C, A>(
@@ -768,8 +808,8 @@ async fn forward_lane_responses<C, A>(
     lane_writers: &mut HashMap<i32, ByteWriter>,
 ) -> Result<ControlFlow<()>, AgentTaskError>
 where
-    C: RuntimeContext,
-    A: AgentVTable,
+    C: GuestRuntimeContext,
+    A: GuestAgentVTable,
 {
     let mut decoder = LaneResponseDecoder::default();
 

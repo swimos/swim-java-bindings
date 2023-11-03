@@ -23,4 +23,20 @@ public class AgentContextFunctionTable {
    */
   static native void dropHandle(long handlePtr);
 
+  static native void suspendTask(long handlePtr, long resumeAfterSeconds, int resumeAfterNanos, long idMsb, long idLsb);
+
+  static native void scheduleTaskIndefinitely(long handlePtr,
+      long intervalSeconds,
+      int intervalNanos,
+      long idMsb,
+      long idLsb);
+
+  static native void repeatTask(long handlePtr,
+      int runCount,
+      long intervalSeconds,
+      int intervalNanos,
+      long idMsb,
+      long idLsb);
+
+  public static native void cancelTask(long ptr, long mostSignificantBits, long leastSignificantBits);
 }

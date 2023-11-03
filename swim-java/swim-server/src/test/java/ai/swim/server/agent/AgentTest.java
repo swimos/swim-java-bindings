@@ -3,6 +3,7 @@ package ai.swim.server.agent;
 import ai.swim.codec.data.ByteWriter;
 import ai.swim.codec.encoder.Encoder;
 import ai.swim.server.SwimServerException;
+import ai.swim.server.agent.task.Task;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;

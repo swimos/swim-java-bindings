@@ -24,7 +24,7 @@ use jvm_sys::env::JavaEnv;
 use swim_server_core::agent::foreign::JavaAgentFactory;
 use swim_server_core::agent::spec::AgentSpec;
 use swim_server_core::agent::spec::PlaneSpec;
-use swim_server_core::{server_fn, FfiAgentDef};
+use swim_server_core::{server_fn, GuestAgentDef};
 
 use server_fixture::{LaneRequestDiscriminant, LaneResponseDiscriminant, TestAgentContext};
 use swim_server_core::agent::GuestConfig;
@@ -171,7 +171,7 @@ async fn run_agent(
 ) {
     let factory =
         env.with_env(|scope| JavaAgentFactory::new(&env, scope.new_global_ref(plane_obj)));
-    let agent = FfiAgentDef::new(env.clone(), spec, factory, GuestConfig::java_default());
+    let agent = GuestAgentDef::new(env.clone(), spec, factory, GuestConfig::java_default());
     let agent_context = TestAgentContext::default();
     let start_barrier = Arc::new(Notify::new());
 

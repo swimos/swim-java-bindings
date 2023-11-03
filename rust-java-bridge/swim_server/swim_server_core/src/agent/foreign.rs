@@ -28,7 +28,7 @@ use crate::agent::context::JavaAgentContext;
 use crate::agent::foreign::buffer::Dispatcher;
 use crate::agent::GuestRuntimeRequest;
 
-pub trait AgentVTable: Send + Sync + 'static {
+pub trait GuestAgentVTable: Send + Sync + 'static {
     type Suspended<O>: Future<Output = Result<O, AgentTaskError>> + Send
     where
         O: Send;
@@ -48,26 +48,26 @@ pub trait AgentVTable: Send + Sync + 'static {
     fn run_task(&self, id: Uuid) -> Self::Suspended<()>;
 }
 
-pub trait RuntimeContext: Send + Sync + Clone + 'static {
+pub trait GuestRuntimeContext: Send + Sync + Clone + 'static {
     fn fatal_error(&self, cause: impl ToString) -> AgentTaskError;
 }
 
-impl RuntimeContext for JavaEnv {
+impl GuestRuntimeContext for JavaEnv {
     fn fatal_error(&self, cause: impl ToString) -> AgentTaskError {
         self.fatal_error(cause)
     }
 }
 
-pub trait AgentFactory {
-    type VTable: AgentVTable;
-    type Context: RuntimeContext;
+pub trait GuestAgentFactory {
+    type GuestAgent: GuestAgentVTable;
+    type Context: GuestRuntimeContext;
 
     fn agent_for(
         &self,
         ctx: Self::Context,
         uri: impl AsRef<str>,
         tx: mpsc::Sender<GuestRuntimeRequest>,
-    ) -> Result<Self::VTable, AgentInitError>;
+    ) -> Result<Self::GuestAgent, AgentInitError>;
 }
 
 #[derive(Debug, Clone)]
@@ -93,8 +93,8 @@ impl JavaAgentFactory {
     }
 }
 
-impl AgentFactory for JavaAgentFactory {
-    type VTable = JavaAgentRef;
+impl GuestAgentFactory for JavaAgentFactory {
+    type GuestAgent = JavaAgentRef;
     type Context = JavaEnv;
 
     fn agent_for(
@@ -102,7 +102,7 @@ impl AgentFactory for JavaAgentFactory {
         env: Self::Context,
         uri: impl AsRef<str>,
         tx: mpsc::Sender<GuestRuntimeRequest>,
-    ) -> Result<Self::VTable, AgentInitError> {
+    ) -> Result<Self::GuestAgent, AgentInitError> {
         let node_uri = uri.as_ref();
         debug!(node_uri, "Attempting to create a new Java agent");
 
@@ -186,7 +186,7 @@ impl<O> Future for BlockingJniCall<O> {
     }
 }
 
-impl AgentVTable for JavaAgentRef {
+impl GuestAgentVTable for JavaAgentRef {
     type Suspended<O> = BlockingJniCall<O>
     where
         O: Send;

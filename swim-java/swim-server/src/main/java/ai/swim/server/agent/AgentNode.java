@@ -3,11 +3,11 @@ package ai.swim.server.agent;
 import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.decoder.DecoderException;
 import ai.swim.server.agent.call.CallContext;
+import ai.swim.server.agent.task.TaskRegistry;
 import ai.swim.server.lanes.Lane;
 import ai.swim.server.lanes.LaneModel;
 import ai.swim.server.lanes.state.StateCollector;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -21,18 +21,22 @@ public class AgentNode {
   private final StateCollector collector;
   /**
    * A map containing a key that is a unique lane identifier that has been registered with the Rust runtime and a value
-   * that is an initalised {@link LaneModel} that has been registered with the {@link StateCollector} below.
+   * that is an initialised {@link LaneModel} that has been registered with the {@link StateCollector} below.
    */
   private final Map<Integer, LaneModel> lanes;
   /**
    * Mapping from laneUri -> laneId.
    */
   private final Map<String, Integer> laneMappings;
+  private final TaskRegistry taskRegistry;
+  private AgentState state;
 
   public AgentNode(StateCollector collector, Map<Integer, LaneModel> lanes, Map<String, Integer> laneMappings) {
     this.collector = collector;
     this.lanes = lanes;
     this.laneMappings = laneMappings;
+    taskRegistry = new TaskRegistry();
+    state = AgentState.NotStarted;
   }
 
   /**
@@ -126,5 +130,17 @@ public class AgentNode {
     } else {
       return lanes.get(id).getLaneView();
     }
+  }
+
+  public TaskRegistry getTaskRegistry() {
+    return taskRegistry;
+  }
+
+  public boolean isRunning() {
+    return state == AgentState.Running;
+  }
+
+  public void setState(AgentState state) {
+    this.state = state;
   }
 }

@@ -24,10 +24,10 @@ use uuid::Uuid;
 use interval_stream::ScheduleDef;
 use server_fixture::{Channels, TestAgentContext};
 
-use crate::agent::foreign::{AgentFactory, AgentVTable, RuntimeContext};
+use crate::agent::foreign::{GuestAgentFactory, GuestAgentVTable, GuestRuntimeContext};
 use crate::agent::spec::{AgentSpec, LaneKindRepr, LaneSpec};
 use crate::agent::{GuestConfig, GuestRuntimeRequest, TaskScheduler};
-use crate::FfiAgentDef;
+use crate::GuestAgentDef;
 
 #[derive(thiserror::Error, Debug)]
 #[error("Fatal error: {0}")]
@@ -36,7 +36,7 @@ struct FatalError(String);
 #[derive(Clone)]
 struct TestRuntimeContext;
 
-impl RuntimeContext for TestRuntimeContext {
+impl GuestRuntimeContext for TestRuntimeContext {
     fn fatal_error(&self, cause: impl ToString) -> AgentTaskError {
         AgentTaskError::UserCodeError(Box::new(FatalError(cause.to_string())))
     }
@@ -68,8 +68,8 @@ impl TestAgentFactory {
     }
 }
 
-impl AgentFactory for TestAgentFactory {
-    type VTable = TestAgentVTable;
+impl GuestAgentFactory for TestAgentFactory {
+    type GuestAgent = TestAgentVTable;
     type Context = TestRuntimeContext;
 
     fn agent_for(
@@ -77,7 +77,7 @@ impl AgentFactory for TestAgentFactory {
         _ctx: Self::Context,
         uri: impl AsRef<str>,
         runtime_tx: mpsc::Sender<GuestRuntimeRequest>,
-    ) -> Result<Self::VTable, AgentInitError> {
+    ) -> Result<Self::GuestAgent, AgentInitError> {
         let inner = &mut *self.inner.lock();
         let requested_uri = uri.as_ref();
         match inner.take() {
@@ -302,7 +302,7 @@ struct TestAgentVTable {
     channel: VTableChannelSender,
 }
 
-impl AgentVTable for TestAgentVTable {
+impl GuestAgentVTable for TestAgentVTable {
     type Suspended<O> = BoxFuture<'static,Result<O, AgentTaskError>>
     where
         O: Send;
@@ -496,7 +496,7 @@ where
 {
     let (runtime_tx, runtime_rx) = oneshot::channel();
     let factory = TestAgentFactory::new("agent".to_string(), sender, runtime_tx);
-    let def = FfiAgentDef::new(
+    let def = GuestAgentDef::new(
         TestRuntimeContext,
         spec,
         factory,
