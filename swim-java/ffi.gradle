@@ -13,21 +13,20 @@ ext {
         target_dir = target_dir.concat('/x86_64-apple-darwin')
     }
 
-    debug_dir = target_dir.concat('/debug')
     release_dir = target_dir.concat('/release')
 }
 
 test {
-    def library_path = '-Djava.library.path='.concat(debug_dir)
+    def library_path = '-Djava.library.path='.concat(release_dir)
     jvmArgs library_path
     useJUnitPlatform()
 
     testLogging.showStandardStreams = true
 }
 
-def compileRust(release) {
+def compileRust() {
     exec {
-        println "Compiling rust libraries (".concat(release ? "release)" : "debug)")
+        println "Compiling rust libraries"
 
         workingDir(bridge_dir)
         environment('RUSTFLAGS', '-Awarnings')
@@ -52,31 +51,17 @@ def compileRust(release) {
             args.addAll(features.join(','))
         }
 
-        if (release) {
-            args.add('--release')
-        }
+        args.add('--release')
 
         commandLine args
     }
 }
 
-def compileRustDebug = tasks.register('compileRustDebug') {
-    compileRust(false)
+def compileRust = tasks.register('compileRust') {
+    compileRust()
 }
 
-compileTestJava {
-    doLast {
-        compileRust(false)
-    }
-}
-
-assemble {
-    doLast {
-        compileRust(true)
-    }
-}
-
-check.dependsOn compileRustDebug
+check.dependsOn compileRust
 
 tasks.register('cleanRust') {
     doLast {
@@ -102,12 +87,6 @@ tasks.create(name: "cleanLibs", type: Exec, description: "Cleaning library direc
     }
 }
 
-tasks.create(name: "nativeLibs", type: Sync) {
-    from "${project.ext.release_dir}"
-    include "*.dylib", "*.so", "*.dll"
-    into "libs"
-}
-
 tasks.named("processResources").configure { dependsOn("nativeLibs") }
 tasks.withType(JavaCompile).configureEach {
     compileTask -> compileTask.dependsOn "nativeLibs"
@@ -117,6 +96,7 @@ sourceSets {
     main {
         java {
             srcDir 'src/main/java'
+            srcDir "${buildDir}/generated/main/java"
         }
         resources {
             srcDir 'libs'

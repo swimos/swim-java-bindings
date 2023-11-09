@@ -15,8 +15,8 @@
 package ai.swim.client.downlink.value;
 
 import ai.swim.client.Handle;
-import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.DownlinkConfig;
+import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.lifecycle.OnEvent;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnSet;
@@ -87,9 +87,9 @@ public class ValueDownlinkBuilder<T> {
    * Attempts to open the downlink.
    *
    * @return an established ValueDownlink.
-   * @throws SwimClientException if there was an error opening the downlink.
+   * @throws DownlinkException if there was an error opening the downlink.
    */
-  public ValueDownlink<T> open() throws SwimClientException {
+  public ValueDownlink<T> open() throws DownlinkException {
     return ValueDownlinkModel.open(handle, host, node, lane, formType, lifecycle, downlinkConfig);
   }
 

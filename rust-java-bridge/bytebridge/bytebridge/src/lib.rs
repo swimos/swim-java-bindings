@@ -11,7 +11,7 @@ use std::string::FromUtf8Error;
 
 pub use bytes::BytesMut;
 pub use rmp::decode::read_array_len;
-use rmp::decode::{read_i8, read_marker, MarkerReadError, ValueReadError};
+use rmp::decode::{read_marker, MarkerReadError, ValueReadError};
 pub use rmp::encode::write_array_len;
 use rmp::encode::write_ext_meta;
 use rmp::Marker;
@@ -131,7 +131,7 @@ where
         Marker::FixExt1 => {
             let ty = reader.read_i8()?;
             if ty == ENUM_EXT {
-                let ordinal = read_i8(reader)?;
+                let ordinal = i8::try_from_reader(reader)?;
 
                 if (0..i8::max_value()).contains(&ordinal) {
                     Ok(ordinal)

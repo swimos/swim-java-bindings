@@ -1,0 +1,29 @@
+[package]
+name = "swim_server_test"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+swim_server_core = { path = "../swim_server_core" }
+jvm_sys = { path = "../../jvm_sys" }
+swim_server_app = { path = "../../../swim-rust/server/swim_server_app"}
+bytebridge = { workspace = true }
+jni = { workspace = true }
+futures = { workspace = true }
+futures-util = { workspace = true }
+bytes = { workspace = true }
+rmp = { workspace = true }
+rand = { workspace = true }
+parking_lot = { workspace = true, features = ["send_guard"] }
+base64 = "0.21.2"
+tokio = { workspace = true, features = ["rt-multi-thread", "io-util", "macros"] }
+ratchet = { workspace = true }
+swim_utilities = { workspace = true, features = ["byte_channel"] }
+swim_api = { path = "../../../swim-rust/api/swim_api" }
+tokio-util = { workspace = true, features = ["codec"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tracing = { workspace = true }
+tracing-futures = { workspace = true }

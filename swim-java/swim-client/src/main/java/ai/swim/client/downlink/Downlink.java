@@ -14,7 +14,6 @@
 
 package ai.swim.client.downlink;
 
-import ai.swim.client.SwimClientException;
 import ai.swim.concurrent.Trigger;
 
 /**
@@ -44,17 +43,17 @@ public abstract class Downlink<S> {
   /**
    * Blocks the current thread until the downlink has been terminated.
    *
-   * @throws SwimClientException if the downlink terminated with an error.
+   * @throws DownlinkException if the downlink terminated with an error.
    */
-  public void awaitStopped() throws SwimClientException {
+  public void awaitStopped() throws DownlinkException {
     try {
       trigger.awaitTrigger();
     } catch (InterruptedException e) {
-      throw new SwimClientException(e);
+      throw new DownlinkException(e);
     }
 
     if (cause != null || message != null) {
-      throw new SwimClientException(message, cause);
+      throw new DownlinkException(message, cause);
     }
   }
 

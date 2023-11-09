@@ -42,11 +42,11 @@ impl JavaMethod {
     }
 
     #[track_caller]
-    pub fn execute<'j, H>(
+    pub fn execute<H>(
         &mut self,
         handler: &H,
         scope: &Scope,
-        args: &[JValue<'j>],
+        args: &[JValue<'_>],
     ) -> Result<(), H::Err>
     where
         H: JavaExceptionHandler,

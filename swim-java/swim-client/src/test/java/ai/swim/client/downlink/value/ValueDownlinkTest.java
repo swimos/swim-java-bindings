@@ -15,6 +15,7 @@
 package ai.swim.client.downlink.value;
 
 import ai.swim.client.SwimClientException;
+import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.downlink.FfiTest;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
@@ -345,7 +346,7 @@ class ValueDownlinkTest extends FfiTest {
     try {
       valueDownlink.awaitStopped();
       fail("Expected awaitStopped to throw a SwimClientException");
-    } catch (SwimClientException e) {
+    } catch (DownlinkException e) {
       assertEquals("Invalid frame body", e.getMessage());
 
       Throwable cause = e.getCause();

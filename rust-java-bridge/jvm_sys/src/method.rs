@@ -28,6 +28,7 @@ use std::sync::Arc;
 /// in the case in HotSpot VM's.
 #[derive(Debug, Clone)]
 pub struct InitialisedJavaObjectMethod {
+    def: JavaObjectMethodDef,
     signature: Arc<TypeSignature>,
     method_id: JMethodID,
 }
@@ -50,6 +51,7 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
         let InitialisedJavaObjectMethod {
             signature,
             method_id,
+            def,
         } = self;
 
         if signature.args.len() != args.len() {
@@ -57,7 +59,14 @@ impl<'j> JavaObjectMethod<'j> for InitialisedJavaObjectMethod {
         }
 
         let args = args.iter().map(|v| v.to_jni()).collect::<Vec<_>>();
-        scope.call_method_unchecked(handler, object, *method_id, signature.ret.clone(), &args)
+        scope.call_method_unchecked(
+            def,
+            handler,
+            object,
+            *method_id,
+            signature.ret.clone(),
+            &args,
+        )
     }
 }
 
@@ -114,6 +123,7 @@ impl JavaObjectMethodDef {
         let signature = TypeSignature::from_str(signature)?;
 
         Ok(InitialisedJavaObjectMethod {
+            def: *self,
             signature: Arc::new(signature),
             method_id,
         })
@@ -137,28 +147,28 @@ pub trait JavaObjectMethod<'j> {
 }
 
 pub trait JavaMethodExt<'j>: JavaObjectMethod<'j> {
-    fn string<'m>(&'m self) -> MoldString<'m, Self>
+    fn string(&self) -> MoldString<'_, Self>
     where
         Self: Sized,
     {
         MoldString { method: self }
     }
 
-    fn null<'m>(&'m self) -> MoldNull<'m, Self>
+    fn null(&self) -> MoldNull<'_, Self>
     where
         Self: Sized,
     {
         MoldNull { method: self }
     }
 
-    fn global_ref<'m>(&'m self) -> MoldGlobalRef<'m, Self>
+    fn global_ref(&self) -> MoldGlobalRef<'_, Self>
     where
         Self: Sized,
     {
         MoldGlobalRef { method: self }
     }
 
-    fn array<'m, A>(&'m self) -> MoldArray<'m, Self, A>
+    fn array<A>(&self) -> MoldArray<'_, Self, A>
     where
         Self: Sized,
         A: JavaArrayType,
@@ -169,21 +179,21 @@ pub trait JavaMethodExt<'j>: JavaObjectMethod<'j> {
         }
     }
 
-    fn l<'m>(&'m self) -> MoldObject<'m, Self>
+    fn l(&self) -> MoldObject<'_, Self>
     where
         Self: Sized,
     {
         MoldObject { method: self }
     }
 
-    fn v<'m>(&'m self) -> MoldVoid<'m, Self>
+    fn v(&self) -> MoldVoid<'_, Self>
     where
         Self: Sized,
     {
         MoldVoid { method: self }
     }
 
-    fn z<'m>(&'m self) -> MoldBool<'m, Self>
+    fn z(&self) -> MoldBool<'_, Self>
     where
         Self: Sized,
     {
@@ -259,7 +269,8 @@ where
     {
         let MoldVoid { method } = self;
         let val = method.invoke(handler, scope, object, args)?;
-        Ok(mold(scope, || val.v()))
+        mold(scope, || val.v());
+        Ok(())
     }
 }
 
@@ -288,14 +299,15 @@ where
         let MoldNull { method } = self;
         let value = method.invoke(handler, scope, object, args)?;
 
-        Ok(mold(scope, || match value.l() {
+        mold(scope, || match value.l() {
             Ok(ptr) if ptr.is_null() => Ok(()),
             Ok(ptr) => Err(WrongJValueType(
                 "JObject != null",
                 JValue::Object(ptr).type_name(),
             )),
             Err(e) => Err(e),
-        }))
+        });
+        Ok(())
     }
 }
 

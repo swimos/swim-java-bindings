@@ -6,5 +6,6 @@ build
 out
 *.log
 *~
-
 swim-client/libs/*
+swim-server/libs/*
+swim-core/swim-downlink/libs/*

@@ -41,10 +41,10 @@ public class UnitAgent extends AbstractAgent {
    */
   @Override
   public void didStart() {
-    this.timer = setTimer(1000, () -> {
-      this.intLane.set(this.intLane.get() + 1);
-      this.timer.reschedule(1000);
-    });
+//    this.timer = setTimer(1000, () -> {
+//      this.intLane.set(this.intLane.get() + 1);
+//      this.timer.reschedule(1000);
+//    });
   }
 
 }

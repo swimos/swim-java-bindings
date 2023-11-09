@@ -5,6 +5,7 @@ import ai.swim.codec.input.Input;
 
 public class Alt<T> extends Parser<T> {
   private final Parser<T>[] parsers;
+  private Integer last;
 
   @SafeVarargs
   private Alt(Parser<T>... parsers) {
@@ -44,7 +45,35 @@ public class Alt<T> extends Parser<T> {
     int errorCount = 0;
     int contCount = 0;
 
+    // try running the last successful parser first as a fast path
+    if (last != null) {
+      Parser<T> p = parsers[last];
+      if (!p.isError()) {
+        Input source = input.clone();
+        Parser<T> result = p.feed(source);
+
+        if (result.isError()) {
+          errorCount += 1;
+          error = result;
+        } else if (result.isCont()) {
+          contCount += 1;
+          cont = result;
+          advanced = source;
+        } else {
+          input.setFrom(source);
+          return result;
+        }
+
+        parsers[last] = result;
+      }
+    }
+
     for (int i = 0; i < parsers.length; i++) {
+      if (last != null && last == i) {
+        // In order to reach this branch, the 'last' parser would have failed and so it can be skipped.
+        continue;
+      }
+
       Parser<T> p = parsers[i];
 
       if (p.isError()) {
@@ -65,6 +94,9 @@ public class Alt<T> extends Parser<T> {
         cont = parseResult;
         advanced = source;
       } else if (parseResult.isDone()) {
+        // Set the last index so in the next invocation we can run it as a fast path.
+        last = i;
+
         input.setFrom(source);
         return parseResult;
       }

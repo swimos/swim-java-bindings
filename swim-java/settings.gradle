@@ -1,8 +1,8 @@
 rootProject.name = 'swim-java'
 
 include('swim-client')
-
 include('swim-core')
+include('swim-ffi')
 
 include('swim-core/swim-codec')
 project(':swim-core/swim-codec').name = 'swim-codec'
@@ -25,10 +25,6 @@ project(':swim-core/swim-util').name = 'swim-util'
 include('swim-core/swim-concurrent')
 project(':swim-core/swim-concurrent').name = 'swim-concurrent'
 
-include 'swim.lang.ffi'
-project(':swim.lang.ffi').projectDir = file('swim-ffi/swim.lang.ffi')
-project(':swim.lang.ffi').name = 'swim-lang-ffi'
-
 include 'value_downlink'
 project(':value_downlink').projectDir = file('cookbook/value_downlink')
 project(':value_downlink').name = 'value_downlink'
@@ -36,3 +32,6 @@ project(':value_downlink').name = 'value_downlink'
 include 'map_downlink'
 project(':map_downlink').projectDir = file('cookbook/map_downlink')
 project(':map_downlink').name = 'map_downlink'
+
+include('swim-server')
+project(':swim-server').name = 'swim-server'

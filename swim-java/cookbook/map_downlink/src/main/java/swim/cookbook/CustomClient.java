@@ -14,10 +14,12 @@
 
 package swim.cookbook;
 
+import ai.swim.client.ClientConfig;
 import ai.swim.client.SwimClient;
 import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.map.MapDownlink;
 import ai.swim.client.downlink.map.MapDownlinkBuilder;
+import java.io.IOException;
 
 /**
  * An example application that demonstrates interacting with a Swim Value Lane.
@@ -28,10 +30,10 @@ final class CustomClient {
 
   }
 
-  public static void main(String[] args) throws SwimClientException {
+  public static void main(String[] args) throws SwimClientException, IOException {
     // Initialises the client runtime.
     MapDownlinkBuilder<Integer, String> builder;
-    try (SwimClient client = SwimClient.open()) {
+    try (SwimClient client = SwimClient.open(new ClientConfig())) {
 
       // Here we create a ValueDownlinkBuilder to a host running at "warp://localhost:9001/" an agent of "unit/foo" and a
       // value lane of "lane" - which corresponds to UnitAgent#intLane.

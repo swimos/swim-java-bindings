@@ -1,0 +1,12 @@
+[package]
+name = "swim_server"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+swim_server_core = { path = "swim_server_core" }
+jvm_sys = { path = "../jvm_sys" }
+jni = { workspace = true }

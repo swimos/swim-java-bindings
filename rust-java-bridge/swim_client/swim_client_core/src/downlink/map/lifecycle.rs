@@ -141,14 +141,14 @@ impl MapDownlinkVTable {
         drop: jobject,
     ) -> MapDownlinkVTable {
         MapDownlinkVTable {
-            on_linked: JavaMethod::for_method(&env, on_linked, ON_LINKED),
-            on_synced: JavaMethod::for_method(&env, on_synced, ROUTINE_EXEC),
-            on_update: JavaMethod::for_method(&env, on_update, DISPATCH_ON_UPDATE),
-            on_remove: JavaMethod::for_method(&env, on_remove, DISPATCH_ON_REMOVE),
-            on_clear: JavaMethod::for_method(&env, on_clear, DISPATCH_ON_CLEAR),
-            on_unlinked: JavaMethod::for_method(&env, on_unlinked, ON_UNLINKED),
-            take: JavaMethod::for_method(&env, take, DISPATCH_TAKE),
-            drop: JavaMethod::for_method(&env, drop, DISPATCH_DROP),
+            on_linked: JavaMethod::for_method(env, on_linked, ON_LINKED),
+            on_synced: JavaMethod::for_method(env, on_synced, ROUTINE_EXEC),
+            on_update: JavaMethod::for_method(env, on_update, DISPATCH_ON_UPDATE),
+            on_remove: JavaMethod::for_method(env, on_remove, DISPATCH_ON_REMOVE),
+            on_clear: JavaMethod::for_method(env, on_clear, DISPATCH_ON_CLEAR),
+            on_unlinked: JavaMethod::for_method(env, on_unlinked, ON_UNLINKED),
+            take: JavaMethod::for_method(env, take, DISPATCH_TAKE),
+            drop: JavaMethod::for_method(env, drop, DISPATCH_DROP),
             handler: ExceptionHandler(IsTypeOfExceptionHandler::new(
                 env,
                 "ai/swim/client/downlink/DownlinkException",

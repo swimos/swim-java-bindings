@@ -17,9 +17,11 @@ use std::io::Write;
 
 use jni::JNIEnv;
 
+pub const RUNTIME_EXCEPTION: &str = "java/lang/RuntimeException";
+
 #[macro_export]
 macro_rules! jni_try {
-    ($env:ident, $class:tt, $msg:tt, $expr:expr, $ret:expr $(,)?) => {{
+    ($env:ident, $class:expr, $msg:tt, $expr:expr, $ret:expr $(,)?) => {{
         let env_ref = $env;
 
         match $expr {
@@ -32,16 +34,16 @@ macro_rules! jni_try {
             }
         }
     }};
-    ($env:ident, $class:tt, $msg:tt, $expr:expr, $(,)?) => {{
+    ($env:ident, $class:expr, $msg:tt, $expr:expr, $(,)?) => {{
         $crate::jni_try!($env, $class, $msg, $expr, ())
     }};
     ($env:ident, $msg:tt, $expr:expr $(,)?) => {
-        $crate::jni_try!($env, "ai/swim/client/SwimClientException", $msg, $expr, ())
+        $crate::jni_try!($env, $crate::RUNTIME_EXCEPTION, $msg, $expr, ())
     };
     ($env:ident, $msg:tt, $expr:expr, $ret:expr $(,)?) => {
         $crate::jni_try!(
             $env,
-            "ai/swim/client/SwimClientException",
+            $crate::RUNTIME_EXCEPTION,
             $msg,
             $expr,
             $ret
@@ -71,7 +73,8 @@ macro_rules! jni_try {
 /// $exception_type) and a default value is returned for the function.
 #[macro_export]
 macro_rules! ffi_fn {
-    ($exception_class:tt, $name:tt ($env:ident, $class:ident $(,)? $($arg:ident: $ty:ty $(,)?)*) $(-> $ret:tt)? $body:block) => {
+    ($exception_class:tt, $(#[$attrs:meta])* fn $name:tt ($env:ident, $class:ident $(,)? $($arg:ident: $ty:ty $(,)?)*) $(-> $ret:tt)? $body:block) => {
+        $(#[$attrs])*
         #[no_mangle]
         pub extern "system" fn $name(
             $env:jni::JNIEnv,
@@ -86,8 +89,9 @@ macro_rules! ffi_fn {
             }
         }
     };
-    ($exception_class:tt, $prefix:tt, $name:tt ($env:ident, $class:ident $(,)? $($arg:ident: $ty:ty $(,)?)*) $(-> $ret:tt)? $body:block) => {
+    ($exception_class:tt, $prefix:tt, $(#[$attrs:meta])* fn $name:tt ($env:ident, $class:ident $(,)? $($arg:ident: $ty:ty $(,)?)*) $(-> $ret:tt)? $body:block) => {
         $crate::paste::item! {
+            $(#[$attrs])*
             #[no_mangle]
             pub extern "system" fn [< $prefix _ $name >](
                 $env:jni::JNIEnv,
@@ -158,16 +162,16 @@ where
 
     match env.exception_check() {
         Ok(true) => {
-            let _r = write!(writer, "Unhandled exception. Printing and clearing it");
+            let _r = writeln!(writer, "Unhandled exception. Printing and clearing it");
             describe(
                 &mut writer,
                 env.exception_describe(),
-                "Failed to print exception",
+                "Failed to print exception\n",
             );
             describe(
                 &mut writer,
                 env.exception_clear(),
-                "Failed to clear exception",
+                "Failed to clear exception\n",
             );
         }
         Ok(false) => {}

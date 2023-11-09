@@ -14,9 +14,8 @@
 
 package ai.swim.client.downlink.map;
 
-import ai.swim.client.Handle;
-import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.DownlinkConfig;
+import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.downlink.map.dispatch.DispatchDrop;
 import ai.swim.client.downlink.map.dispatch.DispatchOnClear;
 import ai.swim.client.downlink.map.dispatch.DispatchOnRemove;
@@ -25,6 +24,7 @@ import ai.swim.client.downlink.map.dispatch.DispatchTake;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.concurrent.Trigger;
+import ai.swim.lang.ffi.NativeHandle;
 import ai.swim.structure.Form;
 
 public final class MapDownlinkModel<K, V> extends MapDownlink<K, V> {
@@ -44,16 +44,16 @@ public final class MapDownlinkModel<K, V> extends MapDownlink<K, V> {
    * @param lifecycle      Downlink lifecycle event callbacks.
    * @param downlinkConfig Downlink and runtime configuration.
    * @return An established ValueDownlink.
-   * @throws SwimClientException if there is an error opening the downlink or by a malformed address.
+   * @throws DownlinkException if there is an error opening the downlink or by a malformed address.
    */
-  static <K, V> MapDownlink<K, V> open(Handle handle,
+  static <K, V> MapDownlink<K, V> open(NativeHandle handle,
       String host,
       String node,
       String lane,
       Class<K> keyType,
       Class<V> valueType,
       MapDownlinkLifecycle<K, V> lifecycle,
-      DownlinkConfig downlinkConfig) throws SwimClientException {
+      DownlinkConfig downlinkConfig) throws DownlinkException {
     MapDownlinkState<K, V> state = new MapDownlinkState<>(
         Form.forClass(keyType),
         Form.forClass(valueType),
@@ -121,6 +121,6 @@ public final class MapDownlinkModel<K, V> extends MapDownlink<K, V> {
       DispatchOnClear onClear,
       OnUnlinked onUnlinked,
       DispatchTake take,
-      DispatchDrop drop) throws SwimClientException;
+      DispatchDrop drop) throws DownlinkException;
 
 }

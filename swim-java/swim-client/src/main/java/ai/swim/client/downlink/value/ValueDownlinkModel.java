@@ -15,8 +15,8 @@
 package ai.swim.client.downlink.value;
 
 import ai.swim.client.Handle;
-import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.DownlinkConfig;
+import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.concurrent.Trigger;
@@ -40,7 +40,7 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
    * @param lifecycle      Downlink lifecycle event callbacks.
    * @param downlinkConfig Downlink and runtime configuration.
    * @return An established ValueDownlink.
-   * @throws SwimClientException if there is an error opening the downlink or by a malformed address.
+   * @throws DownlinkException if there is an error opening the downlink or by a malformed address.
    */
   static <T> ValueDownlink<T> open(Handle handle,
       String host,
@@ -48,7 +48,7 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
       String lane,
       Class<T> formType,
       ValueDownlinkLifecycle<T> lifecycle,
-      DownlinkConfig downlinkConfig) throws SwimClientException {
+      DownlinkConfig downlinkConfig) throws DownlinkException {
     ValueDownlinkState<T> state = new ValueDownlinkState<>(Form.forClass(formType));
     Trigger trigger = new Trigger();
     ValueDownlinkModel<T> downlink = new ValueDownlinkModel<>(trigger, state);
@@ -101,6 +101,6 @@ public final class ValueDownlinkModel<T> extends ValueDownlink<T> {
       OnLinked onLinked,
       Consumer<ByteBuffer> onSet,
       Consumer<ByteBuffer> onSynced,
-      OnUnlinked onUnlinked) throws SwimClientException;
+      OnUnlinked onUnlinked) throws DownlinkException;
 
 }

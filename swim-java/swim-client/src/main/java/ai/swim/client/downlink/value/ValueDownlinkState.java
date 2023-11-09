@@ -27,7 +27,7 @@ import ai.swim.structure.recognizer.RecognizerException;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-class ValueDownlinkState<T> {
+public class ValueDownlinkState<T> {
   private final Form<T> form;
   private T state;
 

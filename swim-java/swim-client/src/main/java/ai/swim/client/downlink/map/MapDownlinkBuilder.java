@@ -14,20 +14,20 @@
 
 package ai.swim.client.downlink.map;
 
-import ai.swim.client.Handle;
-import ai.swim.client.SwimClientException;
 import ai.swim.client.downlink.DownlinkConfig;
+import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.lifecycle.OnClear;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnRemove;
 import ai.swim.client.lifecycle.OnSynced;
 import ai.swim.client.lifecycle.OnUnlinked;
 import ai.swim.client.lifecycle.OnUpdate;
+import ai.swim.lang.ffi.NativeHandle;
 import java.util.Map;
 import java.util.Objects;
 
 public class MapDownlinkBuilder<K, V> {
-  private final Handle handle;
+  private final NativeHandle handle;
   private final String host;
   private final String lane;
   private final Class<K> keyType;
@@ -36,7 +36,7 @@ public class MapDownlinkBuilder<K, V> {
   private final MapDownlinkLifecycle<K, V> lifecycle;
   private DownlinkConfig downlinkConfig;
 
-  public MapDownlinkBuilder(Handle handle,
+  public MapDownlinkBuilder(NativeHandle handle,
       Class<K> keyType,
       Class<V> valueType,
       String host,
@@ -104,9 +104,9 @@ public class MapDownlinkBuilder<K, V> {
    * Attempts to open the downlink.
    *
    * @return an established ValueDownlink.
-   * @throws SwimClientException if there was an error opening the downlink.
+   * @throws DownlinkException if there was an error opening the downlink.
    */
-  public MapDownlink<K, V> open() throws SwimClientException {
+  public MapDownlink<K, V> open() throws DownlinkException {
     return MapDownlinkModel.open(handle, host, node, lane, keyType, valueType, lifecycle, downlinkConfig);
   }
 

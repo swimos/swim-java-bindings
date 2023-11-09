@@ -29,7 +29,6 @@ pub mod map;
 pub mod value;
 mod vtable;
 
-
 pub const ON_LINKED: JavaObjectMethodDef =
     JavaObjectMethodDef::new("ai/swim/client/lifecycle/OnLinked", "onLinked", "()V");
 pub const ON_UNLINKED: JavaObjectMethodDef =
