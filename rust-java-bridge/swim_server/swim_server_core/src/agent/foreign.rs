@@ -33,9 +33,9 @@ pub trait GuestAgentVTable: Send + Sync + 'static {
     where
         O: Send;
 
-    fn did_start(&self) -> Self::Suspended<()>;
+    fn did_start(&self) -> Self::Suspended<Vec<u8>>;
 
-    fn did_stop(&self) -> Self::Suspended<()>;
+    fn did_stop(&self) -> Self::Suspended<Vec<u8>>;
 
     fn dispatch(&mut self, lane_id: i32, buffer: BytesMut) -> Self::Suspended<Vec<u8>>;
 
@@ -45,7 +45,7 @@ pub trait GuestAgentVTable: Send + Sync + 'static {
 
     fn flush_state(&self) -> Self::Suspended<Vec<u8>>;
 
-    fn run_task(&self, id: Uuid) -> Self::Suspended<()>;
+    fn run_task(&self, id: Uuid, complete: bool) -> Self::Suspended<Vec<u8>>;
 }
 
 pub trait GuestRuntimeContext: Send + Sync + Clone + 'static {
@@ -129,6 +129,9 @@ impl GuestAgentFactory for JavaAgentFactory {
             };
             JavaAgentRef::new(env.clone(), obj_ref, vtable.clone())
         });
+
+        debug!(node_uri, "Created new java agent");
+
         Ok(agent)
     }
 }
@@ -191,7 +194,7 @@ impl GuestAgentVTable for JavaAgentRef {
     where
         O: Send;
 
-    fn did_start(&self) -> Self::Suspended<()> {
+    fn did_start(&self) -> Self::Suspended<Vec<u8>> {
         let JavaAgentRef {
             env,
             agent_obj,
@@ -205,11 +208,13 @@ impl GuestAgentVTable for JavaAgentRef {
 
         BlockingJniCall::new(env.clone(), move || {
             trace!("Invoking agent did_start method");
-            env.with_env(|scope| vtable.did_start(&scope, agent_obj.as_obj()))
+            let r = env.with_env(|scope| vtable.did_start(&scope, agent_obj.as_obj()));
+            debug!(result = ?r,"Agent did start invocation result");
+            r
         })
     }
 
-    fn did_stop(&self) -> Self::Suspended<()> {
+    fn did_stop(&self) -> Self::Suspended<Vec<u8>> {
         let JavaAgentRef {
             env,
             agent_obj,
@@ -301,7 +306,7 @@ impl GuestAgentVTable for JavaAgentRef {
         })
     }
 
-    fn run_task(&self, id: Uuid) -> Self::Suspended<()> {
+    fn run_task(&self, id: Uuid, complete: bool) -> Self::Suspended<Vec<u8>> {
         let JavaAgentRef {
             env,
             agent_obj,
@@ -314,12 +319,17 @@ impl GuestAgentVTable for JavaAgentRef {
         let env = env.clone();
 
         BlockingJniCall::new(env.clone(), move || {
-            trace!("Flushing agent state");
+            trace!(id = %id, complete, "Running task");
             let (id_msb, id_lsb) = id.as_u64_pair();
-            env.with_env(|scope| {
-                vtable.run_task(&scope, agent_obj.as_obj(), id_msb as i64, id_lsb as i64)
-            });
-            Ok(())
+            Ok(env.with_env(|scope| {
+                vtable.run_task(
+                    &scope,
+                    agent_obj.as_obj(),
+                    id_msb as i64,
+                    id_lsb as i64,
+                    complete,
+                )
+            }))
         })
     }
 }
@@ -471,9 +481,9 @@ pub struct JavaAgentVTable {
 
 impl JavaAgentVTable {
     const DID_START: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "didStart", "()V");
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "didStart", "()[B");
     const DID_STOP: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "didStop", "()V");
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "didStop", "()[B");
     const DISPATCH: JavaObjectMethodDef = JavaObjectMethodDef::new(
         "ai/swim/server/agent/AgentView",
         "dispatch",
@@ -489,7 +499,7 @@ impl JavaAgentVTable {
     const FLUSH_STATE: JavaObjectMethodDef =
         JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "flushState", "()[B");
     const RUN_TASK: JavaObjectMethodDef =
-        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "runTask", "(IIZ)V");
+        JavaObjectMethodDef::new("ai/swim/server/agent/AgentView", "runTask", "(JJZ)[B");
 
     pub fn initialise(env: &JavaEnv) -> JavaAgentVTable {
         JavaAgentVTable {
@@ -510,18 +520,24 @@ impl JavaAgentVTable {
         }
     }
 
-    fn did_start(&self, scope: &Scope, agent_obj: JObject) -> Result<(), AgentTaskError> {
+    fn did_start(&self, scope: &Scope, agent_obj: JObject) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable {
             did_start, handler, ..
         } = self;
-        did_start.v().invoke(handler, scope, agent_obj, &[])
+        did_start
+            .l()
+            .array::<ByteArray>()
+            .invoke(handler, scope, agent_obj, &[])
     }
 
-    fn did_stop(&self, scope: &Scope, agent_obj: JObject) -> Result<(), AgentTaskError> {
+    fn did_stop(&self, scope: &Scope, agent_obj: JObject) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable {
             did_stop, handler, ..
         } = self;
-        did_stop.v().invoke(handler, scope, agent_obj, &[])
+        did_stop
+            .l()
+            .array::<ByteArray>()
+            .invoke(handler, scope, agent_obj, &[])
     }
 
     fn dispatch(
@@ -591,8 +607,19 @@ impl JavaAgentVTable {
         scope.invoke(init.v(), agent_obj, &[lane_id.into(), msg.into()])
     }
 
-    fn run_task(&self, scope: &Scope, agent_obj: JObject, id_msb: i64, id_lsb: i64) {
+    fn run_task(
+        &self,
+        scope: &Scope,
+        agent_obj: JObject,
+        id_msb: i64,
+        id_lsb: i64,
+        complete: bool,
+    ) -> Vec<u8> {
         let JavaAgentVTable { run_task, .. } = self;
-        scope.invoke(run_task.v(), agent_obj, &[id_msb.into(), id_lsb.into()])
+        scope.invoke(
+            run_task.l().array::<ByteArray>(),
+            agent_obj,
+            &[id_msb.into(), id_lsb.into(), complete.into()],
+        )
     }
 }

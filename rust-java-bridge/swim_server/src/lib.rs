@@ -43,3 +43,55 @@ server_fn! {
         }
     }
 }
+
+server_fn! {
+    agent_AgentContextFunctionTable_suspendTask(
+        env,
+        _class,
+        context: *mut JavaAgentContext,
+        resume_after_seconds: u64,
+        resume_after_nanos: u32,
+        id_msb: u64,
+        id_lsb: u64,
+    ) {
+        null_pointer_check_abort!(env, context);
+
+        let context = unsafe { &*context };
+        context.suspend_task(resume_after_seconds, resume_after_nanos, id_msb, id_lsb);
+    }
+}
+
+server_fn! {
+    agent_AgentContextFunctionTable_scheduleTaskIndefinitely(
+        env,
+        _class,
+        context: *mut JavaAgentContext,
+        interval_seconds: u64,
+        interval_nanos: u32,
+        id_msb: u64,
+        id_lsb: u64,
+    ) {
+        null_pointer_check_abort!(env, context);
+
+        let context = unsafe { &*context };
+        context.schedule_task_indefinitely(interval_seconds, interval_nanos, id_msb, id_lsb);
+    }
+}
+
+server_fn! {
+    agent_AgentContextFunctionTable_repeatTask(
+        env,
+        _class,
+        context: *mut JavaAgentContext,
+        count: usize,
+        interval_seconds: u64,
+        interval_nanos: u32,
+        id_msb: u64,
+        id_lsb: u64,
+    ) {
+        null_pointer_check_abort!(env, context);
+
+        let context = unsafe { &*context };
+        context.repeat_task(count, interval_seconds, interval_nanos, id_msb, id_lsb);
+    }
+}

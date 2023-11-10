@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::future::{ready, Future};
+use std::future::Future;
 use std::mem::size_of;
 use std::ops::ControlFlow;
 use std::pin::Pin;
@@ -28,7 +28,7 @@ use tokio::sync::mpsc;
 use tokio::{pin, select};
 use tokio_util::codec::{Decoder, FramedRead, FramedWrite};
 use tokio_util::time::delay_queue::Key;
-use tracing::{debug, error, info, span, trace, Level};
+use tracing::{debug, info, span, trace, Level};
 use tracing_futures::Instrument;
 use uuid::Uuid;
 
@@ -46,21 +46,21 @@ pub mod foreign;
 pub mod spec;
 
 #[derive(Debug, Clone)]
-pub struct GuestAgentDef<C, F> {
+pub struct JavaGuestAgent<C, F> {
     guest_context: C,
     spec: AgentSpec,
     agent_factory: F,
-    guest_config: GuestConfig,
+    guest_config: JavaGuestConfig,
 }
 
-impl<C, F> GuestAgentDef<C, F> {
+impl<C, F> JavaGuestAgent<C, F> {
     pub fn new(
         guest_context: C,
         spec: AgentSpec,
         agent_factory: F,
-        guest_config: GuestConfig,
-    ) -> GuestAgentDef<C, F> {
-        GuestAgentDef {
+        guest_config: JavaGuestConfig,
+    ) -> JavaGuestAgent<C, F> {
+        JavaGuestAgent {
             guest_context,
             spec,
             agent_factory,
@@ -69,7 +69,7 @@ impl<C, F> GuestAgentDef<C, F> {
     }
 }
 
-impl<C, F> Agent for GuestAgentDef<C, F>
+impl<C, F> Agent for JavaGuestAgent<C, F>
 where
     F: GuestAgentFactory<Context = C>,
     C: GuestRuntimeContext,
@@ -81,7 +81,7 @@ where
         config: AgentConfig,
         context: Box<dyn AgentContext + Send>,
     ) -> BoxFuture<'static, AgentInitResult> {
-        let GuestAgentDef {
+        let JavaGuestAgent {
             guest_config,
             guest_context,
             spec,
@@ -211,7 +211,7 @@ where
 }
 
 async fn initialize_agent<A, C>(
-    guest_config: GuestConfig,
+    guest_config: JavaGuestConfig,
     guest_context: C,
     spec: AgentSpec,
     route: RouteUri,
@@ -315,6 +315,7 @@ where
     where
         S: Stream<Item = Result<BytesMut, FrameIoError>> + Send + 's,
     {
+        println!("Running ValueLikeLaneGuestInitializer");
         let ValueLikeLaneGuestInitializer { agent_obj, lane_id } = self;
         Box::pin(async move {
             match try_last(stream).await? {
@@ -414,7 +415,7 @@ enum RuntimeEvent {
         error: FrameIoError,
     },
     ScheduledEvent {
-        event: TaskDef,
+        event: TaskState,
     },
 }
 
@@ -425,16 +426,16 @@ struct TaskDef {
 
 /// Guest language configuration.
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct GuestConfig {
+pub struct JavaGuestConfig {
     /// The maximum message size that the guest language is capable of processing.
     ///
     /// For Java, this is ~ 2 ^ size_of::<i32>() - 8.
     max_message_size: u64,
 }
 
-impl GuestConfig {
-    pub fn java_default() -> GuestConfig {
-        GuestConfig {
+impl JavaGuestConfig {
+    pub fn java_default() -> JavaGuestConfig {
+        JavaGuestConfig {
             // This is the maximum array size that Java can handle. It varies by VM so it may be
             // better to reflect ArrayList#MAX_ARRAY_SIZE and provide it at runtime.
             max_message_size: (2 ^ size_of::<i32>() - 8) as u64,
@@ -443,7 +444,7 @@ impl GuestConfig {
 }
 
 struct GuestEnvironment<V> {
-    guest_config: GuestConfig,
+    guest_config: JavaGuestConfig,
     guest_agent: V,
     _route: RouteUri,
     _route_params: HashMap<String, String>,
@@ -480,18 +481,16 @@ impl<A, C> GuestAgentTask<A, C> {
 
         let did_start_call = agent_environment.guest_agent.did_start();
 
-        if suspend(
+        if let ControlFlow::Break(()) = suspend(
             &mut agent_environment,
             &agent_context,
             &mut runtime_requests,
             &mut task_scheduler,
+            &guest_context,
             did_start_call,
-            |_, _| ready(Ok(())),
         )
         .await?
-        .is_none()
         {
-            error!("Guest context handle dropped");
             return Ok(());
         }
 
@@ -537,38 +536,17 @@ impl<A, C> GuestAgentTask<A, C> {
                         LaneRequest::InitComplete => continue,
                     };
 
-                    let suspend_result = suspend(
+                    if let ControlFlow::Break(()) = suspend(
                         &mut agent_environment,
                         &agent_context,
                         &mut runtime_requests,
                         &mut task_scheduler,
+                        &guest_context,
                         handle,
-                        |agent_environment, suspend_result| async {
-                            match suspend_result {
-                                Ok(responses) => {
-                                    trace!("Handling lane response");
-                                    let r = forward_lane_responses(
-                                        &guest_context,
-                                        &agent_environment.guest_agent,
-                                        BytesMut::from_iter(responses),
-                                        &mut agent_environment.lane_writers,
-                                    )
-                                    .await;
-                                    debug!("Resuming agent runtime");
-                                    r
-                                }
-
-                                Err(e) => Err(e),
-                            }
-                        },
                     )
-                    .await?;
-                    match suspend_result {
-                        Some(ControlFlow::Break(())) | None => {
-                            debug!("Shutting down agent");
-                            break;
-                        }
-                        Some(ControlFlow::Continue(())) => continue,
+                    .await?
+                    {
+                        return Ok(());
                     }
                 }
                 Some(RuntimeEvent::RequestError { id, error }) => {
@@ -581,54 +559,58 @@ impl<A, C> GuestAgentTask<A, C> {
                 }
                 None => break,
                 Some(RuntimeEvent::ScheduledEvent { event }) => {
-                    let handle = agent_environment.guest_agent.run_task(event.id);
-
-                    if suspend(
+                    let TaskState { id, complete } = event;
+                    let handle = agent_environment.guest_agent.run_task(id, complete);
+                    if let ControlFlow::Break(()) = suspend(
                         &mut agent_environment,
                         &agent_context,
                         &mut runtime_requests,
                         &mut task_scheduler,
+                        &guest_context,
                         handle,
-                        |_, _| ready(Ok(())),
                     )
                     .await?
-                    .is_none()
                     {
-                        debug!("Shutting down agent");
-                        break;
+                        return Ok(());
                     }
                 }
             }
         }
 
         let did_stop_call = agent_environment.guest_agent.did_stop();
-        suspend(
+        if let ControlFlow::Break(()) = suspend(
             &mut agent_environment,
             &agent_context,
             &mut runtime_requests,
             &mut task_scheduler,
+            &guest_context,
             did_stop_call,
-            |_, _| ready(Ok(())),
         )
-        .await?;
+        .await?
+        {
+            return Ok(());
+        }
 
         Ok(())
     }
 }
 
-enum SuspendedRuntimeEvent<O> {
+enum SuspendedRuntimeEvent {
     Request(Option<GuestRuntimeRequest>),
-    SuspendComplete(O),
+    SuspendComplete(Result<Vec<u8>, AgentTaskError>),
 }
 
-impl<O> Debug for SuspendedRuntimeEvent<O> {
+impl Debug for SuspendedRuntimeEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             SuspendedRuntimeEvent::Request(r) => {
                 write!(f, "SuspendedRuntimeEvent::Request({:?})", r)
             }
-            SuspendedRuntimeEvent::SuspendComplete(_) => {
-                write!(f, "SuspendedRuntimeEvent::SuspendComplete")
+            SuspendedRuntimeEvent::SuspendComplete(Ok(_)) => {
+                write!(f, "SuspendedRuntimeEvent::SuspendComplete(Ok(_))")
+            }
+            SuspendedRuntimeEvent::SuspendComplete(Err(e)) => {
+                write!(f, "SuspendedRuntimeEvent::SuspendComplete(Err({e:?}))")
             }
         }
     }
@@ -677,8 +659,14 @@ impl TaskScheduler {
     }
 }
 
+#[derive(Clone, Debug)]
+struct TaskState {
+    id: Uuid,
+    complete: bool,
+}
+
 impl Stream for TaskScheduler {
-    type Item = TaskDef;
+    type Item = TaskState;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let status = ready!(Pin::new(&mut self.tasks).poll_next(cx));
@@ -689,11 +677,14 @@ impl Stream for TaskScheduler {
                 match status {
                     ItemStatus::Complete => {
                         self.keys.remove(&id);
-                        Poll::Ready(Some(item))
+                        Poll::Ready(Some(TaskState { id, complete: true }))
                     }
                     ItemStatus::WillYield { key } => {
                         self.keys.insert(id, key);
-                        Poll::Ready(Some(item))
+                        Poll::Ready(Some(TaskState {
+                            id,
+                            complete: false,
+                        }))
                     }
                 }
             }
@@ -720,28 +711,31 @@ impl Stream for TaskScheduler {
 /// # Returns
 /// Returns `None` if `runtime_requests` has been dropped. This indicates that the agent should
 /// shutdown. Returns `Some` if the runtime was not dropped.
-async fn suspend<'l, F, O, H, HF, HR, A>(
+async fn suspend<'l, F, C, A>(
     agent_environment: &'l mut GuestEnvironment<A>,
     agent_context: &Box<dyn AgentContext + Send>,
     runtime_requests: &mut mpsc::Receiver<GuestRuntimeRequest>,
     task_scheduler: &mut TaskScheduler,
+    guest_context: &C,
     suspended_task: F,
-    followed_by: H,
-) -> Result<Option<HR>, AgentTaskError>
+) -> Result<ControlFlow<()>, AgentTaskError>
 where
-    F: Future<Output = O>,
-    H: FnOnce(&'l mut GuestEnvironment<A>, O) -> HF,
-    HF: Future<Output = Result<HR, AgentTaskError>> + 'l,
+    F: Future<Output = Result<Vec<u8>, AgentTaskError>>,
     A: GuestAgentVTable,
+    C: GuestRuntimeContext,
 {
     pin!(suspended_task);
 
-    loop {
-        let event: SuspendedRuntimeEvent<O> = select! {
+    debug!("Agent runtime suspended");
+
+    let result = loop {
+        let event: SuspendedRuntimeEvent = select! {
             biased;
             request = runtime_requests.recv() => SuspendedRuntimeEvent::Request(request),
             suspend_result = (&mut suspended_task) => SuspendedRuntimeEvent::SuspendComplete(suspend_result),
         };
+
+        debug!(event = ?event, "Suspended runtime event received");
 
         match event {
             SuspendedRuntimeEvent::Request(Some(request)) => {
@@ -752,14 +746,15 @@ where
                         {
                             Ok(()) => continue,
                             Err(OpenLaneError::AgentRuntime(e)) => {
-                                return Err(AgentTaskError::UserCodeError(Box::new(e)))
+                                break Err(AgentTaskError::UserCodeError(Box::new(e)))
                             }
                             Err(OpenLaneError::FrameIo(error)) => {
-                                return Err(AgentTaskError::BadFrame { lane: uri, error })
+                                break Err(AgentTaskError::BadFrame { lane: uri, error })
                             }
                         }
                     }
                     GuestRuntimeRequest::ScheduleTask { id, schedule } => {
+                        trace!(id = ?id, schedule = ?schedule, "Scheduling task");
                         task_scheduler.push_task(id, schedule);
                     }
                     GuestRuntimeRequest::CancelTask { id } => task_scheduler.cancel_task(id),
@@ -768,13 +763,23 @@ where
             SuspendedRuntimeEvent::Request(None) => {
                 // Agent context has been dropped.
                 debug!("Agent context has been dropped. Shutting down agent");
-                return Ok(None);
+                break Ok(ControlFlow::Break(()));
             }
-            SuspendedRuntimeEvent::SuspendComplete(output) => {
-                return followed_by(agent_environment, output).await.map(Some)
+            SuspendedRuntimeEvent::SuspendComplete(Ok(responses)) => {
+                break forward_lane_responses(
+                    guest_context,
+                    &agent_environment.guest_agent,
+                    BytesMut::from_iter(responses),
+                    &mut agent_environment.lane_writers,
+                )
+                .await
             }
+            SuspendedRuntimeEvent::SuspendComplete(Err(e)) => break Err(e),
         }
-    }
+    };
+
+    debug!(result = ?result, "Agent runtime suspend complete");
+    result
 }
 
 /// Requests from the guest runtime to the host.

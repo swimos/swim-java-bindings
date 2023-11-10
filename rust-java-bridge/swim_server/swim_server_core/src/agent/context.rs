@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use interval_stream::ScheduleDef;
 use tokio::sync::mpsc;
+use tracing::trace;
 use uuid::Uuid;
 
 use crate::agent::spec::LaneSpec;
@@ -25,6 +26,7 @@ impl JavaAgentContext {
     pub fn open_lane(&self, uri: String, spec: LaneSpec) {
         let JavaAgentContext { env, tx, .. } = self;
         env.with_env_expect(|_| {
+            trace!(uri, spec = ?spec, "Java agent context opening lane");
             tx.blocking_send(GuestRuntimeRequest::OpenLane {
                 uri: uri.into(),
                 spec,
@@ -85,6 +87,9 @@ impl JavaAgentContext {
     fn schedule(&self, id_msb: u64, id_lsb: u64, schedule: ScheduleDef) {
         let JavaAgentContext { env, tx, .. } = self;
         env.with_env_expect(|_| {
+            println!("Java agent context scheduling task: {id_msb}, {id_lsb}");
+            trace!(id_msb, id_lsb, schedule = ?schedule, "Java agent context scheduling task");
+            println!("Rust uuid: {}", Uuid::from_u64_pair(id_msb, id_lsb));
             tx.blocking_send(GuestRuntimeRequest::ScheduleTask {
                 id: Uuid::from_u64_pair(id_msb, id_lsb),
                 schedule,
@@ -95,6 +100,7 @@ impl JavaAgentContext {
     pub fn cancel_task(&self, id_msb: u64, id_lsb: u64) {
         let JavaAgentContext { env, tx, .. } = self;
         env.with_env_expect(|_| {
+            trace!(id_msb, id_lsb, "Java agent context cancelling task");
             tx.blocking_send(GuestRuntimeRequest::CancelTask {
                 id: Uuid::from_u64_pair(id_msb, id_lsb),
             })

@@ -26,8 +26,8 @@ use server_fixture::{Channels, TestAgentContext};
 
 use crate::agent::foreign::{GuestAgentFactory, GuestAgentVTable, GuestRuntimeContext};
 use crate::agent::spec::{AgentSpec, LaneKindRepr, LaneSpec};
-use crate::agent::{GuestConfig, GuestRuntimeRequest, TaskScheduler};
-use crate::GuestAgentDef;
+use crate::agent::{GuestRuntimeRequest, JavaGuestConfig, TaskScheduler};
+use crate::JavaGuestAgent;
 
 #[derive(thiserror::Error, Debug)]
 #[error("Fatal error: {0}")]
@@ -107,10 +107,10 @@ type PromiseSender<T> = oneshot::Sender<Result<T, AgentTaskError>>;
 #[derive(Debug)]
 enum VTableRequest {
     DidStart {
-        promise: PromiseSender<()>,
+        promise: PromiseSender<Vec<u8>>,
     },
     DidStop {
-        promise: PromiseSender<()>,
+        promise: PromiseSender<Vec<u8>>,
     },
     Dispatch {
         lane_id: i32,
@@ -132,7 +132,8 @@ enum VTableRequest {
     },
     RunTask {
         id: Uuid,
-        promise: PromiseSender<()>,
+        complete: bool,
+        promise: PromiseSender<Vec<u8>>,
     },
 }
 
@@ -141,7 +142,7 @@ struct VTableChannelReceiver {
 }
 
 impl VTableChannelReceiver {
-    async fn did_start(&mut self, result: Result<(), AgentTaskError>) {
+    async fn did_start(&mut self, result: Result<Vec<u8>, AgentTaskError>) {
         match self.rx.recv().await {
             Some(VTableRequest::DidStart { promise }) => {
                 promise.send(result).expect("VTable channel dropped")
@@ -155,7 +156,7 @@ impl VTableChannelReceiver {
         }
     }
 
-    async fn did_stop(&mut self, result: Result<(), AgentTaskError>) {
+    async fn did_stop(&mut self, result: Result<Vec<u8>, AgentTaskError>) {
         match self.rx.recv().await {
             Some(VTableRequest::DidStop { promise }) => {
                 promise.send(result).expect("VTable channel dropped")
@@ -258,10 +259,20 @@ impl VTableChannelReceiver {
         }
     }
 
-    async fn run_task(&mut self, expected_id: Uuid, result: Result<(), AgentTaskError>) {
+    async fn run_task(
+        &mut self,
+        expected_id: Uuid,
+        expected_completed: bool,
+        result: Result<Vec<u8>, AgentTaskError>,
+    ) {
         match self.rx.recv().await {
-            Some(VTableRequest::RunTask { id, promise }) => {
+            Some(VTableRequest::RunTask {
+                id,
+                complete,
+                promise,
+            }) => {
                 assert_eq!(id, expected_id);
+                assert_eq!(complete, expected_completed);
                 promise.send(result).expect("VTable channel dropped")
             }
             Some(req) => {
@@ -307,7 +318,7 @@ impl GuestAgentVTable for TestAgentVTable {
     where
         O: Send;
 
-    fn did_start(&self) -> Self::Suspended<()> {
+    fn did_start(&self) -> Self::Suspended<Vec<u8>> {
         let channel = self.channel.clone();
         Box::pin(async move {
             channel
@@ -316,7 +327,7 @@ impl GuestAgentVTable for TestAgentVTable {
         })
     }
 
-    fn did_stop(&self) -> Self::Suspended<()> {
+    fn did_stop(&self) -> Self::Suspended<Vec<u8>> {
         let channel = self.channel.clone();
         Box::pin(async move {
             channel
@@ -373,11 +384,15 @@ impl GuestAgentVTable for TestAgentVTable {
         })
     }
 
-    fn run_task(&self, id: Uuid) -> Self::Suspended<()> {
+    fn run_task(&self, id: Uuid, complete: bool) -> Self::Suspended<Vec<u8>> {
         let channel = self.channel.clone();
         Box::pin(async move {
             channel
-                .send(|promise| VTableRequest::RunTask { id, promise })
+                .send(|promise| VTableRequest::RunTask {
+                    id,
+                    complete,
+                    promise,
+                })
                 .await
         })
     }
@@ -496,11 +511,11 @@ where
 {
     let (runtime_tx, runtime_rx) = oneshot::channel();
     let factory = TestAgentFactory::new("agent".to_string(), sender, runtime_tx);
-    let def = GuestAgentDef::new(
+    let def = JavaGuestAgent::new(
         TestRuntimeContext,
         spec,
         factory,
-        GuestConfig::java_default(),
+        JavaGuestConfig::java_default(),
     );
     let agent_context = TestAgentContext::default();
     let channels = agent_context.channels();
@@ -543,9 +558,9 @@ async fn lifecycle_events() {
             .send("lane".to_string(), LaneRequest::<BytesMut>::InitComplete)
             .await;
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
         channels.drop_all().await;
-        vtable_rx.did_stop(Ok(())).await;
+        vtable_rx.did_stop(Ok(Vec::new())).await;
     })
     .await;
 
@@ -580,13 +595,13 @@ async fn schedule_task_once() {
             .await
             .expect("Runtime dropped");
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
         vtable_rx.sync(0, id, Ok(Vec::new())).await;
-        vtable_rx.run_task(task_id, Ok(())).await;
+        vtable_rx.run_task(task_id, true, Ok(Vec::new())).await;
 
         channels.drop_all().await;
 
-        vtable_rx.did_stop(Ok(())).await;
+        vtable_rx.did_stop(Ok(Vec::new())).await;
     })
     .await;
 
@@ -624,16 +639,16 @@ async fn schedule_task_interval() {
             .await
             .expect("Runtime dropped");
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
         vtable_rx.sync(0, id, Ok(Vec::new())).await;
 
         for _ in 0..run_count {
-            vtable_rx.run_task(task_id, Ok(())).await;
+            vtable_rx.run_task(task_id, true, Ok(Vec::new())).await;
         }
 
         channels.drop_all().await;
 
-        vtable_rx.did_stop(Ok(())).await;
+        vtable_rx.did_stop(Ok(Vec::new())).await;
     })
     .await;
 
@@ -669,34 +684,45 @@ async fn schedule_task_infinite() {
             .await
             .expect("Runtime dropped");
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
         vtable_rx.sync(0, id, Ok(Vec::new())).await;
 
         for _ in 0..10 {
-            vtable_rx.run_task(task_id, Ok(())).await;
+            vtable_rx.run_task(task_id, true, Ok(Vec::new())).await;
         }
 
         channels.drop_all().await;
 
-        drain_vtable_tasks(&mut vtable_rx.rx, task_id, || Ok(())).await;
+        drain_vtable_tasks(&mut vtable_rx.rx, task_id, true, || Ok(Vec::new())).await;
     })
     .await;
 
     assert!(result.is_ok());
 }
 
-async fn drain_vtable_tasks<R>(rx: &mut mpsc::Receiver<VTableRequest>, task_id: Uuid, result: R)
-where
-    R: Fn() -> Result<(), AgentTaskError>,
+async fn drain_vtable_tasks<R>(
+    rx: &mut mpsc::Receiver<VTableRequest>,
+    task_id: Uuid,
+    expected_completed: bool,
+    result: R,
+) where
+    R: Fn() -> Result<Vec<u8>, AgentTaskError>,
 {
     loop {
         match rx.recv().await {
-            Some(VTableRequest::RunTask { id, promise }) => {
+            Some(VTableRequest::RunTask {
+                id,
+                complete,
+                promise,
+            }) => {
                 assert_eq!(task_id, id);
+                assert_eq!(complete, expected_completed);
                 promise.send(result()).expect("Channel closed unexpectedly")
             }
             Some(VTableRequest::DidStop { promise }) => {
-                promise.send(Ok(())).expect("Channel closed unexpectedly");
+                promise
+                    .send(Ok(Vec::new()))
+                    .expect("Channel closed unexpectedly");
                 break;
             }
             Some(req) => {
@@ -761,21 +787,21 @@ async fn mixed_tasks() {
             .await
             .expect("Runtime dropped");
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
         vtable_rx.sync(0, id, Ok(Vec::new())).await;
 
-        vtable_rx.run_task(first_task, Ok(())).await;
+        vtable_rx.run_task(first_task, true, Ok(Vec::new())).await;
 
-        vtable_rx.run_task(second_task, Ok(())).await;
-        vtable_rx.run_task(second_task, Ok(())).await;
-        vtable_rx.run_task(second_task, Ok(())).await;
+        vtable_rx.run_task(second_task, true, Ok(Vec::new())).await;
+        vtable_rx.run_task(second_task, true, Ok(Vec::new())).await;
+        vtable_rx.run_task(second_task, true, Ok(Vec::new())).await;
 
-        vtable_rx.run_task(third_task, Ok(())).await;
-        vtable_rx.run_task(third_task, Ok(())).await;
+        vtable_rx.run_task(third_task, true, Ok(Vec::new())).await;
+        vtable_rx.run_task(third_task, true, Ok(Vec::new())).await;
 
         channels.drop_all().await;
 
-        drain_vtable_tasks(&mut vtable_rx.rx, third_task, || Ok(())).await;
+        drain_vtable_tasks(&mut vtable_rx.rx, third_task, true, || Ok(Vec::new())).await;
     })
     .await;
 
@@ -799,7 +825,7 @@ async fn syncs() {
             .send("lane".to_string(), LaneRequest::<BytesMut>::Sync(id))
             .await;
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
         vtable_rx
             .sync(0, id, {
                 Ok(encode_to_vec(
@@ -816,7 +842,7 @@ async fn syncs() {
         expect_value_synced(&mut channels, "lane", id).await;
 
         channels.drop_all().await;
-        vtable_rx.did_stop(Ok(())).await;
+        vtable_rx.did_stop(Ok(Vec::new())).await;
         drop(runtime_tx);
     })
     .await;
@@ -841,7 +867,7 @@ async fn dispatches() {
             .send("lane".to_string(), LaneRequest::<BytesMut>::Sync(id))
             .await;
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
         vtable_rx
             .sync(0, id, {
                 Ok(encode_to_vec(
@@ -879,7 +905,7 @@ async fn dispatches() {
         expect_event(&mut channels, "lane", BytesMut::from("54321")).await;
 
         channels.drop_all().await;
-        vtable_rx.did_stop(Ok(())).await;
+        vtable_rx.did_stop(Ok(Vec::new())).await;
         drop(runtime_tx);
     })
     .await;
@@ -904,7 +930,7 @@ async fn flushes() {
             .send("lane".to_string(), LaneRequest::<BytesMut>::Sync(id))
             .await;
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
         vtable_rx
             .sync(0, id, {
                 Ok(encode_to_vec(
@@ -963,7 +989,7 @@ async fn flushes() {
         expect_event(&mut channels, "lane", BytesMut::from("45678")).await;
 
         channels.drop_all().await;
-        vtable_rx.did_stop(Ok(())).await;
+        vtable_rx.did_stop(Ok(Vec::new())).await;
         drop(runtime_tx);
     })
     .await;
@@ -1003,7 +1029,7 @@ async fn initializes_value_lane() {
             )
             .await;
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
 
         vtable_rx
             .dispatch(0, BytesMut::from("14"), {
@@ -1018,7 +1044,7 @@ async fn initializes_value_lane() {
             .await;
 
         channels.drop_all().await;
-        vtable_rx.did_stop(Ok(())).await;
+        vtable_rx.did_stop(Ok(Vec::new())).await;
         drop(runtime_tx);
     })
     .await;
@@ -1073,7 +1099,7 @@ async fn dispatch_error() {
             .send("lane".to_string(), LaneRequest::<BytesMut>::Sync(id))
             .await;
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
         vtable_rx
             .sync(0, id, {
                 Ok(encode_to_vec(
@@ -1130,7 +1156,7 @@ async fn did_stop_error() {
             .send("lane".to_string(), LaneRequest::<BytesMut>::Sync(id))
             .await;
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
         vtable_rx.sync(0, id, Ok(Vec::new())).await;
 
         channels.drop_all().await;
@@ -1149,7 +1175,7 @@ async fn flush_error() {
             .send("lane".to_string(), LaneRequest::<BytesMut>::Sync(id))
             .await;
 
-        vtable_rx.did_start(Ok(())).await;
+        vtable_rx.did_start(Ok(Vec::new())).await;
 
         vtable_rx
             .sync(0, id, {

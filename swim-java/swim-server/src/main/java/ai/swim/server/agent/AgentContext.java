@@ -130,6 +130,14 @@ public class AgentContext implements NativeResource {
     Task task = taskRegistry.registerTask(this, new Schedule(runCount), runnable);
     UUID id = task.getId();
 
+    System.out.println("Java UUID: " + id);
+
+    long mostSignificantBits = id.getMostSignificantBits();
+    long leastSignificantBits = id.getLeastSignificantBits();
+
+    System.out.println("MSB: " + mostSignificantBits);
+    System.out.println("LSB: " + leastSignificantBits);
+
     AgentContextFunctionTable.repeatTask(
         ptr,
         runCount,

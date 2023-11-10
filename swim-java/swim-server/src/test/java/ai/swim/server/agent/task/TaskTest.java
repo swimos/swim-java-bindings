@@ -11,6 +11,7 @@ import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
 import ai.swim.server.annotations.SwimRoute;
+import ai.swim.server.annotations.Transient;
 import ai.swim.server.lanes.Lanes;
 import ai.swim.server.lanes.models.request.LaneRequest;
 import ai.swim.server.lanes.models.response.LaneResponse;
@@ -26,6 +27,7 @@ public class TaskTest {
   @SwimAgent("test")
   private static class TestAgent extends AbstractAgent {
     @SwimLane
+    @Transient
     private final ValueLane<Integer> runCount = Lanes.valueLane(Integer.class);
     private Task repeatingTask;
 
@@ -55,6 +57,7 @@ public class TaskTest {
         List.of(
             TaggedLaneRequest.value("runCount", LaneRequest.command(0))),
         List.of(
+            TaggedLaneResponse.value("runCount", LaneResponse.event(0)),
             TaggedLaneResponse.value("runCount", LaneResponse.event(1)),
             TaggedLaneResponse.value("runCount", LaneResponse.event(2)),
             TaggedLaneResponse.value("runCount", LaneResponse.event(3)),

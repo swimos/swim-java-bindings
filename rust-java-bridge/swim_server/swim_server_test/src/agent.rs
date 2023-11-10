@@ -24,10 +24,11 @@ use jvm_sys::env::JavaEnv;
 use swim_server_core::agent::foreign::JavaAgentFactory;
 use swim_server_core::agent::spec::AgentSpec;
 use swim_server_core::agent::spec::PlaneSpec;
-use swim_server_core::{server_fn, GuestAgentDef};
+use swim_server_core::{server_fn, JavaGuestAgent};
 
 use server_fixture::{LaneRequestDiscriminant, LaneResponseDiscriminant, TestAgentContext};
-use swim_server_core::agent::GuestConfig;
+use swim_server_core::agent::JavaGuestConfig;
+use tracing_subscriber::filter::LevelFilter;
 
 server_fn! {
     agent_TestLaneServer_runNativeAgent(
@@ -38,6 +39,9 @@ server_fn! {
         plane_obj: jobject,
         config: jbyteArray,
     ) {
+        // let filter = tracing_subscriber::EnvFilter::default().add_directive(LevelFilter::TRACE.into());
+        // tracing_subscriber::fmt().with_env_filter(filter).init();
+
         let env = JavaEnv::new(env);
         let spec = match PlaneSpec::try_from_jbyte_array::<()>(&env, config) {
             Ok(mut spec) => spec.agent_specs.remove("agent").expect("Missing agent definition"),
@@ -171,7 +175,7 @@ async fn run_agent(
 ) {
     let factory =
         env.with_env(|scope| JavaAgentFactory::new(&env, scope.new_global_ref(plane_obj)));
-    let agent = GuestAgentDef::new(env.clone(), spec, factory, GuestConfig::java_default());
+    let agent = JavaGuestAgent::new(env.clone(), spec, factory, JavaGuestConfig::java_default());
     let agent_context = TestAgentContext::default();
     let start_barrier = Arc::new(Notify::new());
 
@@ -185,7 +189,10 @@ async fn run_agent(
 
         loop {
             match decoder.decode(&mut data) {
-                Ok(Some((uri, request))) => producer_channels.send(uri, request).await,
+                Ok(Some((uri, request))) => {
+                    println!("Sending message to: {} -> {:?}", uri, request);
+                    producer_channels.send(uri, request).await
+                }
                 Ok(None) => {
                     break;
                 }
@@ -220,6 +227,7 @@ async fn run_agent(
         while let Some((uri, response)) = consumer_channels.next().await {
             match responses.get_mut(&uri) {
                 Some(expected) => {
+                    println!("Received response from: {} -> {:?}", uri, response);
                     let expected_response = expected.pop_front().expect("Missing response");
                     assert_eq!(expected_response, response);
 
