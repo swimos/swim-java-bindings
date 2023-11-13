@@ -17,11 +17,12 @@ import java.util.UUID;
 import static ai.swim.server.schema.LaneSchema.reflectLane;
 
 /**
- * {@link AbstractAgent}-scoped context for performing various actions on an agent.
+ * {@link AbstractAgent}-scoped context for performing various actions on an
+ * agent.
  */
 public class AgentContext implements NativeResource {
   private final long ptr;
-  @SuppressWarnings({"FieldCanBeLocal", "unused"})
+  @SuppressWarnings({ "FieldCanBeLocal", "unused" })
   private final AtomicDestructor destructor;
   private final String agentName;
   private AgentNode agentNode;
@@ -55,7 +56,8 @@ public class AgentContext implements NativeResource {
    * @param laneUri     the URI of the lane.
    * @param isTransient whether the lane is transient.
    * @param <L>         the type of the lane.
-   * @throws IllegalArgumentException if this agent already contains a lane of URI {@code laneUri}.
+   * @throws IllegalArgumentException if this agent already contains a lane of URI
+   *                                  {@code laneUri}.
    */
   public <L extends LaneView> void openLane(L lane, String laneUri, boolean isTransient) {
     assertAgentStarted();
@@ -72,7 +74,8 @@ public class AgentContext implements NativeResource {
       laneSchema.pack(packer);
       AgentContextFunctionTable.openLane(ptr, laneUri, packer.toByteArray());
     } catch (IOException e) {
-      // This is intentionally a RuntimeException so that it is caught by the runtime and shutdown as it indicates an
+      // This is intentionally a RuntimeException so that it is caught by the runtime
+      // and shutdown as it indicates an
       // encoding bug.
       throw new RuntimeException("Bug: Failed to build lane schema", e);
     }
@@ -129,14 +132,6 @@ public class AgentContext implements NativeResource {
     TaskRegistry taskRegistry = agentNode.getTaskRegistry();
     Task task = taskRegistry.registerTask(this, new Schedule(runCount), runnable);
     UUID id = task.getId();
-
-    System.out.println("Java UUID: " + id);
-
-    long mostSignificantBits = id.getMostSignificantBits();
-    long leastSignificantBits = id.getLeastSignificantBits();
-
-    System.out.println("MSB: " + mostSignificantBits);
-    System.out.println("LSB: " + leastSignificantBits);
 
     AgentContextFunctionTable.repeatTask(
         ptr,

@@ -1,7 +1,6 @@
 package ai.swim.server.agent.task;
 
 import ai.swim.server.agent.AgentContext;
-import java.util.ArrayList;
 import java.util.UUID;
 
 public class Task {
@@ -9,6 +8,7 @@ public class Task {
   private final UUID id;
   private final Schedule schedule;
   private final Runnable runnable;
+  private int runCount;
 
   public Task(AgentContext context, UUID id, Schedule schedule, Runnable runnable) {
     this.context = context;
@@ -31,11 +31,16 @@ public class Task {
     return schedule.isScheduled();
   }
 
+  public int getRunCount() {
+    return runCount;
+  }
+
   void run() {
     if (!isScheduled()) {
       throw new IllegalStateException(String.format("Task %s is not scheduled", id));
     } else {
       schedule.decrement();
+      runCount += 1;
       runnable.run();
     }
   }

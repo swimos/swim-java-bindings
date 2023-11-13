@@ -189,10 +189,7 @@ async fn run_agent(
 
         loop {
             match decoder.decode(&mut data) {
-                Ok(Some((uri, request))) => {
-                    println!("Sending message to: {} -> {:?}", uri, request);
-                    producer_channels.send(uri, request).await
-                }
+                Ok(Some((uri, request))) => producer_channels.send(uri, request).await,
                 Ok(None) => {
                     break;
                 }
@@ -227,7 +224,6 @@ async fn run_agent(
         while let Some((uri, response)) = consumer_channels.next().await {
             match responses.get_mut(&uri) {
                 Some(expected) => {
-                    println!("Received response from: {} -> {:?}", uri, response);
                     let expected_response = expected.pop_front().expect("Missing response");
                     assert_eq!(expected_response, response);
 

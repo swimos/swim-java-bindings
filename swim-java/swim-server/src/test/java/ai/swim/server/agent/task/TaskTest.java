@@ -25,20 +25,20 @@ import java.util.List;
 public class TaskTest {
 
   @SwimAgent("test")
-  private static class TestAgent extends AbstractAgent {
+  private static class RepeatingTaskAgent extends AbstractAgent {
     @SwimLane
     @Transient
     private final ValueLane<Integer> runCount = Lanes.valueLane(Integer.class);
-    private Task repeatingTask;
+    private Task task;
 
-    protected TestAgent(AgentContext context) {
+    protected RepeatingTaskAgent(AgentContext context) {
       super(context);
     }
 
     @Override
     public void didStart() {
       AgentContext context = getContext();
-      context.repeatTask(5, Duration.ofNanos(100), () -> {
+      task = context.repeatTask(5, Duration.ofNanos(100), () -> {
         runCount.set(runCount.get() + 1);
       });
     }
@@ -47,11 +47,11 @@ public class TaskTest {
   @SwimPlane("mock")
   private static class RepeatingTaskPlane extends AbstractPlane {
     @SwimRoute("agent")
-    private TestAgent agent;
+    private RepeatingTaskAgent agent;
   }
 
   @Test
-  void repeatingTask() throws SwimServerException, IOException {
+  void singleRepeatingTask() throws SwimServerException, IOException {
     TestLaneServer.build(
         RepeatingTaskPlane.class,
         List.of(
@@ -63,6 +63,88 @@ public class TaskTest {
             TaggedLaneResponse.value("runCount", LaneResponse.event(3)),
             TaggedLaneResponse.value("runCount", LaneResponse.event(4)),
             TaggedLaneResponse.value("runCount", LaneResponse.event(5))),
+        AgentFixture::writeIntString).run();
+  }
+
+  @SwimAgent("test")
+  private static class SuspendingTaskAgent extends AbstractAgent {
+    @SwimLane
+    @Transient
+    private final ValueLane<Integer> runCount = Lanes.valueLane(Integer.class);
+    private Task task;
+
+    protected SuspendingTaskAgent(AgentContext context) {
+      super(context);
+    }
+
+    @Override
+    public void didStart() {
+      AgentContext context = getContext();
+      task = context.suspend(Duration.ofNanos(100), () -> {
+        runCount.set(runCount.get() + 1);
+      });
+    }
+  }
+
+  @SwimPlane("mock")
+  private static class SuspendingTaskPlane extends AbstractPlane {
+    @SwimRoute("agent")
+    private SuspendingTaskAgent agent;
+  }
+
+  @Test
+  void singleSuspend() throws SwimServerException, IOException {
+    TestLaneServer.build(
+        SuspendingTaskPlane.class,
+        List.of(
+            TaggedLaneRequest.value("runCount", LaneRequest.command(0))),
+        List.of(
+            TaggedLaneResponse.value("runCount", LaneResponse.event(0)),
+            TaggedLaneResponse.value("runCount", LaneResponse.event(1))),
+        AgentFixture::writeIntString).run();
+  }
+
+  @SwimAgent("test")
+  private static class IndefiniteTaskAgent extends AbstractAgent {
+    @SwimLane
+    @Transient
+    private final ValueLane<Integer> runCount = Lanes.valueLane(Integer.class);
+    private Task task;
+
+    protected IndefiniteTaskAgent(AgentContext context) {
+      super(context);
+    }
+
+    @Override
+    public void didStart() {
+      AgentContext context = getContext();
+      task = context.scheduleTaskIndefinitely(Duration.ofNanos(100), () -> {
+        runCount.set(runCount.get() + 1);
+        if (task.getRunCount() == 5) {
+          task.cancel();
+        }
+      });
+    }
+  }
+
+  @SwimPlane("mock")
+  private static class IndefiniteTaskPlane extends AbstractPlane {
+    @SwimRoute("agent")
+    private IndefiniteTaskAgent agent;
+  }
+
+  @Test
+  void indefiniteTask() throws SwimServerException, IOException {
+    TestLaneServer.build(
+        IndefiniteTaskPlane.class,
+        List.of(
+            TaggedLaneRequest.value("runCount", LaneRequest.command(0))),
+        List.of(
+            TaggedLaneResponse.value("runCount", LaneResponse.event(0)),
+            TaggedLaneResponse.value("runCount", LaneResponse.event(1)),
+            TaggedLaneResponse.value("runCount", LaneResponse.event(2)),
+            TaggedLaneResponse.value("runCount", LaneResponse.event(3)),
+            TaggedLaneResponse.value("runCount", LaneResponse.event(4))),
         AgentFixture::writeIntString).run();
   }
 

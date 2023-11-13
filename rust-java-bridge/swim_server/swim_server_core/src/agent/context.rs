@@ -87,9 +87,7 @@ impl JavaAgentContext {
     fn schedule(&self, id_msb: u64, id_lsb: u64, schedule: ScheduleDef) {
         let JavaAgentContext { env, tx, .. } = self;
         env.with_env_expect(|_| {
-            println!("Java agent context scheduling task: {id_msb}, {id_lsb}");
             trace!(id_msb, id_lsb, schedule = ?schedule, "Java agent context scheduling task");
-            println!("Rust uuid: {}", Uuid::from_u64_pair(id_msb, id_lsb));
             tx.blocking_send(GuestRuntimeRequest::ScheduleTask {
                 id: Uuid::from_u64_pair(id_msb, id_lsb),
                 schedule,

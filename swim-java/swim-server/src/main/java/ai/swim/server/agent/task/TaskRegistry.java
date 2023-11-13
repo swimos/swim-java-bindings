@@ -21,7 +21,11 @@ public class TaskRegistry {
     } else {
       try {
         CallContext.enter();
-        task.run();
+        if (task.isScheduled()) {
+          task.run();
+        } else {
+          tasks.remove(id);
+        }
       } catch (Throwable e) {
         tasks.remove(id);
         throw e;

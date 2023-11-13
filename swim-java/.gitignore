@@ -9,3 +9,4 @@ out
 swim-client/libs/*
 swim-server/libs/*
 swim-core/swim-downlink/libs/*
+**/bin

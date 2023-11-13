@@ -95,3 +95,18 @@ server_fn! {
         context.repeat_task(count, interval_seconds, interval_nanos, id_msb, id_lsb);
     }
 }
+
+server_fn! {
+    agent_AgentContextFunctionTable_cancelTask(
+        env,
+        _class,
+        context: *mut JavaAgentContext,
+        id_msb: u64,
+        id_lsb: u64,
+    ) {
+        null_pointer_check_abort!(env, context);
+
+        let context = unsafe { &*context };
+        context.cancel_task(id_msb, id_lsb);
+    }
+}
