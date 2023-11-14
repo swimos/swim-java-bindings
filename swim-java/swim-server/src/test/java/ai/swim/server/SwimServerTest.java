@@ -2,9 +2,9 @@ package ai.swim.server;
 
 import ai.swim.lang.ffi.NativeLoader;
 import ai.swim.server.agent.AbstractAgent;
+import ai.swim.server.agent.AgentContext;
 import ai.swim.server.agent.AgentFactory;
 import ai.swim.server.agent.AgentView;
-import ai.swim.server.agent.AgentContext;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
@@ -49,13 +49,59 @@ class SwimServerTest {
     forPlane(planeSchema.bytes());
   }
 
+  /**
+   * Tests that the agent sets the state of the other lanes correctly and that the responses are encoded correctly.
+   */
   @Test
-  void testRun() throws IOException, SwimServerException {
-    MockSwimServer.forPlane(TestPlane.class).runServer();
+  void encodesResponses() throws SwimServerException, DecoderException {
+    PlaneSchema<TestPlane> planeSchema = reflectPlaneSchema(TestPlane.class);
+    Map<String, AgentFactory<? extends AbstractAgent>> agentFactories = reflectAgentFactories(planeSchema);
+
+    AgentFactory<? extends AbstractAgent> agentFactory = agentFactories.get("nodeUri");
+    int laneId = agentFactory.idFor("laneUri");
+    int plusId = agentFactory.idFor("plusOne");
+    int minusId = agentFactory.idFor("minusOne");
+
+    AgentView agentView = agentFactory.newInstance(0);
+    ByteBuffer buffer = ByteBuffer.wrap(new byte[] {49, 51}); // 13
+
+    Bytes bytes = new Bytes();
+    bytes.writeByteArray(agentView.dispatch(laneId, buffer));
+
+    // assert that there isn't any more data available. only three events should have been written and these would fit
+    // in the buffer
+    assertEquals(0, bytes.getByte());
+
+    Decoder<IdentifiedLaneResponse<String>> decoder = new IdentifiedLaneResponseDecoder();
+
+    HashSet<IdentifiedLaneResponse<String>> expected = new HashSet<>();
+    expected.add(new IdentifiedLaneResponse<>(laneId, LaneResponse.event("13")));
+    expected.add(new IdentifiedLaneResponse<>(plusId, LaneResponse.event("14")));
+    expected.add(new IdentifiedLaneResponse<>(minusId, LaneResponse.event("12")));
+
+    while (true) {
+      decoder = decoder.decode(bytes);
+      if (decoder.isDone()) {
+        expected.remove(decoder.bind());
+        decoder = decoder.reset();
+      } else if (bytes.remaining() == 0) {
+        break;
+      } else {
+        throw new IllegalStateException("Unconsumed input");
+      }
+    }
+
+    assertTrue(expected.isEmpty());
   }
 
   @SwimAgent("agentName")
   private static class TestAgent extends AbstractAgent {
+    @Transient
+    @SwimLane
+    private final ValueLane<Integer> plusOne = valueLane(Integer.class);
+    @Transient
+    @SwimLane
+    private final ValueLane<Integer> minusOne = valueLane(Integer.class);
     @Transient
     @SwimLane("laneUri")
     private final ValueLane<Integer> lane = valueLane(Integer.class).onEvent((ev) -> {
@@ -64,14 +110,6 @@ class SwimServerTest {
     }).onSet(((oldValue, newValue) -> {
       System.out.println("Java agent on set. Old: " + oldValue + ", new: " + newValue);
     }));
-
-    @Transient
-    @SwimLane
-    private final ValueLane<Integer> plusOne = valueLane(Integer.class);
-
-    @Transient
-    @SwimLane
-    private final ValueLane<Integer> minusOne = valueLane(Integer.class);
 
     private TestAgent(AgentContext context) {
       super(context);
@@ -129,8 +167,8 @@ class SwimServerTest {
         return this;
       }
 
-      buffer.getInteger(); // discard len
       int laneId = buffer.getInteger();
+      buffer.getInteger(); // discard len
 
       LaneResponseDecoder<String> delegate = new LaneResponseDecoder<>(new StringDecoder());
       LaneResponse<String> response = delegate.decode(buffer).bind();
@@ -142,51 +180,6 @@ class SwimServerTest {
     public Decoder<IdentifiedLaneResponse<String>> reset() {
       return this;
     }
-  }
-
-  /**
-   * Tests that the agent sets the state of the other lanes correctly and that the responses are encoded correctly.
-   */
-  @Test
-  void encodesResponses() throws SwimServerException, DecoderException {
-    PlaneSchema<TestPlane> planeSchema = reflectPlaneSchema(TestPlane.class);
-    Map<String, AgentFactory<? extends AbstractAgent>> agentFactories = reflectAgentFactories(planeSchema);
-
-    AgentFactory<? extends AbstractAgent> agentFactory = agentFactories.get("nodeUri");
-    int laneId = agentFactory.idFor("laneUri");
-    int plusId = agentFactory.idFor("plusOne");
-    int minusId = agentFactory.idFor("minusOne");
-
-    AgentView agentView = agentFactory.newInstance(0);
-    ByteBuffer buffer = ByteBuffer.wrap(new byte[] {49, 51}); // 13
-
-    Bytes bytes = new Bytes();
-    bytes.writeByteArray(agentView.dispatch(laneId, buffer));
-
-    // assert that there isn't any more data available. only three events should have been written and these would fit
-    // in the buffer
-    assertEquals(0, bytes.getByte());
-
-    Decoder<IdentifiedLaneResponse<String>> decoder = new IdentifiedLaneResponseDecoder();
-
-    HashSet<IdentifiedLaneResponse<String>> expected = new HashSet<>();
-    expected.add(new IdentifiedLaneResponse<>(laneId, LaneResponse.event("13")));
-    expected.add(new IdentifiedLaneResponse<>(plusId, LaneResponse.event("14")));
-    expected.add(new IdentifiedLaneResponse<>(minusId, LaneResponse.event("12")));
-
-    while (true) {
-      decoder = decoder.decode(bytes);
-      if (decoder.isDone()) {
-        expected.remove(decoder.bind());
-        decoder = decoder.reset();
-      } else if (bytes.remaining() == 0) {
-        break;
-      } else {
-        throw new IllegalStateException("Unconsumed input");
-      }
-    }
-
-    assertTrue(expected.isEmpty());
   }
 
 }

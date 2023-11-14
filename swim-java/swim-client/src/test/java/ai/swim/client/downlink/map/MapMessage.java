@@ -19,31 +19,31 @@ import ai.swim.structure.annotations.FieldKind;
 import java.util.Objects;
 
 @AutoForm(subTypes = {
-    @AutoForm.Type(ai.swim.client.downlink.map.Update.class),
-    @AutoForm.Type(ai.swim.client.downlink.map.Remove.class),
-    @AutoForm.Type(ai.swim.client.downlink.map.Clear.class),
-    @AutoForm.Type(ai.swim.client.downlink.map.Take.class),
-    @AutoForm.Type(ai.swim.client.downlink.map.Drop.class),
+    @AutoForm.Type(Update.class),
+    @AutoForm.Type(Remove.class),
+    @AutoForm.Type(Clear.class),
+    @AutoForm.Type(Take.class),
+    @AutoForm.Type(Drop.class),
 })
 public abstract class MapMessage {
-  public static <K, V> ai.swim.client.downlink.map.Update<K, V> update(K key, V value) {
-    return new ai.swim.client.downlink.map.Update<>(key, value);
+  public static <K, V> Update<K, V> update(K key, V value) {
+    return new Update<>(key, value);
   }
 
-  public static <K> ai.swim.client.downlink.map.Remove<K> remove(K key) {
-    return new ai.swim.client.downlink.map.Remove<>(key);
+  public static <K> Remove<K> remove(K key) {
+    return new Remove<>(key);
   }
 
-  public static ai.swim.client.downlink.map.Clear clear() {
-    return new ai.swim.client.downlink.map.Clear();
+  public static Clear clear() {
+    return new Clear();
   }
 
-  public static ai.swim.client.downlink.map.Take take(int n) {
-    return new ai.swim.client.downlink.map.Take(n);
+  public static Take take(int n) {
+    return new Take(n);
   }
 
-  public static ai.swim.client.downlink.map.Drop drop(int n) {
-    return new ai.swim.client.downlink.map.Drop(n);
+  public static Drop drop(int n) {
+    return new Drop(n);
   }
 
   public boolean isUpdate() {
@@ -69,7 +69,7 @@ public abstract class MapMessage {
 
 @AutoForm
 @AutoForm.Tag("update")
-class Update<K, V> extends ai.swim.client.downlink.map.MapMessage {
+class Update<K, V> extends MapMessage {
   public K key;
   @AutoForm.Kind(FieldKind.Body)
   public V value;
@@ -99,7 +99,7 @@ class Update<K, V> extends ai.swim.client.downlink.map.MapMessage {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ai.swim.client.downlink.map.Update<?, ?> update = (ai.swim.client.downlink.map.Update<?, ?>) o;
+    Update<?, ?> update = (Update<?, ?>) o;
     return Objects.equals(key, update.key) && Objects.equals(value, update.value);
   }
 
@@ -116,7 +116,7 @@ class Update<K, V> extends ai.swim.client.downlink.map.MapMessage {
 
 @AutoForm
 @AutoForm.Tag("remove")
-class Remove<K> extends ai.swim.client.downlink.map.MapMessage {
+class Remove<K> extends MapMessage {
   @AutoForm.Kind(FieldKind.Header)
   public K key;
 
@@ -143,7 +143,7 @@ class Remove<K> extends ai.swim.client.downlink.map.MapMessage {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ai.swim.client.downlink.map.Remove<?> remove = (ai.swim.client.downlink.map.Remove<?>) o;
+    Remove<?> remove = (Remove<?>) o;
     return Objects.equals(key, remove.key);
   }
 
@@ -160,7 +160,7 @@ class Remove<K> extends ai.swim.client.downlink.map.MapMessage {
 
 @AutoForm
 @AutoForm.Tag("clear")
-class Clear extends ai.swim.client.downlink.map.MapMessage {
+class Clear extends MapMessage {
   public Clear() {
 
   }
@@ -181,7 +181,7 @@ class Clear extends ai.swim.client.downlink.map.MapMessage {
 
 @AutoForm
 @AutoForm.Tag("take")
-class Take extends ai.swim.client.downlink.map.MapMessage {
+class Take extends MapMessage {
   @AutoForm.Kind(FieldKind.HeaderBody)
   public int n;
 
@@ -201,7 +201,7 @@ class Take extends ai.swim.client.downlink.map.MapMessage {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ai.swim.client.downlink.map.Take take = (ai.swim.client.downlink.map.Take) o;
+    Take take = (Take) o;
     return n == take.n;
   }
 
@@ -225,7 +225,7 @@ class Take extends ai.swim.client.downlink.map.MapMessage {
 
 @AutoForm
 @AutoForm.Tag("drop")
-class Drop extends ai.swim.client.downlink.map.MapMessage {
+class Drop extends MapMessage {
   @AutoForm.Kind(FieldKind.HeaderBody)
   public int n;
 
@@ -252,7 +252,7 @@ class Drop extends ai.swim.client.downlink.map.MapMessage {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ai.swim.client.downlink.map.Drop drop = (ai.swim.client.downlink.map.Drop) o;
+    Drop drop = (Drop) o;
     return n == drop.n;
   }
 

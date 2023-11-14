@@ -11,6 +11,11 @@ import static ai.swim.server.lanes.models.response.LaneResponse.SYNC_COMPLETE;
 import static ai.swim.server.lanes.models.response.LaneResponse.TAG_LEN;
 import static ai.swim.server.lanes.models.response.LaneResponse.UUID_LEN;
 
+/**
+ * A decoder for decoding {@link LaneResponse}'s.
+ *
+ * @param <T> the responses event type.
+ */
 public class LaneResponseDecoder<T> extends Decoder<LaneResponse<T>> {
   private UUID uuid;
   private State state = State.Header;

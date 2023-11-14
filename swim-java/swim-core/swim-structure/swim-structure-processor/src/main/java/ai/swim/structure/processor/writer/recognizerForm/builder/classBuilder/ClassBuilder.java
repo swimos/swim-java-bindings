@@ -180,12 +180,13 @@ public class ClassBuilder extends Builder {
     TypeName targetType = ClassName.bestGuess(formatter.headerClassName());
 
     if (!headerTypeParameters.isEmpty()) {
-      targetType = ParameterizedTypeName.get((ClassName) targetType,
-                                             headerTypeParameters
-                                                 .stream()
-                                                 .map(TypeName::get)
-                                                 .collect(Collectors.toList())
-                                                 .toArray(TypeName[]::new));
+      targetType = ParameterizedTypeName.get(
+          (ClassName) targetType,
+          headerTypeParameters
+              .stream()
+              .map(TypeName::get)
+              .collect(Collectors.toList())
+              .toArray(TypeName[]::new));
     }
 
     ClassName recognizingBuilder = ClassName.get(elementUtils.getTypeElement(RECOGNIZING_BUILDER_CLASS));

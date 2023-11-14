@@ -2,6 +2,11 @@ package ai.swim.server.lanes.models.request;
 
 import java.util.Objects;
 
+/**
+ * A {@link LaneRequest} which is tagged with its lane id.
+ *
+ * @param <T> the request's event type.
+ */
 public class IdentifiedLaneRequest<T> {
   private final int laneId;
   private final LaneRequest<T> laneRequest;

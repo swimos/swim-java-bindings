@@ -22,6 +22,7 @@ use jni::sys::{jbyteArray, jvalue};
 use jni::{JNIEnv, JavaVM, MonitorGuard};
 use parking_lot::Mutex;
 use static_assertions::{assert_impl_all, assert_not_impl_all};
+use tokio::task::JoinError;
 use tracing::{debug, error};
 
 use crate::method::{
@@ -36,6 +37,16 @@ assert_impl_all!(JavaEnv: Send, Sync);
 // not shared across threads; this is upheld directly by JNIEnv being !Send and !Sync but this
 // assertion is added just to ensure that an unsafe implementation isn't added.
 assert_not_impl_all!(Scope: Send, Sync);
+
+const VOID_NO_ARGS_SIG: &str = "()V";
+const FLUSH_OUTPUT_STREAMS: &str = "flushOutputStreams";
+const EXCEPTION_UTILS_CLASS: &str = "ai/swim/lang/ffi/ExceptionUtils";
+const JAVA_CLASS: &str = "java/lang/Class";
+const CLASS_IS_ASSIGNABLE_FROM: &str = "isAssignableFrom";
+const CLASS_IS_ASSIGNABLE_FROM_SIG: &str = "(Ljava/lang/Class;)Z";
+const STACK_TRACE_STRING: &str = "stackTraceString";
+const STACK_TRACE_STRING_SIG: &str = "(Ljava/lang/Throwable;)Ljava/lang/String;";
+const PRINT_STACK_TRACE: &str = "printStackTrace";
 
 #[derive(Debug, Clone)]
 pub struct JavaEnv {
@@ -121,19 +132,36 @@ impl JavaEnv {
         let scope = self.enter_scope();
         match exec(scope.clone()) {
             Ok(o) => Ok(o),
-            Err(e) => Err(scope.throw_new(class, e.to_string())),
+            Err(e) => {
+                scope.throw_new(class, e.to_string());
+                Err(())
+            }
         }
     }
 
-    pub fn fatal_error<M>(&self, msg: M) -> !
+    pub fn fatal_error<E>(&self, err: E) -> !
     where
-        M: ToString,
+        E: Into<FatalError>,
     {
         let scope = self.enter_scope();
-        scope.fatal_error(msg)
+        scope.fatal_error(err)
     }
 }
 
+/// A wrapper around a JNI Environment interface that provides similar functionality to the JNI
+/// crate but catches unsuccessful system calls and aborts the process. Without this, there is a lot
+/// of noise around JNI calls created by attaching the thread to the JVM, executing the JNI calls
+/// and handling the response.
+///
+/// Note: see the corresponding documentation in the JNI crate for the implemented methods.
+///
+/// # Implementation
+/// -  JNI transitions are automatically managed by first creating a new local frame, executing the
+/// call and then popping off the frame.
+/// - Object methods are executed with a 'JavaExceptionHandler' that is invoked if the JNI call
+/// returns with 'Err(Error::JavaException)'. Implementations choose how to handle the exception and
+/// may elect to abort the process.
+/// - Java Method resolution and caching.
 #[derive(Clone)]
 pub struct Scope<'l> {
     vm: Arc<JavaVM>,
@@ -324,12 +352,12 @@ impl<'l> Scope<'l> {
 
     #[cold]
     #[inline(never)]
-    pub fn fatal_error<M>(&self, msg: M) -> !
+    pub fn fatal_error<E>(&self, err: E) -> !
     where
-        M: ToString,
+        E: Into<FatalError>,
     {
         let Scope { vm, .. } = self;
-        abort_vm(vm.clone(), StringError(msg.to_string()))
+        abort_vm(vm.clone(), err.into())
     }
 
     pub fn new_global_ref<O>(&self, obj: O) -> GlobalRef
@@ -345,43 +373,64 @@ impl<'l> Scope<'l> {
         system_call(vm, || env.convert_byte_array(array))
     }
 
-    pub unsafe fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b>
+    pub fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b, B>
     where
         B: BufPtr,
         'l: 'b,
     {
         let Scope { vm, env, .. } = self;
-        let buffer = system_call(vm, || {
+        let buffer = system_call(vm, || unsafe {
             env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len())
         });
         ByteBufferGuard {
-            _buf: Default::default(),
             buffer,
+            _buf: Default::default(),
         }
     }
 }
 
-/// Guard that binds the lifetime of the JByteBuffer to the backing data.
-pub struct ByteBufferGuard<'b> {
-    _buf: PhantomData<&'b mut Vec<u8>>,
-    buffer: JByteBuffer<'b>,
+#[derive(thiserror::Error, Debug)]
+pub enum FatalError {
+    #[error("{0}")]
+    Custom(String),
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Java VM error: {0}")]
+    JavaVm(#[from] jni::errors::Error),
+    #[error("Join error: {0}")]
+    Join(#[from] JoinError),
 }
 
-impl<'b> From<ByteBufferGuard<'b>> for JValue<'b> {
-    fn from(value: ByteBufferGuard<'b>) -> Self {
+impl From<String> for FatalError {
+    fn from(value: String) -> Self {
+        FatalError::Custom(value)
+    }
+}
+
+impl From<&str> for FatalError {
+    fn from(value: &str) -> Self {
+        FatalError::Custom(value.to_string())
+    }
+}
+
+impl<'b, B> From<ByteBufferGuard<'b, B>> for JValue<'b>
+where
+    B: BufPtr,
+{
+    fn from(value: ByteBufferGuard<'b, B>) -> Self {
         unsafe { JValue::Object(JObject::from_raw(value.buffer.into_raw())) }
     }
 }
 
-#[derive(Debug)]
-pub struct StringError(pub String);
-
-impl StdError for StringError {}
-
-impl Display for StringError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str(self.0.as_str())
-    }
+/// Guard that binds the lifetime of the JByteBuffer to the backing data.
+#[must_use]
+#[derive(Clone, Copy)]
+pub struct ByteBufferGuard<'b, B>
+where
+    B: BufPtr,
+{
+    buffer: JByteBuffer<'b>,
+    _buf: PhantomData<&'b mut B>,
 }
 
 fn system_call<F, O>(vm: &Arc<JavaVM>, f: F) -> O
@@ -443,9 +492,9 @@ fn abort_unexpected_sys_exception(vm: Arc<JavaVM>) -> ! {
 #[inline(never)]
 fn flush_output_streams(env: &JNIEnv) {
     let r = env.call_static_method(
-        "ai/swim/lang/ffi/ExceptionUtils",
-        "flushOutputStreams",
-        "()V",
+        EXCEPTION_UTILS_CLASS,
+        FLUSH_OUTPUT_STREAMS,
+        VOID_NO_ARGS_SIG,
         &[],
     );
     if r.is_err() {
@@ -513,9 +562,9 @@ impl NotTypeOfExceptionHandler {
             (
                 class,
                 scope.resolve((
-                    "java/lang/Class",
-                    "isAssignableFrom",
-                    "(Ljava/lang/Class;)Z",
+                    JAVA_CLASS,
+                    CLASS_IS_ASSIGNABLE_FROM,
+                    CLASS_IS_ASSIGNABLE_FROM_SIG,
                 )),
             )
         });
@@ -546,12 +595,9 @@ impl JavaExceptionHandler for AbortingHandler {
     type Err = Infallible;
 
     fn inspect(&self, scope: &Scope, _throwable: JThrowable) -> Option<Self::Err> {
-        let _r = scope.exception_describe();
+        scope.exception_describe();
 
-        abort_vm(
-            scope.vm.clone(),
-            StringError("An exception was not handled".into()),
-        )
+        abort_vm(scope.vm.clone(), FatalError::JavaVm(Error::JavaException))
     }
 }
 
@@ -568,9 +614,9 @@ impl IsTypeOfExceptionHandler {
             (
                 class,
                 scope.resolve((
-                    "java/lang/Class",
-                    "isAssignableFrom",
-                    "(Ljava/lang/Class;)Z",
+                    JAVA_CLASS,
+                    CLASS_IS_ASSIGNABLE_FROM,
+                    CLASS_IS_ASSIGNABLE_FROM_SIG,
                 )),
             )
         });
@@ -666,9 +712,9 @@ fn handle_exception(
     scope.exception_clear();
 
     let stack_trace_obj = scope.call_static_method(
-        "ai/swim/lang/ffi/ExceptionUtils",
-        "stackTraceString",
-        "(Ljava/lang/Throwable;)Ljava/lang/String;",
+        EXCEPTION_UTILS_CLASS,
+        STACK_TRACE_STRING,
+        STACK_TRACE_STRING_SIG,
         &[throwable.into()],
     );
     let stack_trace_str_obj = match stack_trace_obj.l() {
@@ -703,7 +749,7 @@ where
 
                 scope.exception_clear();
 
-                match exception_handler.inspect(&scope, throwable.clone()) {
+                match exception_handler.inspect(&scope, throwable) {
                     Some(e) => Err(e),
                     None => {
                         error!("An exception was not handled by the provided handler. Aborting");
@@ -721,7 +767,7 @@ where
 fn print_exception_stack_trace(scope: &Scope, throwable: &JThrowable) {
     if let Err(e) = scope
         .env
-        .call_method(*throwable, "printStackTrace", "()V", &[])
+        .call_method(*throwable, PRINT_STACK_TRACE, VOID_NO_ARGS_SIG, &[])
     {
         error!(error = ?e, "Failed to print exception stack trace");
         abort_vm(scope.vm.clone(), e);
@@ -740,7 +786,7 @@ where
 
 fn get_exception_message(scope: &Scope, throwable: JThrowable) -> String {
     let Scope { resolver, .. } = &scope;
-    let method = resolver.resolve(&scope, Throwable::GET_MESSAGE);
+    let method = resolver.resolve(scope, Throwable::GET_MESSAGE);
     let message = scope.invoke(method.l(), throwable, &[]);
 
     scope.get_rust_string(JString::from(message))

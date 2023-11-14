@@ -12,22 +12,41 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
+/**
+ * A schema for a {@link AbstractPlane}. Contains all of the {@link AgentSchema}s defined in the plane and provides
+ * functionality for producing a msgpack representation of the plane.
+ *
+ * @param <P> the type of the plane
+ */
 public class PlaneSchema<P extends AbstractPlane> {
+  /**
+   * The {@link Class} implementor of {@link AbstractPlane}
+   */
   private final Class<P> planeClass;
+  /**
+   * The name of the plane
+   */
   private final String name;
+  /**
+   * Mapping from node URI to its {@link AgentSchema}
+   */
   private final Map<String, AgentSchema<?>> agentSchemas;
-  private final Map<Class<? extends AbstractAgent>, String> uriResolver;
 
-  public PlaneSchema(Class<P> planeClass, String name, Map<String, AgentSchema<?>> agentSchemas,
-      Map<Class<? extends AbstractAgent>, String> uriResolver) {
+  public PlaneSchema(Class<P> planeClass, String name, Map<String, AgentSchema<?>> agentSchemas) {
     this.planeClass = planeClass;
     this.name = name;
     this.agentSchemas = agentSchemas;
-    this.uriResolver = uriResolver;
   }
 
+  /**
+   * Reflects a {@link PlaneSchema} from a {@link Class}.
+   *
+   * @param planeClass to reflect
+   * @param <P>        the type of the plane
+   * @return a {@link PlaneSchema} representing the provided class
+   * @throws SwimServerException if the class is not well-defined
+   */
   public static <P extends AbstractPlane> PlaneSchema<P> reflectSchema(Class<P> planeClass) throws SwimServerException {
     if (planeClass == null) {
       throw new NullPointerException();
@@ -43,14 +62,18 @@ public class PlaneSchema<P extends AbstractPlane> {
 
     String planeName = planeAnno.value();
     Map<String, AgentSchema<?>> agentSchemas = reflectAgents(planeClass);
-    Map<Class<? extends AbstractAgent>, String> uriResolver = agentSchemas
-        .entrySet()
-        .stream()
-        .collect(Collectors.toMap(entry -> entry.getValue().getAgentClass(), Map.Entry::getKey));
 
-    return new PlaneSchema<>(planeClass, planeName, agentSchemas, uriResolver);
+    return new PlaneSchema<>(planeClass, planeName, agentSchemas);
   }
 
+  /**
+   * Builds a mapping from nodeUri -> {@link AgentSchema}.
+   *
+   * @param planeClass to reflect
+   * @param <P>        the type of the plane
+   * @return a mapping from nodeUri -> {@link AgentSchema}.
+   * @throws SwimServerException if the plane is not well-defined.
+   */
   private static <P extends AbstractPlane> Map<String, AgentSchema<?>> reflectAgents(Class<P> planeClass) throws SwimServerException {
     Map<String, AgentSchema<?>> agentSchemas = new HashMap<>();
     Field[] fields = planeClass.getDeclaredFields();
@@ -83,12 +106,7 @@ public class PlaneSchema<P extends AbstractPlane> {
 
   @Override
   public String toString() {
-    return "PlaneSchema{" +
-        "planeClass=" + planeClass +
-        ", name='" + name + '\'' +
-        ", agentSchemas=" + agentSchemas +
-        ", uriResolver=" + uriResolver +
-        '}';
+    return "PlaneSchema{" + "planeClass=" + planeClass + ", name='" + name + '\'' + ", agentSchemas=" + agentSchemas + '}';
   }
 
   @Override
@@ -104,14 +122,20 @@ public class PlaneSchema<P extends AbstractPlane> {
         name,
         that.name) && Objects.equals(
         agentSchemas,
-        that.agentSchemas) && Objects.equals(uriResolver, that.uriResolver);
+        that.agentSchemas);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(planeClass, name, agentSchemas, uriResolver);
+    return Objects.hash(planeClass, name, agentSchemas);
   }
 
+  /**
+   * Serializes this {@link PlaneSchema} into its msgpack representation
+   *
+   * @return this {@link PlaneSchema} into its msgpack representation
+   * @throws IOException when the underlying IO in the {@link MessageBufferPacker} throws an exception
+   */
   public byte[] bytes() throws IOException {
     try (MessageBufferPacker packer = MessagePack.newDefaultBufferPacker()) {
       packer.packArrayHeader(2);
@@ -127,16 +151,21 @@ public class PlaneSchema<P extends AbstractPlane> {
     }
   }
 
-  public AgentSchema<?> schemaFor(Class<? extends AbstractAgent> agentClass) {
-    String uri = uriResolver.get(agentClass);
-    return agentSchemas.get(uri);
+  /**
+   * Returns a schema for the nodeUri if it exists
+   *
+   * @param nodeUri to resolve
+   * @return the schema for the nodeUri if it exists
+   */
+  public AgentSchema<?> schemaFor(String nodeUri) {
+    return agentSchemas.get(nodeUri);
   }
 
-  public int laneIdFor(Class<? extends AbstractAgent> agentClass, String nodeUri) {
-    AgentSchema<?> schema =schemaFor(agentClass);
-    return schema.getLaneSchemas().get(nodeUri).getLaneId();
-  }
-
+  /**
+   * Returns the class that this {@link PlaneSchema} represents
+   *
+   * @return the class that this {@link PlaneSchema} represents
+   */
   public Class<P> getPlaneClass() {
     return planeClass;
   }

@@ -27,12 +27,12 @@ use swim_server_core::{server_fn, AgentFactory, FfiAgentDef, FfiContext};
 use crate::TestAgentContext;
 
 server_fn! {
-    agent_AgentTest_runNativeAgent(
+    fn agent_AgentTest_runNativeAgent(
         env,
         _class,
         inputs: jbyteArray,
         outputs:jbyteArray,
-        plane_obj: jobject,
+        server_obj: jobject,
         config: jbyteArray,
     ) {
         let env = JavaEnv::new(env);
@@ -45,16 +45,16 @@ server_fn! {
            (scope.convert_byte_array(inputs), scope.convert_byte_array(outputs))
         });
 
-        let plane_obj = env.with_env(|scope| {
-            if plane_obj.is_null() {
+        let server_obj = env.with_env(|scope| {
+            if server_obj.is_null() {
                 scope.fatal_error("Bug: plane object is null");
             } else {
-                unsafe { JObject::from_raw(plane_obj)}
+                unsafe { JObject::from_raw(server_obj)}
             }
         });
 
         let runtime = Builder::new_multi_thread().enable_all().build().expect("Failed to build Tokio runtime");
-        runtime.block_on(run_agent(env, spec, plane_obj, inputs, outputs));
+        runtime.block_on(run_agent(env, spec, server_obj, inputs, outputs));
     }
 }
 
@@ -70,7 +70,7 @@ where
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         if !src.has_remaining() {
-            return Ok(None);
+            Ok(None)
         } else {
             let uri_len = src.get_i32() as usize;
             let lane_uri = std::str::from_utf8(src.split_to(uri_len).as_ref())
@@ -117,7 +117,7 @@ impl Decoder for RequestDecoder {
 /// # Arguments:
 /// `env`: Java environment
 /// `spec`: the agent's specification.
-/// `plane_obj`: a reference to the `AbstractPlane` in Java for creating the agent. This plane must
+/// `server_obj`: a reference to the `AbstractPlane` in Java for creating the agent. This plane must
 /// contain the agent defined by `spec`.
 /// `inputs`: a vector of bytes that will be decoded by a `TaggedDecoder::<RequestDecoder>` instance.
 /// This contains the commands that will be forwarded to the agent. These commands may be multiple
@@ -134,12 +134,12 @@ impl Decoder for RequestDecoder {
 async fn run_agent(
     env: JavaEnv,
     spec: AgentSpec,
-    plane_obj: JObject<'_>,
+    server_obj: JObject<'_>,
     inputs: Vec<u8>,
     outputs: Vec<u8>,
 ) {
     let ffi_context = FfiContext::new(env.clone());
-    let factory = env.with_env(|scope| AgentFactory::new(&env, scope.new_global_ref(plane_obj)));
+    let factory = env.with_env(|scope| AgentFactory::new(&env, scope.new_global_ref(server_obj)));
     let agent = FfiAgentDef::new(ffi_context, spec, factory);
     let agent_context = TestAgentContext::default();
     let start_barrier = Arc::new(Notify::new());

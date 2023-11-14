@@ -5,12 +5,12 @@ import ai.swim.server.codec.Decoder;
 import ai.swim.server.codec.DecoderException;
 import ai.swim.server.codec.Size;
 
+/**
+ * A decoder for decoding {@link IdentifiedLaneResponse}'s.
+ *
+ * @param <T> the lane response's event type.
+ */
 public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResponse<T>> {
-  enum State {
-    LaneId,
-    Delegated
-  }
-
   private Decoder<LaneResponse<T>> delegate;
   private State state;
   private int laneId;
@@ -27,6 +27,8 @@ public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResp
         case LaneId:
           if (buffer.remaining() >= Size.INT) {
             laneId = buffer.getInteger();
+            // Discard the length as it is only used when writing to Rust.
+            buffer.getInteger();
             state = State.Delegated;
             break;
           } else {
@@ -46,5 +48,10 @@ public class IdentifiedLaneResponseDecoder<T> extends Decoder<IdentifiedLaneResp
   @Override
   public Decoder<IdentifiedLaneResponse<T>> reset() {
     return new IdentifiedLaneResponseDecoder<>(delegate.reset());
+  }
+
+  enum State {
+    LaneId,
+    Delegated
   }
 }

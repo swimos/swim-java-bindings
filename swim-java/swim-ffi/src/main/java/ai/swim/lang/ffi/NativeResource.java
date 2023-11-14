@@ -24,6 +24,6 @@ package ai.swim.lang.ffi;
  * implementations should perform checks against double freeing; a simple atomic boolean which is negated when the
  * object is correctly deallocated and checked in the destructor should suffice.
  */
-public interface NativeResource  {
+public interface NativeResource {
 
 }

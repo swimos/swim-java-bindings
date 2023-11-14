@@ -24,7 +24,7 @@ use swim_client_core::downlink::map::{FfiMapDownlink, MapDownlinkLifecycle};
 use crate::lifecycle_test;
 
 client_fn! {
-    downlink_map_MapDownlinkTest_callbackTest(
+    fn downlink_map_MapDownlinkTest_callbackTest(
         env,
         _class,
         on_linked: jobject,
@@ -91,7 +91,7 @@ client_fn! {
 }
 
 client_fn! {
-    downlink_map_MapDownlinkTest_lifecycleTest(
+    fn downlink_map_MapDownlinkTest_lifecycleTest(
         env,
         _class,
         lock: jobject,

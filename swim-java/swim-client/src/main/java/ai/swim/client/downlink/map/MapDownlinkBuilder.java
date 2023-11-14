@@ -14,8 +14,8 @@
 
 package ai.swim.client.downlink.map;
 
-import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.downlink.DownlinkConfig;
+import ai.swim.client.downlink.DownlinkException;
 import ai.swim.client.lifecycle.OnClear;
 import ai.swim.client.lifecycle.OnLinked;
 import ai.swim.client.lifecycle.OnRemove;

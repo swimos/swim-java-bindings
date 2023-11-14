@@ -18,9 +18,9 @@ use futures_util::StreamExt;
 use jni::sys::jobject;
 use swim_api::downlink::{Downlink, DownlinkConfig, DownlinkKind};
 use swim_api::error::DownlinkTaskError;
-use swim_api::protocol::downlink::{DownlinkNotification};
-use swim_model::{Text};
+use swim_api::protocol::downlink::DownlinkNotification;
 use swim_model::address::Address;
+use swim_model::Text;
 use swim_utilities::io::byte_channel::{ByteReader, ByteWriter};
 use tokio_util::codec::FramedRead;
 
@@ -124,7 +124,7 @@ async fn run_ffi_value_downlink(
                     state = LinkState::Synced;
                 }
                 _ => {
-                    return Err(DownlinkTaskError::SyncedWithNoValue.into());
+                    return Err(DownlinkTaskError::SyncedWithNoValue);
                 }
             },
             DownlinkNotification::Event { body } => {

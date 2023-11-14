@@ -23,7 +23,6 @@ import ai.swim.client.lifecycle.OnSet;
 import ai.swim.client.lifecycle.OnSynced;
 import ai.swim.client.lifecycle.OnUnlinked;
 import java.util.Objects;
-import ai.swim.lang.ffi.NativeHandle;
 
 public class ValueDownlinkBuilder<T> {
   private final Handle handle;

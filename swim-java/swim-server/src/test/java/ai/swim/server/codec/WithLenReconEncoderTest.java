@@ -17,12 +17,11 @@ class WithLenReconEncoderTest {
     Bytes bytes = new Bytes();
     encoder.encode(new Prop(1, 2), bytes);
 
-    byte[] expected = new byte[bytes.capacity()];
-    expected[3] = (byte) (len + Size.INT);
-    byte[] stringBytes = string.getBytes(StandardCharsets.UTF_8);
-    System.arraycopy(stringBytes, 0, expected, 4, stringBytes.length);
+    Bytes expected = new Bytes();
+    expected.writeLong(len);
+    expected.writeByteArray(string.getBytes(StandardCharsets.UTF_8));
 
-    assertArrayEquals(expected, bytes.getArray());
+    assertArrayEquals(expected.getArray(), bytes.getArray());
   }
 
   @AutoForm
