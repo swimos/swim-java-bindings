@@ -9,6 +9,7 @@ public class Task {
   private final Schedule schedule;
   private final Runnable runnable;
   private int runCount;
+  private boolean cancelled;
 
   public Task(AgentContext context, UUID id, Schedule schedule, Runnable runnable) {
     this.context = context;
@@ -18,8 +19,9 @@ public class Task {
   }
 
   public void cancel() {
-    if (isScheduled()) {
+    if (isScheduled() && !cancelled) {
       context.cancelTask(this);
+      cancelled = true;
     }
   }
 
@@ -28,7 +30,7 @@ public class Task {
   }
 
   public boolean isScheduled() {
-    return schedule.isScheduled();
+    return schedule.isScheduled() && !cancelled;
   }
 
   public int getRunCount() {

@@ -738,8 +738,6 @@ where
                 // We cannot call 'ExceptionDescribe' here as some implementations have a side
                 // effect of clearing the exception.
 
-                println!("Fallible jni call err");
-
                 scope.exception_clear();
 
                 match exception_handler.inspect(&scope, throwable.clone()) {

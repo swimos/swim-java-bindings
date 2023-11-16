@@ -8,7 +8,21 @@ use swim_server_core::agent::spec::LaneSpec;
 use swim_server_core::server_fn;
 
 server_fn! {
-    agent_AgentContextFunctionTable_openLane(
+    /// Opens a new lane on the agent that the provided context is associated with.
+    ///
+    /// # Arguments
+    /// `context` - the Java agent's pointer to the context.
+    /// `lane_uri` - the lane URI to be opened.
+    /// `config` - a MSGPACK representation of the lane's configuration.
+    ///
+    /// # Throws
+    /// `ai/swim/server/codec/decoder/DecoderException` if `config` is malformed.
+    ///
+    /// # Errors
+    /// - If the lane already exists then the agent will shutdown and return `AgentTaskError::UserCodeError`.
+    /// - If the agent runtime fails to load the state of the lane from the store then the agent will shutdown
+    /// and return `AgentTaskError::FrameIoError`.
+    pub fn agent_AgentContextFunctionTable_openLane(
         env,
         _class,
         context: *mut JavaAgentContext,
@@ -32,7 +46,11 @@ server_fn! {
 }
 
 server_fn! {
-    agent_AgentContextFunctionTable_dropHandle(
+    /// Drops the [`JavaAgentContext`].
+    ///
+    /// # Arguments
+    /// `context` - the Java agent's pointer to the context.
+    pub fn agent_AgentContextFunctionTable_dropHandle(
         env,
         _class,
         context: *mut JavaAgentContext,
@@ -45,7 +63,15 @@ server_fn! {
 }
 
 server_fn! {
-    agent_AgentContextFunctionTable_suspendTask(
+    /// Registers a new task be run after an interval.
+    ///
+    /// # Arguments
+    /// `context` - the Java agent's pointer to the context.
+    /// `resume_after_seconds` - interval seconds resolution.
+    /// `resume_after_nanos` - interval nanoseconds resolution.
+    /// `id_msb` - the most significant bits in the task's UUID.
+    /// `id_lsb` - the least significant bits in the task's UUID.
+    pub fn agent_AgentContextFunctionTable_suspendTask(
         env,
         _class,
         context: *mut JavaAgentContext,
@@ -62,7 +88,15 @@ server_fn! {
 }
 
 server_fn! {
-    agent_AgentContextFunctionTable_scheduleTaskIndefinitely(
+    /// Registers a new task be run indefinitely with an interval between invocations.
+    ///
+    /// # Arguments
+    /// `context` - the Java agent's pointer to the context.
+    /// `resume_after_seconds` - interval seconds resolution.
+    /// `resume_after_nanos` - interval nanoseconds resolution.
+    /// `id_msb` - the most significant bits in the task's UUID.
+    /// `id_lsb` - the least significant bits in the task's UUID.
+    pub fn agent_AgentContextFunctionTable_scheduleTaskIndefinitely(
         env,
         _class,
         context: *mut JavaAgentContext,
@@ -79,7 +113,16 @@ server_fn! {
 }
 
 server_fn! {
-    agent_AgentContextFunctionTable_repeatTask(
+    /// Registers a new task be run for a fixed number of times with an interval between invocations.
+    ///
+    /// # Arguments
+    /// `context` - the Java agent's pointer to the context.
+    /// `count` - the number of times to run the task.
+    /// `resume_after_seconds` - interval seconds resolution.
+    /// `resume_after_nanos` - interval nanoseconds resolution.
+    /// `id_msb` - the most significant bits in the task's UUID.
+    /// `id_lsb` - the least significant bits in the task's UUID.
+    pub fn agent_AgentContextFunctionTable_repeatTask(
         env,
         _class,
         context: *mut JavaAgentContext,
@@ -97,7 +140,13 @@ server_fn! {
 }
 
 server_fn! {
-    agent_AgentContextFunctionTable_cancelTask(
+    /// Cancels the task associated with the provided UUID.
+    ///
+    /// # Arguments
+    /// `context` - the Java agent's pointer to the context.
+    /// `id_msb` - the most significant bits in the task's UUID.
+    /// `id_lsb` - the least significant bits in the task's UUID.
+    pub fn agent_AgentContextFunctionTable_cancelTask(
         env,
         _class,
         context: *mut JavaAgentContext,

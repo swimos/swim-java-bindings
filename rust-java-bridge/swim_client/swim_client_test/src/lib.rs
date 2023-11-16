@@ -46,7 +46,7 @@ mod map;
 mod value;
 
 client_fn! {
-    downlink_FfiTest_dropSwimClient(
+    pub fn downlink_FfiTest_dropSwimClient(
         _env,
         _class,
         ptr: *mut SwimClient,
@@ -59,7 +59,7 @@ client_fn! {
 }
 
 client_fn! {
-    downlink_FfiTest_dropRuntime(
+    pub fn downlink_FfiTest_dropRuntime(
         _env,
         _class,
         ptr: *mut Runtime,
@@ -166,7 +166,7 @@ where
 }
 
 client_fn! {
-    downlink_ConfigTest_parsesConfig(
+    pub fn downlink_ConfigTest_parsesConfig(
         env,
         _class,
         config: jbyteArray,

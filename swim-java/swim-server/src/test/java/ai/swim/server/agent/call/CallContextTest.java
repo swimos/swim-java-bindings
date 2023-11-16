@@ -38,9 +38,8 @@ class CallContextTest {
       Thread thread = new Thread(() -> {
         // Invalid access here as the thread has not entered a call context.
 
-        trigger.trigger();
         assertThrows(CallContextException.class, () -> laneView.set(20));
-        fail("Expected a CallContextException to be thrown");
+        trigger.trigger();
       });
       thread.start();
       try {
@@ -90,12 +89,10 @@ class CallContextTest {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-    }    @SwimLane
-    private final ValueLane<Integer> valueLane = valueLane(Integer.class).onSet(((oldValue, newValue) -> {
-      run();
-    }));
+    }
 
-
+    @SwimLane
+    private final ValueLane<Integer> valueLane = valueLane(Integer.class).onSet(((oldValue, newValue) -> run()));
   }
 
 }

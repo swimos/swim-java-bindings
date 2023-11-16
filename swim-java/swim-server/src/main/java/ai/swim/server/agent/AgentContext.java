@@ -88,6 +88,13 @@ public class AgentContext implements NativeResource {
     return agentName;
   }
 
+  /**
+   * Suspend a task to be executed by the agent.
+   * 
+   * @param resumeAfter the duration to suspend the task for.
+   * @param runnable    to invoke once the duration has elapsed.
+   * @return a handle to the task.
+   */
   public Task suspend(Duration resumeAfter, Runnable runnable) {
     assertAgentStarted();
 
@@ -105,6 +112,14 @@ public class AgentContext implements NativeResource {
     return task;
   }
 
+  /**
+   * Schedules a task to run indefinitely with an interval inbetween the
+   * invocations.
+   * 
+   * @param interval to suspend the task for between invocation.
+   * @param runnable to invoke.
+   * @return a handle to the task.
+   */
   public Task scheduleTaskIndefinitely(Duration interval, Runnable runnable) {
     assertAgentStarted();
 
@@ -122,6 +137,15 @@ public class AgentContext implements NativeResource {
     return task;
   }
 
+  /**
+   * Schedules a task to run a fixed number of times with an interval between the
+   * invocations.
+   * 
+   * @param runCount the number of times to run the task.
+   * @param interval to suspend the task for between invocation.
+   * @param runnable to invoke.
+   * @return a handle to the task.
+   */
   public Task repeatTask(int runCount, Duration interval, Runnable runnable) {
     assertAgentStarted();
 
@@ -144,6 +168,12 @@ public class AgentContext implements NativeResource {
     return task;
   }
 
+  /**
+   * Cancels the provided task from executing again.
+   * 
+   * @param task to cancel
+   * @throws IllegalArgumentException if the task is not registered
+   */
   public void cancelTask(Task task) {
     assertAgentStarted();
 

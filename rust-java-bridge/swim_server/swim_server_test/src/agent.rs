@@ -5,10 +5,11 @@ use std::sync::Arc;
 
 use bytes::{Buf, BytesMut};
 use futures_util::future::try_join3;
-use futures_util::StreamExt;
-use jni::objects::JObject;
-use jni::sys::{jbyteArray, jobject};
+use futures_util::{Future, StreamExt};
+use jni::objects::{GlobalRef, JObject, JValue};
+use jni::sys::{jboolean, jbyteArray, jobject};
 use swim_api::agent::Agent;
+use swim_api::error::AgentInitError;
 use swim_api::protocol::agent::{
     LaneRequestDecoder, MapLaneResponseDecoder, ValueLaneResponseDecoder,
 };
@@ -16,35 +17,38 @@ use swim_api::protocol::map::{MapMessageDecoder, RawMapOperationDecoder};
 use swim_api::protocol::WithLengthBytesCodec;
 use swim_utilities::routing::route_uri::RouteUri;
 use tokio::runtime::Builder;
-use tokio::sync::Notify;
+use tokio::sync::{mpsc, Notify};
 use tokio_util::codec::Decoder;
+use tracing::debug;
 
 use jvm_sys::bridge::JniByteCodec;
 use jvm_sys::env::JavaEnv;
-use swim_server_core::agent::foreign::JavaAgentFactory;
+use jvm_sys::method::{InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethodDef};
+use server_fixture::{
+    Channels, LaneRequestDiscriminant, LaneResponseDiscriminant, TestAgentContext,
+};
+use swim_server_core::agent::context::JavaAgentContext;
+use swim_server_core::agent::foreign::{GuestAgentFactory, JavaAgentRef, JavaAgentVTable};
 use swim_server_core::agent::spec::AgentSpec;
-use swim_server_core::agent::spec::PlaneSpec;
+use swim_server_core::agent::{GuestRuntimeRequest, JavaGuestConfig};
 use swim_server_core::{server_fn, JavaGuestAgent};
 
-use server_fixture::{LaneRequestDiscriminant, LaneResponseDiscriminant, TestAgentContext};
-use swim_server_core::agent::JavaGuestConfig;
-use tracing_subscriber::filter::LevelFilter;
-
 server_fn! {
-    agent_TestLaneServer_runNativeAgent(
+    pub fn agent_NativeTest_runNativeAgent(
         env,
         _class,
         inputs: jbyteArray,
         outputs:jbyteArray,
-        plane_obj: jobject,
-        config: jbyteArray,
+        agent_factory: jobject,
+        agent_config: jbyteArray,
+        ordered_responses: jboolean
     ) {
         // let filter = tracing_subscriber::EnvFilter::default().add_directive(LevelFilter::TRACE.into());
         // tracing_subscriber::fmt().with_env_filter(filter).init();
 
         let env = JavaEnv::new(env);
-        let spec = match PlaneSpec::try_from_jbyte_array::<()>(&env, config) {
-            Ok(mut spec) => spec.agent_specs.remove("agent").expect("Missing agent definition"),
+        let spec = match AgentSpec::try_from_jbyte_array::<()>(&env, agent_config) {
+            Ok(spec) => spec,
             Err(_) => return,
         };
 
@@ -52,16 +56,21 @@ server_fn! {
            (scope.convert_byte_array(inputs), scope.convert_byte_array(outputs))
         });
 
-        let plane_obj = env.with_env(|scope| {
-            if plane_obj.is_null() {
-                scope.fatal_error("Bug: plane object is null");
+        let factory_obj = env.with_env(|scope| {
+            if agent_factory.is_null() {
+                scope.fatal_error("Bug: agent factory object is null");
             } else {
-                unsafe { JObject::from_raw(plane_obj)}
+                unsafe { JObject::from_raw(agent_factory)}
             }
         });
 
         let runtime = Builder::new_multi_thread().enable_all().build().expect("Failed to build Tokio runtime");
-        runtime.block_on(run_agent(env, spec, plane_obj, inputs, outputs));
+
+        if ordered_responses == 1 {
+            runtime.block_on(run_agent(env, spec, factory_obj, inputs, outputs, expect_in_order_envelopes));
+        } else {
+            runtime.block_on(run_agent(env, spec, factory_obj, inputs, outputs, out_of_order_envelopes));
+        }
     }
 }
 
@@ -111,7 +120,7 @@ impl Decoder for ResponseDecoder {
                     .map_err(|_| ErrorKind::InvalidData.into())
                     .map(|e| e.map(LaneResponseDiscriminant::Map))
             }
-            n => panic!("Invalid boolean for kind: {n}"),
+            _n => panic!("Invalid boolean for kind: {_n}"),
         }
     }
 }
@@ -141,8 +150,69 @@ impl Decoder for RequestDecoder {
                     .map_err(|_| ErrorKind::InvalidData.into())
                     .map(|e| e.map(LaneRequestDiscriminant::Map))
             }
-            n => panic!("Invalid boolean for kind: {n}"),
+            _n => panic!("Invalid boolean for kind: {_n}"),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct JavaSingleAgentFactory {
+    new_agent_method: InitialisedJavaObjectMethod,
+    factory: GlobalRef,
+    vtable: Arc<JavaAgentVTable>,
+}
+
+impl JavaSingleAgentFactory {
+    const NEW_AGENT: JavaObjectMethodDef = JavaObjectMethodDef::new(
+        "ai/swim/server/agent/AgentFactory",
+        "newInstance",
+        "(J)Lai/swim/server/agent/AgentView;",
+    );
+
+    pub fn new(env: &JavaEnv, factory: GlobalRef) -> JavaSingleAgentFactory {
+        JavaSingleAgentFactory {
+            new_agent_method: env.initialise(Self::NEW_AGENT),
+            factory,
+            vtable: Arc::new(JavaAgentVTable::initialise(env)),
+        }
+    }
+}
+
+impl GuestAgentFactory for JavaSingleAgentFactory {
+    type GuestAgent = JavaAgentRef;
+    type Context = JavaEnv;
+
+    fn agent_for(
+        &self,
+        env: Self::Context,
+        uri: impl AsRef<str>,
+        tx: mpsc::Sender<GuestRuntimeRequest>,
+    ) -> Result<Self::GuestAgent, AgentInitError> {
+        let node_uri = uri.as_ref();
+
+        let JavaSingleAgentFactory {
+            new_agent_method,
+            factory,
+            vtable,
+        } = self;
+
+        let agent = env.with_env(|scope| {
+            let java_agent_ctx = Box::leak(Box::new(JavaAgentContext::new(env.clone(), tx)));
+            let obj_ref = unsafe {
+                scope.invoke(
+                    new_agent_method.l().global_ref(),
+                    factory.as_obj(),
+                    &[JValue::Object(JObject::from_raw(
+                        java_agent_ctx as *mut _ as u64 as jobject,
+                    ))],
+                )
+            };
+            JavaAgentRef::new(env.clone(), obj_ref, vtable.clone())
+        });
+
+        debug!(node_uri, "Created new java agent");
+
+        Ok(agent)
     }
 }
 
@@ -152,13 +222,14 @@ impl Decoder for RequestDecoder {
 /// # Arguments:
 /// `env`: Java environment
 /// `spec`: the agent's specification.
-/// `plane_obj`: a reference to the `AbstractPlane` in Java for creating the agent. This plane must
-/// contain the agent defined by `spec`.
+/// `agent_factory`: a reference to the `AgentFactory` in Java for creating the agent.
 /// `inputs`: a vector of bytes that will be decoded by a `TaggedDecoder::<RequestDecoder>` instance.
 /// This contains the commands that will be forwarded to the agent. These commands may be multiple
 /// messages for the same lane URI.
 /// `outputs`: a vector of bytes that will be decoded by a `TaggedDecoder::<ResponseDecoder>`
 /// instance. These are the expected responses that the agent will produce.
+/// `response_validator`: a validator for envelopes produced by an agent. This can be used to provide
+/// a validator which may expect the envelopes to be either in order or out-of-order.
 ///
 /// # Errors:
 /// If there is an error, then it will panic to ensure that the error is propagated to the JVM.
@@ -166,15 +237,19 @@ impl Decoder for RequestDecoder {
 /// # Note:
 /// This function needs to be blocked on by the callee. If there is an error, then it will panic to
 /// ensure that the error is propagated to the JVM.
-async fn run_agent(
+async fn run_agent<V, VFut>(
     env: JavaEnv,
     spec: AgentSpec,
-    plane_obj: JObject<'_>,
+    agent_factory: JObject<'_>,
     inputs: Vec<u8>,
     outputs: Vec<u8>,
-) {
-    let factory =
-        env.with_env(|scope| JavaAgentFactory::new(&env, scope.new_global_ref(plane_obj)));
+    response_validator: V,
+) where
+    V: FnOnce(HashMap<String, VecDeque<LaneResponseDiscriminant>>, Channels) -> VFut,
+    VFut: Future<Output = ()>,
+{
+    let factory = env
+        .with_env(|scope| JavaSingleAgentFactory::new(&env, scope.new_global_ref(agent_factory)));
     let agent = JavaGuestAgent::new(env.clone(), spec, factory, JavaGuestConfig::java_default());
     let agent_context = TestAgentContext::default();
     let start_barrier = Arc::new(Notify::new());
@@ -201,13 +276,14 @@ async fn run_agent(
     };
 
     let consumer_barrier = start_barrier.clone();
-    let mut consumer_channels = agent_context.channels();
+    let consumer_channels = agent_context.channels();
     let consumer_task = async move {
         consumer_barrier.notified().await;
 
         let mut data = BytesMut::from_iter(outputs);
         let mut decoder = TaggedDecoder::<ResponseDecoder>::default();
-        let mut responses = HashMap::<String, VecDeque<LaneResponseDiscriminant>>::default();
+        let mut responses: HashMap<String, VecDeque<LaneResponseDiscriminant>> =
+            HashMap::<String, VecDeque<LaneResponseDiscriminant>>::default();
 
         loop {
             match decoder.decode(&mut data) {
@@ -221,28 +297,7 @@ async fn run_agent(
             }
         }
 
-        while let Some((uri, response)) = consumer_channels.next().await {
-            match responses.get_mut(&uri) {
-                Some(expected) => {
-                    let expected_response = expected.pop_front().expect("Missing response");
-                    assert_eq!(expected_response, response);
-
-                    if expected.is_empty() {
-                        responses.remove(&uri);
-                    }
-
-                    if responses.is_empty() {
-                        break;
-                    }
-                }
-                None => {
-                    panic!("Missing lane response for: {uri}")
-                }
-            }
-        }
-
-        // Drop all of the agent's input channels so that it stops.
-        consumer_channels.drop_all().await;
+        response_validator(responses, consumer_channels).await;
 
         Ok(())
     };
@@ -272,4 +327,64 @@ async fn run_agent(
 
         env.with_env(|scope| scope.throw_new("java/lang/RuntimeException", e.to_string()))
     }
+}
+
+async fn expect_in_order_envelopes(
+    mut responses: HashMap<String, VecDeque<LaneResponseDiscriminant>>,
+    mut channels: Channels,
+) {
+    while let Some((uri, response)) = channels.next().await {
+        match responses.get_mut(&uri) {
+            Some(expected) => {
+                let expected_response = expected.pop_front().expect("Missing response");
+                assert_eq!(expected_response, response);
+
+                if expected.is_empty() {
+                    responses.remove(&uri);
+                }
+
+                if responses.is_empty() {
+                    break;
+                }
+            }
+            None => {
+                panic!("Missing lane response for: {uri}")
+            }
+        }
+    }
+
+    // Drop all of the agent's input channels so that it stops.
+    channels.drop_all().await;
+}
+
+async fn out_of_order_envelopes(
+    mut responses: HashMap<String, VecDeque<LaneResponseDiscriminant>>,
+    mut channels: Channels,
+) {
+    while let Some((uri, response)) = channels.next().await {
+        match responses.get_mut(&uri) {
+            Some(expected) => match expected.iter().position(|e| e.eq(&response)) {
+                Some(idx) => {
+                    expected.remove(idx);
+
+                    if expected.is_empty() {
+                        responses.remove(&uri);
+                    }
+
+                    if responses.is_empty() {
+                        break;
+                    }
+                }
+                None => {
+                    panic!("Unexpected response for lane ({uri}): {response:?}")
+                }
+            },
+            None => {
+                panic!("Missing lane response for: {uri}")
+            }
+        }
+    }
+
+    // Drop all of the agent's input channels so that it stops.
+    channels.drop_all().await;
 }

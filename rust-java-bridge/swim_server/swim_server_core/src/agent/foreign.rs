@@ -70,6 +70,7 @@ pub trait GuestAgentFactory {
     ) -> Result<Self::GuestAgent, AgentInitError>;
 }
 
+/// Provides access to creating new agents that exist on a provided plane in the Java runtime.
 #[derive(Debug, Clone)]
 pub struct JavaAgentFactory {
     new_agent_method: InitialisedJavaObjectMethod,

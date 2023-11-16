@@ -18,7 +18,7 @@ use swim_server_core::agent::spec::PlaneSpec;
 use swim_server_core::{run_server, server_fn};
 
 server_fn! {
-    TestSwimServer_runNative(
+    pub fn TestSwimServer_runNative(
         env,
         _class,
         config: jbyteArray,

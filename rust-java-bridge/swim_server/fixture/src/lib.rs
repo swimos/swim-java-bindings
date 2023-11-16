@@ -109,7 +109,10 @@ impl Channels {
     pub async fn send<R: Into<LaneRequestDiscriminant>>(&self, lane_uri: String, request: R) {
         let mut guard = self.inner.lock().await;
         let inner = &mut *guard;
-        let writer = inner.writers.get_mut(&lane_uri).expect("Missing channel");
+        let writer = inner
+            .writers
+            .get_mut(&lane_uri)
+            .expect(&format!("Missing channel for lane: {lane_uri}"));
         let mut framed = FramedWrite::new(writer, LaneRequestDiscriminantEncoder);
 
         framed.send(request.into()).await.expect("Channel closed");

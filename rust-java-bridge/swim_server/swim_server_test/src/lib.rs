@@ -10,7 +10,7 @@ mod agent;
 mod mock;
 
 server_fn! {
-    SwimServerTest_forPlane(
+    pub fn SwimServerTest_forPlane(
         env,
         _class,
         config: jbyteArray

@@ -6,21 +6,19 @@ import ai.swim.server.agent.AgentContext;
 import ai.swim.server.agent.AgentFixture;
 import ai.swim.server.agent.TaggedLaneRequest;
 import ai.swim.server.agent.TaggedLaneResponse;
-import ai.swim.server.agent.TestLaneServer;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
-import ai.swim.server.annotations.SwimPlane;
-import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.annotations.Transient;
 import ai.swim.server.lanes.Lanes;
 import ai.swim.server.lanes.models.request.LaneRequest;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.value.ValueLane;
-import ai.swim.server.plane.AbstractPlane;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import static ai.swim.server.agent.NativeTest.runAgent;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class TaskTest {
 
@@ -29,7 +27,6 @@ public class TaskTest {
     @SwimLane
     @Transient
     private final ValueLane<Integer> runCount = Lanes.valueLane(Integer.class);
-    private Task task;
 
     protected RepeatingTaskAgent(AgentContext context) {
       super(context);
@@ -37,33 +34,21 @@ public class TaskTest {
 
     @Override
     public void didStart() {
-      AgentContext context = getContext();
-      task = context.repeatTask(5, Duration.ofNanos(100), () -> {
+      getContext().repeatTask(5, Duration.ofNanos(100), () -> {
         runCount.set(runCount.get() + 1);
       });
     }
   }
 
-  @SwimPlane("mock")
-  private static class RepeatingTaskPlane extends AbstractPlane {
-    @SwimRoute("agent")
-    private RepeatingTaskAgent agent;
-  }
-
   @Test
-  void singleRepeatingTask() throws SwimServerException, IOException {
-    TestLaneServer.build(
-        RepeatingTaskPlane.class,
-        List.of(
-            TaggedLaneRequest.value("runCount", LaneRequest.command(0))),
-        List.of(
-            TaggedLaneResponse.value("runCount", LaneResponse.event(0)),
-            TaggedLaneResponse.value("runCount", LaneResponse.event(1)),
-            TaggedLaneResponse.value("runCount", LaneResponse.event(2)),
-            TaggedLaneResponse.value("runCount", LaneResponse.event(3)),
-            TaggedLaneResponse.value("runCount", LaneResponse.event(4)),
-            TaggedLaneResponse.value("runCount", LaneResponse.event(5))),
-        AgentFixture::writeIntString).run();
+  void singleRepeatingTask() throws SwimServerException, IOException, NoSuchMethodException {
+    runAgent(RepeatingTaskAgent.class, List.of(TaggedLaneRequest.value("runCount", LaneRequest.command(0))), List.of(
+        TaggedLaneResponse.value("runCount", LaneResponse.event(0)),
+        TaggedLaneResponse.value("runCount", LaneResponse.event(1)),
+        TaggedLaneResponse.value("runCount", LaneResponse.event(2)),
+        TaggedLaneResponse.value("runCount", LaneResponse.event(3)),
+        TaggedLaneResponse.value("runCount", LaneResponse.event(4)),
+        TaggedLaneResponse.value("runCount", LaneResponse.event(5))), AgentFixture::writeIntString, true);
   }
 
   @SwimAgent("test")
@@ -71,7 +56,6 @@ public class TaskTest {
     @SwimLane
     @Transient
     private final ValueLane<Integer> runCount = Lanes.valueLane(Integer.class);
-    private Task task;
 
     protected SuspendingTaskAgent(AgentContext context) {
       super(context);
@@ -79,29 +63,17 @@ public class TaskTest {
 
     @Override
     public void didStart() {
-      AgentContext context = getContext();
-      task = context.suspend(Duration.ofNanos(100), () -> {
+      getContext().suspend(Duration.ofNanos(100), () -> {
         runCount.set(runCount.get() + 1);
       });
     }
   }
 
-  @SwimPlane("mock")
-  private static class SuspendingTaskPlane extends AbstractPlane {
-    @SwimRoute("agent")
-    private SuspendingTaskAgent agent;
-  }
-
   @Test
-  void singleSuspend() throws SwimServerException, IOException {
-    TestLaneServer.build(
-        SuspendingTaskPlane.class,
-        List.of(
-            TaggedLaneRequest.value("runCount", LaneRequest.command(0))),
-        List.of(
-            TaggedLaneResponse.value("runCount", LaneResponse.event(0)),
-            TaggedLaneResponse.value("runCount", LaneResponse.event(1))),
-        AgentFixture::writeIntString).run();
+  void singleSuspend() throws SwimServerException, IOException, NoSuchMethodException {
+    runAgent(SuspendingTaskAgent.class, List.of(TaggedLaneRequest.value("runCount", LaneRequest.command(0))), List.of(
+        TaggedLaneResponse.value("runCount", LaneResponse.event(0)),
+        TaggedLaneResponse.value("runCount", LaneResponse.event(1))), AgentFixture::writeIntString, true);
   }
 
   @SwimAgent("test")
@@ -127,25 +99,85 @@ public class TaskTest {
     }
   }
 
-  @SwimPlane("mock")
-  private static class IndefiniteTaskPlane extends AbstractPlane {
-    @SwimRoute("agent")
-    private IndefiniteTaskAgent agent;
+  @Test
+  void indefiniteTask() throws SwimServerException, IOException, NoSuchMethodException {
+    runAgent(IndefiniteTaskAgent.class, List.of(TaggedLaneRequest.value("runCount", LaneRequest.command(0))), List.of(
+        TaggedLaneResponse.value("runCount", LaneResponse.event(0)),
+        TaggedLaneResponse.value("runCount", LaneResponse.event(1)),
+        TaggedLaneResponse.value("runCount", LaneResponse.event(2)),
+        TaggedLaneResponse.value("runCount", LaneResponse.event(3)),
+        TaggedLaneResponse.value("runCount", LaneResponse.event(4))), AgentFixture::writeIntString, true);
+  }
+
+  @SwimAgent("test")
+  private static class MultipleTasksAgent extends AbstractAgent {
+    @SwimLane
+    @Transient
+    private final ValueLane<Integer> indefiniteRunCount = Lanes.valueLane(Integer.class);
+
+    @SwimLane
+    @Transient
+    private final ValueLane<Integer> suspendedRunCount = Lanes.valueLane(Integer.class);
+
+    @SwimLane
+    @Transient
+    private final ValueLane<Integer> repeatingRunCount = Lanes.valueLane(Integer.class);
+
+    private Task indefiniteTask;
+    private Task suspendedTask;
+    private Task repeatingTask;
+
+    protected MultipleTasksAgent(AgentContext context) {
+      super(context);
+    }
+
+    @Override
+    public void didStart() {
+      AgentContext context = getContext();
+
+      indefiniteTask = context.scheduleTaskIndefinitely(Duration.ofNanos(100), () -> {
+        indefiniteRunCount.set(indefiniteRunCount.get() + 1);
+
+        if (indefiniteTask.getRunCount() == 5) {
+          indefiniteTask.cancel();
+
+          assertFalse(indefiniteTask.isScheduled());
+          assertFalse(suspendedTask.isScheduled());
+          assertFalse(repeatingTask.isScheduled());
+        }
+      });
+      suspendedTask = context.suspend(Duration.ofNanos(100), () -> suspendedRunCount.set(suspendedRunCount.get() + 1));
+      repeatingTask = context.repeatTask(
+          5,
+          Duration.ofNanos(100),
+          () -> repeatingRunCount.set(repeatingRunCount.get() + 1));
+    }
   }
 
   @Test
-  void indefiniteTask() throws SwimServerException, IOException {
-    TestLaneServer.build(
-        IndefiniteTaskPlane.class,
+  void multipleTasks() throws SwimServerException, IOException, NoSuchMethodException {
+    runAgent(
+        MultipleTasksAgent.class,
         List.of(
-            TaggedLaneRequest.value("runCount", LaneRequest.command(0))),
+            TaggedLaneRequest.value("indefiniteRunCount", LaneRequest.command(0)),
+            TaggedLaneRequest.value("suspendedRunCount", LaneRequest.command(0)),
+            TaggedLaneRequest.value("repeatingRunCount", LaneRequest.command(0))),
         List.of(
-            TaggedLaneResponse.value("runCount", LaneResponse.event(0)),
-            TaggedLaneResponse.value("runCount", LaneResponse.event(1)),
-            TaggedLaneResponse.value("runCount", LaneResponse.event(2)),
-            TaggedLaneResponse.value("runCount", LaneResponse.event(3)),
-            TaggedLaneResponse.value("runCount", LaneResponse.event(4))),
-        AgentFixture::writeIntString).run();
+            TaggedLaneResponse.value("indefiniteRunCount", LaneResponse.event(0)),
+            TaggedLaneResponse.value("indefiniteRunCount", LaneResponse.event(1)),
+            TaggedLaneResponse.value("indefiniteRunCount", LaneResponse.event(2)),
+            TaggedLaneResponse.value("indefiniteRunCount", LaneResponse.event(3)),
+            TaggedLaneResponse.value("indefiniteRunCount", LaneResponse.event(4)),
+            TaggedLaneResponse.value("suspendedRunCount", LaneResponse.event(0)),
+            TaggedLaneResponse.value("suspendedRunCount", LaneResponse.event(1)),
+            TaggedLaneResponse.value("repeatingRunCount", LaneResponse.event(0)),
+            TaggedLaneResponse.value("repeatingRunCount", LaneResponse.event(1)),
+            TaggedLaneResponse.value("repeatingRunCount", LaneResponse.event(2)),
+            TaggedLaneResponse.value("repeatingRunCount", LaneResponse.event(3)),
+            TaggedLaneResponse.value("repeatingRunCount", LaneResponse.event(4)),
+            TaggedLaneResponse.value("repeatingRunCount", LaneResponse.event(5))),
+        AgentFixture::writeIntString,
+        true);
   }
 
 }

@@ -51,6 +51,11 @@ public class TaskRegistry {
   }
 
   public void cancelTask(Task task) {
-    tasks.remove(task.getId());
+    UUID id = task.getId();
+    if (tasks.containsKey(id)) {
+      tasks.remove(id);
+    } else {
+      throw new IllegalArgumentException("Missing task: " + id);
+    }
   }
 }

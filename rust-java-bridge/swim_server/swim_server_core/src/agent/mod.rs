@@ -429,7 +429,7 @@ struct TaskDef {
 pub struct JavaGuestConfig {
     /// The maximum message size that the guest language is capable of processing.
     ///
-    /// For Java, this is ~ 2 ^ size_of::<i32>() - 8.
+    /// For Java, this is Integer.MAX_VALUE - 8. See ArrayList#MAX_ARRAY_SIZE.
     max_message_size: u64,
 }
 
@@ -438,7 +438,7 @@ impl JavaGuestConfig {
         JavaGuestConfig {
             // This is the maximum array size that Java can handle. It varies by VM so it may be
             // better to reflect ArrayList#MAX_ARRAY_SIZE and provide it at runtime.
-            max_message_size: (2 ^ size_of::<i32>() - 8) as u64,
+            max_message_size: i32::MAX as u64,
         }
     }
 }

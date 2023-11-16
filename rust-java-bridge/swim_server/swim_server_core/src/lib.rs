@@ -38,11 +38,8 @@ pub async fn run_server(
         );
     }
 
-    println!("Spawning server");
-
     let (task, server_handle) = server.build().await.unwrap().run();
     let jh = tokio::spawn(task);
-    println!("Spawned server");
 
     let handle = async move {
         jh.await.unwrap().unwrap();
