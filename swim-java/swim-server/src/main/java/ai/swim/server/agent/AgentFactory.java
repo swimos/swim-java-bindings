@@ -3,6 +3,8 @@ package ai.swim.server.agent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.lanes.Lane;
 import ai.swim.server.lanes.LaneModel;
+import ai.swim.server.lanes.command.CommandLane;
+import ai.swim.server.lanes.command.CommandLaneView;
 import ai.swim.server.lanes.map.MapLane;
 import ai.swim.server.lanes.map.MapLaneView;
 import ai.swim.server.lanes.state.StateCollector;
@@ -118,6 +120,8 @@ public class AgentFactory<A extends AbstractAgent> {
       return reflectValueLane(agent, laneUri, laneId, field, collector);
     } else if (MapLane.class.isAssignableFrom(type)) {
       return reflectMapLane(agent, laneUri, laneId, field, collector);
+    } else if (CommandLane.class.isAssignableFrom(type)) {
+      return reflectCommandLane(agent, laneUri, laneId, field, collector);
     } else {
       throw unsupportedLaneType(type, agent.getClass());
     }
@@ -143,6 +147,19 @@ public class AgentFactory<A extends AbstractAgent> {
       StateCollector collector) {
     try {
       MapLaneView<?, ?> laneView = (MapLaneView<?, ?>) field.get(agent);
+      return laneView.initLaneModel(collector, laneId);
+    } catch (IllegalAccessException e) {
+      throw laneInitFailure(agent, laneUri, e);
+    }
+  }
+
+  private static LaneModel reflectCommandLane(AbstractAgent agent,
+      String laneUri,
+      int laneId,
+      Field field,
+      StateCollector collector) {
+    try {
+      CommandLaneView<?> laneView = (CommandLaneView<?>) field.get(agent);
       return laneView.initLaneModel(collector, laneId);
     } catch (IllegalAccessException e) {
       throw laneInitFailure(agent, laneUri, e);

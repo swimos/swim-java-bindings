@@ -568,20 +568,9 @@ impl JavaAgentVTable {
         remote: Uuid,
     ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable { sync, handler, .. } = self;
-        let try_into = |num: u64| -> Result<i64, AgentTaskError> {
-            match num.try_into() {
-                Ok(n) => Ok(n),
-                Err(_) => {
-                    return Err(AgentTaskError::DeserializationFailed(
-                        ReadError::NumberOutOfRange,
-                    ))
-                }
-            }
-        };
-
         let (msb, lsb) = remote.as_u64_pair();
-        let msb = try_into(msb)?;
-        let lsb = try_into(lsb)?;
+        let msb = msb as i64;
+        let lsb = lsb as i64;
 
         sync.l().array::<ByteArray>().invoke(
             handler,
