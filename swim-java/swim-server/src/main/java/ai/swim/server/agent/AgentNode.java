@@ -1,5 +1,6 @@
 package ai.swim.server.agent;
 
+import ai.swim.server.agent.call.CallContext;
 import ai.swim.server.lanes.Lane;
 import ai.swim.server.lanes.LaneModel;
 import ai.swim.server.lanes.state.StateCollector;
@@ -43,8 +44,13 @@ public class AgentNode {
    * @return an array containing encoded {@link ai.swim.server.lanes.models.response.LaneResponse}s.
    */
   public byte[] dispatch(int laneIdx, ByteBuffer buffer) {
+    CallContext.enter();
+
     lanes.get(laneIdx).dispatch(buffer);
-    return flushState();
+    byte[] bytes = flushState();
+
+    CallContext.exit();
+    return bytes;
   }
 
   /**
@@ -92,7 +98,11 @@ public class AgentNode {
    * @return an array containing encoded {@link ai.swim.server.lanes.models.response.LaneResponse}s.
    */
   public byte[] flushState() {
-    return collector.flushState();
+    CallContext.enter();
+    byte[] state = collector.flushState();
+    CallContext.exit();
+
+    return state;
   }
 
   /**

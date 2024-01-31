@@ -1,5 +1,8 @@
 package ai.swim.server.agent;
 
+import ai.swim.server.agent.call.CallContext;
+import ai.swim.server.agent.call.CallContextException;
+
 /**
  * Base agent class for implementing Swim Agents.
  */
@@ -25,11 +28,14 @@ public abstract class AbstractAgent {
   }
 
   /**
-   * Returns the {@link AgentContext} scoped to this agent.
+   * Returns the {@link AgentContext} associated with a {@link AbstractAgent}.
    *
-   * @return this agent's {@link AgentContext}
+   * @throws CallContextException if called from outside the context of the Swim runtime. This can happen if a thread
+   *                              has been spawned that was not started by the Swim runtime, and it attempts to access
+   *                              the context.
    */
   public AgentContext getContext() {
+    CallContext.check();
     return context;
   }
 
