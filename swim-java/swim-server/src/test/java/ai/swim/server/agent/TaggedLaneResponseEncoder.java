@@ -1,7 +1,7 @@
 package ai.swim.server.agent;
 
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Encoder;
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.encoder.Encoder;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.models.response.LaneResponseEncoder;
 import java.nio.charset.StandardCharsets;
@@ -14,10 +14,11 @@ public class TaggedLaneResponseEncoder<T> implements Encoder<TaggedLaneResponse<
   }
 
   @Override
-  public void encode(TaggedLaneResponse<T> target, Bytes buffer) {
+  public void encode(TaggedLaneResponse<T> target, ByteWriter buffer) {
     byte[] bytes = target.getLaneUri().getBytes(StandardCharsets.UTF_8);
     buffer.writeInteger(bytes.length);
     buffer.writeByteArray(bytes);
+    buffer.writeByte((byte) (target.isMapLike()?1:0));
     delegate.encode(target.getResponse(), buffer);
   }
 }

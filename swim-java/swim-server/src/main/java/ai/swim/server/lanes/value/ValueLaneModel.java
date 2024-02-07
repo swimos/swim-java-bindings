@@ -2,16 +2,14 @@ package ai.swim.server.lanes.value;
 
 import ai.swim.codec.Parser;
 import ai.swim.codec.ParserError;
+import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.input.Input;
-import ai.swim.server.codec.Bytes;
 import ai.swim.server.lanes.LaneModel;
 import ai.swim.server.lanes.LaneView;
-import ai.swim.server.lanes.WriteResult;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
 import ai.swim.structure.FormParser;
 import ai.swim.structure.recognizer.RecognizerException;
-import java.nio.ByteBuffer;
 import java.util.UUID;
 
 /**
@@ -40,9 +38,9 @@ public final class ValueLaneModel<T> extends LaneModel {
   }
 
   @Override
-  public void dispatch(ByteBuffer buffer) {
+  public void dispatch(ReadBuffer buffer) {
     Parser<T> parser = new FormParser<>(form.reset());
-    parser = parser.feed(Input.byteBuffer(buffer));
+    parser = parser.feed(Input.readBuffer(buffer));
 
     if (parser.isDone()) {
       T newValue = parser.bind();
@@ -64,9 +62,9 @@ public final class ValueLaneModel<T> extends LaneModel {
   }
 
   @Override
-  public void init(ByteBuffer buffer) {
+  public void init(ReadBuffer buffer) {
     Parser<T> parser = new FormParser<>(form.reset());
-    parser = parser.feed(Input.byteBuffer(buffer));
+    parser = parser.feed(Input.readBuffer(buffer));
     if (parser.isDone()) {
       state.set(parser.bind());
     } else if (parser.isError()) {

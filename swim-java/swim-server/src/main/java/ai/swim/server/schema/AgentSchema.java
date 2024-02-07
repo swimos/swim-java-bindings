@@ -187,4 +187,8 @@ public class AgentSchema<A extends AbstractAgent> {
         .stream()
         .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getLaneId()));
   }
+
+  public String getAgentName() {
+    return name;
+  }
 }

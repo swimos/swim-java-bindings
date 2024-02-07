@@ -1,5 +1,7 @@
 package ai.swim.server.codec;
 
+import ai.swim.codec.data.ByteReader;
+import ai.swim.codec.data.ByteWriter;
 import ai.swim.structure.Recon;
 import ai.swim.structure.annotations.AutoForm;
 import org.junit.jupiter.api.Test;
@@ -14,14 +16,16 @@ class WithLenReconEncoderTest {
     int len = string.length();
 
     WithLenReconEncoder<Prop, PropWriter> encoder = new WithLenReconEncoder<>(new PropWriter());
-    Bytes bytes = new Bytes();
+    ByteWriter bytes = new ByteWriter();
     encoder.encode(new Prop(1, 2), bytes);
 
-    Bytes expected = new Bytes();
+    ByteWriter expected = new ByteWriter();
     expected.writeLong(len);
     expected.writeByteArray(string.getBytes(StandardCharsets.UTF_8));
 
-    assertArrayEquals(expected.getArray(), bytes.getArray());
+    ByteReader reader = bytes.reader();
+
+    assertArrayEquals(expected.getArray(), reader.getArray());
   }
 
   @AutoForm

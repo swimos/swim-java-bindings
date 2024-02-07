@@ -1,84 +1,51 @@
 package ai.swim.server.agent;
 
-import ai.swim.lang.ffi.NativeLoader;
-import ai.swim.server.AbstractSwimServerBuilder;
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.encoder.Encoder;
 import ai.swim.server.SwimServerException;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
 import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.annotations.Transient;
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Encoder;
+import ai.swim.server.lanes.map.MapLane;
+import ai.swim.server.lanes.map.MapOperation;
+import ai.swim.server.lanes.map.codec.MapOperationEncoder;
 import ai.swim.server.lanes.models.request.LaneRequest;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.value.ValueLane;
 import ai.swim.server.lanes.value.ValueLaneView;
 import ai.swim.server.plane.AbstractPlane;
-import ai.swim.server.schema.PlaneSchema;
+import ai.swim.structure.Form;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
+import static ai.swim.server.lanes.Lanes.mapLane;
 import static ai.swim.server.lanes.Lanes.valueLane;
 
 class AgentTest {
 
-  static {
-    try {
-      NativeLoader.loadLibraries("swim_server_test");
-    } catch (IOException e) {
-      throw new ExceptionInInitializerError(e);
-    }
-  }
-
-  private static native void runNativeAgent(byte[] inputs,
-      byte[] expectedResponses,
-      AbstractSwimServerBuilder server,
-      byte[] planeSpec);
-
-  private static <E> Bytes encodeIter(Iterable<E> iterator, Encoder<E> encoder) {
-    Bytes requestBytes = new Bytes();
-
-    for (E e : iterator) {
-      encoder.encode(e, requestBytes);
-    }
-
-    return requestBytes;
-  }
-
-  private static void writeInt(int v, Bytes into) {
-    byte[] bytes = Integer.toString(v).getBytes(StandardCharsets.UTF_8);
-    into.writeLong(bytes.length);
-    into.writeByteArray(bytes);
-  }
-
   @Test
   void agentResponses() throws SwimServerException, IOException {
-    TestServer
-        .test(
-            TestPlane.class,
-            List.of(new TaggedLaneRequest<>("numLane", LaneRequest.command(2))),
-            List.of(
-                new TaggedLaneResponse<>("numLane", LaneResponse.event(2)),
-                new TaggedLaneResponse<>("plusOne", LaneResponse.event(3)),
-                new TaggedLaneResponse<>("minusOne", LaneResponse.event(1))))
-        .run();
+    TestLaneServer.build(TestPlane.class, List.of(TaggedLaneRequest.value("numLane", LaneRequest.command(2))), List.of(
+        TaggedLaneResponse.value("numLane", LaneResponse.event(2)),
+        TaggedLaneResponse.value("plusOne", LaneResponse.event(3)),
+        TaggedLaneResponse.value("minusOne", LaneResponse.event(1))), AgentFixture::writeIntString).run();
   }
 
   @Test
   void dynamicLaneOpens() throws SwimServerException, IOException {
-    TestServer.test(
+    TestLaneServer.build(
         DynamicTestPlane.class,
         List.of(
-            new TaggedLaneRequest<>("numLane", LaneRequest.command(13)),
-            new TaggedLaneRequest<>("numLane", LaneRequest.command(14))),
+            TaggedLaneRequest.value("numLane", LaneRequest.command(13)),
+            TaggedLaneRequest.value("numLane", LaneRequest.command(14))),
         List.of(
-            new TaggedLaneResponse<>("numLane", LaneResponse.event(13)),
-            new TaggedLaneResponse<>("dynamic", LaneResponse.event(15)),
-            new TaggedLaneResponse<>("numLane", LaneResponse.event(14)),
-            new TaggedLaneResponse<>("dynamic", LaneResponse.event(16)))).run();
+            TaggedLaneResponse.value("numLane", LaneResponse.event(13)),
+            TaggedLaneResponse.value("dynamic", LaneResponse.event(15)),
+            TaggedLaneResponse.value("numLane", LaneResponse.event(14)),
+            TaggedLaneResponse.value("dynamic", LaneResponse.event(16))),
+        AgentFixture::writeIntString).run();
   }
 
   @SwimAgent
@@ -109,39 +76,6 @@ class AgentTest {
     private TestAgent agent;
   }
 
-  private static class TestServer extends AbstractSwimServerBuilder {
-
-    private final Bytes responseBytes;
-    private final Bytes requestBytes;
-
-    protected TestServer(Map<String, AgentFactory<? extends AbstractAgent>> agentFactories,
-        PlaneSchema<?> schema,
-        Bytes requestBytes,
-        Bytes responseBytes) {
-      super(agentFactories, schema);
-      this.requestBytes = requestBytes;
-      this.responseBytes = responseBytes;
-    }
-
-    public static <P extends AbstractPlane> TestServer test(Class<P> planeClass,
-        List<TaggedLaneRequest<Integer>> inputs,
-        List<TaggedLaneResponse<Integer>> outputs) throws SwimServerException {
-      PlaneSchema<P> planeSchema = reflectPlaneSchema(planeClass);
-      Map<String, AgentFactory<? extends AbstractAgent>> agentFactories = reflectAgentFactories(planeSchema);
-
-      Bytes requestBytes = encodeIter(inputs, new TaggedLaneRequestEncoder<>(AgentTest::writeInt));
-      Bytes responseBytes = encodeIter(outputs, new TaggedLaneResponseEncoder<>(AgentTest::writeInt));
-
-      return new TestServer(agentFactories, planeSchema, requestBytes, responseBytes);
-    }
-
-    @Override
-    protected long run() throws IOException {
-      runNativeAgent(requestBytes.getArray(), responseBytes.getArray(), this, schema.bytes());
-      return 0;
-    }
-  }
-
   @SwimAgent
   private static class DynamicTestAgent extends AbstractAgent {
     @Transient
@@ -169,5 +103,79 @@ class AgentTest {
   private static class DynamicTestPlane extends AbstractPlane {
     @SwimRoute("agent")
     private DynamicTestAgent agent;
+  }
+
+  @SwimPlane("mock")
+  private static class HeterogeneousLanesPlane extends AbstractPlane {
+    @SwimRoute("agent")
+    private HeterogeneousLanesAgent agent;
+  }
+
+  @SwimAgent
+  private static class HeterogeneousLanesAgent extends AbstractAgent {
+    @Transient
+    @SwimLane
+    private final ValueLane<Integer> numLane = valueLane(Integer.class).onEvent(this::onEvent);
+    @Transient
+    @SwimLane
+    private final ValueLane<Integer> updateCount = valueLane(Integer.class);
+
+    @Transient
+    @SwimLane
+    private final MapLane<Integer, Boolean> parity = mapLane(
+        Integer.class,
+        Boolean.class).onUpdate(((key, oldValue, newValue) -> {
+      Integer oldCount = updateCount.get();
+      updateCount.set(oldCount == null ? 1 : oldCount + 1);
+    }));
+
+    private HeterogeneousLanesAgent(AgentContext context) {
+      super(context);
+    }
+
+    private void onEvent(int ev) {
+      parity.put(ev, ev % 2 == 0);
+    }
+  }
+
+  @Test
+  void heterogeneousLanes() throws SwimServerException, IOException {
+    Encoder<Integer> integerEncoder = AgentFixture::writeIntString;
+
+    List<TaggedLaneRequest<Integer>> requests = List.of(
+        TaggedLaneRequest.value("numLane", LaneRequest.command(1)),
+        TaggedLaneRequest.value("numLane", LaneRequest.command(2)));
+    ByteWriter requestBytes = AgentFixture.encodeIter(requests, new TaggedLaneRequestEncoder<>(integerEncoder));
+
+    List<TaggedLaneResponse<?>> value = List.of(
+        TaggedLaneResponse.value("numLane", LaneResponse.event(1)),
+        TaggedLaneResponse.map(
+            "parity",
+            LaneResponse.event(MapOperation.update(
+                1,
+                false))),
+        TaggedLaneResponse.value("updateCount", LaneResponse.event(1)));
+
+    Encoder<TaggedLaneResponse<Integer>> valueResponseEncoder = new TaggedLaneResponseEncoder<>(integerEncoder);
+    Encoder<TaggedLaneResponse<MapOperation<Integer, Boolean>>> mapResponseEncoder = new TaggedLaneResponseEncoder<>(new MapOperationEncoder<>(
+        Form.forClass(Integer.class),
+        Form.forClass(
+            Boolean.class)));
+
+    ByteWriter responseBytes = new ByteWriter();
+
+    valueResponseEncoder.encode(TaggedLaneResponse.value("numLane", LaneResponse.event(1)), responseBytes);
+    mapResponseEncoder.encode(
+        TaggedLaneResponse.map("parity", LaneResponse.event(MapOperation.update(1, false))),
+        responseBytes);
+    valueResponseEncoder.encode(TaggedLaneResponse.value("updateCount", LaneResponse.event(1)), responseBytes);
+
+    valueResponseEncoder.encode(TaggedLaneResponse.value("numLane", LaneResponse.event(2)), responseBytes);
+    mapResponseEncoder.encode(
+        TaggedLaneResponse.map("parity", LaneResponse.event(MapOperation.update(2, true))),
+        responseBytes);
+    valueResponseEncoder.encode(TaggedLaneResponse.value("updateCount", LaneResponse.event(2)), responseBytes);
+
+    TestLaneServer.build(HeterogeneousLanesPlane.class, requestBytes, responseBytes).run();
   }
 }

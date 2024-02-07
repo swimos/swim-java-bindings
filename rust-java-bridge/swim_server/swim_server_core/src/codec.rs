@@ -45,8 +45,8 @@ struct MapOperationBytesEncoder;
 impl MapOperationBytesEncoder {
     const UPDATE: u8 = 0;
     const REMOVE: u8 = 1;
-
     const CLEAR: u8 = 2;
+
     const OVERSIZE_KEY: &'static str = "Key too large.";
     const OVERSIZE_RECORD: &'static str = "Record too large.";
 }

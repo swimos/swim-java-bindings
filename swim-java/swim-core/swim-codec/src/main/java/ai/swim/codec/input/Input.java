@@ -1,5 +1,6 @@
 package ai.swim.codec.input;
 
+import ai.swim.codec.data.ReadBuffer;
 import ai.swim.codec.location.Location;
 import java.nio.ByteBuffer;
 
@@ -14,8 +15,22 @@ public abstract class Input {
   /**
    * Creates a new string {@code Input}.
    */
-  public static Input string(String input) {
+  public static StringInput string(String input) {
     return new StringInput(input);
+  }
+
+  /**
+   * Creates a new {@link ByteBuffer} {@code Input}.
+   */
+  public static ByteBufferInput byteBuffer(ByteBuffer data) {
+    return new ByteBufferInput(data);
+  }
+
+  /**
+   * Creates a new {@link ReadBuffer} {@code Input}.
+   */
+  public static ReadBufferInput readBuffer(ReadBuffer data) {
+    return new ReadBufferInput(data);
   }
 
   /**
@@ -23,10 +38,6 @@ public abstract class Input {
    */
   public static Input done(Input input) {
     return new InputDone(input);
-  }
-
-  public static Input byteBuffer(ByteBuffer data) {
-    return new ByteBufferInput(data);
   }
 
   /**

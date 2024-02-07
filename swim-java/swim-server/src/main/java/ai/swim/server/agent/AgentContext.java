@@ -16,13 +16,15 @@ import static ai.swim.server.schema.LaneSchema.reflectLane;
  */
 public class AgentContext implements NativeResource {
   private final long ptr;
-  @SuppressWarnings("FieldCanBeLocal")
+  @SuppressWarnings({"FieldCanBeLocal", "unused"})
   private final AtomicDestructor destructor;
+  private final String agentName;
   private AgentNode agentNode;
 
-  public AgentContext(long ptr) {
+  public AgentContext(long ptr, String agentName) {
     this.ptr = ptr;
     this.destructor = new AtomicDestructor(this, () -> AgentContextFunctionTable.dropHandle(ptr));
+    this.agentName = agentName;
   }
 
   void setAgent(AgentNode agentNode) {
@@ -71,4 +73,7 @@ public class AgentContext implements NativeResource {
     agentNode.addLane(laneUri, id, laneModel);
   }
 
+  public String getAgentName() {
+    return agentName;
+  }
 }

@@ -5,5 +5,5 @@ package ai.swim.server.lanes;
  */
 // todo: log bounds.
 public interface Lane {
-
+  // todo: uri retrieval and log interface bound.
 }

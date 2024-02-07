@@ -1,7 +1,7 @@
 package ai.swim.server.lanes.models.request;
 
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Encoder;
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.encoder.Encoder;
 
 public class IdentifiedLaneRequestEncoder<T> implements Encoder<IdentifiedLaneRequest<T>> {
   private final Encoder<LaneRequest<T>> delegate;
@@ -11,7 +11,7 @@ public class IdentifiedLaneRequestEncoder<T> implements Encoder<IdentifiedLaneRe
   }
 
   @Override
-  public void encode(IdentifiedLaneRequest<T> target, Bytes buffer) {
+  public void encode(IdentifiedLaneRequest<T> target, ByteWriter buffer) {
     buffer.writeInteger(target.getLaneId());
     delegate.encode(target.getLaneRequest(), buffer);
   }

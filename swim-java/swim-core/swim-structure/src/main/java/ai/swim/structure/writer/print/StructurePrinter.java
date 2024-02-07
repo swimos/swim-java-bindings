@@ -30,11 +30,11 @@ import java.util.Base64;
 public class StructurePrinter implements HeaderWriter<String>, BodyWriter<String>, StructuralWriter<String> {
   private final PrintStrategy printStrategy;
   private final SuppressingWriter writer;
+  private final AttributePrinter attributePrinter;
   private boolean hasAttr;
   private boolean braceWritten;
   private boolean singleItem;
   private boolean first;
-  private AttributePrinter attributePrinter;
 
   public StructurePrinter(java.io.Writer writer, PrintStrategy printStrategy) {
     this.writer = new SuppressingWriter(writer);

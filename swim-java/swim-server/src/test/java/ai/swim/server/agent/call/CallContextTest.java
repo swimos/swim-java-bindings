@@ -1,5 +1,6 @@
 package ai.swim.server.agent.call;
 
+import ai.swim.codec.decoder.DecoderException;
 import ai.swim.concurrent.Trigger;
 import ai.swim.server.SwimServerException;
 import ai.swim.server.agent.AbstractAgent;
@@ -27,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 class CallContextTest {
 
   @Test
-  void laneAccess() throws InterruptedException {
+  void laneAccess() throws InterruptedException, DecoderException {
     StateCollector stateCollector = new StateCollector();
     Trigger trigger = new Trigger();
     ValueLaneView<Integer> laneView = new ValueLaneView<>(Form.forClass(Integer.class));
@@ -50,7 +51,7 @@ class CallContextTest {
     });
 
     ValueLaneModel<Integer> model = new ValueLaneModel<>(0, laneView, stateCollector);
-    laneView.setModel(new ValueLaneModel<>(0, laneView, stateCollector));
+    laneView.setModel(model);
 
     AgentNode node = new AgentNode(stateCollector, Map.of(0, model), Map.of("test", 0));
 
@@ -60,16 +61,21 @@ class CallContextTest {
     trigger.awaitTrigger(5, TimeUnit.SECONDS);
   }
 
+  @Test
+  void agentContext() throws SwimServerException, NoSuchMethodException, DecoderException {
+    AgentSchema<TestAgent> agentSchema = AgentSchema.reflectSchema(TestAgent.class);
+    AgentFactory<TestAgent> agentFactory = AgentFactory.forSchema(agentSchema);
+    AgentView view = agentFactory.newInstance(0);
+
+    byte[] msg = "13".getBytes(StandardCharsets.UTF_8);
+    view.dispatch(0, ByteBuffer.wrap(msg), msg.length);
+  }
+
   @SwimAgent("agent")
   private static class TestAgent extends AbstractAgent {
     protected TestAgent(AgentContext context) {
       super(context);
     }
-
-    @SwimLane
-    private final ValueLane<Integer> valueLane = valueLane(Integer.class).onSet(((oldValue, newValue) -> {
-      run();
-    }));
 
     private void run() {
       Thread thread = new Thread(() -> assertThrows(CallContextException.class, () -> {
@@ -84,17 +90,12 @@ class CallContextTest {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-    }
-  }
+    }    @SwimLane
+    private final ValueLane<Integer> valueLane = valueLane(Integer.class).onSet(((oldValue, newValue) -> {
+      run();
+    }));
 
-  @Test
-  void agentContext() throws SwimServerException, NoSuchMethodException {
-    AgentSchema<TestAgent> agentSchema = AgentSchema.reflectSchema(TestAgent.class);
-    AgentFactory<TestAgent> agentFactory = AgentFactory.forSchema(agentSchema);
-    AgentView view = agentFactory.newInstance(0);
 
-    byte[] msg = "13".getBytes(StandardCharsets.UTF_8);
-    view.dispatch(0, ByteBuffer.wrap(msg));
   }
 
 }

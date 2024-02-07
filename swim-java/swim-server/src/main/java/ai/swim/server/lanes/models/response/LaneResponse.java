@@ -1,15 +1,10 @@
 package ai.swim.server.lanes.models.response;
 
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Encoder;
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.encoder.Encoder;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * An abstract lane response which may be either a command, sync, sync complete, or event response.
- *
- * @param <T> the response's event type.
- */
 public abstract class LaneResponse<T> {
   public static final byte COMMAND = 0;
   public static final byte SYNC = 1;
@@ -36,13 +31,9 @@ public abstract class LaneResponse<T> {
     return new Synced<>(remote);
   }
 
-  /**
-   * Encodes this response using {@code encoder} and into {@code buffer}.
-   *
-   * @param encoder for this response's event type.
-   * @param buffer  to encode into.
-   */
-  public abstract void encode(Encoder<T> encoder, Bytes buffer);
+  public abstract void encode(Encoder<T> encoder, ByteWriter buffer);
+
+  public abstract void accept(LaneResponseVisitor<T> visitor);
 
   @Override
   public abstract boolean equals(Object obj);
@@ -52,8 +43,13 @@ public abstract class LaneResponse<T> {
 
   private static class Initialized<T> extends LaneResponse<T> {
     @Override
-    public void encode(Encoder<T> encoder, Bytes buffer) {
+    public void encode(Encoder<T> encoder, ByteWriter buffer) {
       buffer.writeByte(INITIALIZED);
+    }
+
+    @Override
+    public void accept(LaneResponseVisitor<T> visitor) {
+      visitor.visitInitialized();
     }
 
     @Override
@@ -78,9 +74,14 @@ public abstract class LaneResponse<T> {
     }
 
     @Override
-    public void encode(Encoder<T> encoder, Bytes buffer) {
+    public void encode(Encoder<T> encoder, ByteWriter buffer) {
       buffer.writeByte(EVENT);
       encoder.encode(event, buffer);
+    }
+
+    @Override
+    public void accept(LaneResponseVisitor<T> visitor) {
+      visitor.visitEvent(event);
     }
 
     @Override
@@ -118,12 +119,17 @@ public abstract class LaneResponse<T> {
     }
 
     @Override
-    public void encode(Encoder<T> encoder, Bytes dst) {
+    public void encode(Encoder<T> encoder, ByteWriter dst) {
       dst.reserve(TAG_LEN + UUID_LEN);
       dst.writeByte(SYNC);
       dst.writeLong(remote.getMostSignificantBits());
       dst.writeLong(remote.getLeastSignificantBits());
       encoder.encode(event, dst);
+    }
+
+    @Override
+    public void accept(LaneResponseVisitor<T> visitor) {
+      visitor.visitSyncEvent(remote, event);
     }
 
     @Override
@@ -160,11 +166,16 @@ public abstract class LaneResponse<T> {
     }
 
     @Override
-    public void encode(Encoder<T> encoder, Bytes dst) {
+    public void encode(Encoder<T> encoder, ByteWriter dst) {
       dst.reserve(TAG_LEN + UUID_LEN);
       dst.writeByte(SYNC_COMPLETE);
       dst.writeLong(remote.getMostSignificantBits());
       dst.writeLong(remote.getLeastSignificantBits());
+    }
+
+    @Override
+    public void accept(LaneResponseVisitor<T> visitor) {
+      visitor.visitSynced(remote);
     }
 
     @Override

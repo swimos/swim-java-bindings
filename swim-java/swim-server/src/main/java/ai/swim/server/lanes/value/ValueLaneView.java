@@ -72,7 +72,9 @@ public final class ValueLaneView<T> extends LaneView implements ValueLane<T> {
 
   @Override
   public void set(T to) {
+    T oldValue = model.get();
     model.set(to);
+    onSet(oldValue, to);
   }
 
   @Override

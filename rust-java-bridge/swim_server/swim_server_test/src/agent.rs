@@ -10,13 +10,16 @@ use jni::objects::JObject;
 use jni::sys::{jbyteArray, jobject};
 use swim_api::agent::Agent;
 use swim_api::protocol::agent::{
-    LaneRequest, LaneRequestDecoder, LaneResponse, ValueLaneResponseDecoder,
+    LaneRequest, LaneRequestDecoder, LaneResponse, MapLaneResponseDecoder, ValueLaneResponseDecoder,
 };
+use swim_api::protocol::map::{MapMessageDecoder, RawMapOperationDecoder};
 use swim_api::protocol::WithLengthBytesCodec;
 use swim_utilities::routing::route_uri::RouteUri;
 use tokio::runtime::Builder;
 use tokio::sync::Notify;
 use tokio_util::codec::Decoder;
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::EnvFilter;
 
 use jvm_sys::bridge::JniByteCodec;
 use jvm_sys::env::JavaEnv;
@@ -24,15 +27,15 @@ use swim_server_core::spec::AgentSpec;
 use swim_server_core::spec::PlaneSpec;
 use swim_server_core::{server_fn, AgentFactory, FfiAgentDef, FfiContext};
 
-use crate::TestAgentContext;
+use crate::{LaneRequestDiscriminant, LaneResponseDiscriminant, TestAgentContext};
 
 server_fn! {
-    fn agent_AgentTest_runNativeAgent(
+    agent_TestLaneServer_runNativeAgent(
         env,
         _class,
         inputs: jbyteArray,
         outputs:jbyteArray,
-        server_obj: jobject,
+        plane_obj: jobject,
         config: jbyteArray,
     ) {
         let env = JavaEnv::new(env);
@@ -45,16 +48,16 @@ server_fn! {
            (scope.convert_byte_array(inputs), scope.convert_byte_array(outputs))
         });
 
-        let server_obj = env.with_env(|scope| {
-            if server_obj.is_null() {
+        let plane_obj = env.with_env(|scope| {
+            if plane_obj.is_null() {
                 scope.fatal_error("Bug: plane object is null");
             } else {
-                unsafe { JObject::from_raw(server_obj)}
+                unsafe { JObject::from_raw(plane_obj)}
             }
         });
 
         let runtime = Builder::new_multi_thread().enable_all().build().expect("Failed to build Tokio runtime");
-        runtime.block_on(run_agent(env, spec, server_obj, inputs, outputs));
+        runtime.block_on(run_agent(env, spec, plane_obj, inputs, outputs));
     }
 }
 
@@ -70,7 +73,7 @@ where
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         if !src.has_remaining() {
-            Ok(None)
+            return Ok(None);
         } else {
             let uri_len = src.get_i32() as usize;
             let lane_uri = std::str::from_utf8(src.split_to(uri_len).as_ref())
@@ -85,14 +88,27 @@ where
 struct ResponseDecoder;
 
 impl Decoder for ResponseDecoder {
-    type Item = LaneResponse<BytesMut>;
+    type Item = LaneResponseDiscriminant;
     type Error = std::io::Error;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
-        let mut decoder = ValueLaneResponseDecoder::default();
-        decoder
-            .decode(src)
-            .map_err(|_| ErrorKind::InvalidData.into())
+        match src.get_i8() {
+            0 => {
+                let mut decoder = ValueLaneResponseDecoder::default();
+                decoder
+                    .decode(src)
+                    .map_err(|_| ErrorKind::InvalidData.into())
+                    .map(|e| e.map(LaneResponseDiscriminant::Value))
+            }
+            1 => {
+                let mut decoder = MapLaneResponseDecoder::default();
+                decoder
+                    .decode(src)
+                    .map_err(|_| ErrorKind::InvalidData.into())
+                    .map(|e| e.map(LaneResponseDiscriminant::Map))
+            }
+            n => panic!("Invalid boolean for kind: {n}"),
+        }
     }
 }
 
@@ -100,14 +116,29 @@ impl Decoder for ResponseDecoder {
 struct RequestDecoder;
 
 impl Decoder for RequestDecoder {
-    type Item = LaneRequest<BytesMut>;
+    type Item = LaneRequestDiscriminant;
     type Error = std::io::Error;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
-        let mut decoder = LaneRequestDecoder::new(WithLengthBytesCodec::default());
-        decoder
-            .decode(src)
-            .map_err(|_| ErrorKind::InvalidData.into())
+        match src.get_i8() {
+            0 => {
+                let mut decoder = LaneRequestDecoder::new(WithLengthBytesCodec::default());
+                decoder
+                    .decode(src)
+                    .map_err(|_| ErrorKind::InvalidData.into())
+                    .map(|e| e.map(LaneRequestDiscriminant::Value))
+            }
+            1 => {
+                let mut decoder = LaneRequestDecoder::new(MapMessageDecoder::new(
+                    RawMapOperationDecoder::default(),
+                ));
+                decoder
+                    .decode(src)
+                    .map_err(|_| ErrorKind::InvalidData.into())
+                    .map(|e| e.map(LaneRequestDiscriminant::Map))
+            }
+            n => panic!("Invalid boolean for kind: {n}"),
+        }
     }
 }
 
@@ -117,7 +148,7 @@ impl Decoder for RequestDecoder {
 /// # Arguments:
 /// `env`: Java environment
 /// `spec`: the agent's specification.
-/// `server_obj`: a reference to the `AbstractPlane` in Java for creating the agent. This plane must
+/// `plane_obj`: a reference to the `AbstractPlane` in Java for creating the agent. This plane must
 /// contain the agent defined by `spec`.
 /// `inputs`: a vector of bytes that will be decoded by a `TaggedDecoder::<RequestDecoder>` instance.
 /// This contains the commands that will be forwarded to the agent. These commands may be multiple
@@ -134,12 +165,15 @@ impl Decoder for RequestDecoder {
 async fn run_agent(
     env: JavaEnv,
     spec: AgentSpec,
-    server_obj: JObject<'_>,
+    plane_obj: JObject<'_>,
     inputs: Vec<u8>,
     outputs: Vec<u8>,
 ) {
+    // let filter = EnvFilter::default().add_directive(LevelFilter::TRACE.into());
+    // tracing_subscriber::fmt().with_env_filter(filter).init();
+
     let ffi_context = FfiContext::new(env.clone());
-    let factory = env.with_env(|scope| AgentFactory::new(&env, scope.new_global_ref(server_obj)));
+    let factory = env.with_env(|scope| AgentFactory::new(&env, scope.new_global_ref(plane_obj)));
     let agent = FfiAgentDef::new(ffi_context, spec, factory);
     let agent_context = TestAgentContext::default();
     let start_barrier = Arc::new(Notify::new());
@@ -172,7 +206,7 @@ async fn run_agent(
 
         let mut data = BytesMut::from_iter(outputs);
         let mut decoder = TaggedDecoder::<ResponseDecoder>::default();
-        let mut responses = HashMap::<String, VecDeque<LaneResponse<BytesMut>>>::default();
+        let mut responses = HashMap::<String, VecDeque<LaneResponseDiscriminant>>::default();
 
         loop {
             match decoder.decode(&mut data) {

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::task::{Context, Poll};
+use std::task::{Context, Poll, Waker};
 
 use bytes::BytesMut;
 use futures::{ready, Stream};
@@ -15,13 +15,15 @@ use swim_api::downlink::DownlinkKind;
 use swim_api::error::{AgentRuntimeError, DownlinkRuntimeError, OpenStoreError};
 use swim_api::meta::lane::LaneKind;
 use swim_api::protocol::agent::{
-    LaneRequest, LaneRequestEncoder, LaneResponse, ValueLaneResponseDecoder,
+    LaneRequest, LaneRequestEncoder, LaneResponse, MapLaneResponseDecoder, ValueLaneResponseDecoder,
 };
+use swim_api::protocol::map::{MapMessage, RawMapOperation, RawMapOperationMut};
 use swim_api::store::StoreKind;
 use swim_utilities::io::byte_channel::{byte_channel, ByteReader, ByteWriter};
 use swim_utilities::non_zero_usize;
-use tokio::sync::{Mutex, MutexGuard};
-use tokio_util::codec::{FramedRead, FramedWrite};
+use tokio::sync::{Mutex, MutexGuard, TryLockError};
+use tokio_util::codec::{Encoder, FramedRead, FramedWrite};
+use tokio_util::either::Either;
 
 use jvm_sys::bridge::JniByteCodec;
 use jvm_sys::env::JavaEnv;
@@ -62,23 +64,19 @@ impl AgentContext for TestAgentContext {
         let channels = self.channels.inner.clone();
         let lane_uri = name.to_string();
         async move {
+            let guard = &mut *channels.lock().await;
+            let (tx_in, rx_in) = byte_channel(BUFFER_SIZE);
+            let (tx_out, rx_out) = byte_channel(BUFFER_SIZE);
+
             match lane_kind.uplink_kind() {
-                UplinkKind::Value => {
-                    let guard = &mut *channels.lock().await;
-                    let (tx_in, rx_in) = byte_channel(BUFFER_SIZE);
-                    let (tx_out, rx_out) = byte_channel(BUFFER_SIZE);
-
-                    guard.push_value_channel(tx_in, rx_out, lane_uri.to_string());
-
-                    Ok((tx_out, rx_in))
-                }
-                UplinkKind::Map => {
-                    unimplemented!("Map uplinks")
-                }
+                UplinkKind::Value => guard.push_value_channel(tx_in, rx_out, lane_uri.to_string()),
+                UplinkKind::Map => guard.push_map_channel(tx_in, rx_out, lane_uri.to_string()),
                 UplinkKind::Supply => {
                     panic!("Unexpected supply uplink")
                 }
             }
+
+            Ok((tx_out, rx_in))
         }
         .boxed()
     }
@@ -117,13 +115,13 @@ impl Channels {
         }
     }
 
-    async fn send(&self, lane_uri: String, request: LaneRequest<BytesMut>) {
+    async fn send<R: Into<LaneRequestDiscriminant>>(&self, lane_uri: String, request: R) {
         let mut guard = self.inner.lock().await;
         let inner = &mut *guard;
         let writer = inner.writers.get_mut(&lane_uri).expect("Missing channel");
-        let mut framed = FramedWrite::new(writer, LaneRequestEncoder::value());
+        let mut framed = FramedWrite::new(writer, LaneRequestDiscriminantEncoder);
 
-        framed.send(request).await.expect("Channel closed");
+        framed.send(request.into()).await.expect("Channel closed");
     }
 
     async fn drop_all(&self) {
@@ -134,8 +132,89 @@ impl Channels {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum LaneResponseDiscriminant {
+    Value(LaneResponse<BytesMut>),
+    Map(LaneResponse<RawMapOperationMut>),
+}
+
+impl LaneResponseDiscriminant {
+    fn expect_value(self) -> LaneResponse<BytesMut> {
+        match self {
+            LaneResponseDiscriminant::Value(r) => r,
+            LaneResponseDiscriminant::Map(_) => {
+                panic!("Expected a value message")
+            }
+        }
+    }
+
+    fn expect_map(self) -> LaneResponse<RawMapOperationMut> {
+        match self {
+            LaneResponseDiscriminant::Value(_) => {
+                panic!("Expected a map message")
+            }
+            LaneResponseDiscriminant::Map(r) => r,
+        }
+    }
+}
+
+pub struct LaneRequestDiscriminantEncoder;
+
+impl Encoder<LaneRequestDiscriminant> for LaneRequestDiscriminantEncoder {
+    type Error = std::io::Error;
+
+    fn encode(
+        &mut self,
+        item: LaneRequestDiscriminant,
+        dst: &mut BytesMut,
+    ) -> Result<(), Self::Error> {
+        match item {
+            LaneRequestDiscriminant::Value(r) => LaneRequestEncoder::value().encode(r, dst),
+            LaneRequestDiscriminant::Map(r) => LaneRequestEncoder::map().encode(r, dst),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum LaneRequestDiscriminant {
+    Value(LaneRequest<BytesMut>),
+    Map(LaneRequest<MapMessage<BytesMut, BytesMut>>),
+}
+
+impl From<LaneRequest<BytesMut>> for LaneRequestDiscriminant {
+    fn from(value: LaneRequest<BytesMut>) -> Self {
+        LaneRequestDiscriminant::Value(value)
+    }
+}
+
+impl From<LaneRequest<MapMessage<BytesMut, BytesMut>>> for LaneRequestDiscriminant {
+    fn from(value: LaneRequest<MapMessage<BytesMut, BytesMut>>) -> Self {
+        LaneRequestDiscriminant::Map(value)
+    }
+}
+
+impl LaneRequestDiscriminant {
+    fn expect_value(self) -> LaneRequest<BytesMut> {
+        match self {
+            LaneRequestDiscriminant::Value(r) => r,
+            LaneRequestDiscriminant::Map(_) => {
+                panic!("Expected a value message")
+            }
+        }
+    }
+
+    fn expect_map(self) -> LaneRequest<MapMessage<BytesMut, BytesMut>> {
+        match self {
+            LaneRequestDiscriminant::Value(_) => {
+                panic!("Expected a map message")
+            }
+            LaneRequestDiscriminant::Map(r) => r,
+        }
+    }
+}
+
 impl Stream for Channels {
-    type Item = (String, LaneResponse<BytesMut>);
+    type Item = (String, LaneResponseDiscriminant);
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         loop {
@@ -144,8 +223,16 @@ impl Stream for Channels {
 
             match ready!(Pin::new(&mut inner.read_demux).poll_next(cx)) {
                 Some(Some((uri, reader, resp))) => {
-                    inner.push_value_reader(reader, uri.clone());
-                    return Poll::Ready(Some((uri, resp)));
+                    return match resp {
+                        LaneResponseDiscriminant::Value(r) => {
+                            inner.push_value_reader(reader, uri.clone());
+                            Poll::Ready(Some((uri, LaneResponseDiscriminant::Value(r))))
+                        }
+                        LaneResponseDiscriminant::Map(r) => {
+                            inner.push_map_reader(reader, uri.clone());
+                            Poll::Ready(Some((uri, LaneResponseDiscriminant::Map(r))))
+                        }
+                    }
                 }
                 Some(None) => {
                     if inner.read_demux.is_empty() {
@@ -160,8 +247,9 @@ impl Stream for Channels {
 
 #[derive(Debug, Default)]
 struct ChannelsInner {
-    read_demux:
-        FuturesUnordered<BoxFuture<'static, Option<(String, ByteReader, LaneResponse<BytesMut>)>>>,
+    read_demux: FuturesUnordered<
+        BoxFuture<'static, Option<(String, ByteReader, LaneResponseDiscriminant)>>,
+    >,
     writers: HashMap<String, ByteWriter>,
 }
 
@@ -171,11 +259,34 @@ impl ChannelsInner {
         self.writers.insert(lane_uri, tx);
     }
 
+    fn push_map_channel(&mut self, tx: ByteWriter, rx: ByteReader, lane_uri: String) {
+        self.push_map_reader(rx, lane_uri.clone());
+        self.writers.insert(lane_uri, tx);
+    }
+
     fn push_value_reader(&mut self, rx: ByteReader, lane_uri: String) {
         self.read_demux.push(Box::pin(async move {
             let mut decoder = FramedRead::new(rx, ValueLaneResponseDecoder::default());
             match decoder.next().await {
-                Some(Ok(response)) => Some((lane_uri, decoder.into_inner(), response)),
+                Some(Ok(response)) => Some((
+                    lane_uri,
+                    decoder.into_inner(),
+                    LaneResponseDiscriminant::Value(response),
+                )),
+                None | Some(Err(_)) => None,
+            }
+        }));
+    }
+
+    fn push_map_reader(&mut self, rx: ByteReader, lane_uri: String) {
+        self.read_demux.push(Box::pin(async move {
+            let mut decoder = FramedRead::new(rx, MapLaneResponseDecoder::default());
+            match decoder.next().await {
+                Some(Ok(response)) => Some((
+                    lane_uri,
+                    decoder.into_inner(),
+                    LaneResponseDiscriminant::Map(response),
+                )),
                 None | Some(Err(_)) => None,
             }
         }));
@@ -283,7 +394,10 @@ mod tests {
                 let tx = inner.writers.get_mut(&uri).expect(MISSING_CHANNEL);
 
                 let mut encoder = FramedWrite::new(tx, LaneResponseEncoder::new(BytesCodec));
-                encoder.send(response).await.expect(CLOSED_CHANNEL);
+                encoder
+                    .send(response.expect_value())
+                    .await
+                    .expect(CLOSED_CHANNEL);
             }
         };
 

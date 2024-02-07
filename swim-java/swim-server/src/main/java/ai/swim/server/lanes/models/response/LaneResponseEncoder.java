@@ -1,7 +1,7 @@
 package ai.swim.server.lanes.models.response;
 
-import ai.swim.server.codec.Bytes;
-import ai.swim.server.codec.Encoder;
+import ai.swim.codec.data.ByteWriter;
+import ai.swim.codec.encoder.Encoder;
 
 /**
  * A encoder for encoding {@link LaneResponse}'s.
@@ -16,7 +16,7 @@ public class LaneResponseEncoder<T> implements Encoder<LaneResponse<T>> {
   }
 
   @Override
-  public void encode(LaneResponse<T> target, Bytes dst) {
+  public void encode(LaneResponse<T> target, ByteWriter dst) {
     target.encode(delegate, dst);
   }
 }
