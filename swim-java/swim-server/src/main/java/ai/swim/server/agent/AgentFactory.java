@@ -3,6 +3,8 @@ package ai.swim.server.agent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.lanes.Lane;
 import ai.swim.server.lanes.LaneModel;
+import ai.swim.server.lanes.demand.DemandLane;
+import ai.swim.server.lanes.demand.DemandLaneView;
 import ai.swim.server.lanes.map.MapLane;
 import ai.swim.server.lanes.map.MapLaneView;
 import ai.swim.server.lanes.state.StateCollector;
@@ -118,8 +120,23 @@ public class AgentFactory<A extends AbstractAgent> {
       return reflectValueLane(agent, laneUri, laneId, field, collector);
     } else if (MapLane.class.isAssignableFrom(type)) {
       return reflectMapLane(agent, laneUri, laneId, field, collector);
+    } else if (DemandLane.class.isAssignableFrom(type)) {
+      return reflectDemandLane(agent, laneUri, laneId, field, collector);
     } else {
       throw unsupportedLaneType(type, agent.getClass());
+    }
+  }
+
+  private static LaneModel reflectDemandLane(AbstractAgent agent,
+      String laneUri,
+      int laneId,
+      Field field,
+      StateCollector collector) {
+    try {
+      DemandLaneView<?> laneView = (DemandLaneView<?>) field.get(agent);
+      return laneView.initLaneModel(collector, laneId);
+    } catch (IllegalAccessException e) {
+      throw laneInitFailure(agent, laneUri, e);
     }
   }
 

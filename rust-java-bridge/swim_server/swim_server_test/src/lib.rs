@@ -15,9 +15,13 @@ use swim_api::downlink::DownlinkKind;
 use swim_api::error::{AgentRuntimeError, DownlinkRuntimeError, OpenStoreError};
 use swim_api::meta::lane::LaneKind;
 use swim_api::protocol::agent::{
-    LaneRequest, LaneRequestEncoder, LaneResponse, MapLaneResponseDecoder, ValueLaneResponseDecoder,
+    LaneRequest, LaneRequestEncoder, LaneResponse, LaneResponseDecoder, MapLaneResponseDecoder,
+    ValueLaneResponseDecoder,
 };
-use swim_api::protocol::map::{MapMessage, RawMapOperation, RawMapOperationMut};
+use swim_api::protocol::map::{
+    MapMessage, RawMapOperation, RawMapOperationDecoder, RawMapOperationMut,
+};
+use swim_api::protocol::WithLengthBytesCodec;
 use swim_api::store::StoreKind;
 use swim_utilities::io::byte_channel::{byte_channel, ByteReader, ByteWriter};
 use swim_utilities::non_zero_usize;
@@ -222,16 +226,26 @@ impl Stream for Channels {
             let inner = &mut *guard;
 
             match ready!(Pin::new(&mut inner.read_demux).poll_next(cx)) {
-                Some(Some((uri, reader, resp))) => {
+                Some(Some((uri, decoder, resp))) => {
                     return match resp {
-                        LaneResponseDiscriminant::Value(r) => {
-                            inner.push_value_reader(reader, uri.clone());
-                            Poll::Ready(Some((uri, LaneResponseDiscriminant::Value(r))))
-                        }
-                        LaneResponseDiscriminant::Map(r) => {
-                            inner.push_map_reader(reader, uri.clone());
-                            Poll::Ready(Some((uri, LaneResponseDiscriminant::Map(r))))
-                        }
+                        LaneResponseDiscriminant::Value(r) => match decoder {
+                            EitherDecoder::Value(decoder) => {
+                                inner.push_value_reader(decoder, uri.clone());
+                                Poll::Ready(Some((uri, LaneResponseDiscriminant::Value(r))))
+                            }
+                            EitherDecoder::Map(_) => {
+                                unreachable!("Invalid decoder returned")
+                            }
+                        },
+                        LaneResponseDiscriminant::Map(r) => match decoder {
+                            EitherDecoder::Value(_) => {
+                                unreachable!("Invalid decoder returned")
+                            }
+                            EitherDecoder::Map(decoder) => {
+                                inner.push_map_reader(decoder, uri.clone());
+                                Poll::Ready(Some((uri, LaneResponseDiscriminant::Map(r))))
+                            }
+                        },
                     }
                 }
                 Some(None) => {
@@ -245,49 +259,68 @@ impl Stream for Channels {
     }
 }
 
+enum EitherDecoder {
+    Value(FramedRead<ByteReader, LaneResponseDecoder<WithLengthBytesCodec>>),
+    Map(FramedRead<ByteReader, LaneResponseDecoder<RawMapOperationDecoder>>),
+}
+
 #[derive(Debug, Default)]
 struct ChannelsInner {
     read_demux: FuturesUnordered<
-        BoxFuture<'static, Option<(String, ByteReader, LaneResponseDiscriminant)>>,
+        BoxFuture<'static, Option<(String, EitherDecoder, LaneResponseDiscriminant)>>,
     >,
     writers: HashMap<String, ByteWriter>,
 }
 
 impl ChannelsInner {
     fn push_value_channel(&mut self, tx: ByteWriter, rx: ByteReader, lane_uri: String) {
-        self.push_value_reader(rx, lane_uri.clone());
+        let decoder = FramedRead::new(rx, ValueLaneResponseDecoder::default());
+        self.push_value_reader(decoder, lane_uri.clone());
         self.writers.insert(lane_uri, tx);
     }
 
     fn push_map_channel(&mut self, tx: ByteWriter, rx: ByteReader, lane_uri: String) {
-        self.push_map_reader(rx, lane_uri.clone());
+        let decoder = FramedRead::new(rx, MapLaneResponseDecoder::default());
+        self.push_map_reader(decoder, lane_uri.clone());
         self.writers.insert(lane_uri, tx);
     }
 
-    fn push_value_reader(&mut self, rx: ByteReader, lane_uri: String) {
+    fn push_value_reader(
+        &mut self,
+        mut decoder: FramedRead<ByteReader, LaneResponseDecoder<WithLengthBytesCodec>>,
+        lane_uri: String,
+    ) {
         self.read_demux.push(Box::pin(async move {
-            let mut decoder = FramedRead::new(rx, ValueLaneResponseDecoder::default());
             match decoder.next().await {
                 Some(Ok(response)) => Some((
                     lane_uri,
-                    decoder.into_inner(),
+                    EitherDecoder::Value(decoder),
                     LaneResponseDiscriminant::Value(response),
                 )),
-                None | Some(Err(_)) => None,
+                Some(Err(e)) => {
+                    panic!("Frame error: {:?}", e);
+                }
+                None => None,
             }
         }));
     }
 
-    fn push_map_reader(&mut self, rx: ByteReader, lane_uri: String) {
+    fn push_map_reader(
+        &mut self,
+        mut decoder: FramedRead<ByteReader, LaneResponseDecoder<RawMapOperationDecoder>>,
+        lane_uri: String,
+    ) {
         self.read_demux.push(Box::pin(async move {
-            let mut decoder = FramedRead::new(rx, MapLaneResponseDecoder::default());
             match decoder.next().await {
                 Some(Ok(response)) => Some((
                     lane_uri,
-                    decoder.into_inner(),
+                    EitherDecoder::Map(decoder),
                     LaneResponseDiscriminant::Map(response),
                 )),
-                None | Some(Err(_)) => None,
+                Some(Err(e)) => {
+                    panic!("Frame error: {:?}", e);
+                }
+                None => None,
             }
         }));
     }

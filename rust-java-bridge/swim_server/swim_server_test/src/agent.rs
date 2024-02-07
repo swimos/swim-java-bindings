@@ -225,7 +225,6 @@ async fn run_agent(
                 Some(expected) => {
                     let expected_response = expected.pop_front().expect("Missing response");
                     assert_eq!(expected_response, response);
-
                     if expected.is_empty() {
                         responses.remove(&uri);
                     }
