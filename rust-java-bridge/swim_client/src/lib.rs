@@ -27,7 +27,7 @@ use swim_client_core::downlink::map::FfiMapDownlink;
 use url::ParseError;
 use url::Url;
 
-use jvm_sys::env::{FatalError, JavaEnv};
+use jvm_sys::env::{JavaEnv, StringError};
 use jvm_sys::jni_try;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
@@ -173,7 +173,7 @@ fn open_downlink<D>(
     let mut config_bytes =
         env.with_env(|scope| BytesMut::from_iter(scope.convert_byte_array(config)));
     let config = match env.with_env_throw(SWIM_CLIENT_EXCEPTION, |_| {
-        DownlinkConfigurations::try_from_bytes(&mut config_bytes).map_err(|e| FatalError::Custom(e))
+        DownlinkConfigurations::try_from_bytes(&mut config_bytes).map_err(StringError)
     }) {
         Ok(config) => config,
         Err(()) => return,
