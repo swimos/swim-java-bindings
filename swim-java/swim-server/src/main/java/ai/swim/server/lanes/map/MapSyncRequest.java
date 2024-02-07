@@ -25,7 +25,7 @@ public class MapSyncRequest<K> {
       ByteWriter byteWriter,
       Writable<K> keyForm,
       Writable<V> valueForm,
-      Map<K, V> state) throws BufferOverflowException {
+      MapLookup<K, V> mapLookup) throws BufferOverflowException {
     IdentifiedLaneResponseEncoder<MapOperation<K, V>> encoder = new IdentifiedLaneResponseEncoder<>(new MapOperationEncoder<>(
         keyForm,
         valueForm));
@@ -34,7 +34,7 @@ public class MapSyncRequest<K> {
     if (keyIter.hasNext()) {
       while (keyIter.hasNext()) {
         K key = keyIter.next();
-        V value = state.get(key);
+        V value = mapLookup.get(key);
 
         if (value != null) {
           encoder.encode(

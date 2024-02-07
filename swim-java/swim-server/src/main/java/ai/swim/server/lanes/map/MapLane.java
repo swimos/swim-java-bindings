@@ -15,7 +15,7 @@ import ai.swim.structure.Form;
  * @param <K> the type of the keys contained in the map.
  * @param <V> the type of the values contained in the map.
  */
-public interface MapLane<K, V> extends Lane {
+public interface MapLane<K, V> extends Lane, TypedMap<K, V> {
 
   /**
    * Returns the {@link Form} associated with the key type.
@@ -68,28 +68,5 @@ public interface MapLane<K, V> extends Lane {
    * Clears the map and invokes the {@link OnClear} callback if one has been registered.
    */
   void clear();
-
-  /**
-   * Inserts an entry into the map and invokes the {@link OnUpdate} callback if one has been registered.
-   *
-   * @param key   that will be inserted.
-   * @param value to associate with the key.
-   */
-  V update(K key, V value);
-
-  /**
-   * Removes an entry from the map and invokes the {@link OnRemove} callback if one has been registered.
-   *
-   * @param key to remove.
-   * @return the value associated with key if one existed
-   */
-  V remove(K key);
-
-  /**
-   * Gets an entry from the map.
-   *
-   * @param key the key whose associated value is to be returned.
-   */
-  V get(K key);
 
 }

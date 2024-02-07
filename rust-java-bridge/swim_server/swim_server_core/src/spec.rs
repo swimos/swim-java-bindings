@@ -1,26 +1,15 @@
-use bytes::BytesMut;
 use std::collections::HashMap;
-use std::str::FromStr;
-use std::sync::Arc;
 
-use futures_util::future::BoxFuture;
-use futures_util::FutureExt;
-use swim_api::agent::{Agent, AgentConfig, AgentContext, AgentInitResult, AgentTask};
-use swim_api::error::AgentInitError;
 use swim_api::meta::lane::LaneKind;
-use swim_utilities::routing::route_uri::RouteUri;
 
-use bytebridge::{ByteCodec, FromBytesError};
-use jvm_sys::method::JavaObjectMethodDef;
+use bytebridge::ByteCodec;
 
-struct AgentVTable {
-    on_start: JavaObjectMethodDef,
-}
-
+/// PlaneSpec produced when deserializing the output of ai/swim/server/schema/PlaneSchema#bytes.
 #[derive(ByteCodec, Debug, Clone)]
 pub struct PlaneSpec {
+    /// The name of the plane.
     pub name: String,
-    // nodeUri -> spec
+    /// Node URI -> Agent Spec mappings.
     pub agent_specs: HashMap<String, AgentSpec>,
 }
 
@@ -30,10 +19,12 @@ impl PlaneSpec {
     }
 }
 
+/// AgentSpec produced when deserializing the output of ai/swim/server/schema/AgentSchema#pack.
 #[derive(ByteCodec, Debug, Clone)]
 pub struct AgentSpec {
+    /// The *name* of the agent.
     pub name: String,
-    // laneUri -> spec
+    /// Lane URI -> Lane Spec mappings.
     pub lane_specs: HashMap<String, LaneSpec>,
 }
 
@@ -43,10 +34,14 @@ impl AgentSpec {
     }
 }
 
+/// Lane specification.
 #[derive(ByteCodec, Debug, Clone)]
 pub struct LaneSpec {
+    /// Whether the lane is transient.
     pub is_transient: bool,
+    /// Unique lane ID scoped to the agent.
     pub lane_idx: i32,
+    /// The type of the lane.
     pub lane_kind_repr: LaneKindRepr,
 }
 
@@ -60,6 +55,7 @@ impl LaneSpec {
     }
 }
 
+/// Lane types.
 #[derive(ByteCodec, Debug, Copy, Clone)]
 pub enum LaneKindRepr {
     Action,

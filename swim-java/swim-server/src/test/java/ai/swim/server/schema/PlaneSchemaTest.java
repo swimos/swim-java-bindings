@@ -25,8 +25,7 @@ class PlaneSchemaTest {
         new AgentSchema<>(
             TestAgent.class,
             "Agent",
-            Map.of("testValueLane", new LaneSchema(true, LaneKind.Value,
-                                                   0))));
+            Map.of("testValueLane", new LaneSchema(true, LaneKind.Value, 0))));
   }
 
   @Test
@@ -36,11 +35,13 @@ class PlaneSchemaTest {
     assertEquals(
         schema,
         new PlaneSchema<>(
-            TestPlane.class, "testPlane",
+            TestPlane.class,
+            "testPlane",
             Map.of(
                 "testRoute",
                 new AgentSchema<>(
-                    TestAgent.class, "Agent",
+                    TestAgent.class,
+                    "Agent",
                     Map.of(
                         "testValueLane",
                         new LaneSchema(true, LaneKind.Value, 0)))), uriResolver));

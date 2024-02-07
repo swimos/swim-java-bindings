@@ -23,6 +23,7 @@ type MapReaderCodec = LaneCodec<MapMessageDecoder<RawMapOperationDecoder>>;
 const TAG_SIZE: usize = size_of::<u8>();
 const LEN_SIZE: usize = size_of::<i64>();
 
+/// Abstraction over value and map readers.
 pub enum LaneReaderCodec {
     Value(ValueReaderCodec),
     Map(MapReaderCodec),
@@ -38,6 +39,7 @@ impl LaneReaderCodec {
     }
 }
 
+/// Map operation encoder that operates directly on [`BytesMut`] instead of bounds of [`StructuralWritable`].
 struct MapOperationBytesEncoder;
 
 impl MapOperationBytesEncoder {
@@ -60,12 +62,6 @@ impl Encoder<MapOperation<BytesMut, BytesMut>> for MapOperationBytesEncoder {
         match item {
             MapOperation::Update { key, value } => {
                 let total_len = key.len() + value.len() + LEN_SIZE + TAG_SIZE;
-                println!("Total len 2: {}", total_len);
-                println!("key len 2: {}", key.len());
-                println!("value len 2: {}", value.len());
-
-                // int/i32 overflow is handled in Java
-
                 dst.reserve(total_len + LEN_SIZE);
                 dst.put_u64(u64::try_from(total_len).expect(Self::OVERSIZE_RECORD));
                 dst.put_u8(Self::UPDATE);
@@ -133,12 +129,28 @@ enum LaneResponseDecoderState {
     },
 }
 
+/// Item yielded by a [`LaneResponseDecoder`].
 #[derive(PartialEq, Debug)]
 pub enum LaneResponseElement {
+    /// More data should be fetched by invoking `AgentView#flushState`.
     Feed,
-    Response { lane_id: i32, data: Bytes },
+    /// A response produced by a lane.
+    Response {
+        /// The lane that produced the response.
+        lane_id: i32,
+        /// The LaneResponse data to forward.
+        data: Bytes,
+    },
 }
 
+/// `ai/swim/server/lanes/models/response/IdentifiedLaneResponse` decoder.
+///
+/// The decoder implementation yields either LaneResponseElement::Feed if the Java runtime has
+/// signalled that more data is available if another `AgentView#flushState` call is made, or
+/// LaneResponseElement::Response with a lane ID to forward the data to.
+///
+/// Any errors that this decoder yields should be considered a codec bug and the process should be
+/// aborted.
 #[derive(Default)]
 pub struct LaneResponseDecoder {
     state: LaneResponseDecoderState,

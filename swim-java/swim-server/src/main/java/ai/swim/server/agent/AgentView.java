@@ -94,6 +94,11 @@ public class AgentView {
     return node.flushState();
   }
 
+  /**
+   * Returns the {@link AgentNode} associated with this {@link AgentView}.
+   *
+   * @return the {@link AgentNode} associated with this {@link AgentView}.
+   */
   public AgentNode getNode() {
     return node;
   }

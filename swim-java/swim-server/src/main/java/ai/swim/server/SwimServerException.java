@@ -14,7 +14,9 @@
 
 package ai.swim.server;
 
-
+/**
+ * Exception thrown when a component (plane, agent, lane) used for building a Swim Server is not well-defined.
+ */
 public class SwimServerException extends Exception {
   public SwimServerException() {
   }

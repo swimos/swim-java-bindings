@@ -30,7 +30,7 @@ use swim_server_core::{server_fn, AgentFactory, FfiAgentDef, FfiContext};
 use crate::{LaneRequestDiscriminant, LaneResponseDiscriminant, TestAgentContext};
 
 server_fn! {
-    agent_TestLaneServer_runNativeAgent(
+    fn agent_TestLaneServer_runNativeAgent(
         env,
         _class,
         inputs: jbyteArray,

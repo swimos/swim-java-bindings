@@ -107,12 +107,10 @@ class SwimServerTest {
     private final ValueLane<Integer> minusOne = valueLane(Integer.class);
     @Transient
     @SwimLane("laneUri")
-    private final ValueLane<Integer> lane = valueLane(Integer.class).onEvent((ev) -> {
-      System.out.println("Java agent on event: " + ev);
-      forward(ev);
-    }).onSet(((oldValue, newValue) -> {
-      System.out.println("Java agent on set. Old: " + oldValue + ", new: " + newValue);
-    }));
+    private final ValueLane<Integer> lane = valueLane(Integer.class)
+        .onEvent(this::forward)
+        .onSet(((oldValue, newValue) -> {
+        }));
 
     private TestAgent(AgentContext context) {
       super(context);

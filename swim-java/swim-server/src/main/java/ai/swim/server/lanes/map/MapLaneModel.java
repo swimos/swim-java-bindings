@@ -10,13 +10,16 @@ import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
 import ai.swim.structure.recognizer.Recognizer;
 import ai.swim.structure.recognizer.RecognizerException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public final class MapLaneModel<K, V> extends LaneModel {
   private final MapLaneView<K, V> view;
   private final Form<K> keyForm;
   private final Form<V> valueForm;
-  private final MapState<K, V> state;
+  private final MapLaneState<K, V> state;
   private final OperationDispatcher<V, K> operationDispatcher;
   private final Initialiser<V, K> initVisitor;
 
@@ -24,7 +27,7 @@ public final class MapLaneModel<K, V> extends LaneModel {
     this.view = view;
     this.keyForm = view.keyForm();
     this.valueForm = view.valueForm();
-    this.state = new MapState<>(laneId, keyForm, valueForm, collector);
+    this.state = new MapLaneState<>(laneId, keyForm, valueForm, collector);
     this.operationDispatcher = new OperationDispatcher<>(state, view);
     this.initVisitor = new Initialiser<>(state);
   }
@@ -95,4 +98,31 @@ public final class MapLaneModel<K, V> extends LaneModel {
   }
 
 
+  public int size() {
+    return state.size();
+  }
+
+  public boolean containsKey(K key) {
+    return state.containsKey(key);
+  }
+
+  public boolean containsValue(V value) {
+    return state.containsValue(value);
+  }
+
+  public void putAll(TypedMap<? extends K, ? extends V> m) {
+    state.putAll(m);
+  }
+
+  public Set<K> keySet() {
+    return state.keySet();
+  }
+
+  public Collection<V> values() {
+    return state.values();
+  }
+
+  public Set<Map.Entry<K, V>> entrySet() {
+    return state.entrySet();
+  }
 }

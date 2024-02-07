@@ -5,8 +5,11 @@ import ai.swim.codec.data.ByteWriter;
 import ai.swim.codec.decoder.Decoder;
 import ai.swim.codec.decoder.DecoderException;
 import ai.swim.server.lanes.WriteResult;
+import ai.swim.server.lanes.map.MapLaneState;
 import ai.swim.server.lanes.map.MapOperation;
 import ai.swim.server.lanes.map.PendingWrites;
+import ai.swim.server.lanes.map.TypedHashMap;
+import ai.swim.server.lanes.map.TypedMap;
 import ai.swim.server.lanes.map.codec.MapOperationDecoder;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
 import ai.swim.server.agent.lanes.models.response.IdentifiedLaneResponseDecoder;
@@ -123,7 +126,7 @@ class PendingWritesTest {
   void writesInterleaved() throws DecoderException {
     PendingWrites<Integer, Integer> pendingWrites = new PendingWrites<>();
     Form<Integer> integerForm = Form.forClass(Integer.class);
-    Map<Integer, Integer> state = Map.of(1, 1, 2, 2, 3, 3);
+    TypedHashMap<Integer, Integer> state = TypedMap.of(Map.of(1, 1, 2, 2, 3, 3));
     UUID firstRemote = UUID.randomUUID();
     UUID secondRemote = UUID.randomUUID();
 
@@ -164,7 +167,7 @@ class PendingWritesTest {
   void syncOnly() throws DecoderException {
     PendingWrites<Integer, Integer> pendingWrites = new PendingWrites<>();
     Form<Integer> integerForm = Form.forClass(Integer.class);
-    Map<Integer, Integer> state = Map.of(1, 1, 2, 2, 3, 3);
+    TypedHashMap<Integer, Integer> state = TypedMap.of(Map.of(1, 1, 2, 2, 3, 3));
     UUID firstRemote = UUID.randomUUID();
     UUID secondRemote = UUID.randomUUID();
 
@@ -201,7 +204,7 @@ class PendingWritesTest {
   void eventsOnly() throws DecoderException {
     PendingWrites<Integer, Integer> pendingWrites = new PendingWrites<>();
     Form<Integer> integerForm = Form.forClass(Integer.class);
-    Map<Integer, Integer> state = Map.of(1, 1, 2, 2, 3, 3);
+    TypedHashMap<Integer, Integer> state = TypedMap.of(Map.of(1, 1, 2, 2, 3, 3));
 
     pendingWrites.pushOperation(MapOperation.update(1, 1));
     pendingWrites.pushOperation(MapOperation.remove(6));

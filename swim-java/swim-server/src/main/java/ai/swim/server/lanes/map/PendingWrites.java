@@ -60,14 +60,14 @@ public class PendingWrites<K, V> {
    * Sync events are interleaved with any map operations.
    *
    * @param laneId     the ID of the map lane.
-   * @param state      the map's current state.
+   * @param mapLookup      the map's current state.
    * @param byteWriter to write the events into.
    * @param keyForm    for writing the map's key type.
    * @param valueForm  for writing the map's value type.
    * @return the result of the operation.
    */
   public WriteResult writeInto(int laneId,
-      Map<K, V> state,
+      MapLookup<K, V> mapLookup,
       ByteWriter byteWriter,
       Writable<K> keyForm,
       Writable<V> valueForm) {
@@ -83,7 +83,7 @@ public class PendingWrites<K, V> {
           MapSyncRequest<K> syncRequest = syncQueue.peek();
           if (syncRequest != null) {
             try {
-              if (syncRequest.encodeInto(laneId, byteWriter, keyForm, valueForm, state)) {
+              if (syncRequest.encodeInto(laneId, byteWriter, keyForm, valueForm, mapLookup)) {
                 syncQueue.poll();
               }
             } catch (BufferOverflowException ignored) {

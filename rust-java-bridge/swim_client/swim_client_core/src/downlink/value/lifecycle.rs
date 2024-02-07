@@ -14,14 +14,13 @@
 
 use bytes::BytesMut;
 use jni::sys::jobject;
-use swim_api::error::DownlinkTaskError;
 use jvm_sys::env::{IsTypeOfExceptionHandler, JavaEnv};
+use swim_api::error::DownlinkTaskError;
 
-use jvm_sys::vtable::Consumer;
 use crate::downlink::{ON_LINKED, ON_UNLINKED};
+use jvm_sys::vtable::Consumer;
 
 use crate::downlink::vtable::{ExceptionHandler, JavaMethod};
-
 
 pub struct ValueDownlinkVTable {
     on_linked: JavaMethod,
@@ -70,7 +69,7 @@ impl ValueDownlinkVTable {
             on_synced, handler, ..
         } = self;
         env.with_env(|scope| {
-            let buffer = unsafe { scope.new_direct_byte_buffer_exact(value) };
+            let buffer = scope.new_direct_byte_buffer_exact(value);
             on_synced.execute(handler, &scope, &[buffer.into()])
         })
     }
@@ -84,7 +83,7 @@ impl ValueDownlinkVTable {
             on_event, handler, ..
         } = self;
         env.with_env(|scope| {
-            let buffer = unsafe { scope.new_direct_byte_buffer_exact(value) };
+            let buffer = scope.new_direct_byte_buffer_exact(value);
             on_event.execute(handler, &scope, &[buffer.into()])
         })
     }
@@ -94,7 +93,7 @@ impl ValueDownlinkVTable {
             on_set, handler, ..
         } = self;
         env.with_env(|scope| {
-            let buffer = unsafe { scope.new_direct_byte_buffer_exact(value) };
+            let buffer = scope.new_direct_byte_buffer_exact(value);
             on_set.execute(handler, &scope, &[buffer.into()])
         })
     }
@@ -108,7 +107,6 @@ impl ValueDownlinkVTable {
         env.with_env(|scope| on_unlinked.execute(handler, &scope, &[]))
     }
 }
-
 
 pub struct ValueDownlinkLifecycle {
     vtable: ValueDownlinkVTable,

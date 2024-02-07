@@ -7,25 +7,26 @@ import ai.swim.server.lanes.WriteResult;
 import ai.swim.server.lanes.state.State;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
-public class MapState<K, V> implements State {
+public class MapLaneState<K, V> implements State {
   private final Form<K> keyForm;
   private final Form<V> valueForm;
   private final StateCollector collector;
   private final PendingWrites<K, V> pendingWrites;
   private final int laneId;
-  private final Map<K, V> state;
+  private final TypedHashMap<K, V> state;
 
-  public MapState(int laneId, Form<K> keyForm, Form<V> valueForm, StateCollector collector) {
+  public MapLaneState(int laneId, Form<K> keyForm, Form<V> valueForm, StateCollector collector) {
     this.laneId = laneId;
     this.keyForm = keyForm;
     this.valueForm = valueForm;
     this.collector = collector;
-    state = new HashMap<>();
+    state = new TypedHashMap<>();
     pendingWrites = new PendingWrites<>();
   }
 
@@ -94,4 +95,31 @@ public class MapState<K, V> implements State {
     collector.add(this);
   }
 
+  public int size() {
+    return state.size();
+  }
+
+  public boolean containsKey(K key) {
+    return state.containsKey(key);
+  }
+
+  public boolean containsValue(V value) {
+    return state.containsValue(value);
+  }
+
+  public void putAll(TypedMap<? extends K, ? extends V> m) {
+    state.putAll(m);
+  }
+
+  public Set<K> keySet() {
+    return state.keySet();
+  }
+
+  public Collection<V> values() {
+    return state.values();
+  }
+
+  public Set<Map.Entry<K, V>> entrySet() {
+    return state.entrySet();
+  }
 }

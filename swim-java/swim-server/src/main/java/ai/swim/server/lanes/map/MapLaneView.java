@@ -7,6 +7,9 @@ import ai.swim.server.lanes.lifecycle.OnRemove;
 import ai.swim.server.lanes.lifecycle.OnUpdate;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 public final class MapLaneView<K, V> extends LaneView implements MapLane<K, V> {
   private final Form<K> keyForm;
@@ -21,7 +24,7 @@ public final class MapLaneView<K, V> extends LaneView implements MapLane<K, V> {
     this.valueForm = valueForm;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "unused"})
   public void setModel(MapLaneModel<?, ?> model) {
     this.model = (MapLaneModel<K, V>) model;
   }
@@ -83,27 +86,73 @@ public final class MapLaneView<K, V> extends LaneView implements MapLane<K, V> {
   }
 
   @Override
-  public void clear() {
-    model.clear();
-    onClear();
+  public int size() {
+    return model.size();
   }
 
   @Override
-  public V update(K key, V value) {
-    V oldValue = model.update(key, value);
-    onUpdate(key,oldValue,value);
-    return oldValue;
+  public boolean containsKey(K key) {
+    return model.containsKey(key);
   }
 
   @Override
-  public V remove(K key) {
-    V oldValue = model.remove(key);
-    onRemove(key,oldValue);
-    return oldValue;
+  public boolean containsValue(V value) {
+    return model.containsValue(value);
   }
 
   @Override
   public V get(K key) {
     return model.get(key);
   }
+
+  @Override
+  public V put(K key, V value) {
+    V oldValue = model.update(key, value);
+    onUpdate(key, oldValue, value);
+    return oldValue;
+  }
+
+  @Override
+  public V remove(K key) {
+    V oldValue = model.remove(key);
+    onRemove(key, oldValue);
+    return oldValue;
+  }
+
+  @Override
+  public void putAll(TypedMap<? extends K, ? extends V> m) {
+    if (onUpdate != null) {
+      for (Map.Entry<? extends K, ? extends V> entry : m.entrySet()) {
+        K key = entry.getKey();
+        V newValue = entry.getValue();
+        V oldValue = model.update(key, newValue);
+
+        onUpdate.onUpdate(key, oldValue, newValue);
+      }
+    } else {
+      model.putAll(m);
+    }
+  }
+
+  @Override
+  public void clear() {
+    model.clear();
+    onClear();
+  }
+
+  @Override
+  public Set<K> keySet() {
+    return model.keySet();
+  }
+
+  @Override
+  public Collection<V> values() {
+    return model.values();
+  }
+
+  @Override
+  public Set<Map.Entry<K, V>> entrySet() {
+    return model.entrySet();
+  }
+
 }

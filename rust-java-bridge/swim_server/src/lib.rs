@@ -8,7 +8,23 @@ use swim_server_core::spec::LaneSpec;
 use swim_server_core::JavaAgentContext;
 
 server_fn! {
-    agent_AgentContextFunctionTable_openLane(
+    /// Opens a new lane on the agent.
+    ///
+    /// # Arguments
+    /// - 'context' - agent-scoped context.
+    /// - 'lane_uri' - the URI of the lane. This must not already exist in the agent or an exception
+    /// will be thrown.
+    /// - 'config' - msgpack representation of the lane.
+    ///
+    /// # Throws:
+    /// - "ai/swim/server/codec/DecoderException" if 'config' is malformed. This will be propagated back
+    /// to the agent runtime and cause the server runtime to shutdown as a malformed buffer can only
+    /// occur as the result of a bug.
+    ///
+    /// # Blocking
+    /// Blocks the current thread until there is sufficient capacity in the channel to the agent runtime
+    /// for the request.
+    fn agent_AgentContextFunctionTable_openLane(
         env,
         _class,
         context: *mut JavaAgentContext,
@@ -32,7 +48,11 @@ server_fn! {
 }
 
 server_fn! {
-    agent_AgentContextFunctionTable_dropHandle(
+    /// Drops the JavaAgentContext.
+    ///
+    /// Care must be taken to ensure that this function is only called once per JavaAgentContext
+    /// instance.
+    fn agent_AgentContextFunctionTable_dropHandle(
         env,
         _class,
         context: *mut JavaAgentContext,
