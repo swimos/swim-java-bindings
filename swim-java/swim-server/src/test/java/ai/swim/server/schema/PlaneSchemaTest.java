@@ -31,6 +31,7 @@ class PlaneSchemaTest {
   @Test
   void testReflectPlaneSchema() throws SwimServerException {
     PlaneSchema<TestPlane> schema = PlaneSchema.reflectSchema(TestPlane.class);
+    Map<Class<? extends AbstractAgent>, String> uriResolver = Map.of(TestAgent.class, "testRoute");
     assertEquals(
         schema,
         new PlaneSchema<>(
@@ -43,7 +44,7 @@ class PlaneSchemaTest {
                     "Agent",
                     Map.of(
                         "testValueLane",
-                        new LaneSchema(true, LaneKind.Value, 0))))));
+                        new LaneSchema(true, LaneKind.Value, 0)))), uriResolver));
   }
 
   @SwimAgent("Agent")
