@@ -55,7 +55,7 @@ public class TestLaneServer extends AbstractSwimServerBuilder {
   }
 
   @Override
-  protected long run() throws IOException {
+  public long run() throws IOException {
     runNativeAgent(requestBytes.getArray(), responseBytes.getArray(), this, schema.bytes());
     return 0;
   }

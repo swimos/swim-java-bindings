@@ -1,4 +1,4 @@
-package ai.swim.server.agent.lanes.map;
+package ai.swim.server.agent.lanes;
 
 import ai.swim.codec.data.ByteReader;
 import ai.swim.codec.data.ByteWriter;
@@ -7,7 +7,7 @@ import ai.swim.codec.decoder.DecoderException;
 import ai.swim.server.lanes.WriteResult;
 import ai.swim.server.lanes.map.MapLaneState;
 import ai.swim.server.lanes.map.MapOperation;
-import ai.swim.server.lanes.map.PendingWrites;
+import ai.swim.server.lanes.map.PendingMapWrites;
 import ai.swim.server.lanes.map.TypedHashMap;
 import ai.swim.server.lanes.map.TypedMap;
 import ai.swim.server.lanes.map.codec.MapOperationDecoder;
@@ -18,7 +18,6 @@ import ai.swim.server.lanes.models.response.LaneResponseDecoder;
 import ai.swim.server.lanes.models.response.LaneResponseVisitor;
 import ai.swim.structure.Form;
 import org.junit.jupiter.api.Test;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -26,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-class PendingWritesTest {
+class PendingMapWritesTest {
 
   private static <T> LaneResponseVisitor<T> expectSyncEvent(UUID expectedRemote, T expectedValue) {
     Runnable failFn = () -> fail(String.format("Expected sync event %s -> %s", expectedRemote, expectedValue));
@@ -124,14 +123,14 @@ class PendingWritesTest {
 
   @Test
   void writesInterleaved() throws DecoderException {
-    PendingWrites<Integer, Integer> pendingWrites = new PendingWrites<>();
+    PendingMapWrites<Integer, Integer> pendingWrites = new PendingMapWrites<>();
     Form<Integer> integerForm = Form.forClass(Integer.class);
     TypedHashMap<Integer, Integer> state = TypedMap.of(Map.of(1, 1, 2, 2, 3, 3));
     UUID firstRemote = UUID.randomUUID();
     UUID secondRemote = UUID.randomUUID();
 
-    pendingWrites.pushSync(firstRemote, new HashSet<>(state.keySet()));
-    pendingWrites.pushSync(secondRemote, new HashSet<>(state.keySet()));
+    pendingWrites.pushSync(firstRemote, state.keySet().iterator());
+    pendingWrites.pushSync(secondRemote, state.keySet().iterator());
     pendingWrites.pushOperation(MapOperation.update(1, 1));
     pendingWrites.pushOperation(MapOperation.remove(6));
 
@@ -165,14 +164,14 @@ class PendingWritesTest {
 
   @Test
   void syncOnly() throws DecoderException {
-    PendingWrites<Integer, Integer> pendingWrites = new PendingWrites<>();
+    PendingMapWrites<Integer, Integer> pendingWrites = new PendingMapWrites<>();
     Form<Integer> integerForm = Form.forClass(Integer.class);
     TypedHashMap<Integer, Integer> state = TypedMap.of(Map.of(1, 1, 2, 2, 3, 3));
     UUID firstRemote = UUID.randomUUID();
     UUID secondRemote = UUID.randomUUID();
 
-    pendingWrites.pushSync(firstRemote, new HashSet<>(state.keySet()));
-    pendingWrites.pushSync(secondRemote, new HashSet<>(state.keySet()));
+    pendingWrites.pushSync(firstRemote, state.keySet().iterator());
+    pendingWrites.pushSync(secondRemote, state.keySet().iterator());
 
     ByteWriter buffer = new ByteWriter();
     WriteResult writeResult = pendingWrites.writeInto(0, state, buffer, integerForm, integerForm);
@@ -202,7 +201,7 @@ class PendingWritesTest {
 
   @Test
   void eventsOnly() throws DecoderException {
-    PendingWrites<Integer, Integer> pendingWrites = new PendingWrites<>();
+    PendingMapWrites<Integer, Integer> pendingWrites = new PendingMapWrites<>();
     Form<Integer> integerForm = Form.forClass(Integer.class);
     TypedHashMap<Integer, Integer> state = TypedMap.of(Map.of(1, 1, 2, 2, 3, 3));
 
