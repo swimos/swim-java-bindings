@@ -18,6 +18,7 @@ use bytes::Bytes;
 use futures_util::future::BoxFuture;
 use futures_util::StreamExt;
 use jni::sys::{jint, jobject};
+use jvm_sys::env::{JavaEnv, SpannedError};
 use swim_api::downlink::{Downlink, DownlinkConfig, DownlinkKind};
 use swim_api::error::{DownlinkTaskError, FrameIoError};
 use swim_api::protocol::downlink::DownlinkNotification;
@@ -26,19 +27,18 @@ use swim_model::address::Address;
 use swim_model::Text;
 use swim_utilities::io::byte_channel::{ByteReader, ByteWriter};
 use tokio_util::codec::FramedRead;
-use jvm_sys::env::{JavaEnv, SpannedError};
 
 use crate::downlink::decoder::MapDlNotDecoder;
 pub use crate::downlink::map::lifecycle::MapDownlinkLifecycle;
 
 pub struct FfiMapDownlink {
-    env:JavaEnv,
+    env: JavaEnv,
     lifecycle: MapDownlinkLifecycle,
 }
 
 impl FfiMapDownlink {
     pub fn create(
-        env:JavaEnv,
+        env: JavaEnv,
         on_linked: jobject,
         on_synced: jobject,
         on_update: jobject,
@@ -59,10 +59,7 @@ impl FfiMapDownlink {
             take,
             drop,
         );
-        FfiMapDownlink {
-            env,
-            lifecycle,
-        }
+        FfiMapDownlink { env, lifecycle }
     }
 }
 
@@ -79,10 +76,7 @@ impl Downlink for FfiMapDownlink {
         output: ByteWriter,
     ) -> BoxFuture<'static, Result<(), DownlinkTaskError>> {
         Box::pin(async move {
-            let FfiMapDownlink {
-                env,
-                lifecycle,
-            } = self;
+            let FfiMapDownlink { env, lifecycle } = self;
             run_ffi_map_downlink(env, lifecycle, path, config, input, output).await
         })
     }
@@ -129,7 +123,7 @@ enum State {
 }
 
 async fn run_ffi_map_downlink(
-    env:JavaEnv,
+    env: JavaEnv,
     mut lifecycle: MapDownlinkLifecycle,
     _path: Address<Text>,
     config: DownlinkConfig,

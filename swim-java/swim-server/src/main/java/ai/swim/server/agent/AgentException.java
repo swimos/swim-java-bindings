@@ -1,6 +1,11 @@
 package ai.swim.server.agent;
 
-public class AgentException extends RuntimeException {
+/**
+ * Exception type thrown by an agent if there is an issue decoding a message.
+ * <p>
+ * Throwing this exception will cause the agent to shut down.
+ */
+class AgentException extends RuntimeException {
   public AgentException() {
     super();
   }

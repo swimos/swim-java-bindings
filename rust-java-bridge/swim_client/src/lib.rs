@@ -27,8 +27,7 @@ use swim_client_core::downlink::map::FfiMapDownlink;
 use url::ParseError;
 use url::Url;
 
-use jvm_sys::env::JavaEnv;
-use jvm_sys::env::StringError;
+use jvm_sys::env::{FatalError, JavaEnv};
 use jvm_sys::jni_try;
 use swim_client_core::downlink::value::FfiValueDownlink;
 use swim_client_core::downlink::DownlinkConfigurations;
@@ -85,7 +84,7 @@ impl From<ClientConfig> for swim_client_core::ClientConfig {
 }
 
 client_fn! {
-    SwimClient_startClient(
+    fn SwimClient_startClient(
         env,
         _class,
         config: jbyteArray,
@@ -114,7 +113,7 @@ client_fn! {
 }
 
 client_fn! {
-    SwimClient_shutdownClient(
+    fn SwimClient_shutdownClient(
         env,
         _class,
         client: *mut SwimClient,
@@ -128,7 +127,7 @@ client_fn! {
 }
 
 client_fn! {
-    Handle_createHandle(
+    fn Handle_createHandle(
         env,
         _class,
         runtime: *mut SwimClient,
@@ -142,7 +141,7 @@ client_fn! {
 }
 
 client_fn! {
-    Handle_dropHandle(
+    fn Handle_dropHandle(
         env,
         _class,
         handle: *mut ClientHandle,
@@ -153,6 +152,8 @@ client_fn! {
         }
     }
 }
+
+const SWIM_CLIENT_EXCEPTION: &str = "ai/swim/client/SwimClientException";
 
 /// Attempts to open a downlink using the provided client handle. This function assumes that the
 /// downlink_ref, config, and stopped_barrier are not null pointers.
@@ -171,25 +172,24 @@ fn open_downlink<D>(
 {
     let mut config_bytes =
         env.with_env(|scope| BytesMut::from_iter(scope.convert_byte_array(config)));
-    let config = match env.with_env_throw("ai/swim/client/SwimClientException", |_| {
-        DownlinkConfigurations::try_from_bytes(&mut config_bytes).map_err(StringError)
+    let config = match env.with_env_throw(SWIM_CLIENT_EXCEPTION, |_| {
+        DownlinkConfigurations::try_from_bytes(&mut config_bytes).map_err(|e| FatalError::Custom(e))
     }) {
         Ok(config) => config,
-        Err(_) => return,
+        Err(()) => return,
     };
 
-    let (host, node, lane) =
-        match env.with_env_throw("ai/swim/client/SwimClientException", move |scope| {
-            let host = Url::from_str(scope.get_rust_string(host).as_str())?;
-            let node = scope.get_rust_string(node);
-            let lane = scope.get_rust_string(lane);
-            Ok::<(Url, String, String), ParseError>((host, node, lane))
-        }) {
-            Ok((host, node, lane)) => (host, node, lane),
-            Err(()) => {
-                return;
-            }
-        };
+    let (host, node, lane) = match env.with_env_throw(SWIM_CLIENT_EXCEPTION, move |scope| {
+        let host = Url::from_str(scope.get_rust_string(host).as_str())?;
+        let node = scope.get_rust_string(node);
+        let lane = scope.get_rust_string(lane);
+        Ok::<(Url, String, String), ParseError>((host, node, lane))
+    }) {
+        Ok((host, node, lane)) => (host, node, lane),
+        Err(()) => {
+            return;
+        }
+    };
 
     let (downlink_gr, barrier_gr) = env.with_env(|scope| {
         (
@@ -212,7 +212,7 @@ client_fn! {
     // If the number of arguments for this grows any further then it might be worth implementing an
     // FFI builder pattern that finalises with an 'open' call which this accepts and takes ownership
     // of.
-    downlink_value_ValueDownlinkModel_open(
+    fn downlink_value_ValueDownlinkModel_open(
         env,
         _class,
         handle: *mut ClientHandle,
@@ -256,7 +256,7 @@ client_fn! {
 }
 
 client_fn! {
-    downlink_map_MapDownlinkModel_open(
+    fn downlink_map_MapDownlinkModel_open(
         env,
         _class,
         handle: *mut ClientHandle,

@@ -32,12 +32,11 @@ use swim_server_core::server_fn;
 use swim_server_core::spec::PlaneSpec;
 
 mod agent;
-mod mock;
 
 const BUFFER_SIZE: NonZeroUsize = non_zero_usize!(128);
 
 server_fn! {
-    SwimServerTest_forPlane(
+    fn SwimServerTest_forPlane(
         env,
         _class,
         config: jbyteArray
