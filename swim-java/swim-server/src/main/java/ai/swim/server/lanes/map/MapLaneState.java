@@ -3,6 +3,7 @@ package ai.swim.server.lanes.map;
 import ai.swim.codec.data.ByteWriter;
 import ai.swim.server.agent.call.CallContext;
 import ai.swim.server.agent.call.CallContextException;
+import ai.swim.server.lanes.PendingMapWrites;
 import ai.swim.server.lanes.WriteResult;
 import ai.swim.server.lanes.state.State;
 import ai.swim.server.lanes.state.StateCollector;
@@ -17,7 +18,7 @@ public class MapLaneState<K, V> implements State {
   private final Form<K> keyForm;
   private final Form<V> valueForm;
   private final StateCollector collector;
-  private final PendingWrites<K, V> pendingWrites;
+  private final PendingMapWrites<K, V> pendingWrites;
   private final int laneId;
   private final TypedHashMap<K, V> state;
 
@@ -27,13 +28,13 @@ public class MapLaneState<K, V> implements State {
     this.valueForm = valueForm;
     this.collector = collector;
     state = new TypedHashMap<>();
-    pendingWrites = new PendingWrites<>();
+    pendingWrites = new PendingMapWrites<>();
   }
 
   /**
    * Clears the map.
    *
-   * @throws ai.swim.server.agent.call.CallContextException if not invoked from a valid call context.
+   * @throws CallContextException if not invoked from a valid call context.
    */
   public void clear() {
     CallContext.check();
@@ -47,7 +48,7 @@ public class MapLaneState<K, V> implements State {
    * Associates the specified value with the specified key in this map.
    *
    * @return the old value associated with the key
-   * @throws ai.swim.server.agent.call.CallContextException if not invoked from a valid call context.
+   * @throws CallContextException if not invoked from a valid call context.
    */
   public V update(K key, V value) {
     CallContext.check();
@@ -91,7 +92,7 @@ public class MapLaneState<K, V> implements State {
   }
 
   public void sync(UUID uuid) {
-    pendingWrites.pushSync(uuid, new HashSet<>(state.keySet()));
+    pendingWrites.pushSync(uuid, state.keySet().iterator());
     collector.add(this);
   }
 
@@ -122,4 +123,5 @@ public class MapLaneState<K, V> implements State {
   public Set<Map.Entry<K, V>> entrySet() {
     return state.entrySet();
   }
+
 }

@@ -1,4 +1,4 @@
-package ai.swim.server.agent.lanes.map.codec;
+package ai.swim.server.agent.lanes;
 
 import ai.swim.codec.data.ByteReader;
 import ai.swim.codec.data.ByteWriter;
