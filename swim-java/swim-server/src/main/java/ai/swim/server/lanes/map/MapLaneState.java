@@ -1,9 +1,9 @@
 package ai.swim.server.lanes.map;
 
-<<<<<<<< HEAD:swim-java/swim-server/src/main/java/ai/swim/server/lanes/map/MapLaneState.java
 import ai.swim.codec.data.ByteWriter;
 import ai.swim.server.agent.call.CallContext;
 import ai.swim.server.agent.call.CallContextException;
+import ai.swim.server.lanes.PendingMapWrites;
 import ai.swim.server.lanes.WriteResult;
 import ai.swim.server.lanes.state.State;
 import ai.swim.server.lanes.state.StateCollector;
@@ -18,7 +18,7 @@ public class MapLaneState<K, V> implements State {
   private final Form<K> keyForm;
   private final Form<V> valueForm;
   private final StateCollector collector;
-  private final PendingWrites<K, V> pendingWrites;
+  private final PendingMapWrites<K, V> pendingWrites;
   private final int laneId;
   private final TypedHashMap<K, V> state;
 
@@ -28,36 +28,74 @@ public class MapLaneState<K, V> implements State {
     this.valueForm = valueForm;
     this.collector = collector;
     state = new TypedHashMap<>();
-    pendingWrites = new PendingWrites<>();
-========
-import ai.swim.server.lanes.MapLookup;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-public class MapState<K, V> implements MapLookup<K, V> {
-  private final Map<K, V> state;
-
-  public MapState() {
-    state = new HashMap<>();
->>>>>>>> origin/supply-lane:swim-java/swim-server/src/main/java/ai/swim/server/lanes/map/MapState.java
+    pendingWrites = new PendingMapWrites<>();
   }
 
-  public MapState(Map<K, V> state) {
-    this.state = state;
+  /**
+   * Clears the map.
+   *
+   * @throws CallContextException if not invoked from a valid call context.
+   */
+  public void clear() {
+    CallContext.check();
+
+    state.clear();
+    pendingWrites.pushOperation(MapOperation.clear());
+    collector.add(this);
   }
 
-  @Override
+  /**
+   * Associates the specified value with the specified key in this map.
+   *
+   * @return the old value associated with the key
+   * @throws CallContextException if not invoked from a valid call context.
+   */
+  public V update(K key, V value) {
+    CallContext.check();
+
+    V oldValue = state.put(key, value);
+    pendingWrites.pushOperation(MapOperation.update(key, value));
+    collector.add(this);
+
+    return oldValue;
+  }
+
+  /**
+   * Removes the mapping for a key from this map if it is present.
+   *
+   * @return the old value associated with the key
+   * @throws CallContextException if not invoked from a valid call context.
+   */
+  public V remove(K key) {
+    CallContext.check();
+
+    V oldValue = state.remove(key);
+    pendingWrites.pushOperation(MapOperation.remove(key));
+    collector.add(this);
+
+    return oldValue;
+  }
+
+  /**
+   * Gets the value associated with the key.
+   *
+   * @throws CallContextException if not invoked from a valid call context.
+   */
   public V get(K key) {
+    CallContext.check();
     return state.get(key);
   }
 
-  public void clear() {
-    state.clear();
+  @Override
+  public WriteResult writeInto(ByteWriter bytes) {
+    return pendingWrites.writeInto(laneId, state, bytes, keyForm, valueForm);
   }
 
-<<<<<<<< HEAD:swim-java/swim-server/src/main/java/ai/swim/server/lanes/map/MapLaneState.java
+  public void sync(UUID uuid) {
+    pendingWrites.pushSync(uuid, state.keySet().iterator());
+    collector.add(this);
+  }
+
   public int size() {
     return state.size();
   }
@@ -85,18 +123,5 @@ public class MapState<K, V> implements MapLookup<K, V> {
   public Set<Map.Entry<K, V>> entrySet() {
     return state.entrySet();
   }
-}
-========
-  public V put(K key, V value) {
-    return state.put(key, value);
-  }
 
-  public V remove(K key) {
-    return state.remove(key);
-  }
-
-  public Set<K> keySet() {
-    return new HashSet<>(state.keySet());
-  }
 }
->>>>>>>> origin/supply-lane:swim-java/swim-server/src/main/java/ai/swim/server/lanes/map/MapState.java
