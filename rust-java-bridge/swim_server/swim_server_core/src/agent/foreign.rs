@@ -568,6 +568,7 @@ impl JavaAgentVTable {
         remote: Uuid,
     ) -> Result<Vec<u8>, AgentTaskError> {
         let JavaAgentVTable { sync, handler, .. } = self;
+
         let (msb, lsb) = remote.as_u64_pair();
         let msb = msb as i64;
         let lsb = lsb as i64;

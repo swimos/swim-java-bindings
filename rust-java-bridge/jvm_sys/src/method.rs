@@ -17,6 +17,7 @@ use jni::errors::Error as JError;
 use jni::errors::Error::WrongJValueType;
 use jni::objects::{GlobalRef, JMethodID, JObject, JString, JValue};
 use jni::signature::TypeSignature;
+use std::any::type_name;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -147,28 +148,28 @@ pub trait JavaObjectMethod<'j>: Debug {
 }
 
 pub trait JavaMethodExt<'j>: JavaObjectMethod<'j> {
-    fn string<'m>(&'m self) -> MoldString<'m, Self>
+    fn string(&self) -> MoldString<'_, Self>
     where
         Self: Sized,
     {
         MoldString { method: self }
     }
 
-    fn null<'m>(&'m self) -> MoldNull<'m, Self>
+    fn null(&self) -> MoldNull<'_, Self>
     where
         Self: Sized,
     {
         MoldNull { method: self }
     }
 
-    fn global_ref<'m>(&'m self) -> MoldGlobalRef<'m, Self>
+    fn global_ref(&self) -> MoldGlobalRef<'_, Self>
     where
         Self: Sized,
     {
         MoldGlobalRef { method: self }
     }
 
-    fn array<'m, A>(&'m self) -> MoldArray<'m, Self, A>
+    fn array<A>(&self) -> MoldArray<'_, Self, A>
     where
         Self: Sized,
         A: JavaArrayType,
@@ -179,21 +180,21 @@ pub trait JavaMethodExt<'j>: JavaObjectMethod<'j> {
         }
     }
 
-    fn l<'m>(&'m self) -> MoldObject<'m, Self>
+    fn l(&self) -> MoldObject<'_, Self>
     where
         Self: Sized,
     {
         MoldObject { method: self }
     }
 
-    fn v<'m>(&'m self) -> MoldVoid<'m, Self>
+    fn v(&self) -> MoldVoid<'_, Self>
     where
         Self: Sized,
     {
         MoldVoid { method: self }
     }
 
-    fn z<'m>(&'m self) -> MoldBool<'m, Self>
+    fn z(&self) -> MoldBool<'_, Self>
     where
         Self: Sized,
     {
@@ -271,7 +272,8 @@ where
     {
         let MoldVoid { method } = self;
         let val = method.invoke(handler, scope, object, args)?;
-        Ok(mold(self, scope, || val.v()))
+        mold(self, scope, || val.v());
+        Ok(())
     }
 }
 
@@ -300,14 +302,16 @@ where
     {
         let MoldNull { method } = self;
         let value = method.invoke(handler, scope, object, args)?;
-        Ok(mold(self, scope, || match value.l() {
+
+        mold(self, scope, || match value.l() {
             Ok(ptr) if ptr.is_null() => Ok(()),
             Ok(ptr) => Err(WrongJValueType(
                 "JObject != null",
                 JValue::Object(ptr).type_name(),
             )),
             Err(e) => Err(e),
-        }))
+        });
+        Ok(())
     }
 }
 

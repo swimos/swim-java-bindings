@@ -8,20 +8,22 @@ use swim_server_core::agent::spec::LaneSpec;
 use swim_server_core::server_fn;
 
 server_fn! {
-    /// Opens a new lane on the agent that the provided context is associated with.
+    /// Opens a new lane on the agent.
     ///
     /// # Arguments
-    /// `context` - the Java agent's pointer to the context.
-    /// `lane_uri` - the lane URI to be opened.
-    /// `config` - a MSGPACK representation of the lane's configuration.
+    /// - 'context' - agent-scoped context.
+    /// - 'lane_uri' - the URI of the lane. This must not already exist in the agent or an exception
+    /// will be thrown.
+    /// - 'config' - msgpack representation of the lane.
     ///
-    /// # Throws
-    /// `ai/swim/server/codec/decoder/DecoderException` if `config` is malformed.
+    /// # Throws:
+    /// - "ai/swim/server/codec/DecoderException" if 'config' is malformed. This will be propagated back
+    /// to the agent runtime and cause the server runtime to shutdown as a malformed buffer can only
+    /// occur as the result of a bug.
     ///
-    /// # Errors
-    /// - If the lane already exists then the agent will shutdown and return `AgentTaskError::UserCodeError`.
-    /// - If the agent runtime fails to load the state of the lane from the store then the agent will shutdown
-    /// and return `AgentTaskError::FrameIoError`.
+    /// # Blocking
+    /// Blocks the current thread until there is sufficient capacity in the channel to the agent runtime
+    /// for the request.
     pub fn agent_AgentContextFunctionTable_openLane(
         env,
         _class,

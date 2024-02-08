@@ -20,7 +20,7 @@ public class ValueState<T> implements State {
   private final Form<T> form;
   private final StateCollector collector;
   private final List<T> events;
-  private final List<UUID> syncRequests;
+  private final List<LaneResponse<T>> syncRequests;
   private final int laneId;
   private T state;
   private boolean dirty;
@@ -66,14 +66,13 @@ public class ValueState<T> implements State {
 
   @Override
   public WriteResult writeInto(ByteWriter bytes) {
-    ListIterator<UUID> syncIter = syncRequests.listIterator();
+    ListIterator<LaneResponse<T>> syncIter = syncRequests.listIterator();
 
     while (syncIter.hasNext()) {
-      UUID remote = syncIter.next();
+      LaneResponse<T> response = syncIter.next();
 
       try {
-        write(bytes, LaneResponse.syncEvent(remote, state));
-        write(bytes, LaneResponse.synced(remote));
+        write(bytes, response);
       } catch (BufferOverflowException ignored) {
         return WriteResult.DataStillAvailable;
       }
@@ -103,9 +102,9 @@ public class ValueState<T> implements State {
     }
   }
 
-  @Override
   public void sync(UUID uuid) {
-    syncRequests.add(uuid);
+    syncRequests.add(LaneResponse.syncEvent(uuid, state));
+    syncRequests.add(LaneResponse.synced(uuid));
     collector.add(this);
   }
 

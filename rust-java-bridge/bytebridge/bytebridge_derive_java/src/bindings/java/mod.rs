@@ -671,10 +671,7 @@ fn infer_docs(attrs: &[Attribute], documentation: &mut Documentation) -> Result<
                 v => {
                     return Err(Error::new_spanned(
                         v,
-                        format!(
-                            "Invalid documentation type: {}",
-                            v.to_token_stream().to_string()
-                        ),
+                        format!("Invalid documentation type: {}", v.to_token_stream()),
                     ))
                 }
             },

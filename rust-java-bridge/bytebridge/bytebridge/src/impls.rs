@@ -676,10 +676,10 @@ where
     {
         let len = read_array_len(reader)? as usize;
         if len != N {
-            return Err(FromBytesError::Invalid(format!(
+            Err(FromBytesError::Invalid(format!(
                 "Invalid array len. Expected {} got {}",
                 N, len
-            )));
+            )))
         } else {
             let mut array = unsafe { MaybeUninit::<[MaybeUninit<E>; N]>::uninit().assume_init() };
 

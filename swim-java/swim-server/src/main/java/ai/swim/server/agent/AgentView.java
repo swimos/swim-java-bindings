@@ -116,13 +116,19 @@ public class AgentView {
     return node.flushState();
   }
 
+  /**
+   * Returns the {@link AgentNode} associated with this {@link AgentView}.
+   *
+   * @return the {@link AgentNode} associated with this {@link AgentView}.
+   */
+  public AgentNode getNode() {
+    return node;
+  }
+
   public byte[] runTask(long idMsb, long idLsb, boolean remove) {
     TaskRegistry taskRegistry = node.getTaskRegistry();
     taskRegistry.runTask(new UUID(idMsb, idLsb), remove);
     return flushState();
   }
 
-  public AgentNode getNode() {
-    return node;
-  }
 }
