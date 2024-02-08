@@ -21,11 +21,13 @@ public abstract class NativeTest {
     }
   }
 
-  private static native <A extends AbstractAgent> void runNativeAgent(byte[] inputs,
+  private static native <A extends AbstractAgent> void runNativeAgent(
+      byte[] inputs,
       byte[] expectedResponses,
       AgentFactory<A> agentFactory,
       byte[] agentSpec,
-      boolean orderedResponses);
+      boolean orderedResponses
+  );
 
   public static <A extends AbstractAgent, E> void runAgent(Class<A> agentClass,
       List<TaggedLaneRequest<E>> inputs,

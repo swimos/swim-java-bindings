@@ -36,7 +36,7 @@ pub async fn run_server(
     let mut server = ServerBuilder::with_plane_name(name.as_str()).with_in_memory_store();
 
     let factory =
-        env.with_env(|scope| JavaAgentFactory::new(&env, scope.new_global_ref(plane_obj)));
+        env.with_env(|scope| JavaAgentFactory::new(&env, scope.new_global_ref(server_obj)));
 
     for (uri, spec) in agent_specs {
         server = server.add_route(

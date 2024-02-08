@@ -6,7 +6,6 @@ import ai.swim.server.agent.AgentContext;
 import ai.swim.server.agent.AgentFixture;
 import ai.swim.server.agent.TaggedLaneRequest;
 import ai.swim.server.agent.TaggedLaneResponse;
-import ai.swim.server.agent.TestLaneServer;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import static ai.swim.server.agent.NativeTest.runAgent;
 import static ai.swim.server.lanes.Lanes.supplyLane;
 import static ai.swim.server.lanes.Lanes.valueLane;
 
@@ -41,28 +41,20 @@ class SupplyLaneTest {
     }
   }
 
-  @SwimPlane("test")
-  private static class TestPlane extends AbstractPlane {
-    @SwimRoute("agent")
-    private TestAgent testAgent;
-  }
-
   @Test
-  void sync() throws SwimServerException, IOException {
+  void sync() throws SwimServerException, IOException, NoSuchMethodException {
     UUID remote = UUID.randomUUID();
-    TestLaneServer.build(
-        TestPlane.class,
+    runAgent(
+        TestAgent.class,
         List.of(TaggedLaneRequest.value("supplyLane", LaneRequest.sync(remote))),
         List.of(TaggedLaneResponse.value("supplyLane", LaneResponse.synced(remote))),
-        AgentFixture::writeIntString).runServer();
+        AgentFixture::writeIntString, true);
   }
 
   @Test
-  void events() throws SwimServerException, IOException {
-    TestLaneServer
-        .build(TestPlane.class, List.of(TaggedLaneRequest.value("valueLane", LaneRequest.command(1))), List.of(
-            TaggedLaneResponse.value("valueLane", LaneResponse.event(1)),
-            TaggedLaneResponse.value("supplyLane", LaneResponse.event(1))), AgentFixture::writeIntString)
-        .runServer();
+  void events() throws SwimServerException, IOException, NoSuchMethodException {
+    runAgent(TestAgent.class, List.of(TaggedLaneRequest.value("valueLane", LaneRequest.command(1))), List.of(
+        TaggedLaneResponse.value("valueLane", LaneResponse.event(1)),
+        TaggedLaneResponse.value("supplyLane", LaneResponse.event(1))), AgentFixture::writeIntString, true);
   }
 }

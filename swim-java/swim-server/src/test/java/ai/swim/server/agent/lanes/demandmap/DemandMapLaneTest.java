@@ -10,7 +10,6 @@ import ai.swim.server.agent.TaggedLaneRequest;
 import ai.swim.server.agent.TaggedLaneRequestEncoder;
 import ai.swim.server.agent.TaggedLaneResponse;
 import ai.swim.server.agent.TaggedLaneResponseEncoder;
-import ai.swim.server.agent.TestLaneServer;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
@@ -30,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import static ai.swim.server.agent.NativeTest.runAgent;
 import static ai.swim.server.lanes.Lanes.demandMapLane;
 import static ai.swim.server.lanes.Lanes.valueLane;
 
@@ -64,14 +64,8 @@ class DemandMapLaneTest {
     }
   }
 
-  @SwimPlane("test")
-  private static class TestPlane extends AbstractPlane {
-    @SwimRoute("agent")
-    private TestAgent testAgent;
-  }
-
   @Test
-  void cuesKeys() throws SwimServerException, IOException {
+  void cuesKeys() throws SwimServerException, IOException, NoSuchMethodException {
     Encoder<Integer> integerEncoder = AgentFixture::writeIntString;
     List<TaggedLaneRequest<Integer>> requests = List.of(TaggedLaneRequest.value("valueLane", LaneRequest.command(1)),
                                                         TaggedLaneRequest.value("valueLane", LaneRequest.command(2)),
@@ -101,20 +95,18 @@ class DemandMapLaneTest {
     mapResponseEncoder.encode(TaggedLaneResponse.map("demandMapLane", LaneResponse.event(MapOperation.update("4", 4))),
                               responseBytes);
 
-    TestLaneServer.build(TestPlane.class, requestBytes, responseBytes).run();
+    runAgent(TestAgent.class, requestBytes, responseBytes,true);
   }
 
   @Test
-  void syncs() throws SwimServerException, IOException {
+  void syncs() throws SwimServerException, IOException, NoSuchMethodException {
     UUID remote = UUID.randomUUID();
     Encoder<MapOperation<String, Integer>> encoder = new MapOperationEncoder<>(Form.forClass(String.class),
                                                                                Form.forClass(Integer.class));
-    TestLaneServer
-        .build(TestPlane.class, List.of(TaggedLaneRequest.map("demandMapLane", LaneRequest.sync(remote))), List.of(
+    runAgent(TestAgent.class, List.of(TaggedLaneRequest.map("demandMapLane", LaneRequest.sync(remote))), List.of(
             TaggedLaneResponse.map("demandMapLane", LaneResponse.syncEvent(remote, MapOperation.update("1", 1))),
             TaggedLaneResponse.map("demandMapLane", LaneResponse.syncEvent(remote, MapOperation.update("2", 2))),
             TaggedLaneResponse.map("demandMapLane", LaneResponse.syncEvent(remote, MapOperation.update("3", 3))),
-            TaggedLaneResponse.map("demandMapLane", LaneResponse.synced(remote))), encoder)
-        .runServer();
+            TaggedLaneResponse.map("demandMapLane", LaneResponse.synced(remote))), encoder,true);
   }
 }

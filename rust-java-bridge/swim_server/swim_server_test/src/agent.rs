@@ -38,16 +38,16 @@ server_fn! {
         env,
         _class,
         inputs: jbyteArray,
-        outputs:jbyteArray,
+        outputs: jbyteArray,
         agent_factory: jobject,
-        agent_config: jbyteArray,
+        agent_spec: jbyteArray,
         ordered_responses: jboolean
     ) {
         // let filter = tracing_subscriber::EnvFilter::default().add_directive(LevelFilter::TRACE.into());
         // tracing_subscriber::fmt().with_env_filter(filter).init();
 
         let env = JavaEnv::new(env);
-        let spec = match AgentSpec::try_from_jbyte_array::<()>(&env, agent_config) {
+        let spec = match AgentSpec::try_from_jbyte_array::<()>(&env, agent_spec) {
             Ok(spec) => spec,
             Err(_) => return,
         };

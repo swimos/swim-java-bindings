@@ -17,8 +17,8 @@ use jni::errors::Error as JError;
 use jni::errors::Error::WrongJValueType;
 use jni::objects::{GlobalRef, JMethodID, JObject, JString, JValue};
 use jni::signature::TypeSignature;
-use std::fmt::Debug;
 use std::any::type_name;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -272,7 +272,7 @@ where
     {
         let MoldVoid { method } = self;
         let val = method.invoke(handler, scope, object, args)?;
-        mold(scope, || val.v());
+        mold(self, scope, || val.v());
         Ok(())
     }
 }
@@ -303,7 +303,7 @@ where
         let MoldNull { method } = self;
         let value = method.invoke(handler, scope, object, args)?;
 
-        mold(scope, || match value.l() {
+        mold(self, scope, || match value.l() {
             Ok(ptr) if ptr.is_null() => Ok(()),
             Ok(ptr) => Err(WrongJValueType(
                 "JObject != null",

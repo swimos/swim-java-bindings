@@ -55,11 +55,10 @@ impl AgentContext for TestAgentContext {
             let (tx_out, rx_out) = byte_channel(BUFFER_SIZE);
 
             match lane_kind.uplink_kind() {
-                UplinkKind::Value => inner.push_value_channel(tx_in, rx_out, lane_uri.to_string()),
-                UplinkKind::Map => inner.push_map_channel(tx_in, rx_out, lane_uri.to_string()),
-                UplinkKind::Supply => {
-                    panic!("Unexpected supply uplink")
+                UplinkKind::Value | UplinkKind::Supply => {
+                    inner.push_value_channel(tx_in, rx_out, lane_uri.to_string())
                 }
+                UplinkKind::Map => inner.push_map_channel(tx_in, rx_out, lane_uri.to_string()),
             }
 
             waker.wake();

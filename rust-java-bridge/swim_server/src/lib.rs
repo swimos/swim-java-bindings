@@ -24,7 +24,7 @@ server_fn! {
     /// # Blocking
     /// Blocks the current thread until there is sufficient capacity in the channel to the agent runtime
     /// for the request.
-    fn agent_AgentContextFunctionTable_openLane(
+    pub fn agent_AgentContextFunctionTable_openLane(
         env,
         _class,
         context: *mut JavaAgentContext,
