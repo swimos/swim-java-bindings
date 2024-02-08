@@ -18,13 +18,7 @@ import ai.swim.structure.annotations.AutoForm;
 import ai.swim.structure.annotations.FieldKind;
 import java.util.Objects;
 
-@AutoForm(subTypes = {
-    @AutoForm.Type(Update.class),
-    @AutoForm.Type(Remove.class),
-    @AutoForm.Type(Clear.class),
-    @AutoForm.Type(Take.class),
-    @AutoForm.Type(Drop.class),
-})
+@AutoForm(subTypes = {@AutoForm.Type(Update.class), @AutoForm.Type(Remove.class), @AutoForm.Type(Clear.class), @AutoForm.Type(Take.class), @AutoForm.Type(Drop.class),})
 public abstract class MapMessage {
   public static <K, V> Update<K, V> update(K key, V value) {
     return new Update<>(key, value);
@@ -85,10 +79,7 @@ class Update<K, V> extends MapMessage {
 
   @Override
   public String toString() {
-    return "Update{" +
-        "key=" + key +
-        ", value=" + value +
-        '}';
+    return "Update{" + "key=" + key + ", value=" + value + '}';
   }
 
   @Override
@@ -130,9 +121,7 @@ class Remove<K> extends MapMessage {
 
   @Override
   public String toString() {
-    return "Remove{" +
-        "key=" + key +
-        '}';
+    return "Remove{" + "key=" + key + '}';
   }
 
   @Override
@@ -212,9 +201,7 @@ class Take extends MapMessage {
 
   @Override
   public String toString() {
-    return "Take{" +
-        "n=" + n +
-        '}';
+    return "Take{" + "n=" + n + '}';
   }
 
   @Override
@@ -239,9 +226,7 @@ class Drop extends MapMessage {
 
   @Override
   public String toString() {
-    return "Drop{" +
-        "n=" + n +
-        '}';
+    return "Drop{" + "n=" + n + '}';
   }
 
   @Override

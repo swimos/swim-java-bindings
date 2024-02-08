@@ -1,6 +1,9 @@
 package ai.swim.server.schema;
 
+import ai.swim.server.lanes.demand.DemandLane;
+import ai.swim.server.lanes.demandmap.DemandMapLane;
 import ai.swim.server.lanes.map.MapLane;
+import ai.swim.server.lanes.supply.SupplyLane;
 import ai.swim.server.lanes.value.ValueLane;
 import org.msgpack.core.MessageBufferPacker;
 import java.io.IOException;
@@ -22,6 +25,12 @@ public class LaneSchema {
       return new LaneSchema(isTransient, LaneKind.Value, laneId);
     } else if (MapLane.class.isAssignableFrom(type)) {
       return new LaneSchema(isTransient, LaneKind.Map, laneId);
+    } else if (DemandLane.class.isAssignableFrom(type)) {
+      return new LaneSchema(isTransient, LaneKind.Demand, laneId);
+    } else if (DemandMapLane.class.isAssignableFrom(type)) {
+      return new LaneSchema(isTransient, LaneKind.DemandMap, laneId);
+    } else if (SupplyLane.class.isAssignableFrom(type)) {
+      return new LaneSchema(isTransient, LaneKind.Supply, laneId);
     } else {
       throw new IllegalArgumentException("Unsupported lane type: " + type);
     }

@@ -3,6 +3,12 @@ use quote::__private::ext::RepToTokensExt;
 use quote::{format_ident, quote, ToTokens};
 use syn::{parse2, Attribute, Data, DeriveInput, Error, Fields, Meta, Type, Visibility};
 
+/// Derive a ByteCodec from 'input'.
+///
+/// # Arguments:
+/// - `input`: the TokenStream to parse.
+/// - `external`: whether this derivation was triggered externally to a proc macro. I.e, if
+///  `derive(ByteCodec)` was used, then this would be false.
 pub fn derive(input: TokenStream, external: bool) -> TokenStream {
     let input = match parse2::<DeriveInput>(input) {
         Ok(input) => input,

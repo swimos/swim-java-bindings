@@ -17,9 +17,11 @@ use std::io::Write;
 
 use jni::JNIEnv;
 
+pub const RUNTIME_EXCEPTION: &str = "java/lang/RuntimeException";
+
 #[macro_export]
 macro_rules! jni_try {
-    ($env:ident, $class:tt, $msg:tt, $expr:expr, $ret:expr $(,)?) => {{
+    ($env:ident, $class:expr, $msg:tt, $expr:expr, $ret:expr $(,)?) => {{
         let env_ref = $env;
 
         match $expr {
@@ -32,16 +34,16 @@ macro_rules! jni_try {
             }
         }
     }};
-    ($env:ident, $class:tt, $msg:tt, $expr:expr, $(,)?) => {{
+    ($env:ident, $class:expr, $msg:tt, $expr:expr, $(,)?) => {{
         $crate::jni_try!($env, $class, $msg, $expr, ())
     }};
     ($env:ident, $msg:tt, $expr:expr $(,)?) => {
-        $crate::jni_try!($env, "java/lang/RuntimeException", $msg, $expr, ())
+        $crate::jni_try!($env, $crate::RUNTIME_EXCEPTION, $msg, $expr, ())
     };
     ($env:ident, $msg:tt, $expr:expr, $ret:expr $(,)?) => {
         $crate::jni_try!(
             $env,
-            "java/lang/RuntimeException",
+            $crate::RUNTIME_EXCEPTION,
             $msg,
             $expr,
             $ret
@@ -89,6 +91,7 @@ macro_rules! ffi_fn {
     };
     ($(#[$attrs:meta])*, $exception_class:tt, $prefix:tt, $name:tt ($env:ident, $class:ident $(,)? $($arg:ident: $ty:ty $(,)?)*) $(-> $ret:tt)? $body:block) => {
         $crate::paste::item! {
+            $(#[$attrs])*
             #[no_mangle]
             $(#[$attrs])*
             pub extern "system" fn [< $prefix _ $name >](
@@ -160,7 +163,7 @@ where
 
     match env.exception_check() {
         Ok(true) => {
-            let _r = write!(writer, "Unhandled exception. Printing and clearing it\n");
+            let _r = writeln!(writer, "Unhandled exception. Printing and clearing it");
             describe(
                 &mut writer,
                 env.exception_describe(),

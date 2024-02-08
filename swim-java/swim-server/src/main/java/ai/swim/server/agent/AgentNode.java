@@ -12,6 +12,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Agent node definition containing an agent-scoped state collector for tracking state changes across the registered
+ * lanes and the lanes themselves.
+ */
 public class AgentNode {
   /**
    * A collector for managing which lanes have become dirty since the delivery of an envelope to a lane. A single

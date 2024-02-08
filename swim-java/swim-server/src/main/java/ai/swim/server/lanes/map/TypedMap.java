@@ -69,9 +69,9 @@ public interface TypedMap<K, V> {
   void putAll(TypedMap<? extends K, ? extends V> m);
 
   /**
-   * Returns an immutable {@link Set} view of the keys contained in this map.
+   * Returns a {@link Set} of the keys contained in this map.
    *
-   * @return an immutable {@link Set} view of the keys contained in this map.
+   * @return a {@link Set} of the keys contained in this map.
    */
   Set<K> keySet();
 

@@ -15,9 +15,21 @@ use jvm_sys::env::JavaEnv;
 
 pub mod macros;
 
+/// Constructs and runs a new Swim Server.
+///
+/// # Arguments
+/// - `env` - Java environment.
+/// - `server_obj` - JObject referencing an ai/swim/server/AbstractSwimServerBuilder instance. Used
+/// for instantiating new agents.
+/// - `plane_spec` - Specification of the plane. Detailing the agents and their respective lanes.
+/// All agents contained in the spec must be available in the `server_obj`'s factory.
+///
+/// # Returns
+/// `0`: a handle to the server. Used for accessing its port and shutting down the server.
+/// `1`: the server's task future.
 pub async fn run_server(
     env: JavaEnv,
-    plane_obj: JObject<'_>,
+    server_obj: JObject<'_>,
     plane_spec: PlaneSpec,
 ) -> (ServerHandle, BoxFuture<'static, ()>) {
     let PlaneSpec { name, agent_specs } = plane_spec;
