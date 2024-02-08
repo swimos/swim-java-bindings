@@ -1,5 +1,6 @@
 package ai.swim.server.schema;
 
+import ai.swim.server.lanes.command.CommandLane;
 import ai.swim.server.lanes.demand.DemandLane;
 import ai.swim.server.lanes.demandmap.DemandMapLane;
 import ai.swim.server.lanes.map.MapLane;
@@ -31,6 +32,8 @@ public class LaneSchema {
       return new LaneSchema(isTransient, LaneKind.DemandMap, laneId);
     } else if (SupplyLane.class.isAssignableFrom(type)) {
       return new LaneSchema(isTransient, LaneKind.Supply, laneId);
+    } else if (CommandLane.class.isAssignableFrom(type)) {
+      return new LaneSchema(isTransient, LaneKind.Command, laneId);
     } else {
       throw new IllegalArgumentException("Unsupported lane type: " + type);
     }

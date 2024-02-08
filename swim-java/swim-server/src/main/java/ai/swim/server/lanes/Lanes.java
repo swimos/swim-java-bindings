@@ -1,5 +1,6 @@
 package ai.swim.server.lanes;
 
+import ai.swim.server.lanes.command.CommandLaneView;
 import ai.swim.server.lanes.demand.DemandLaneView;
 import ai.swim.server.lanes.demandmap.DemandMapLaneView;
 import ai.swim.server.lanes.map.MapLaneView;
@@ -125,6 +126,28 @@ public class Lanes {
    */
   public static <T> SupplyLaneView<T> supplyLane(Class<T> clazz) {
     return supplyLane(Form.forClass(clazz));
+  }
+
+  /**
+   * Returns a new Command Lane.
+   *
+   * @param form for encoding and decoding {@code T}
+   * @param <T>  the lane's event type.
+   * @return a new Command Lane.
+   */
+  public static <T> CommandLaneView<T> commandLane(Form<T> form) {
+    return new CommandLaneView<>(form);
+  }
+
+  /**
+   * Returns a new Command Lane.
+   *
+   * @param clazz class of {@code T}.
+   * @param <T>   the lane's event type.
+   * @return a new Command Lane.
+   */
+  public static <T> CommandLaneView<T> commandLane(Class<T> clazz) {
+    return commandLane(Form.forClass(clazz));
   }
 
 }
