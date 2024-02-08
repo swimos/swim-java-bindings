@@ -88,7 +88,6 @@ public class CommandState<T> implements State {
     }
   }
 
-  @Override
   public void sync(UUID uuid) {
     syncRequests.add(uuid);
     collector.add(this);
