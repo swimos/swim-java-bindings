@@ -1,0 +1,14 @@
+[package]
+name = "server_fixture"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+swim_server_app = { path = "../../../swim-rust/server/swim_server_app"}
+swim_api = { path = "../../../swim-rust/api/swim_api" }
+futures = { workspace = true }
+futures-util = { workspace = true }
+tokio-util = { workspace = true, features = ["codec"] }
+bytes = { workspace = true }
+swim_utilities = { workspace = true, features = ["byte_channel"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "io-util", "macros"] }

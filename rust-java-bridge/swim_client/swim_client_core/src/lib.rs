@@ -297,9 +297,9 @@ fn set_exception(env: &JavaEnv, downlink_ref: GlobalRef, cause: &DownlinkRuntime
                         &downlink_ref,
                         "cause",
                         "Ljava/lang/Throwable;",
-                        JValue::Object(spanned.cause_throwable.as_obj()),
+                        JValue::Object(spanned.throwable.as_obj()),
                     );
-                    spanned.cause.clone()
+                    spanned.error.clone()
                 }
                 None => cause.to_string(),
             },

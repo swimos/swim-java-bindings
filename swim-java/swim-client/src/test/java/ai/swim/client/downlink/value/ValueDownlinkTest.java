@@ -28,6 +28,7 @@ import ai.swim.structure.recognizer.RecognizerException;
 import org.junit.jupiter.api.Test;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -335,6 +336,8 @@ class ValueDownlinkTest extends FfiTest {
     ValueDownlinkLifecycle<Integer> lifecycle = new ValueDownlinkLifecycle<>();
     lifecycle.setOnEvent(event -> {
     });
+
+    new ArrayList<>()
 
     ValueDownlinkState<Integer> state = new ValueDownlinkState<>(Form.forClass(Integer.class));
     Trigger stoppedBarrier = new Trigger();

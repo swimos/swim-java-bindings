@@ -79,7 +79,7 @@ pub enum Notification {
 const DEFAULT_BUFFER_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(64) };
 
 client_fn! {
-    fn downlink_value_ValueDownlinkTest_lifecycleTest(
+    pub fn downlink_value_ValueDownlinkTest_lifecycleTest(
         env,
         _class,
         lock: jobject,
@@ -120,7 +120,7 @@ fn create_io() -> (Transport<MockClientConnections, MockWs>, Server) {
 }
 
 client_fn! {
-    fn downlink_value_ValueDownlinkTest_driveDownlinkError(
+    pub fn downlink_value_ValueDownlinkTest_driveDownlinkError(
         env,
         _class,
         downlink_ref: JObject,
@@ -190,7 +190,7 @@ client_fn! {
 }
 
 client_fn! {
-    fn downlink_value_ValueDownlinkTest_parsesConfig(
+    pub fn downlink_value_ValueDownlinkTest_parsesConfig(
         env,
         _class,
         config: jbyteArray,
@@ -206,7 +206,7 @@ client_fn! {
 }
 
 client_fn! {
-    fn downlink_value_ValueDownlinkTest_driveDownlink(
+    pub fn downlink_value_ValueDownlinkTest_driveDownlink(
         env,
         _class,
         downlink_ref: JObject,

@@ -11,6 +11,7 @@ import ai.swim.server.agent.AbstractAgent;
 import ai.swim.server.agent.AgentContext;
 import ai.swim.server.agent.AgentFactory;
 import ai.swim.server.agent.AgentView;
+import ai.swim.server.agent.task.Task;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
 import ai.swim.server.annotations.SwimPlane;
@@ -25,6 +26,7 @@ import ai.swim.server.schema.PlaneSchema;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
 import static ai.swim.server.AbstractSwimServerBuilder.reflectAgentFactories;
@@ -130,6 +132,7 @@ class SwimServerTest {
       plusOne.set(ev + 1);
       minusOne.set(ev - 1);
     }
+
   }
 
   @SwimPlane("planeName")

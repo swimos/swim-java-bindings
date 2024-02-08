@@ -6,21 +6,18 @@ import ai.swim.server.agent.AgentContext;
 import ai.swim.server.agent.AgentFixture;
 import ai.swim.server.agent.TaggedLaneRequest;
 import ai.swim.server.agent.TaggedLaneResponse;
-import ai.swim.server.agent.TestLaneServer;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
-import ai.swim.server.annotations.SwimPlane;
-import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.annotations.Transient;
 import ai.swim.server.lanes.demand.DemandLane;
 import ai.swim.server.lanes.models.request.LaneRequest;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.value.ValueLane;
-import ai.swim.server.plane.AbstractPlane;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import static ai.swim.server.agent.NativeTest.runAgent;
 import static ai.swim.server.lanes.Lanes.demandLane;
 import static ai.swim.server.lanes.Lanes.valueLane;
 
@@ -46,17 +43,12 @@ class DemandLaneTest {
     }
   }
 
-  @SwimPlane("test")
-  private static class TestPlane extends AbstractPlane {
-    @SwimRoute("agent")
-    private TestAgent testAgent;
-  }
 
   @Test
-  void nativeTest() throws SwimServerException, IOException {
+  void nativeTest() throws SwimServerException, IOException, NoSuchMethodException {
     UUID remote = UUID.randomUUID();
-    TestLaneServer.build(
-        TestPlane.class,
+    runAgent(
+        TestAgent.class,
         List.of(
             TaggedLaneRequest.value("demandLane", LaneRequest.sync(remote)),
             TaggedLaneRequest.value("valueLane", LaneRequest.command(1))),
@@ -65,6 +57,6 @@ class DemandLaneTest {
             TaggedLaneResponse.value("demandLane", LaneResponse.synced(remote)),
             TaggedLaneResponse.value("valueLane", LaneResponse.event(1)),
             TaggedLaneResponse.value("demandLane", LaneResponse.event(2))),
-        AgentFixture::writeIntString).runServer();
+        AgentFixture::writeIntString, false);
   }
 }

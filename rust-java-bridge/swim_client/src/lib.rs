@@ -84,7 +84,7 @@ impl From<ClientConfig> for swim_client_core::ClientConfig {
 }
 
 client_fn! {
-    fn SwimClient_startClient(
+    pub fn SwimClient_startClient(
         env,
         _class,
         config: jbyteArray,
@@ -113,7 +113,7 @@ client_fn! {
 }
 
 client_fn! {
-    fn SwimClient_shutdownClient(
+    pub fn SwimClient_shutdownClient(
         env,
         _class,
         client: *mut SwimClient,
@@ -127,7 +127,7 @@ client_fn! {
 }
 
 client_fn! {
-    fn Handle_createHandle(
+    pub fn Handle_createHandle(
         env,
         _class,
         runtime: *mut SwimClient,
@@ -141,7 +141,7 @@ client_fn! {
 }
 
 client_fn! {
-    fn Handle_dropHandle(
+    pub fn Handle_dropHandle(
         env,
         _class,
         handle: *mut ClientHandle,
@@ -212,7 +212,7 @@ client_fn! {
     // If the number of arguments for this grows any further then it might be worth implementing an
     // FFI builder pattern that finalises with an 'open' call which this accepts and takes ownership
     // of.
-    fn downlink_value_ValueDownlinkModel_open(
+    pub fn downlink_value_ValueDownlinkModel_open(
         env,
         _class,
         handle: *mut ClientHandle,
@@ -256,7 +256,7 @@ client_fn! {
 }
 
 client_fn! {
-    fn downlink_map_MapDownlinkModel_open(
+    pub fn downlink_map_MapDownlinkModel_open(
         env,
         _class,
         handle: *mut ClientHandle,
