@@ -42,7 +42,6 @@ use tracing::{debug, error};
 use crate::method::{
     InitialisedJavaObjectMethod, JavaMethodExt, JavaObjectMethod, JavaObjectMethodDef,
 };
-use crate::vtable::Throwable;
 
 assert_impl_all!(JavaEnv: Send, Sync);
 
@@ -197,8 +196,8 @@ impl<'l> Scope<'l> {
         U: Into<JNIString>,
         V: Into<JNIString> + AsRef<str>,
     {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.call_static_method(class, name, sig, args))
+        let Scope { env, .. } = self;
+        system_call(self, || env.call_static_method(class, name, sig, args))
     }
 
     pub fn throw_new<'c, S, T>(&self, class: T, msg: S)
@@ -206,8 +205,8 @@ impl<'l> Scope<'l> {
         S: Into<JNIString>,
         T: Desc<'l, JClass<'c>>,
     {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.throw_new(class, msg))
+        let Scope { env, .. } = self;
+        system_call(self, || env.throw_new(class, msg))
     }
 
     pub fn with_local_frame_null<F>(&self, effect: F)
@@ -224,8 +223,8 @@ impl<'l> Scope<'l> {
         U: Into<JNIString>,
         V: Into<JNIString>,
     {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.get_method_id(class, name, sig))
+        let Scope { env, .. } = self;
+        system_call(self, || env.get_method_id(class, name, sig))
     }
 
     pub fn resolve(&self, def: impl Into<JavaObjectMethodDef>) -> InitialisedJavaObjectMethod {
@@ -239,32 +238,31 @@ impl<'l> Scope<'l> {
         S: Into<JNIString>,
         T: Into<JNIString> + AsRef<str>,
     {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.set_field(obj, name, ty, val))
+        let Scope { env, .. } = self;
+        system_call(self, || env.set_field(obj, name, ty, val))
     }
 
     pub fn find_class<S>(&self, name: S) -> JClass<'l>
     where
         S: Into<JNIString>,
     {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.find_class(name))
+        let Scope { env, .. } = self;
+        system_call(self, || env.find_class(name))
     }
 
     pub fn get_object_class<O>(&self, obj: O) -> JClass<'l>
     where
         O: Into<JObject<'l>>,
     {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.get_object_class(obj))
+        let Scope { env, .. } = self;
+        system_call(self, || env.get_object_class(obj))
     }
 
     pub fn initialise<D>(&self, def: D) -> InitialisedJavaObjectMethod
     where
         D: Into<JavaObjectMethodDef>,
     {
-        let Scope { vm, .. } = self;
-        system_call(vm, || def.into().initialise(self))
+        system_call(self, || def.into().initialise(self))
     }
 
     pub fn invoke<M, O>(&'l self, method: M, object: O, args: &[JValue<'l>]) -> M::Output
@@ -286,21 +284,21 @@ impl<'l> Scope<'l> {
     where
         S: Into<JNIString>,
     {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.new_string(source))
+        let Scope { env, .. } = self;
+        system_call(self, || env.new_string(source))
     }
 
     pub fn lock_obj<O>(&self, obj: O) -> MonitorGuard<'l>
     where
         O: Into<JObject<'l>>,
     {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.lock_obj(obj))
+        let Scope { env, .. } = self;
+        system_call(self, || env.lock_obj(obj))
     }
 
     pub fn exception_occurred(&self) -> Option<JThrowable<'l>> {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || match env.exception_occurred() {
+        let Scope { env, .. } = self;
+        system_call(self, || match env.exception_occurred() {
             Ok(throwable) => {
                 let ptr = throwable.into_raw();
                 if ptr.is_null() {
@@ -314,26 +312,26 @@ impl<'l> Scope<'l> {
     }
 
     pub fn exception_describe(&self) {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.exception_describe())
+        let Scope { env, .. } = self;
+        system_call(self, || env.exception_describe())
     }
 
     pub fn exception_clear(&self) {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.exception_clear())
+        let Scope { env, .. } = self;
+        system_call(self, || env.exception_clear())
     }
 
     pub fn get_java_string<'s>(&'s self, obj: JString<'s>) -> JavaStr<'s, 'l>
     where
         'l: 's,
     {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.get_string(obj))
+        let Scope { env, .. } = self;
+        system_call(self, || env.get_string(obj))
     }
 
     pub fn get_rust_string(&self, obj: JString) -> String {
-        let Scope { vm, env, .. } = self;
-        let jstr = system_call(vm, || env.get_string(obj));
+        let Scope { env, .. } = self;
+        let jstr = system_call(self, || env.get_string(obj));
         String::from(jstr)
     }
 
@@ -351,27 +349,27 @@ impl<'l> Scope<'l> {
     where
         O: Into<JObject<'l>>,
     {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.new_global_ref(obj))
+        let Scope { env, .. } = self;
+        system_call(self, || env.new_global_ref(obj))
     }
 
     pub fn delete_local_ref(&self, obj: JObject) {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.delete_local_ref(obj))
+        let Scope { env, .. } = self;
+        system_call(self, || env.delete_local_ref(obj))
     }
 
     pub fn convert_byte_array(&self, array: jbyteArray) -> Vec<u8> {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || env.convert_byte_array(array))
+        let Scope { env, .. } = self;
+        system_call(self, || env.convert_byte_array(array))
     }
 
-    pub fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b>
+    pub fn new_direct_byte_buffer_exact<'b, B>(&self, buf: &'b mut B) -> ByteBufferGuard<'b, B>
     where
         B: BufPtr,
         'l: 'b,
     {
-        let Scope { vm, env, .. } = self;
-        let buffer = system_call(vm, || unsafe {
+        let Scope { env, .. } = self;
+        let buffer = system_call(self, || unsafe {
             env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len())
         });
         ByteBufferGuard {
@@ -385,8 +383,8 @@ impl<'l> Scope<'l> {
         data: *mut u8,
         len: usize,
     ) -> GlobalRefByteBuffer {
-        let Scope { vm, env, .. } = self;
-        system_call(vm, || {
+        let Scope { env, .. } = self;
+        system_call(self, || {
             let buffer = unsafe { env.new_direct_byte_buffer(data, len)? };
             let global_ref = env.new_global_ref(buffer)?;
             Ok(GlobalRefByteBuffer(global_ref))
@@ -403,7 +401,7 @@ impl<'l> Scope<'l> {
 }
 
 #[must_use]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct GlobalRefByteBuffer(GlobalRef);
 
 pub unsafe trait JObjectFromByteBuffer {
@@ -419,19 +417,19 @@ unsafe impl JObjectFromByteBuffer for GlobalRefByteBuffer {
 /// Guard that binds the lifetime of the JByteBuffer to the backing data.
 #[must_use]
 #[derive(Clone, Copy)]
-pub struct ByteBufferGuard<'b> {
-    _buf: PhantomData<&'b mut Vec<u8>>,
+pub struct ByteBufferGuard<'b, B> {
+    _buf: PhantomData<&'b mut B>,
     buffer: JByteBuffer<'b>,
 }
 
-impl<'b> From<ByteBufferGuard<'b>> for JValue<'b> {
-    fn from(value: ByteBufferGuard<'b>) -> Self {
+impl<'b, B> From<ByteBufferGuard<'b, B>> for JValue<'b> {
+    fn from(value: ByteBufferGuard<'b, B>) -> Self {
         unsafe { JValue::Object(JObject::from_raw(value.buffer.into_raw())) }
     }
 }
 
-unsafe impl<'b> JObjectFromByteBuffer for ByteBufferGuard<'b> {
-    // This is unsafe due to the clone unbinding the object from the lifetime.
+unsafe impl<'b, B> JObjectFromByteBuffer for ByteBufferGuard<'b, B> {
+    // This is unsafe due to the clone unbinds the object from the lifetime.
     fn as_byte_buffer(&self) -> JObject {
         *self.buffer.deref()
     }
@@ -448,15 +446,20 @@ impl Display for StringError {
     }
 }
 
-fn system_call<F, O>(vm: &Arc<JavaVM>, f: F) -> O
+fn system_call<F, O>(scope: &Scope, f: F) -> O
 where
     F: FnOnce() -> Result<O, Error>,
 {
     match f() {
         Ok(o) => o,
         Err(e) => match e {
-            Error::JavaException => abort_unexpected_sys_exception(vm.clone()),
-            e => abort_vm(vm.clone(), e),
+            Error::JavaException => match scope.exception_occurred() {
+                Some(throwable) => abort_unexpected_exception(scope, throwable),
+                None => {
+                    scope.fatal_error("Missing throwable");
+                }
+            },
+            e => abort_vm(scope.vm.clone(), e),
         },
     }
 }
@@ -473,25 +476,41 @@ fn get_env(vm: &JavaVM) -> Result<JNIEnv, ()> {
 
 #[cold]
 #[inline(never)]
-fn abort_unexpected_sys_exception(vm: Arc<JavaVM>) -> ! {
+fn abort_unexpected_exception(scope: &Scope, throwable: JThrowable) -> ! {
     const UNEXPECTED_EXCEPTION: &str =
-        "An unexpected exception was thrown while making a system call";
+        "An unexpected exception was thrown while making a native call";
     let backtrace = Backtrace::force_capture();
 
-    if let Ok(env) = get_env(vm.as_ref()) {
-        // This has to be done from the current thread as it contains the JniEnv that is associated
-        // with the exception.
-        let _r = env.exception_describe();
+    // This has to be done from the current thread as it contains the JniEnv that is associated
+    // with the exception.
+    let _r = scope.exception_describe();
+
+    scope.call_static_method(
+        "ai/swim/lang/ffi/ExceptionUtils",
+        "flushOutputStreams",
+        "()V",
+        &[],
+    );
+
+    {
+        let _stdout_lock = std::io::stdout().lock();
+        let _stderr_lock = std::io::stderr().lock();
+        eprintln!(
+            "{}",
+            SpannedError::collect(scope, Location::caller(), throwable)
+        );
     }
+
+    let vm = scope.vm.clone();
 
     let _r = std::thread::spawn(move || {
         let _stdout_lock = std::io::stdout().lock();
-        eprintln!("Aborting VM due to an unhandled exception during a system call");
+        let _stderr_lock = std::io::stderr().lock();
+
+        eprintln!("{UNEXPECTED_EXCEPTION}");
         eprintln!("Stack backtrace:\n{backtrace}");
 
         if let Ok(env) = get_env(vm.as_ref()) {
-            flush_output_streams(&env);
-
             eprintln!("{UNEXPECTED_EXCEPTION}");
             env.fatal_error(UNEXPECTED_EXCEPTION)
         } else {
@@ -502,39 +521,31 @@ fn abort_unexpected_sys_exception(vm: Arc<JavaVM>) -> ! {
     abort()
 }
 
-/// Flushes Java output streams to ensure that any exception messages have been printed.
-#[cold]
-#[inline(never)]
-fn flush_output_streams(env: &JNIEnv) {
-    let r = env.call_static_method(
-        "ai/swim/lang/ffi/ExceptionUtils",
-        "flushOutputStreams",
-        "()V",
-        &[],
-    );
-    if r.is_err() {
-        eprintln!("Failed to flush Java output streams");
-    }
-}
-
 #[cold]
 #[inline(never)]
 fn abort_vm(vm: Arc<JavaVM>, e: impl StdError + Send + 'static) -> ! {
+    let _stdout_lock = std::io::stdout().lock();
+    let _stderr_lock = std::io::stderr().lock();
+
     let backtrace = Backtrace::force_capture();
     eprintln!("Aborting VM due to: {}\nStack backtrace: {}", e, backtrace);
 
     let _r = std::thread::spawn(move || {
-        let _stdout_lock = std::io::stdout().lock();
-        eprintln!("Stack backtrace:\n{backtrace}");
-
         if let Ok(env) = get_env(vm.as_ref()) {
-            flush_output_streams(&env);
+            let _r = env.call_static_method(
+                "ai/swim/lang/ffi/ExceptionUtils",
+                "flushOutputStreams",
+                "()V",
+                &[],
+            );
+
             eprintln!("Error executing Java call: {:?}", e);
             env.fatal_error(e.to_string())
         } else {
             eprintln!("Failed to get Java VM");
         }
-    });
+    })
+    .join();
     abort()
 }
 
@@ -599,7 +610,7 @@ impl JavaExceptionHandler for NotTypeOfExceptionHandler {
         if is_assignable_from {
             None
         } else {
-            Some(handle_exception(scope, Location::caller(), throwable))
+            Some(SpannedError::collect(scope, Location::caller(), throwable))
         }
     }
 }
@@ -609,13 +620,8 @@ struct AbortingHandler;
 impl JavaExceptionHandler for AbortingHandler {
     type Err = Infallible;
 
-    fn inspect(&self, scope: &Scope, _throwable: JThrowable) -> Option<Self::Err> {
-        let _r = scope.exception_describe();
-
-        abort_vm(
-            scope.vm.clone(),
-            StringError("An exception was not handled".into()),
-        )
+    fn inspect(&self, scope: &Scope, throwable: JThrowable) -> Option<Self::Err> {
+        abort_unexpected_exception(scope, throwable)
     }
 }
 
@@ -652,7 +658,7 @@ impl JavaExceptionHandler for IsTypeOfExceptionHandler {
         let is_assignable_from = scope.invoke(method.z(), clazz, &[JValue::Object(class.as_obj())]);
 
         if is_assignable_from {
-            Some(handle_exception(scope, Location::caller(), throwable))
+            Some(SpannedError::collect(scope, Location::caller(), throwable))
         } else {
             None
         }
@@ -667,26 +673,44 @@ pub struct SpannedError {
     /// The Rust call site location that triggered the exception to be thrown.
     pub location: &'static Location<'static>,
     /// The Java exception stack trace converted to a string.
-    pub stack_trace: String,
-    /// The cause of the exception.
-    pub cause: String,
+    pub error: String,
     /// A global reference to the cause of the Java exception.
-    pub cause_throwable: GlobalRef,
+    pub throwable: GlobalRef,
 }
 
 impl SpannedError {
     pub fn new(
         location: &'static Location<'static>,
-        stack_trace: String,
-        cause: String,
-        cause_throwable: GlobalRef,
+        error: String,
+        throwable: GlobalRef,
     ) -> SpannedError {
         SpannedError {
             location,
-            stack_trace,
-            cause,
-            cause_throwable,
+            error,
+            throwable,
         }
+    }
+
+    #[inline(never)]
+    fn collect(scope: &Scope, location: &'static Location, throwable: JThrowable) -> SpannedError {
+        println!("Handle exception");
+        let cause_global_ref = scope.new_global_ref(throwable);
+
+        scope.exception_clear();
+
+        let stack_trace_obj = scope.call_static_method(
+            "ai/swim/lang/ffi/ExceptionUtils",
+            "formatThrowable",
+            "(Ljava/lang/Throwable;)Ljava/lang/String;",
+            &[throwable.into()],
+        );
+        let stack_trace_str_obj = match stack_trace_obj.l() {
+            Ok(obj) => JString::from(obj),
+            Err(e) => abort_vm(scope.vm.clone(), e),
+        };
+        let error = scope.get_rust_string(stack_trace_str_obj);
+
+        SpannedError::new(location, error, cause_global_ref)
     }
 }
 
@@ -695,58 +719,21 @@ impl StdError for SpannedError {}
 impl Display for SpannedError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let SpannedError {
-            location,
-            stack_trace,
-            cause,
-            ..
+            location, error, ..
         } = self;
 
         writeln!(f, "Native exception thrown at call site: {location}")?;
-        writeln!(f, "\tCaused by: {cause}")?;
+        writeln!(f, "\tCaused by:")?;
 
-        let stack_trace = stack_trace
-            .lines()
-            .map(|l| format!("\n\t\t{l}"))
-            .collect::<String>();
-
-        writeln!(f, "\tStack trace:{stack_trace}")
+        writeln!(
+            f,
+            "{}",
+            error
+                .lines()
+                .map(|l| format!("\n\t\t{l}"))
+                .collect::<String>()
+        )
     }
-}
-
-#[inline(never)]
-fn handle_exception(
-    scope: &Scope,
-    location: &'static Location,
-    throwable: JThrowable,
-) -> SpannedError {
-    let cause_method = scope.resolve(Throwable::GET_CAUSE);
-    let cause_global_ref = scope.new_global_ref(scope.invoke(
-        cause_method.l(),
-        unsafe { JObject::from_raw(throwable.into_raw()) },
-        &[],
-    ));
-    let message_string = get_exception_message(scope, throwable);
-
-    scope.exception_clear();
-
-    let stack_trace_obj = scope.call_static_method(
-        "ai/swim/lang/ffi/ExceptionUtils",
-        "stackTraceString",
-        "(Ljava/lang/Throwable;)Ljava/lang/String;",
-        &[throwable.into()],
-    );
-    let stack_trace_str_obj = match stack_trace_obj.l() {
-        Ok(obj) => JString::from(obj),
-        Err(e) => abort_vm(scope.vm.clone(), e),
-    };
-    let stack_trace_string = scope.get_rust_string(stack_trace_str_obj);
-
-    SpannedError::new(
-        location,
-        stack_trace_string,
-        message_string,
-        cause_global_ref,
-    )
 }
 
 fn fallible_jni_call<O, F, I>(scope: Scope, exception_handler: &I, call: F) -> Result<O, I::Err>
@@ -800,14 +787,6 @@ where
         Ok(o) => o,
         Err(e) => abort_vm(vm.clone(), e),
     })
-}
-
-fn get_exception_message(scope: &Scope, throwable: JThrowable) -> String {
-    let Scope { resolver, .. } = &scope;
-    let method = resolver.resolve(&scope, Throwable::GET_MESSAGE);
-    let message = scope.invoke(method.l(), throwable, &[]);
-
-    scope.get_rust_string(JString::from(message))
 }
 
 #[derive(Debug, Clone, Default)]

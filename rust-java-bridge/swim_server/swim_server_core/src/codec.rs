@@ -28,8 +28,6 @@ use swim_api::protocol::WithLengthBytesCodec;
 use swim_utilities::io::byte_channel::ByteReader;
 use tokio_util::codec::{Decoder, Encoder, FramedRead};
 
-use crate::agent::LaneType;
-
 type LaneCodec<T> = FramedRead<ByteReader, LaneRequestDecoder<T>>;
 type ValueReaderCodec = LaneCodec<WithLengthBytesCodec>;
 type MapReaderCodec = LaneCodec<MapMessageDecoder<RawMapOperationDecoder>>;
@@ -102,13 +100,11 @@ impl Encoder<MapOperation<BytesMut, BytesMut>> for MapOperationBytesEncoder {
 }
 
 impl Stream for LaneReaderCodec {
-    type Item = (LaneType, Result<LaneRequest<BytesMut>, FrameIoError>);
+    type Item = Result<LaneRequest<BytesMut>, FrameIoError>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match self.get_mut() {
-            LaneReaderCodec::Value(ref mut inner) => Pin::new(inner)
-                .poll_next(cx)
-                .map(|r| r.map(|r| (LaneType::Value, r))),
+            LaneReaderCodec::Value(ref mut inner) => Pin::new(inner).poll_next(cx),
             LaneReaderCodec::Map(ref mut inner) => match Pin::new(inner).poll_next(cx) {
                 Poll::Ready(Some(Ok(op))) => {
                     let item = match op {
@@ -122,9 +118,9 @@ impl Stream for LaneReaderCodec {
                         LaneRequest::InitComplete => LaneRequest::InitComplete,
                         LaneRequest::Sync(id) => LaneRequest::Sync(id),
                     };
-                    Poll::Ready(Some((LaneType::Map, Ok(item))))
+                    Poll::Ready(Some(Ok(item)))
                 }
-                Poll::Ready(Some(Err(e))) => Poll::Ready(Some((LaneType::Map, Err(e)))),
+                Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(e))),
                 Poll::Ready(None) => Poll::Ready(None),
                 Poll::Pending => Poll::Pending,
             },
@@ -193,7 +189,9 @@ impl Decoder for LaneResponseDecoder {
                         match src.get_i8() {
                             0 => *more_available = false,
                             1 => *more_available = true,
-                            _ => return Err(ErrorKind::InvalidData.into()),
+                            _ => {
+                                return Err(ErrorKind::InvalidData.into());
+                            }
                         }
 
                         *state = LaneResponseDecoderState::ResponseHeader;
@@ -239,7 +237,7 @@ mod tests {
     use bytes::{BufMut, Bytes, BytesMut};
     use tokio_util::codec::Decoder;
 
-    use crate::codec::{LaneResponseDecoder, LaneResponseDecoderState, LaneResponseElement};
+    use super::{LaneResponseDecoder, LaneResponseDecoderState, LaneResponseElement};
 
     #[test]
     fn empty() {

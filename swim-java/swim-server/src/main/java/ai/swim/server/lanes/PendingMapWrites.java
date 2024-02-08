@@ -1,24 +1,9 @@
-/*
- * Copyright 2015-2024 Swim Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package ai.swim.server.lanes.map;
+package ai.swim.server.lanes;
 
 import ai.swim.codec.data.BufferOverflowException;
 import ai.swim.codec.data.ByteWriter;
-import ai.swim.server.lanes.WriteResult;
+import ai.swim.server.lanes.map.MapOperation;
+import ai.swim.server.lanes.map.MapSyncRequest;
 import ai.swim.server.lanes.map.codec.MapOperationEncoder;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponseEncoder;
@@ -26,8 +11,7 @@ import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.structure.writer.Writable;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Map;
-import java.util.Set;
+import java.util.Iterator;
 import java.util.UUID;
 
 /**
@@ -36,7 +20,7 @@ import java.util.UUID;
  * @param <K> map lane's key type.
  * @param <V> map lane's value type.
  */
-public class PendingWrites<K, V> {
+public class PendingMapWrites<K, V> {
   private final Deque<MapSyncRequest<K>> syncQueue;
   private final Deque<MapOperation<K, V>> operationQueue;
   private Bias bias;
@@ -45,7 +29,7 @@ public class PendingWrites<K, V> {
     Sync, Event
   }
 
-  public PendingWrites() {
+  public PendingMapWrites() {
     syncQueue = new ArrayDeque<>();
     operationQueue = new ArrayDeque<>();
     bias = Bias.Sync;
@@ -57,7 +41,7 @@ public class PendingWrites<K, V> {
    * @param remote UUID.
    * @param keys   that were contained in the map's state.
    */
-  public void pushSync(UUID remote, Set<K> keys) {
+  public void pushSync(UUID remote, Iterator<K> keys) {
     syncQueue.addLast(new MapSyncRequest<>(remote, keys));
   }
 

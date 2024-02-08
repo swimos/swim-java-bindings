@@ -18,6 +18,7 @@ package ai.swim.server.lanes.map;
 
 import ai.swim.codec.data.BufferOverflowException;
 import ai.swim.codec.data.ByteWriter;
+import ai.swim.server.lanes.MapLookup;
 import ai.swim.server.lanes.map.codec.MapOperationEncoder;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponse;
 import ai.swim.server.lanes.models.response.IdentifiedLaneResponseEncoder;
@@ -30,11 +31,11 @@ import java.util.UUID;
 
 public class MapSyncRequest<K> {
   private final UUID remote;
-  private final Set<K> keys;
+  private final Iterator<K> keyIter;
 
-  public MapSyncRequest(UUID remote, Set<K> keys) {
+  public MapSyncRequest(UUID remote, Iterator<K> keyIter) {
     this.remote = remote;
-    this.keys = keys;
+    this.keyIter = keyIter;
   }
 
   public <V> boolean encodeInto(int laneId,
@@ -45,7 +46,6 @@ public class MapSyncRequest<K> {
     IdentifiedLaneResponseEncoder<MapOperation<K, V>> encoder = new IdentifiedLaneResponseEncoder<>(new MapOperationEncoder<>(
         keyForm,
         valueForm));
-    Iterator<K> keyIter = keys.iterator();
 
     if (keyIter.hasNext()) {
       while (keyIter.hasNext()) {
@@ -56,7 +56,6 @@ public class MapSyncRequest<K> {
           encoder.encode(
               new IdentifiedLaneResponse<>(laneId, LaneResponse.syncEvent(remote, MapOperation.update(key, value))),
               byteWriter);
-          keyIter.remove();
           return false;
         }
       }
@@ -70,7 +69,7 @@ public class MapSyncRequest<K> {
   public String toString() {
     return "MapSyncRequest{" +
         "remote=" + remote +
-        ", keys=" + keys +
+        ", keyIter=" + keyIter +
         '}';
   }
 }

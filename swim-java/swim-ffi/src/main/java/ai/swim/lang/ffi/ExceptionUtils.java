@@ -17,18 +17,21 @@
 package ai.swim.lang.ffi;
 
 public class ExceptionUtils {
-  public static String stackTraceString(Throwable exception) {
+  public static String formatThrowable(Throwable exception) {
     if (exception == null) {
       return "";
     }
 
+    StringBuilder builder = new StringBuilder();
+    builder.append(exception);
+    builder.append(System.lineSeparator());
+
     StackTraceElement[] stackTrace = exception.getStackTrace();
     if (stackTrace == null) {
-      return "";
+      return builder.toString();
     }
 
     int lim = Math.min(stackTrace.length, 20);
-    StringBuilder builder = new StringBuilder();
 
     for (int i = 0; i < lim; i++) {
       StackTraceElement element = stackTrace[i];

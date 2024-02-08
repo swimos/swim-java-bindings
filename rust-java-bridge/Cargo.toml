@@ -13,6 +13,8 @@ members = [
     "swim_server",
     "swim_server/swim_server_core",
     "swim_server/swim_server_test",
+    "swim_server/fixture",
+    "utilities/*"
 ]
 
 [workspace.dependencies]
@@ -43,6 +45,7 @@ tracing-futures = "0.2"
 rand = "0.8.5"
 uuid = "1.2"
 swim_utilities = { path = "../swim-rust/swim_utilities" }
+pin-project = "1.0.12"
 
 [workspace.dependencies.ratchet]
 package = "ratchet_rs"

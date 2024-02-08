@@ -24,12 +24,9 @@ import ai.swim.server.agent.AbstractAgent;
 import ai.swim.server.agent.AgentContext;
 import ai.swim.server.agent.TaggedLaneRequest;
 import ai.swim.server.agent.TaggedLaneResponse;
-import ai.swim.server.agent.TestLaneServer;
 import ai.swim.server.agent.call.CallContext;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
-import ai.swim.server.annotations.SwimPlane;
-import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.annotations.Transient;
 import ai.swim.server.lanes.map.MapLane;
 import ai.swim.server.lanes.map.MapLaneModel;
@@ -39,7 +36,6 @@ import ai.swim.server.lanes.map.codec.MapOperationEncoder;
 import ai.swim.server.lanes.models.request.LaneRequest;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.state.StateCollector;
-import ai.swim.server.plane.AbstractPlane;
 import ai.swim.structure.Form;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -48,6 +44,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import static ai.swim.server.agent.AgentFixture.encodeIter;
+import static ai.swim.server.agent.NativeTest.runAgent;
 import static ai.swim.server.lanes.Lanes.mapLane;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -114,34 +111,26 @@ public class MapLaneTest {
     }
   }
 
-  @SwimPlane("test")
-  private static class TestPlane extends AbstractPlane {
-    @SwimRoute("agent")
-    private TestAgent testAgent;
-  }
-
   @Test
-  void nativeTest() throws SwimServerException, IOException {
+  void nativeTest() throws SwimServerException, IOException, NoSuchMethodException {
     Encoder<MapOperation<String, Integer>> encoder = new MapOperationEncoder<>(
         Form.forClass(String.class),
         Form.forClass(Integer.class));
-    TestLaneServer
-        .build(
-            TestPlane.class,
-            List.of(
-                TaggedLaneRequest.map("mapLane", LaneRequest.command(MapOperation.update("a", 1))),
-                TaggedLaneRequest.map("mapLane", LaneRequest.command(MapOperation.update("b", 2))),
-                TaggedLaneRequest.map("mapLane", LaneRequest.command(MapOperation.update("c", 3))),
-                TaggedLaneRequest.map("mapLane", LaneRequest.command(MapOperation.remove("c"))),
-                TaggedLaneRequest.map("mapLane", LaneRequest.command(MapOperation.clear()))),
-            List.of(
-                TaggedLaneResponse.map("mapLane", LaneResponse.event(MapOperation.update("a", 1))),
-                TaggedLaneResponse.map("mapLane", LaneResponse.event(MapOperation.update("b", 2))),
-                TaggedLaneResponse.map("mapLane", LaneResponse.event(MapOperation.update("c", 3))),
-                TaggedLaneResponse.map("mapLane", LaneResponse.event(MapOperation.remove("c"))),
-                TaggedLaneResponse.map("mapLane", LaneResponse.event(MapOperation.clear()))),
-            encoder)
-        .runServer();
+    runAgent(
+        TestAgent.class,
+        List.of(
+            TaggedLaneRequest.map("mapLane", LaneRequest.command(MapOperation.update("a", 1))),
+            TaggedLaneRequest.map("mapLane", LaneRequest.command(MapOperation.update("b", 2))),
+            TaggedLaneRequest.map("mapLane", LaneRequest.command(MapOperation.update("c", 3))),
+            TaggedLaneRequest.map("mapLane", LaneRequest.command(MapOperation.remove("c"))),
+            TaggedLaneRequest.map("mapLane", LaneRequest.command(MapOperation.clear()))),
+        List.of(
+            TaggedLaneResponse.map("mapLane", LaneResponse.event(MapOperation.update("a", 1))),
+            TaggedLaneResponse.map("mapLane", LaneResponse.event(MapOperation.update("b", 2))),
+            TaggedLaneResponse.map("mapLane", LaneResponse.event(MapOperation.update("c", 3))),
+            TaggedLaneResponse.map("mapLane", LaneResponse.event(MapOperation.remove("c"))),
+            TaggedLaneResponse.map("mapLane", LaneResponse.event(MapOperation.clear()))),
+        encoder, true);
   }
 
 }

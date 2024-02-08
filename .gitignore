@@ -7,5 +7,5 @@
 **/.idea
 
 */*.iml
-.vscode/
 *.code-workspace
+.vscode

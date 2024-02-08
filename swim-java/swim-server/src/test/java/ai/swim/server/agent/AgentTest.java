@@ -21,8 +21,6 @@ import ai.swim.codec.encoder.Encoder;
 import ai.swim.server.SwimServerException;
 import ai.swim.server.annotations.SwimAgent;
 import ai.swim.server.annotations.SwimLane;
-import ai.swim.server.annotations.SwimPlane;
-import ai.swim.server.annotations.SwimRoute;
 import ai.swim.server.annotations.Transient;
 import ai.swim.server.lanes.map.MapLane;
 import ai.swim.server.lanes.map.MapOperation;
@@ -31,28 +29,28 @@ import ai.swim.server.lanes.models.request.LaneRequest;
 import ai.swim.server.lanes.models.response.LaneResponse;
 import ai.swim.server.lanes.value.ValueLane;
 import ai.swim.server.lanes.value.ValueLaneView;
-import ai.swim.server.plane.AbstractPlane;
 import ai.swim.structure.Form;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
+import static ai.swim.server.agent.NativeTest.runAgent;
 import static ai.swim.server.lanes.Lanes.mapLane;
 import static ai.swim.server.lanes.Lanes.valueLane;
 
 class AgentTest {
 
   @Test
-  void agentResponses() throws SwimServerException, IOException {
-    TestLaneServer.build(TestPlane.class, List.of(TaggedLaneRequest.value("numLane", LaneRequest.command(2))), List.of(
+  void agentResponses() throws SwimServerException, IOException, NoSuchMethodException {
+    runAgent(TestAgent.class, List.of(TaggedLaneRequest.value("numLane", LaneRequest.command(2))), List.of(
         TaggedLaneResponse.value("numLane", LaneResponse.event(2)),
         TaggedLaneResponse.value("plusOne", LaneResponse.event(3)),
-        TaggedLaneResponse.value("minusOne", LaneResponse.event(1))), AgentFixture::writeIntString).run();
+        TaggedLaneResponse.value("minusOne", LaneResponse.event(1))), AgentFixture::writeIntString, true);
   }
 
   @Test
-  void dynamicLaneOpens() throws SwimServerException, IOException {
-    TestLaneServer.build(
-        DynamicTestPlane.class,
+  void dynamicLaneOpens() throws SwimServerException, IOException, NoSuchMethodException {
+    runAgent(
+        DynamicTestAgent.class,
         List.of(
             TaggedLaneRequest.value("numLane", LaneRequest.command(13)),
             TaggedLaneRequest.value("numLane", LaneRequest.command(14))),
@@ -61,7 +59,7 @@ class AgentTest {
             TaggedLaneResponse.value("dynamic", LaneResponse.event(15)),
             TaggedLaneResponse.value("numLane", LaneResponse.event(14)),
             TaggedLaneResponse.value("dynamic", LaneResponse.event(16))),
-        AgentFixture::writeIntString).run();
+        AgentFixture::writeIntString, true);
   }
 
   @SwimAgent
@@ -86,12 +84,6 @@ class AgentTest {
     }
   }
 
-  @SwimPlane("mock")
-  private static class TestPlane extends AbstractPlane {
-    @SwimRoute("agent")
-    private TestAgent agent;
-  }
-
   @SwimAgent
   private static class DynamicTestAgent extends AbstractAgent {
     @Transient
@@ -113,18 +105,6 @@ class AgentTest {
         lane.set(16);
       }
     }
-  }
-
-  @SwimPlane("mock")
-  private static class DynamicTestPlane extends AbstractPlane {
-    @SwimRoute("agent")
-    private DynamicTestAgent agent;
-  }
-
-  @SwimPlane("mock")
-  private static class HeterogeneousLanesPlane extends AbstractPlane {
-    @SwimRoute("agent")
-    private HeterogeneousLanesAgent agent;
   }
 
   @SwimAgent
@@ -155,7 +135,7 @@ class AgentTest {
   }
 
   @Test
-  void heterogeneousLanes() throws SwimServerException, IOException {
+  void heterogeneousLanes() throws SwimServerException, IOException, NoSuchMethodException {
     Encoder<Integer> integerEncoder = AgentFixture::writeIntString;
 
     List<TaggedLaneRequest<Integer>> requests = List.of(
@@ -192,6 +172,6 @@ class AgentTest {
         responseBytes);
     valueResponseEncoder.encode(TaggedLaneResponse.value("updateCount", LaneResponse.event(2)), responseBytes);
 
-    TestLaneServer.build(HeterogeneousLanesPlane.class, requestBytes, responseBytes).run();
+    runAgent(HeterogeneousLanesAgent.class, requestBytes, responseBytes, true);
   }
 }

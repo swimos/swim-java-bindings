@@ -31,12 +31,4 @@ public interface State {
    * @return a result stating whether there is more data to write.
    */
   WriteResult writeInto(ByteWriter bytes);
-
-  /**
-   * Register {@code uuid}'s intent to sync with the lane.
-   *
-   * @param uuid remote to sync with.
-   */
-  void sync(UUID uuid);
-
 }

@@ -24,6 +24,7 @@ import ai.swim.server.lanes.lifecycle.OnUpdate;
 import ai.swim.server.lanes.state.StateCollector;
 import ai.swim.structure.Form;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -158,7 +159,7 @@ public final class MapLaneView<K, V> extends LaneView implements MapLane<K, V> {
 
   @Override
   public Set<K> keySet() {
-    return model.keySet();
+    return Collections.unmodifiableSet(model.keySet());
   }
 
   @Override

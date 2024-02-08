@@ -18,7 +18,7 @@ use bytebridge::{ByteCodec, ByteCodecExt, FromBytesError};
 use bytes::BytesMut;
 use jni::sys::jbyteArray;
 
-const DECODER_EXCEPTION: &str = "ai/swim/server/codec/DecoderException";
+const DECODER_EXCEPTION: &str = "ai/swim/server/codec/decoder/DecoderException";
 
 pub trait JniByteCodec: ByteCodec {
     fn try_from_jbyte_array<R>(env: &JavaEnv, array: jbyteArray) -> Result<Self, R>

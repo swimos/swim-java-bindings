@@ -17,8 +17,11 @@
 package ai.swim.server.agent;
 
 import ai.swim.codec.decoder.DecoderException;
+import ai.swim.server.agent.call.CallContext;
+import ai.swim.server.agent.task.TaskRegistry;
 import ai.swim.server.lanes.state.StateCollector;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 
 /**
  * A wrapper around a user-defined {@link AbstractAgent} and the lanes that it contains.
@@ -57,7 +60,7 @@ public class AgentView {
    *
    * @param laneIdx the URI of the lane.
    * @param buffer  the event data.
-   * @param len the number of elements written into the buffer
+   * @param len     the number of elements written into the buffer
    * @throws AgentException if an error is encountered when deserialising the envelope.
    */
   public byte[] dispatch(int laneIdx, ByteBuffer buffer, int len) throws DecoderException {
@@ -89,16 +92,35 @@ public class AgentView {
 
   /**
    * Invoked when the agent is started.
+   *
+   * @return an array containing encoded {@link ai.swim.server.lanes.models.response.LaneResponse}s.
    */
-  public void didStart() {
-    this.agent.didStart();
+  public byte[] didStart() {
+    CallContext.enter();
+    node.setState(AgentState.Running);
+
+    try {
+      this.agent.didStart();
+      return flushState();
+    } finally {
+      CallContext.exit();
+    }
   }
 
   /**
    * Invoked when the agent has stopped.
+   *
+   * @return an array containing encoded {@link ai.swim.server.lanes.models.response.LaneResponse}s.
    */
-  public void didStop() {
-    this.agent.didStop();
+  public byte[] didStop() {
+    CallContext.enter();
+    try {
+      this.agent.didStop();
+      return flushState();
+    } finally {
+      node.setState(AgentState.Stopped);
+      CallContext.exit();
+    }
   }
 
   /**
@@ -118,4 +140,11 @@ public class AgentView {
   public AgentNode getNode() {
     return node;
   }
+
+  public byte[] runTask(long idMsb, long idLsb, boolean remove) {
+    TaskRegistry taskRegistry = node.getTaskRegistry();
+    taskRegistry.runTask(new UUID(idMsb, idLsb), remove);
+    return flushState();
+  }
+
 }

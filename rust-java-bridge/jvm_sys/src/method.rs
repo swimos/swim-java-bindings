@@ -18,6 +18,7 @@ use jni::errors::Error::WrongJValueType;
 use jni::objects::{GlobalRef, JMethodID, JObject, JString, JValue};
 use jni::signature::TypeSignature;
 use std::any::type_name;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -130,7 +131,7 @@ impl JavaObjectMethodDef {
     }
 }
 
-pub trait JavaObjectMethod<'j> {
+pub trait JavaObjectMethod<'j>: Debug {
     type Output;
 
     fn invoke<'s, H, O>(
@@ -203,20 +204,21 @@ pub trait JavaMethodExt<'j>: JavaObjectMethod<'j> {
 
 impl<'j, M> JavaMethodExt<'j> for M where M: JavaObjectMethod<'j> {}
 
-fn mold<F, O>(scope: &Scope, f: F) -> O
+fn mold<M, F, O>(method: M, scope: &Scope, f: F) -> O
 where
     F: FnOnce() -> Result<O, JError>,
+    M: Debug,
 {
     match f() {
         Ok(o) => o,
         Err(e) => scope.fatal_error(format!(
-            "Unexpected return type: {}. Expected {}",
-            e,
-            type_name::<O>()
+            "Unexpected return type: {}. Callee: {:?}",
+            e, method
         )),
     }
 }
 
+#[derive(Debug)]
 pub struct MoldString<'m, M> {
     method: &'m M,
 }
@@ -245,6 +247,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct MoldVoid<'m, M> {
     method: &'m M,
 }
@@ -269,11 +272,12 @@ where
     {
         let MoldVoid { method } = self;
         let val = method.invoke(handler, scope, object, args)?;
-        mold(scope, || val.v());
+        mold(self, scope, || val.v());
         Ok(())
     }
 }
 
+#[derive(Debug)]
 pub struct MoldNull<'m, M> {
     method: &'m M,
 }
@@ -299,7 +303,7 @@ where
         let MoldNull { method } = self;
         let value = method.invoke(handler, scope, object, args)?;
 
-        mold(scope, || match value.l() {
+        mold(self, scope, || match value.l() {
             Ok(ptr) if ptr.is_null() => Ok(()),
             Ok(ptr) => Err(WrongJValueType(
                 "JObject != null",
@@ -311,6 +315,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct MoldObject<'m, M> {
     method: &'m M,
 }
@@ -335,18 +340,11 @@ where
     {
         let MoldObject { method } = self;
         let value = method.invoke(handler, scope, object, args)?;
-
-        Ok(mold(scope, || match value.l() {
-            Ok(ptr) if ptr.is_null() => Err(WrongJValueType(
-                "JObject == null",
-                JValue::Object(ptr).type_name(),
-            )),
-            Ok(ptr) => Ok(ptr),
-            Err(e) => Err(e),
-        }))
+        Ok(mold(self, scope, || value.l()))
     }
 }
 
+#[derive(Debug)]
 pub struct MoldBool<'m, M> {
     method: &'m M,
 }
@@ -371,11 +369,11 @@ where
     {
         let MoldBool { method } = self;
         let value = method.invoke(handler, scope, object, args)?;
-
-        Ok(mold(scope, || value.z()))
+        Ok(mold(self, scope, || value.z()))
     }
 }
 
+#[derive(Debug)]
 pub struct MoldGlobalRef<'m, M> {
     method: &'m M,
 }
@@ -404,12 +402,13 @@ where
     }
 }
 
-pub trait JavaArrayType {
+pub trait JavaArrayType: Debug {
     type ArrayType;
 
     fn mold(scope: &Scope, obj: JObject) -> Self::ArrayType;
 }
 
+#[derive(Debug)]
 pub struct ByteArray;
 
 impl JavaArrayType for ByteArray {
@@ -420,6 +419,7 @@ impl JavaArrayType for ByteArray {
     }
 }
 
+#[derive(Debug)]
 pub struct MoldArray<'m, M, A> {
     method: &'m M,
     _at: PhantomData<A>,

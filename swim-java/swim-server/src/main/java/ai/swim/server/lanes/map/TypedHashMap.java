@@ -16,21 +16,24 @@
 
 package ai.swim.server.lanes.map;
 
+import ai.swim.server.lanes.MapLookup;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class TypedHashMap<K, V> implements TypedMap<K, V>, MapLookup<K, V> {
-  private final Map<K, V> state;
+  private final LinkedHashMap<K, V> state;
 
   public TypedHashMap() {
-    state = new HashMap<>();
+    state = new LinkedHashMap<>();
   }
 
   public TypedHashMap(Map<K, V> state) {
-    this.state = state;
+    this.state = new LinkedHashMap<>(state);
   }
 
   @Override
@@ -72,7 +75,7 @@ public class TypedHashMap<K, V> implements TypedMap<K, V>, MapLookup<K, V> {
 
   @Override
   public Set<K> keySet() {
-    return Collections.unmodifiableSet(state.keySet());
+    return state.keySet();
   }
 
   @Override

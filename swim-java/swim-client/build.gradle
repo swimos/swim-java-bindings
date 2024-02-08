@@ -17,6 +17,6 @@ dependencies {
 
 tasks.create(name: "nativeLibs", type: Sync) {
     from "${project.ext.release_dir}"
-    include "*_client.dylib", "*_client.so", "*_client.dll"
+    include "*_client*.dylib", "*_client*.so", "*_client*.dll"
     into "libs"
 }
